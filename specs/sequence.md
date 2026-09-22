@@ -101,10 +101,12 @@ par_over <label> … and <label> … end
 critical <label> … option <label> … end
 break <label> … end
 rect rgb(191, 223, 255) … end
+rect … end
 ```
 
 - Every fragment nests. `else`, `and` and `option` open a new `Section` of the innermost matching fragment; the first section's label is the header label.
-- `rect` takes one colour in the `rgb()`, `rgba()`, `hsl()` or `hsla()` form, parsed into a typed `Color` by the source-style colour grammar ([svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle)); raw text never reaches the output. Hex colours are unavailable because `#` opens a comment. The colour is a fixed literal that ignores the theme, so it emits `I030 FixedColour`, and the `rect` takes no automatic tone.
+- `rect` takes an optional colour in the `rgb()`, `rgba()`, `hsl()` or `hsla()` form, or a CSS named colour, parsed into a typed `Color` by the source-style colour grammar ([svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle)); raw text never reaches the output. Hex colours are unavailable because `#` opens a comment. A named colour is a fixed literal that ignores the theme, so it emits `I030 FixedColour`, and that `rect` takes no automatic tone. `transparent` names a colour like any other and emits `I030`.
+- `rect` with no colour draws the theme's cluster tint and emits no `I030`, matching mermaid 12. Whatever follows the keyword and is not a colour is the header label, so `rect the retry window` tints with the theme and labels the fragment.
 - `par_over` draws the same box as `par` and is recorded as its own kind; its sections overlap in mermaid's renderer, which Merlion draws as stacked sections in one box. TODO(owner): decide whether `par_over` sections share their rows once the `compat` corpus shows how often it appears.
 - Fragments nest at most `limits.nesting` (64) deep; deeper input is `E010 NestingTooDeep`.
 

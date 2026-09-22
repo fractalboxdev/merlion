@@ -820,15 +820,11 @@ impl P<'_, '_> {
         let end = self.stmt_end(start);
         let text = cut_comment(self.src.get(start..end).unwrap_or(""));
         let (kind, label_start) = if word == "rect" {
+            // A colour is optional: `rect` alone takes the theme's cluster tint. A hex
+            // colour is unavailable whichever way, because `#` opens a comment.
             match leading_color(text) {
-                Some((n, c)) => (FragmentKind::Rect(c.unwrap_or(Color::Transparent)), n),
-                None => {
-                    return Err(self.fail(
-                        kw_start,
-                        end,
-                        "`rect` expects an `rgb()`, `rgba()`, `hsl()` or `hsla()` colour; a hex colour is unavailable because `#` opens a comment",
-                    ))
-                }
+                Some((n, c)) => (FragmentKind::Rect(Some(c.unwrap_or(Color::Transparent))), n),
+                None => (FragmentKind::Rect(None), 0),
             }
         } else {
             let kind = match word {
@@ -857,7 +853,7 @@ impl P<'_, '_> {
             );
             return Err(Stop::Failed);
         }
-        if matches!(kind, FragmentKind::Rect(_)) {
+        if matches!(kind, FragmentKind::Rect(Some(_))) {
             let span = self.stmt_span(kw_start, end);
             self.diags
                 .emit_once(Severity::Info, "I030", span, style::FIXED_COLOUR_MESSAGE);

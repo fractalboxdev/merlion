@@ -281,9 +281,10 @@ pub enum FragmentKind {
     /// Sections come from `option`.
     Critical,
     Break,
-    /// `rect rgb(…)`: a tinted background, with the colour typed. A source literal, so
-    /// it emits `I030 FixedColour` and takes no automatic tone.
-    Rect(Color),
+    /// `rect`: a tinted background. A named colour is a source literal, so it emits
+    /// `I030 FixedColour` and takes no automatic tone; `rect` alone carries `None` and
+    /// takes the theme's cluster tint, as mermaid 12 does.
+    Rect(Option<Color>),
 }
 
 impl FragmentKind {

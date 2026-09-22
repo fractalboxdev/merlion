@@ -904,12 +904,12 @@ fn rect_carries_a_typed_colour() {
     let f = fragments(&s)[0];
     assert_eq!(
         f.kind,
-        FragmentKind::Rect(Color::Rgba {
+        FragmentKind::Rect(Some(Color::Rgba {
             r: 191,
             g: 223,
             b: 255,
             a: 255
-        })
+        }))
     );
     assert_eq!(count(&d, "I030"), 1, "{d:#?}");
 }
@@ -930,10 +930,30 @@ fn rect_accepts_rgba_and_hsl() {
 }
 
 #[test]
-fn rect_without_a_colour_is_e002() {
-    let (r, d) = try_parse("sequenceDiagram\n    rect\n      A->>B: hi\n    end\n");
-    assert!(matches!(r, Err(ParseError::Failed)), "{r:?}");
-    assert!(has(&d, "E002"), "{d:#?}");
+fn rect_without_a_colour_takes_the_theme_tint() {
+    let (s, d) = sq_d("rect\n  A->>B: hi\nend");
+    assert_eq!(fragments(&s)[0].kind, FragmentKind::Rect(None));
+    // No colour is named, so nothing is fixed and `I030` has nothing to report.
+    assert_eq!(count(&d, "I030"), 0, "{d:#?}");
+    assert!(!has(&d, "E002"), "{d:#?}");
+}
+
+#[test]
+fn rect_keeps_a_label_after_the_missing_colour() {
+    let (s, _) = sq_d("rect the retry window\n  A->>B: hi\nend");
+    let f = fragments(&s)[0];
+    assert_eq!(f.kind, FragmentKind::Rect(None));
+    assert_eq!(f.sections[0].label, "the retry window");
+}
+
+#[test]
+fn rect_transparent_is_a_colour_the_source_names() {
+    let (s, d) = sq_d("rect transparent\n  A->>B: hi\nend");
+    assert_eq!(
+        fragments(&s)[0].kind,
+        FragmentKind::Rect(Some(Color::Transparent))
+    );
+    assert_eq!(count(&d, "I030"), 1, "{d:#?}");
 }
 
 #[test]
