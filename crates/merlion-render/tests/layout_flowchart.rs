@@ -581,3 +581,36 @@ fn system_font_widens_label_boxes_by_the_tolerance() {
         assert_eq!(g.nodes[0].w, ln.w);
     }
 }
+
+#[test]
+fn chain_inside_a_cluster_stays_straight() {
+    // A loop inside a cluster whose labelled back-edge runs beside the chain, and an
+    // edge leaving the cluster to a node that sits left of it: the cluster pass pushes
+    // the chain right, and must move the whole chain, not the one node next to the label.
+    let mut b = B::new();
+    let v = b.nodes(&[
+        "start",
+        "brief",
+        "web_sources",
+        "academic_sources",
+        "expert_voices",
+        "synthesize",
+        "decision",
+        "format_output",
+        "done",
+    ]);
+    b.edge(v[0], v[1]);
+    for i in 1..6 {
+        b.edge(v[i], v[i + 1]);
+    }
+    b.edge_l(v[6], v[1], "Needs completion");
+    b.edge_l(v[6], v[7], "If complete");
+    b.edge(v[1], v[8]);
+    b.sub("research", "Research", None, &v[1..8]);
+    let g = run(&b.c);
+    check(&b.c, &g);
+    let xs: Vec<f64> = (2..6).map(|i| g.nodes[v[i]].x).collect();
+    for x in &xs {
+        assert!((x - xs[0]).abs() < 1e-6, "chain zig-zags: {:?}", xs);
+    }
+}

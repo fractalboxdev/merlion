@@ -16,7 +16,8 @@
 //! solid block: one left and one right boundary variable per cluster, shared by all
 //! layers it spans, with non-members kept outside and members inside with padding.
 //! Nodes only move right of their Brandes–Köpf position, just enough to satisfy these
-//! constraints.
+//! constraints; a vertical run of one-to-one segments moves as one piece unless that
+//! makes the drawing wider.
 
 use alloc::collections::BTreeMap;
 use alloc::vec;
@@ -28,6 +29,9 @@ use crate::math::{max, min};
 
 /// Gap between a cluster box that ends in one layer and whatever starts in the next.
 pub const CLUSTER_LAYER_GAP: f64 = 8.0;
+
+/// How much wider than the untied solve a cluster solve with straight runs tied may be.
+const TIE_SLACK: f64 = 0.0;
 
 /// Padding of a cluster box around its members, in the layout frame.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -277,6 +281,11 @@ enum Item {
 /// Makes every cluster a solid block in the order axis (see the module docs). The
 /// constraint graph is acyclic because sibling clusters keep one order in all layers
 /// (phase 3); nodes move right of their current position only as far as needed.
+///
+/// A straight run of one-to-one segments (upper node with one lower neighbour, lower
+/// node with one upper neighbour, same cluster, same position) moves as one piece, so a
+/// chain that Brandes–Köpf drew vertical stays vertical when one of its nodes is pushed.
+/// Should tying the runs close a cycle, every node moves on its own instead.
 pub fn fit_clusters(
     g: &LGraph,
     cl: &Clusters,
@@ -285,14 +294,66 @@ pub fn fit_clusters(
     x: &mut [f64],
     fuel: &mut Fuel,
 ) -> Result<(), OutOfFuel> {
-    let k = cl.len();
     let n = g.nodes.len();
-    if k == 0 || x.len() != n {
+    if cl.len() == 0 || x.len() != n {
         return Ok(());
     }
+    let mut rep: Vec<usize> = (0..n).collect();
+    for layer in &g.layers {
+        for &u in layer {
+            fuel.burn(1)?;
+            let [v] = g.down[u][..] else { continue };
+            if g.up.get(v).is_some_and(|up| up.len() == 1)
+                && g.nodes[u].cluster == g.nodes[v].cluster
+                && x[u] == x[v]
+            {
+                rep[v] = rep[u];
+            }
+        }
+    }
+    let own: Vec<usize> = (0..n).collect();
+    let free = solve_clusters(g, cl, pads, spacing, x, &own, fuel)?;
+    let tied = if rep == own {
+        None
+    } else {
+        solve_clusters(g, cl, pads, spacing, x, &rep, fuel)?
+    };
+    let width = |xs: &[f64]| {
+        let (lo, hi) = g
+            .nodes
+            .iter()
+            .enumerate()
+            .fold((f64::MAX, f64::MIN), |(lo, hi), (v, node)| {
+                (min(lo, xs[v] - node.left), max(hi, xs[v] + node.right))
+            });
+        hi - lo
+    };
+    let solved = match (tied, free) {
+        (Some(t), Some(f)) if width(&t) <= width(&f) + TIE_SLACK => Some(t),
+        (_, f) => f,
+    };
+    if let Some(val) = solved {
+        x.copy_from_slice(&val);
+    }
+    Ok(())
+}
+
+/// Longest-path solve of the cluster constraints with node `v` placed by variable
+/// `rep[v]`; `None` when the constraints form a cycle.
+fn solve_clusters(
+    g: &LGraph,
+    cl: &Clusters,
+    pads: &[Pad],
+    spacing: f64,
+    x: &[f64],
+    rep: &[usize],
+    fuel: &mut Fuel,
+) -> Result<Option<Vec<f64>>, OutOfFuel> {
+    let k = cl.len();
+    let n = g.nodes.len();
     let pad = |c: usize| pads.get(c).copied().unwrap_or_default();
     let var = |it: Item| match it {
-        Item::Node(v) => v,
+        Item::Node(v) => rep[v],
         Item::Open(c) => n + 2 * c,
         Item::Close(c) => n + 2 * c + 1,
     };
@@ -346,10 +407,8 @@ pub fn fit_clusters(
     let mut stack: Vec<usize> = (0..total).filter(|&i| indeg[i] == 0).collect();
     stack.reverse();
     let mut done = 0usize;
-    let mut order: Vec<usize> = Vec::with_capacity(total);
     while let Some(a) = stack.pop() {
         done += 1;
-        order.push(a);
         if val[a] == f64::MIN {
             val[a] = 0.0;
         }
@@ -363,26 +422,25 @@ pub fn fit_clusters(
         }
     }
     if done < total {
-        // A cycle would mean inconsistent sibling order; keep the unconstrained result.
-        return Ok(());
+        return Ok(None);
     }
-    x.copy_from_slice(&val[..n]);
+    let mut out: Vec<f64> = (0..n).map(|v| val[rep[v]]).collect();
     let lo = g
         .nodes
         .iter()
         .enumerate()
-        .map(|(v, node)| x[v] - node.left)
+        .map(|(v, node)| out[v] - node.left)
         .fold(f64::MAX, min);
     let lo = (0..k)
         .map(|c| val[n + 2 * c])
         .filter(|v| *v > f64::MIN)
         .fold(lo, min);
     if lo.is_finite() {
-        for v in x.iter_mut() {
+        for v in out.iter_mut() {
             *v -= lo;
         }
     }
-    Ok(())
+    Ok(Some(out))
 }
 
 /// Clusters' first and last layer.
