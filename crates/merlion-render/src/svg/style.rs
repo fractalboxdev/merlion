@@ -184,6 +184,96 @@ fn base_rules(t: &Table) -> Vec<Rule> {
     ]
 }
 
+/// The base rules of a sequence diagram (specs/sequence.md#theme-tokens). Each element
+/// reuses an existing token, so a sequence introduces none of its own.
+///
+/// The lifeline, the destroy cross, the activation bar, the note box, the fragment tab
+/// and the badge read their role directly: they sit outside the `.merlion-node` /
+/// `.merlion-edge` / `.merlion-cluster` groups the per-element tokens are reset on, or
+/// take no role of their own. The fragment divider and the central dot read the tone,
+/// so they follow the fragment's and the message's role.
+fn sequence_rules(t: &Table) -> Vec<Rule> {
+    use Value::{Lit, Role as R, Tone, ToneMix};
+    let lit = |s: &str| Lit(String::from(s));
+    let width = || ("stroke-width", Lit(stroke_var(t)));
+    alloc::vec![
+        Rule {
+            selector: ".merlion-participant>.merlion-lifeline",
+            decls: alloc::vec![
+                ("fill", lit("none")),
+                ("stroke", R(Role::Line)),
+                width(),
+                ("stroke-dasharray", lit("4 4")),
+            ],
+        },
+        Rule {
+            selector: ".merlion-participant>.merlion-destroy",
+            decls: alloc::vec![("fill", lit("none")), ("stroke", R(Role::Line)), width()],
+        },
+        Rule {
+            selector: ".merlion-activation>.merlion-shape",
+            decls: alloc::vec![
+                ("fill", R(Role::NodeBg)),
+                ("stroke", R(Role::NodeBorder)),
+                width(),
+            ],
+        },
+        Rule {
+            selector: ".merlion-note>.merlion-note-box",
+            decls: alloc::vec![
+                ("fill", R(Role::Surface)),
+                ("stroke", R(Role::Border)),
+                width(),
+            ],
+        },
+        Rule {
+            selector: ".merlion-fragment>.merlion-fragment-tab",
+            decls: alloc::vec![("fill", lit("none")), ("stroke", R(Role::Muted)), width()],
+        },
+        Rule {
+            selector: ".merlion-fragment>.merlion-fragment-divider",
+            decls: alloc::vec![
+                ("fill", lit("none")),
+                ("stroke", Tone(Role::ClusterBorder)),
+                width(),
+                ("stroke-dasharray", lit("4 4")),
+            ],
+        },
+        Rule {
+            selector: ".merlion-fragment-label,#{id} .merlion-fragment-section",
+            decls: alloc::vec![("text-anchor", lit("start")), ("white-space", lit("pre"))],
+        },
+        Rule {
+            selector: ".merlion-fragment-label",
+            decls: alloc::vec![("fill", ToneMix(Role::Fg, TONE_TEXT))],
+        },
+        Rule {
+            selector: ".merlion-fragment-section",
+            decls: alloc::vec![("fill", R(Role::Muted))],
+        },
+        Rule {
+            selector: ".merlion-message-number>.merlion-number-bg",
+            decls: alloc::vec![
+                ("fill", R(Role::EdgeLabelBg)),
+                ("stroke", R(Role::Border)),
+                width(),
+            ],
+        },
+        Rule {
+            selector: ".merlion-message-number>.merlion-number-text",
+            decls: alloc::vec![
+                ("text-anchor", lit("middle")),
+                ("white-space", lit("pre")),
+                ("fill", R(Role::Fg)),
+            ],
+        },
+        Rule {
+            selector: ".merlion-message>.merlion-central",
+            decls: alloc::vec![("fill", Tone(Role::Edge)), ("stroke", lit("none"))],
+        },
+    ]
+}
+
 /// Writes `{prefix}{selector}{body}`; `#{id} ` inside a selector list becomes `prefix`.
 fn push_rule(out: &mut String, prefix: &str, selector: &str, body: &str) {
     out.push_str(prefix);
@@ -245,6 +335,9 @@ pub struct Layer<'a> {
     pub table: &'a Table,
     pub roles: &'a [RoleRule],
     pub source: &'a [SourceRule],
+    /// A sequence diagram, which adds the rules of [`sequence_rules`] to the base set.
+    /// A flowchart's bytes are the same with the field as without it.
+    pub sequence: bool,
 }
 
 const SUPPORTS: &str = "@supports (color: color-mix(in oklab, #000, #fff)){";
@@ -253,6 +346,9 @@ const SUPPORTS: &str = "@supports (color: color-mix(in oklab, #000, #fff)){";
 fn push_layer(out: &mut String, prefix: &str, layer: &Layer, detail_size: Option<f64>) {
     let t = layer.table;
     let mut rules = base_rules(t);
+    if layer.sequence {
+        rules.extend(sequence_rules(t));
+    }
     if let Some(size) = detail_size.filter(|s| s.is_finite() && *s > 0.0) {
         rules.push(detail_rule(size));
     }
@@ -362,6 +458,7 @@ mod tests {
             table: &BUILT_IN,
             roles: &[],
             source: &[],
+            sequence: false,
         }
     }
 
@@ -390,6 +487,7 @@ mod tests {
             table: &t,
             roles: &[],
             source: &src,
+            sequence: false,
         };
         let s = build("m1", FontMode::Link, 14.0, None, None, &layer, None);
         assert!(s.contains("#m1 .a{fill:red;}"));
@@ -483,6 +581,7 @@ mod tests {
             table: &t,
             roles: &[],
             source: &src,
+            sequence: false,
         };
         let s = build("m1", FontMode::Link, 14.0, None, None, &layer, None);
         assert!(

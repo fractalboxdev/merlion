@@ -1389,12 +1389,14 @@ pub fn draw_flowchart(
         table: &cx.light.table,
         roles: &role_rules,
         source: &src_rules,
+        sequence: false,
     };
     let dark_layer = match (&dark, &dark_rules) {
         (Some(d), Some((roles, source))) => Some(style::Layer {
             table: &d.table,
             roles,
             source,
+            sequence: false,
         }),
         _ => None,
     };
