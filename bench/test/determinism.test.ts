@@ -44,7 +44,7 @@ describe("compareRenders", () => {
 
 describe("CORPORA", () => {
   it("names one directory of .mmd sources per corpus", () => {
-    expect(Object.keys(CORPORA)).toEqual(["compat", "sequence"]);
+    expect(Object.keys(CORPORA)).toEqual(["compat", "compat-sequence", "sequence"]);
     expect(CORPORA.sequence).toBe(join(REPO_DIR, "crates", "merlion-render", "tests", "fixtures", "sequence"));
     for (const dir of Object.values(CORPORA)) {
       expect(readdirSync(dir).filter((f) => f.endsWith(".mmd")).length).toBeGreaterThan(0);

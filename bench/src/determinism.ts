@@ -13,13 +13,17 @@
 import { Command, FileSystem, Path } from "@effect/platform";
 import { Console, Effect, Schema } from "effect";
 import { pathToFileURL } from "node:url";
-import { COMPAT_DIR, MERLION_BIN, MERLION_WASM_DIR, REPO_DIR, SEQUENCE_DIR } from "./paths.ts";
+import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, MERLION_BIN, MERLION_WASM_DIR, REPO_DIR, SEQUENCE_DIR } from "./paths.ts";
 
 export const FONT_MODES = ["link", "embed", "system"] as const;
 export type FontMode = (typeof FONT_MODES)[number];
 
 /** The directories the check renders, one per corpus name. */
-export const CORPORA = { compat: COMPAT_DIR, sequence: SEQUENCE_DIR } as const;
+export const CORPORA = {
+  compat: COMPAT_DIR,
+  "compat-sequence": COMPAT_SEQUENCE_DIR,
+  sequence: SEQUENCE_DIR,
+} as const;
 export const CORPUS_NAMES = Object.keys(CORPORA) as [Corpus, ...Corpus[]];
 export type Corpus = keyof typeof CORPORA;
 
