@@ -190,3 +190,31 @@ test("rejects invalid options", () => {
   assert.throws(() => rehypeMerlion({ source: "inline" }), /source/);
   assert.throws(() => rehypeMerlion({ width: -1 }), /width/);
 });
+
+// A fence's info string after the language (```mermaid width=1600) sets that block's
+// container width; remark-rehype carries it as `data.meta` on the code element.
+const withMeta = (source, meta) => {
+  const block = mermaidBlock(source);
+  block.children[0].data = { meta };
+  return block;
+};
+
+test("width=<px> in the fence meta overrides the width for that block only", async () => {
+  const { render, calls } = fakeRender();
+  await run(root(withMeta(SRC, "width=1600"), mermaidBlock(SRC)), { render, width: 640 });
+  assert.equal(calls[0].options.width, 1600);
+  assert.equal(calls[1].options.width, 640);
+});
+
+test("an invalid width in the fence meta is reported and the block renders at the default width", async () => {
+  const { render, calls } = fakeRender();
+  const { tree, file } = await run(root(withMeta(SRC, "width=wide"), withMeta(SRC, "title=x width=0")), { render });
+  assert.deepEqual(
+    calls.map((c) => c.options.width),
+    [720, 720],
+  );
+  assert.equal(tree.children[0].tagName, "figure");
+  const meta = file.messages.filter((m) => m.ruleId === "fence-meta");
+  assert.equal(meta.length, 2);
+  assert.match(meta[0].reason, /width=wide/);
+});

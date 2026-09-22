@@ -138,3 +138,47 @@ test("stylesheet: warnings go to the logger; strict errors and refused paths fai
   await assert.rejects(setupAsync({ stylesheet: "big.css" }, fresh), /E013/);
   assert.ok(!existsSync(join(fresh, "node_modules/.astro/merlion/stylesheet.css")));
 });
+
+// --- Astro 7 markdown processors. `markdown.rehypePlugins` is deprecated there and the
+// default Sätteri processor never runs it, so the plugin goes into the processor's own
+// plugin list, first, ahead of code-block transformers such as Expressive Code.
+
+const withProcessor = async (processor, options = {}) => {
+  const updates = [];
+  await merlion({ fontCss: false, ...options }).hooks["astro:config:setup"]({
+    config: { root: new URL("file:///site/"), markdown: { processor } },
+    updateConfig: (c) => updates.push(c),
+    injectScript: () => {},
+    logger: { warn() {}, info() {}, error() {} },
+  });
+  return updates;
+};
+
+test("Sätteri processor: a hast plugin factory first in processor.options.hastPlugins, no legacy rehypePlugins", async () => {
+  const codeBlocks = () => ({ name: "code-blocks" });
+  const processor = { name: "satteri", options: { mdastPlugins: [], hastPlugins: [codeBlocks], features: {} } };
+  const updates = await withProcessor(processor);
+  assert.equal(processor.options.hastPlugins.length, 2);
+  assert.equal(processor.options.hastPlugins[1], codeBlocks);
+  const factory = processor.options.hastPlugins[0];
+  assert.equal(typeof factory, "function");
+  const plugin = factory({ fileURL: new URL("file:///site/src/content/docs/a.md"), sourceFormat: "markdown", source: "", data: {} });
+  assert.equal(plugin.name, "@fractalboxdev/merlion-rehype");
+  assert.deepEqual(plugin.element.filter, ["pre"]);
+  assert.ok(!updates.some((u) => u.markdown?.rehypePlugins), "no deprecated markdown.rehypePlugins");
+});
+
+test("unified processor: rehypeMerlion first in processor.options.rehypePlugins", async () => {
+  const other = () => {};
+  const processor = { name: "unified", options: { remarkPlugins: [], rehypePlugins: [other], remarkRehype: {} } };
+  const updates = await withProcessor(processor, { width: 640 });
+  assert.equal(processor.options.rehypePlugins.length, 2);
+  const [plugin, opts] = processor.options.rehypePlugins[0];
+  assert.equal(plugin, rehypeMerlion);
+  assert.deepEqual(opts, { width: 640, fontCss: false, root: "/site/" });
+  assert.ok(!updates.some((u) => u.markdown?.rehypePlugins));
+});
+
+test("an unknown markdown processor fails the build instead of skipping every diagram", async () => {
+  await assert.rejects(withProcessor({ name: "custom", options: {} }), /markdown\.processor "custom"/);
+});
