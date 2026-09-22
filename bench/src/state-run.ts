@@ -146,6 +146,8 @@ const column = (side: Side) => {
     crossFree: m.filter((x) => x.crossings === 0).length,
     overlaps: [mean(m.map((x) => x.labelOverlaps)), median(m.map((x) => x.labelOverlaps))] as const,
     overlapFree: m.filter((x) => x.overlapsWithNotes === 0).length,
+    throughLabels: m.reduce((t, x) => t + x.edgesThroughLabels, 0),
+    throughFree: m.filter((x) => x.edgesThroughLabels === 0).length,
     width: [mean(m.map((x) => x.width)), median(m.map((x) => x.width))] as const,
     height: [mean(m.map((x) => x.height)), median(m.map((x) => x.height))] as const,
     area: [mean(m.map((x) => x.area)), median(m.map((x) => x.area))] as const,
@@ -190,6 +192,9 @@ const report = (
     `| Label overlaps, mean / median | ${fmt(cand.overlaps[0])} / ${fmt(cand.overlaps[1])} | ${fmt(ref.overlaps[0])} / ${fmt(ref.overlaps[1])} |`,
   );
   lines.push(`| Overlap-free, notes included | ${pct(cand.overlapFree, cand.rendered)} | ${pct(ref.overlapFree, ref.rendered)} |`);
+  lines.push(
+    `| Transitions drawn across another's label | ${cand.throughLabels} in ${cand.rendered - cand.throughFree} diagrams | ${ref.throughLabels} in ${ref.rendered - ref.throughFree} diagrams |`,
+  );
   lines.push(`| Width, mean / median | ${int(cand.width[0])} / ${int(cand.width[1])} | ${int(ref.width[0])} / ${int(ref.width[1])} |`);
   lines.push(`| Height, mean / median | ${int(cand.height[0])} / ${int(cand.height[1])} | ${int(ref.height[0])} / ${int(ref.height[1])} |`);
   lines.push(`| Area (px²), mean / median | ${int(cand.area[0])} / ${int(cand.area[1])} | ${int(ref.area[0])} / ${int(ref.area[1])} |`);
@@ -197,7 +202,8 @@ const report = (
   lines.push(`| Mean fuel | ${int(cand.fuel)} | – |`);
   lines.push("");
   lines.push(
-    "Crossings count pairs of routed transition segments meeting away from a shared endpoint; label overlaps count " +
+    "Crossings count pairs of routed transition segments meeting away from a shared endpoint; a transition drawn " +
+    "across another's label chip leaves the text under it unreadable while the two chips never touch; label overlaps count " +
       "pairs of drawn boxes intersecting by more than 1 px² over the state boxes and the transition label chips, " +
       "and the overlap-free row adds the note boxes to that set.",
   );
