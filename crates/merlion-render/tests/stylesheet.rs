@@ -577,3 +577,59 @@ fn every_compiled_palette_parses_under_the_caps() {
     assert!(canonical.len() > 64 * 1024, "{}", canonical.len());
     assert_eq!(Palette::parse(&canonical), Ok(p));
 }
+
+/// A 64 KiB stylesheet of `:root` blocks full of private tokens, then `roles` role rules
+/// that each reach a private token through `var()`.
+fn root_heavy(roles: usize) -> String {
+    let name = |mut i: usize| {
+        let mut s = String::new();
+        loop {
+            s.insert(0, (b'a' + (i % 26) as u8) as char);
+            i /= 26;
+            if i == 0 {
+                break s;
+            }
+            i -= 1;
+        }
+    };
+    let tail: String = (0..roles)
+        .map(|i| format!(".merlion-c-r{}{{--merlion-tone:var(--a)}}\n", i))
+        .collect();
+    let mut css = String::from(":root{--a:#123456}");
+    let mut i = 1;
+    'outer: loop {
+        let mut block = String::from(":root{--merlion-bg:red;");
+        for _ in 0..31 {
+            let d = format!("--{}:#000;", name(i));
+            i += 1;
+            if css.len() + block.len() + d.len() + 1 + tail.len() > 64 * 1024 {
+                block.push('}');
+                css.push_str(&block);
+                break 'outer;
+            }
+            block.push_str(&d);
+        }
+        block.push('}');
+        css.push_str(&block);
+    }
+    css.push_str(&tail);
+    css
+}
+
+#[test]
+fn compiling_a_root_heavy_stylesheet_stays_linear() {
+    let css = root_heavy(250);
+    assert!(
+        css.len() <= 64 * 1024 && css.len() > 60 * 1024,
+        "{}",
+        css.len()
+    );
+    let t = std::time::Instant::now();
+    let (s, d) = compile(&css, &StylesheetLimits::default());
+    let elapsed = t.elapsed();
+    let s = s.unwrap_or_else(|| panic!("{:?}", d.items));
+    assert_eq!(s.roles.len(), 250);
+    assert_eq!(s.roles[249].tone, Some(hex("#123456")));
+    // Quadratic resolution took seconds in release builds; linear takes milliseconds.
+    assert!(elapsed.as_millis() < 1500, "{:?}", elapsed);
+}

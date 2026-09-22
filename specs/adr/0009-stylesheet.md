@@ -67,7 +67,7 @@ A value is a literal or `var(--<name>)` / `var(--<name>, <literal>)` naming a to
 | Diagnostics | 100, then one summary count | — |
 | Embedded style added per diagram | 16 KiB; only roles the diagram uses are embedded | `W017` for the roles left out |
 
-Parsing and resolution are linear in the input and run once per invocation, outside any render's fuel counter; the 64 KiB cap bounds their cost.
+Parsing and resolution take O(n log n) in the input (each theme's declarations are indexed once and shared by all its rules) and run once per invocation, outside any render's fuel counter; the 64 KiB cap bounds their cost to milliseconds.
 
 ### Precedence
 

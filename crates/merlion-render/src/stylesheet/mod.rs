@@ -6,9 +6,11 @@
 //! literal values only, and [`Stylesheet::palette`] resolves the literals one theme
 //! bakes into a standalone SVG ([`Palette`], `RenderOptions::palette`).
 //!
-//! Parsing and resolution are linear in the input: the block structure is scanned with
-//! an explicit depth counter, `var()` references resolve memoised to a depth of 8, and
-//! the input is capped at 64 KiB. Nothing here panics on any input.
+//! Parsing and resolution take `O(n log n)` in the input: the block structure is scanned
+//! with an explicit depth counter, each theme's declarations are indexed once in a sorted
+//! map shared by the theme block and all its role rules, `var()` references resolve
+//! memoised to a depth of 8, and the input is capped at 64 KiB. Nothing here panics on
+//! any input.
 
 mod scan;
 pub mod value;
@@ -420,19 +422,20 @@ impl<'a> Parser<'a> {
 // Resolution
 // ---------------------------------------------------------------------------------------
 
-/// The declarations visible in one theme: `:root`, overlaid by the theme's own block.
+/// The declarations visible in one theme: `:root`, overlaid by the theme's own block,
+/// the last declaration of a name winning. Built once per theme in `O(n log n)` and
+/// shared, with its memo, by the theme block and every role rule of that theme.
 struct Env<'a> {
-    decls: Vec<&'a RawDecl>,
+    decls: BTreeMap<&'a str, &'a RawDecl>,
     /// Resolved names with the number of `var()` hops their value took.
     memo: BTreeMap<String, (Value, usize)>,
 }
 
 impl<'a> Env<'a> {
     fn new(root: Option<&'a Vec<RawDecl>>, own: Option<&'a Vec<RawDecl>>) -> Self {
-        let mut decls: Vec<&RawDecl> = Vec::new();
+        let mut decls: BTreeMap<&str, &RawDecl> = BTreeMap::new();
         for d in root.into_iter().flatten().chain(own.into_iter().flatten()) {
-            decls.retain(|x| x.name != d.name);
-            decls.push(d);
+            decls.insert(d.name.as_str(), d);
         }
         Env {
             decls,
@@ -441,8 +444,24 @@ impl<'a> Env<'a> {
     }
 
     fn find(&self, name: &str) -> Option<&'a RawDecl> {
-        self.decls.iter().copied().find(|d| d.name == name)
+        self.decls.get(name).copied()
     }
+}
+
+/// The environment of theme `key`, built on first use.
+fn env_for<'e, 'a>(
+    envs: &'e mut BTreeMap<ThemeKey, Env<'a>>,
+    themes: &'a RawThemes,
+    key: &ThemeKey,
+) -> &'e mut Env<'a> {
+    envs.entry(key.clone()).or_insert_with(|| {
+        let own = if *key == ThemeKey::Root {
+            None
+        } else {
+            themes.get(key)
+        };
+        Env::new(themes.get(&ThemeKey::Root), own)
+    })
 }
 
 type Resolved = Result<(Value, usize), (&'static str, String)>;
@@ -579,22 +598,17 @@ pub fn compile(css: &str, limits: &StylesheetLimits) -> (Option<Stylesheet>, Dia
         );
     }
     let max = limits.var_depth;
-    let root = themes.get(&ThemeKey::Root);
     let first_use: Vec<ThemeKey> = themes.blocks.iter().map(|(k, _)| k.clone()).collect();
     let mut out = Stylesheet::default();
+    let mut envs: BTreeMap<ThemeKey, Env> = BTreeMap::new();
     for (key, raw) in &themes.blocks {
-        let own = if *key == ThemeKey::Root {
-            None
-        } else {
-            Some(raw)
-        };
-        let mut env = Env::new(root, own);
+        let env = env_for(&mut envs, &themes, key);
         let mut decls: Vec<(Token, Value)> = Vec::new();
         for rd in raw {
             let Name::Theme(tok) = value::classify(&rd.name) else {
                 continue; // private tokens resolve through `var()` only
             };
-            match resolve(&mut env, &rd.value, tok.kind(), 0, max, &mut Vec::new()) {
+            match resolve(env, &rd.value, tok.kind(), 0, max, &mut Vec::new()) {
                 Ok((v, _)) => {
                     decls.retain(|(t, _)| *t != tok);
                     decls.push((tok, v));
@@ -615,14 +629,14 @@ pub fn compile(css: &str, limits: &StylesheetLimits) -> (Option<Stylesheet>, Dia
     out.themes.sort_by_key(|b| theme_order(&b.key, &first_use));
     out.themes.retain(|b| !b.decls.is_empty());
     for r in roles {
-        let own = r
+        let key = r
             .theme
             .as_ref()
-            .and_then(|t| themes.get(&ThemeKey::Named(t.clone())));
-        let mut env = Env::new(root, own);
+            .map_or(ThemeKey::Root, |t| ThemeKey::Named(t.clone()));
+        let env = env_for(&mut envs, &themes, &key);
         let mut get = |rd: &Option<RawDecl>, kind: Kind, d: &mut Diags| -> Option<Value> {
             let rd = rd.as_ref()?;
-            match resolve(&mut env, &rd.value, kind, 0, max, &mut Vec::new()) {
+            match resolve(env, &rd.value, kind, 0, max, &mut Vec::new()) {
                 Ok((v, _)) => Some(v),
                 Err((code, why)) => {
                     d.warn(
