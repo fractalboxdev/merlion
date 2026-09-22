@@ -43,6 +43,9 @@ fn guard(path: &Path, cwd: &Path, follow: bool, must_exist: bool) -> Result<Path
         Some(p) if !p.as_os_str().is_empty() => p,
         _ => Path::new("."),
     };
+    if !must_exist && fs::symlink_metadata(parent).is_err() {
+        create_output_dir(parent, cwd, follow)?;
+    }
     let dir = parent
         .canonicalize()
         .map_err(|e| format!("directory is not usable: {e}"))?;
@@ -57,6 +60,48 @@ fn guard(path: &Path, cwd: &Path, follow: bool, must_exist: bool) -> Result<Path
         }
     }
     Ok(dir.join(name))
+}
+
+/// Creates the missing directories of an output path, like `mkdir -p`, under the same
+/// rules as the write itself: the nearest existing ancestor resolves (symbolic links
+/// included) inside `cwd` unless `follow`, and the missing part is plain names only, so
+/// `..` can never climb back out of the resolved ancestor.
+fn create_output_dir(dir: &Path, cwd: &Path, follow: bool) -> Result<(), String> {
+    use std::path::Component;
+
+    let mut existing = dir;
+    let mut missing = Vec::new();
+    while fs::symlink_metadata(existing).is_err() {
+        let name = existing
+            .file_name()
+            .ok_or_else(|| "directory is not usable".to_string())?;
+        missing.push(name);
+        existing = match existing.parent() {
+            Some(p) if !p.as_os_str().is_empty() => p,
+            _ => Path::new("."),
+        };
+    }
+    let tail: PathBuf = missing.iter().rev().collect();
+    if !tail.components().all(|c| matches!(c, Component::Normal(_))) {
+        return Err("directory is not usable: missing part contains `..`".into());
+    }
+    let base = existing
+        .canonicalize()
+        .map_err(|e| format!("directory is not usable: {e}"))?;
+    if !base.is_dir() {
+        return Err("directory is not usable: not a directory".into());
+    }
+    if !follow {
+        let root = cwd
+            .canonicalize()
+            .map_err(|e| format!("working directory is not usable: {e}"))?;
+        if !base.starts_with(&root) {
+            return Err(
+                "resolves outside the working directory (pass --follow-symlinks to allow)".into(),
+            );
+        }
+    }
+    fs::create_dir_all(base.join(tail)).map_err(|e| format!("cannot create directory: {e}"))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -220,10 +265,44 @@ mod tests {
     }
 
     #[test]
-    fn guard_refuses_missing_directories_and_directories() {
-        let d = testdir::fresh("gmiss");
-        assert!(guard_target(&d.join("nope/a.svg"), &d, false).is_err());
+    fn guard_creates_missing_output_directories_inside_cwd() {
+        let d = testdir::fresh("gmk");
+        let got = guard_target(&d.join("out/nested/a.svg"), &d, false).unwrap();
+        assert_eq!(got, d.join("out").join("nested").join("a.svg"));
+        assert!(d.join("out/nested").is_dir());
+        // A relative path resolves against the process cwd, which the caller passes.
         assert!(guard_target(&d, &d, false).is_err());
+    }
+
+    #[test]
+    fn guard_never_creates_directories_outside_cwd() {
+        let d = testdir::fresh("gmkout");
+        fs::create_dir(d.join("cwd")).unwrap();
+        let cwd = d.join("cwd");
+        assert!(guard_target(&cwd.join("new/../../escape/a.svg"), &cwd, false).is_err());
+        assert!(!d.join("escape").exists());
+        assert!(!cwd.join("new").exists());
+        assert!(guard_target(&d.join("elsewhere/a.svg"), &cwd, false).is_err());
+        assert!(!d.join("elsewhere").exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn guard_never_creates_directories_through_a_symlink() {
+        let d = testdir::fresh("gmklink");
+        fs::create_dir_all(d.join("cwd")).unwrap();
+        fs::create_dir_all(d.join("outside")).unwrap();
+        let cwd = d.join("cwd");
+        std::os::unix::fs::symlink(d.join("outside"), cwd.join("link")).unwrap();
+        assert!(guard_target(&cwd.join("link/new/a.svg"), &cwd, false).is_err());
+        assert!(!d.join("outside/new").exists());
+    }
+
+    #[test]
+    fn guard_hint_never_creates_directories() {
+        let d = testdir::fresh("ghmk");
+        assert!(guard_hint(&d.join("nope/h.svg"), &d, false).is_err());
+        assert!(!d.join("nope").exists());
     }
 
     #[cfg(unix)]
