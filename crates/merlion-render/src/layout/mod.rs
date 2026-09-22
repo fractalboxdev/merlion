@@ -1,5 +1,7 @@
 //! Layered layout (specs/layout.md). STUB: owned by the layout workstream.
 
+mod acyclic;
+
 use crate::diag::Diagnostics;
 use crate::fuel::Fuel;
 use crate::geometry::Geometry;
