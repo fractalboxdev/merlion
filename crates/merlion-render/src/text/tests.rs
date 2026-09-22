@@ -111,19 +111,25 @@ fn empty_label_is_one_empty_line() {
 }
 
 #[test]
-fn br_forces_lines_and_height() {
-    for s in ["a<br>b", "a<br/>b", "a<br />b", "a<BR>b"] {
-        let (l, _) = lay(s);
-        assert_eq!(texts(&l), ["a", "b"], "{s}");
-        assert!((l.height - 2.0 * l.line_height).abs() < EPS);
-    }
-    let (l, _) = lay("<br>");
+fn a_newline_forces_lines_and_height() {
+    let (l, _) = lay("a\nb");
+    assert_eq!(texts(&l), ["a", "b"]);
+    assert!((l.height - 2.0 * l.line_height).abs() < EPS);
+    let (l, _) = lay("\n");
     assert_eq!(l.lines.len(), 2);
 }
 
 #[test]
+fn a_literal_br_is_drawn_as_text() {
+    // The parser turns a source `<br>` into a newline; a `<br>` still in the text came
+    // from `#lt;br#gt;` and is text, not a break.
+    let (l, _) = lay("a<br>b");
+    assert_eq!(texts(&l), ["a<br>b"]);
+}
+
+#[test]
 fn width_is_widest_line() {
-    let (l, _) = lay("i<br>WWW");
+    let (l, _) = lay("i\nWWW");
     assert!((l.width - l.lines[1].width).abs() < EPS);
     assert!(l.lines[0].width < l.lines[1].width);
 }
@@ -355,7 +361,7 @@ fn invalid_font_size_falls_back_to_default() {
 
 #[test]
 fn deterministic() {
-    let s = "**Deploy** the *service* to `prod`<br>then verify AV Ta Wo";
+    let s = "**Deploy** the *service* to `prod`\nthen verify AV Ta Wo";
     let (a, _) = lay(s);
     let (b, _) = lay(s);
     assert_eq!(a, b);
@@ -390,7 +396,7 @@ fn details(l: &LabelLayout) -> Vec<bool> {
     l.lines.iter().map(|x| x.detail).collect()
 }
 
-const OBSERVE: &str = "**q-observe**<br/>250 push slots<br/>separate invocations";
+const OBSERVE: &str = "**q-observe**\n250 push slots\nseparate invocations";
 
 #[test]
 fn bold_first_line_with_more_lines_is_title_and_detail() {
@@ -412,14 +418,14 @@ fn bold_first_line_with_more_lines_is_title_and_detail() {
 fn labels_outside_the_pattern_are_not_title_and_detail() {
     for s in [
         "**only a title**",
-        "plain<br>two lines",
-        "a **t**<br>x",
-        "x<br>**t**",
-        "**a** b<br>x",
-        "**a** **b**<br>x",
-        "**t**<br>",
-        "**t**<br> <br>",
-        "**a `c` a**<br>x",
+        "plain\ntwo lines",
+        "a **t**\nx",
+        "x\n**t**",
+        "**a** b\nx",
+        "**a** **b**\nx",
+        "**t**\n",
+        "**t**\n \n",
+        "**a `c` a**\nx",
         "",
     ] {
         assert!(!is_title_detail(s), "{s:?}");
@@ -433,21 +439,21 @@ fn labels_outside_the_pattern_are_not_title_and_detail() {
 
 #[test]
 fn surrounding_spaces_and_nested_italic_keep_the_title() {
-    assert!(is_title_detail("  **t**  <br>x"));
-    assert!(is_title_detail("***t***<br>x"));
-    assert!(is_title_detail("**two words**<br>x"));
+    assert!(is_title_detail("  **t**  \nx"));
+    assert!(is_title_detail("***t***\nx"));
+    assert!(is_title_detail("**two words**\nx"));
 }
 
 #[test]
 fn empty_detail_line_between_details_is_kept() {
-    let l = node_lay("**t**<br><br>x");
+    let l = node_lay("**t**\n\nx");
     assert_eq!(details(&l), [false, true, true]);
     assert!(l.lines[1].runs.is_empty());
 }
 
 #[test]
 fn detail_width_is_sum_of_advances_at_detail_size() {
-    let l = node_lay("**Title**<br>Hello world");
+    let l = node_lay("**Title**\nHello world");
     let w = expected("Hello world", Weight::Regular, 14.0 * DETAIL_SCALE);
     assert!((l.lines[1].width - w).abs() < EPS);
     let full = expected("Hello world", Weight::Regular, 14.0);
@@ -474,7 +480,7 @@ fn line_heights_scale_with_size_and_sum_to_height() {
 
 #[test]
 fn uniform_labels_carry_per_line_metrics() {
-    let (l, _) = lay("a<br>b");
+    let (l, _) = lay("a\nb");
     for line in &l.lines {
         assert_eq!(line.size, 14.0);
         assert!(!line.detail);
@@ -488,7 +494,7 @@ fn detail_lines_wrap_and_continuations_stay_detail() {
     let mut d = Diagnostics::new(false);
     let max = 60.0;
     let l = layout_node_label(
-        "**T**<br>alpha beta gamma delta epsilon",
+        "**T**\nalpha beta gamma delta epsilon",
         &TextStyle::default(),
         max,
         &mut d,
@@ -508,7 +514,7 @@ fn detail_lines_wrap_and_continuations_stay_detail() {
 fn wrapped_title_lines_stay_title_and_gap_follows_the_last() {
     let mut d = Diagnostics::new(false);
     let l = layout_node_label(
-        "**alpha beta gamma**<br>x",
+        "**alpha beta gamma**\nx",
         &TextStyle::default(),
         60.0,
         &mut d,
@@ -523,7 +529,7 @@ fn wrapped_title_lines_stay_title_and_gap_follows_the_last() {
 
 #[test]
 fn markdown_in_detail_lines_measures_at_detail_size() {
-    let l = node_lay("**T**<br>a *i* `c` **b**");
+    let l = node_lay("**T**\na *i* `c` **b**");
     let runs = &l.lines[1].runs;
     let s = 14.0 * DETAIL_SCALE;
     assert!(runs.iter().any(|r| r.italic && r.text == "i"));
@@ -536,7 +542,7 @@ fn markdown_in_detail_lines_measures_at_detail_size() {
 #[test]
 fn detail_size_follows_the_font_size() {
     let mut d = Diagnostics::new(false);
-    let l = layout_node_label("**T**<br>x", &style(20.0), 200.0, &mut d);
+    let l = layout_node_label("**T**\nx", &style(20.0), 200.0, &mut d);
     assert!((l.lines[1].size - 16.0).abs() < EPS);
 }
 

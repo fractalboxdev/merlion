@@ -1,4 +1,4 @@
-//! Label markup: character filtering, `<br>` and Markdown emphasis
+//! Label markup: character filtering, hard line breaks and Markdown emphasis
 //! (specs/svg-output.md#text, specs/text-measurement.md#measuring).
 //!
 //! The parser is a single left-to-right pass per hard line with no recursion, so any
@@ -18,7 +18,7 @@ pub struct Styled {
     pub code: bool,
 }
 
-/// A label split into hard lines (at `<br>`), with its filtered characters styled.
+/// A label split into hard lines (at `\n`), with its filtered characters styled.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Parsed {
     pub lines: Vec<Vec<Styled>>,
@@ -37,7 +37,7 @@ pub fn is_bidi_control(c: char) -> bool {
 /// dropped, so CRLF becomes one space.
 fn filter(c: char) -> Option<char> {
     match c {
-        '\t' | '\n' => Some(' '),
+        '\t' => Some(' '),
         '\u{0}'..='\u{1F}' | '\u{7F}'..='\u{9F}' | '\u{FFFE}' | '\u{FFFF}' => None,
         _ => Some(c),
     }
@@ -82,50 +82,33 @@ impl Tok {
     }
 }
 
-/// Matches `<br>`, `<br/>`, `<br />` (any case, any spaces before `/` or `>`) at
-/// `chars[i]`; returns the index after the tag.
-fn match_br(chars: &[char], i: usize) -> Option<usize> {
-    if chars.get(i) != Some(&'<') {
-        return None;
-    }
-    let b = chars.get(i + 1)?;
-    let r = chars.get(i + 2)?;
-    if !b.eq_ignore_ascii_case(&'b') || !r.eq_ignore_ascii_case(&'r') {
-        return None;
-    }
-    let mut j = i + 3;
-    while chars.get(j) == Some(&' ') {
-        j += 1;
-    }
-    if chars.get(j) == Some(&'/') {
-        j += 1;
-        while chars.get(j) == Some(&' ') {
-            j += 1;
-        }
-    }
-    (chars.get(j) == Some(&'>')).then_some(j + 1)
-}
-
-/// Filters, splits at `<br>` and tokenizes.
+/// Splits at the hard line breaks, filters and tokenizes.
+///
+/// `\n` is the only hard break: the parser writes one for every `<br>` the source
+/// carries (specs/parser.md#labels-and-entity-codes), so a `<br>` still in the text
+/// came from `#lt;br#gt;` and is drawn as the text it is.
 fn tokenize(text: &str) -> (Vec<Vec<Tok>>, bool) {
     let mut bidi = false;
-    let chars: Vec<char> = text
-        .chars()
-        .filter(|&c| {
-            let b = is_bidi_control(c);
-            bidi |= b;
-            !b
-        })
-        .filter_map(filter)
-        .collect();
-    let mut lines = alloc::vec![Vec::new()];
+    let mut lines = Vec::new();
+    for raw in text.split('\n') {
+        let chars: Vec<char> = raw
+            .chars()
+            .filter(|&c| {
+                let b = is_bidi_control(c);
+                bidi |= b;
+                !b
+            })
+            .filter_map(filter)
+            .collect();
+        lines.push(tokenize_line(&chars));
+    }
+    (lines, bidi)
+}
+
+fn tokenize_line(chars: &[char]) -> Vec<Tok> {
+    let mut line = Vec::new();
     let mut i = 0;
     while let Some(&c) = chars.get(i) {
-        if let Some(next) = match_br(&chars, i) {
-            lines.push(Vec::new());
-            i = next;
-            continue;
-        }
         let (tok, len) = match c {
             '`' => (Tok::Tick, 1),
             '*' if chars.get(i + 1) == Some(&'*') => (Tok::Star2, 2),
@@ -133,12 +116,10 @@ fn tokenize(text: &str) -> (Vec<Vec<Tok>>, bool) {
             '_' => (Tok::Under, 1),
             _ => (Tok::Ch(c), 1),
         };
-        if let Some(line) = lines.last_mut() {
-            line.push(tok);
-        }
+        line.push(tok);
         i += len;
     }
-    (lines, bidi)
+    line
 }
 
 /// Role of each token after pairing.
@@ -287,33 +268,27 @@ mod tests {
     }
 
     #[test]
-    fn br_variants_break() {
-        for s in [
-            "a<br>b",
-            "a<br/>b",
-            "a<br />b",
-            "a<BR>b",
-            "a<Br/>b",
-            "a<bR  />b",
-        ] {
-            let p = parse(s);
-            assert_eq!(p.lines.len(), 2, "{s}");
-            assert_eq!(show(&p.lines[0]).0, "a");
-            assert_eq!(show(&p.lines[1]).0, "b");
-        }
+    fn a_newline_breaks_the_line() {
+        let p = parse("a\nb");
+        assert_eq!(p.lines.len(), 2);
+        assert_eq!(show(&p.lines[0]).0, "a");
+        assert_eq!(show(&p.lines[1]).0, "b");
     }
 
     #[test]
-    fn other_html_is_literal() {
+    fn html_is_literal_including_a_br() {
         assert_eq!(one("<b>x</b>").0, "<b>x</b>");
         assert_eq!(one("<brx>").0, "<brx>");
         assert_eq!(one("<br").0, "<br");
         assert_eq!(one("a<br/ x>").0, "a<br/ x>");
+        // The parser writes `\n` for a source `<br>`, so this one is `#lt;br#gt;` text.
+        assert_eq!(one("a<br>b").0, "a<br>b");
+        assert_eq!(one("a<br/>b").0, "a<br/>b");
     }
 
     #[test]
     fn consecutive_breaks_make_empty_lines() {
-        let p = parse("a<br><br>b");
+        let p = parse("a\n\nb");
         assert_eq!(p.lines.len(), 3);
         assert!(p.lines[1].is_empty());
     }
@@ -360,8 +335,8 @@ mod tests {
     }
 
     #[test]
-    fn emphasis_does_not_cross_br() {
-        let p = parse("**a<br>b**");
+    fn emphasis_does_not_cross_a_line_break() {
+        let p = parse("**a\nb**");
         assert_eq!(show(&p.lines[0]).0, "**a");
         assert_eq!(show(&p.lines[1]).0, "b**");
     }
@@ -373,7 +348,7 @@ mod tests {
 
     #[test]
     fn filters_controls_and_noncharacters() {
-        assert_eq!(one("a\tb\nc\r\nd").0, "a b c d");
+        assert_eq!(one("a\tb\r").0, "a b");
         assert_eq!(one("a\u{0}\u{7}\u{7F}\u{85}b\u{FFFE}\u{FFFF}").0, "ab");
         assert!(!parse("ab").bidi_stripped);
     }

@@ -266,7 +266,7 @@ fn an_alias_runs_to_the_end_of_the_line() {
 #[test]
 fn an_alias_keeps_line_breaks() {
     let s = sq("participant API as Public<br/>API");
-    assert_eq!(labels(&s), ["Public<br>API"]);
+    assert_eq!(labels(&s), ["Public\nAPI"]);
 }
 
 #[test]
@@ -737,7 +737,7 @@ fn a_note_declares_a_participant_implicitly() {
 #[test]
 fn note_text_keeps_line_breaks_and_entities() {
     let s = sq("Note over A: first<br/>second #hearts;");
-    assert_eq!(notes(&s)[0].text, "first<br>second ♥");
+    assert_eq!(notes(&s)[0].text, "first\nsecond ♥");
 }
 
 #[test]
