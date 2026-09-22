@@ -51,4 +51,4 @@ TODO(owner): approve the panel ([ADR-0007](adr/0007-reader-panel.md), Proposed).
 
 ## Output
 
-Each run writes `bench/results/<date>-<commit>.json` and a Markdown summary, and CI publishes the summary. Graph extraction from SVGs uses `<text>` positions and edge endpoints; a renderer whose labels are HTML inside `<foreignObject>` is parsed through its DOM in the headless browser instead.
+Each run writes `bench/results/<date>-<commit>.json` and a Markdown summary, and CI publishes the summary. Graph extraction from SVGs uses `<text>` positions and edge endpoints; labels that are HTML inside `<foreignObject>` (mermaid diagrams whose own config turns `htmlLabels` back on) are read from that element's text, with a space at every `<br>` and block boundary. Compatibility compares labels with whitespace removed, because renderers wrap long labels at different points.

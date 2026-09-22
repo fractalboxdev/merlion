@@ -147,3 +147,18 @@ describe("extractSvg: fallbacks", () => {
     expect(g.edges.map((e) => [e.from, e.to])).toEqual([["x", "y"]]);
   });
 });
+
+describe("mermaid htmlLabels", () => {
+  it("reads node and edge labels from foreignObject when there is no <text>", () => {
+    const svg = `<svg id="d2" xmlns="http://www.w3.org/2000/svg" class="flowchart" viewBox="0 0 200 200"><g class="root">
+ <g class="edgePaths"><path d="M50,40 L50,120" class="flowchart-link" data-id="L_a_b_0"/></g>
+ <g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_a_b_0"><foreignObject width="30" height="20"><div xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"><p>yes</p></span></div></foreignObject></g></g></g>
+ <g class="nodes">
+  <g class="node default" id="d2-flowchart-a-0" transform="translate(50, 20)"><rect x="-40" y="-20" width="80" height="40"/><g class="label"><rect/><foreignObject width="60" height="21"><div xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel"><p>Line one<br/>two</p></span></div></foreignObject></g></g>
+  <g class="node default" id="d2-flowchart-b-1" transform="translate(50, 140)"><rect x="-40" y="-20" width="80" height="40"/><g class="label"><foreignObject><div xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel"><p>b</p></span></div></foreignObject></g></g>
+ </g></g></svg>`;
+    const g = extractSvg(svg);
+    expect(g.nodes.map((n) => n.label)).toEqual(["Line one two", "b"]);
+    expect(g.edges.map((e) => e.label)).toEqual(["yes"]);
+  });
+});

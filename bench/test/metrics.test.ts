@@ -154,6 +154,10 @@ describe("compareGraphs", () => {
     expect(r.missingNodeLabels).toEqual(["End"]);
     expect(r.extraNodeLabels).toEqual(["Fin"]);
   });
+  it("ignores where each renderer wrapped a label", () => {
+    const wrapped = graph([node("a", 0, 0, "Sta rt"), node("b", 0, 0, "End")], [edge("a", "b", [], "g o")]);
+    expect(compareGraphs(ref, wrapped).pass).toBe(true);
+  });
 });
 
 describe("displacement", () => {

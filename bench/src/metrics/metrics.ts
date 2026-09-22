@@ -297,12 +297,14 @@ const multisetMinus = (a: readonly string[], b: readonly string[]): string[] => 
  * node labels and of non-empty edge labels, and the same edge count.
  */
 export const compareGraphs = (ref: ExtractedGraph, cand: ExtractedGraph): Compat => {
-  const rn = ref.nodes.map((n) => n.label);
-  const cn = cand.nodes.map((n) => n.label);
+  // Renderers wrap labels at different points, so whitespace does not count.
+  const key = (l: string): string => l.replace(/\s+/g, "");
+  const rn = ref.nodes.map((n) => key(n.label));
+  const cn = cand.nodes.map((n) => key(n.label));
   const missing = multisetMinus(rn, cn);
   const extra = multisetMinus(cn, rn);
-  const rel = ref.edges.map((e) => e.label).filter((l) => l !== "");
-  const cel = cand.edges.map((e) => e.label).filter((l) => l !== "");
+  const rel = ref.edges.map((e) => key(e.label)).filter((l) => l !== "");
+  const cel = cand.edges.map((e) => key(e.label)).filter((l) => l !== "");
   const nodeLabels = missing.length === 0 && extra.length === 0;
   const edgeCount = ref.edges.length === cand.edges.length;
   const edgeLabels = multisetMinus(rel, cel).length === 0 && multisetMinus(cel, rel).length === 0;

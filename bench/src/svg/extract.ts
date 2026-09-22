@@ -135,7 +135,8 @@ const num = (e: XmlElement, a: string, dflt = 0): number => {
 /** Local (pre-transform) outline points of a shape; empty for zero-size shapes. */
 const shapePoints = (e: XmlElement): Point[] => {
   switch (e.name) {
-    case "rect": {
+    case "rect":
+    case "foreignObject": {
       const x = num(e, "x");
       const y = num(e, "y");
       const w = num(e, "width");
@@ -223,6 +224,40 @@ const labelText = (texts: readonly XmlElement[]): string => {
     walk(t);
   }
   return normalizeLabel(out);
+};
+
+/** Elements whose start begins a new line in an HTML label. */
+const HTML_BREAKS = new Set(["br", "p", "div", "li", "tr"]);
+
+/**
+ * Text of mermaid `htmlLabels` labels: `<foreignObject>` content with a space
+ * at every HTML line break or block boundary, normalised like `labelText`.
+ */
+const htmlLabelText = (objects: readonly XmlElement[]): string => {
+  let out = "";
+  const walk = (e: XmlElement): void => {
+    for (const c of e.children) {
+      if (typeof c === "string") {
+        out += c;
+      } else {
+        if (HTML_BREAKS.has(c.name)) out += " ";
+        walk(c);
+      }
+    }
+  };
+  for (const o of objects) {
+    out += " ";
+    walk(o);
+  }
+  return normalizeLabel(out);
+};
+
+/** A mermaid label's text: `<text>` when present, else `<foreignObject>` (a diagram that turns `htmlLabels` back on). */
+const mermaidLabel = (scope: XmlElement): { label: string; texts: XmlElement[]; objects: XmlElement[] } => {
+  const texts = collect(scope, (e) => e.name === "text");
+  const objects = collect(scope, (e) => e.name === "foreignObject");
+  const fromText = labelText(texts);
+  return { label: fromText !== "" || objects.length === 0 ? fromText : htmlLabelText(objects), texts, objects };
 };
 
 /** Estimated box of a `<text>` element, used only when no background box exists. */
@@ -385,7 +420,7 @@ const extractMermaid = (root: XmlElement, ctx: Ctx): Omit<ExtractedGraph, "flavo
     if (box === null) continue;
     const rawId = g.attrs["id"] ?? "";
     const id = MERMAID_NODE_ID.exec(rawId)?.[1] ?? stripPrefix(rawId);
-    nodes.push({ id, label: labelText(collect(g, (e) => e.name === "text")), box });
+    nodes.push({ id, label: mermaidLabel(g).label, box });
   }
 
   const clusters: ExtractedCluster[] = [];
@@ -393,7 +428,7 @@ const extractMermaid = (root: XmlElement, ctx: Ctx): Omit<ExtractedGraph, "flavo
     const shapes = collect(g, isShape, (e) => e.name === "text" || isLabelGroup(e));
     const box = shapes.length > 0 ? shapeBox(ctx, shapes[0]!) : null;
     if (box === null) continue;
-    clusters.push({ id: stripPrefix(g.attrs["id"] ?? ""), label: labelText(collect(g, (e) => e.name === "text")), box });
+    clusters.push({ id: stripPrefix(g.attrs["id"] ?? ""), label: mermaidLabel(g).label, box });
   }
 
   // Edge labels keyed by the edge's data-id.
@@ -402,9 +437,8 @@ const extractMermaid = (root: XmlElement, ctx: Ctx): Omit<ExtractedGraph, "flavo
     const inner = collect(lg, (e) => e.name === "g" && "data-id" in e.attrs)[0];
     const key = inner?.attrs["data-id"];
     if (key === undefined) continue;
-    const texts = collect(lg, (e) => e.name === "text");
-    const label = labelText(texts);
-    const bg = collect(lg, (e) => e.name === "rect")
+    const { label, texts, objects } = mermaidLabel(lg);
+    const bg = [...collect(lg, (e) => e.name === "rect"), ...objects]
       .map((r) => shapeBox(ctx, r))
       .filter((b): b is Box => b !== null);
     const box =
