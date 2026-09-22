@@ -131,8 +131,9 @@ impl NodeShape {
 /// segment between layer `s − 1` (end of part `p`) and layer `s` (start of part `p + 1`)
 /// leaves along the layer axis past every part (`chan_y`), runs along the order axis to
 /// the gap between the two parts (`gap_x[p]`), back along the layer axis to just before
-/// part `p + 1` (`entry_y[p + 1]`), and along the order axis to its target. Each wrap
-/// crossing gets its own offset of [`WRAP_STEP`], so parallel detours never overlap.
+/// part `p + 1` (`entry_y[p + 1]`), and along the order axis to its target. The steps
+/// crossing one boundary take distinct tracks [`WRAP_STEP`] apart, nested so that
+/// parallel detours neither overlap nor cross.
 pub struct WrapFrame {
     /// Layer-axis coordinate beyond every part.
     pub chan_y: f64,
@@ -294,8 +295,9 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
     let downward = |c: &[usize]| c.len() >= 2 && layer(c[c.len() - 1]) > layer(c[0]);
 
     // Port offsets per (chain, end): end `true` on the upper node's Down side, `false`
-    // on the lower node's Up side, ordered by where the edge heads next (wrapping
-    // steps go last on the Down side and first on the Up side).
+    // on the lower node's Up side, ordered by where the edge heads next. A wrapping
+    // step heads into a later part, which lies further along the order axis, so it
+    // sorts last on the Down side and first on the Up side.
     let mut ends: BTreeMap<(usize, bool), Vec<(f64, usize)>> = BTreeMap::new();
     for (ci, c) in g.chains.iter().enumerate() {
         let c = &c.nodes;
@@ -303,16 +305,10 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
             continue;
         }
         let n = c.len();
-        let k_up = if wraps_at(c, 1) { f64::MAX } else { at(c[1]).0 };
-        let k_down = if wraps_at(c, n - 1) {
-            f64::MIN
-        } else {
-            at(c[n - 2]).0
-        };
-        ends.entry((c[0], true)).or_default().push((k_up, ci));
+        ends.entry((c[0], true)).or_default().push((at(c[1]).0, ci));
         ends.entry((c[n - 1], false))
             .or_default()
-            .push((k_down, ci));
+            .push((at(c[n - 2]).0, ci));
     }
     let mut port: BTreeMap<(usize, bool), f64> = BTreeMap::new();
     for ((v, down), list) in ends.iter_mut() {
@@ -344,40 +340,67 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
         }
     };
 
-    // Wrap detour offsets: a global index for the outer channel and a per-boundary
-    // index for the gap and entry channels.
-    let mut wrap_slot: BTreeMap<(usize, usize), (usize, usize)> = BTreeMap::new();
-    let mut per_boundary: BTreeMap<usize, usize> = BTreeMap::new();
-    let mut global = 0usize;
+    // Wrap detours nest: at each boundary the step leaving furthest along the order
+    // axis takes the innermost track in the outer channel and in the gap, and the
+    // outermost entry track, so no two detours cross unless their targets are in the
+    // opposite order to their sources. Boundaries share tracks: their channel runs never
+    // overlap along the order axis.
+    let orthogonal = inp.style == EdgeStyle::Orthogonal;
+    let mut steps: BTreeMap<usize, Vec<(f64, f64, usize, usize)>> = BTreeMap::new();
     for (ci, c) in g.chains.iter().enumerate() {
         let c = &c.nodes;
         if !downward(c) {
             continue;
         }
-        for i in 1..c.len() {
+        let n = c.len();
+        for i in 1..n {
             if wraps_at(c, i) {
-                let local = per_boundary.entry(part(layer(c[i - 1]))).or_insert(0);
-                wrap_slot.insert((ci, i), (global, *local));
-                *local += 1;
-                global += 1;
+                let from = if orthogonal && i == 1 {
+                    endpoint(ci, c[0], true).0
+                } else {
+                    at(c[i - 1]).0
+                };
+                let to = if orthogonal && i == n - 1 {
+                    endpoint(ci, c[n - 1], false).0
+                } else {
+                    at(c[i]).0
+                };
+                steps
+                    .entry(part(layer(c[i - 1])))
+                    .or_default()
+                    .push((from, to, ci, i));
             }
         }
     }
+    // (track, tracks at the boundary) per wrapping step.
+    let mut wrap_slot: BTreeMap<(usize, usize), (usize, usize)> = BTreeMap::new();
+    for list in steps.values_mut() {
+        list.sort_by(|a, b| {
+            cmp_f(b.0, a.0)
+                .then(cmp_f(b.1, a.1))
+                .then(a.2.cmp(&b.2))
+                .then(a.3.cmp(&b.3))
+        });
+        let k = list.len();
+        for (r, &(_, _, ci, i)) in list.iter().enumerate() {
+            wrap_slot.insert((ci, i), (r, k));
+        }
+    }
     let detour = |ci: usize, c: &[usize], i: usize, from_x: f64, to_x: f64| -> [(f64, f64); 4] {
-        let (k, local) = wrap_slot.get(&(ci, i)).copied().unwrap_or((0, 0));
+        let (r, k) = wrap_slot.get(&(ci, i)).copied().unwrap_or((0, 1));
+        let outer = k.saturating_sub(1).saturating_sub(r);
         let w = inp.wrap;
         let pa = part(layer(c[i - 1]));
         let pb = part(layer(c[i]));
-        let chan = w.map_or(0.0, |w| w.chan_y) + WRAP_STEP * k as f64;
-        let gx = w.and_then(|w| w.gap_x.get(pa).copied()).unwrap_or(0.0) + WRAP_STEP * local as f64;
+        let chan = w.map_or(0.0, |w| w.chan_y) + WRAP_STEP * r as f64;
+        let gx = w.and_then(|w| w.gap_x.get(pa).copied()).unwrap_or(0.0) + WRAP_STEP * r as f64;
         let entry =
-            w.and_then(|w| w.entry_y.get(pb).copied()).unwrap_or(0.0) - WRAP_STEP * local as f64;
+            w.and_then(|w| w.entry_y.get(pb).copied()).unwrap_or(0.0) - WRAP_STEP * outer as f64;
         [(from_x, chan), (gx, chan), (gx, entry), (to_x, entry)]
     };
 
     // Orthogonal jogs: collected per gap, then each given a distinct height spread
     // evenly across the gap so parallel jogs never overlap.
-    let orthogonal = inp.style == EdgeStyle::Orthogonal;
     let mut jogs: BTreeMap<usize, Vec<Jog>> = BTreeMap::new();
     if orthogonal {
         for (ci, c) in g.chains.iter().enumerate() {
@@ -752,6 +775,39 @@ mod tests {
                 &w[1..w.len() - 1],
                 &[(20.0, 90.0), (60.0, 90.0), (60.0, -20.0), (100.0, -20.0)]
             );
+        }
+    }
+
+    #[test]
+    fn wrap_detours_nest_instead_of_crossing() {
+        // A → C and B → D both cross the wrap between part 0 (layer 0) and part 1
+        // (layer 1, moved after part 0 and back to the top).
+        let g = graph(&[0, 0, 1, 1], &[(0, 2), (1, 3)]);
+        let pos = [(20.0, 10.0), (80.0, 10.0), (160.0, 10.0), (220.0, 10.0)];
+        let shapes = [NodeShape {
+            shape: Shape::Rect,
+            w: 40.0,
+            h: 20.0,
+        }; 4];
+        let wrap = WrapFrame {
+            chan_y: 60.0,
+            gap_x: vec![120.0],
+            entry_y: vec![-30.0, -30.0],
+        };
+        for style in [EdgeStyle::Orthogonal, EdgeStyle::Polyline] {
+            let r = route(&RouteIn {
+                dir: Direction::TB,
+                style,
+                g: &g,
+                pos: &pos,
+                layer_top: &[0.0, 0.0],
+                layer_bot: &[20.0, 20.0],
+                part: &[0, 1],
+                shapes: &shapes,
+                wrap: Some(&wrap),
+            });
+            assert!(r.iter().all(|x| x.wrap));
+            assert_eq!(crossings(&r), 0, "{:?}", style);
         }
     }
 
