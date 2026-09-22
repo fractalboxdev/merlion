@@ -1,0 +1,29 @@
+# Scratch
+.tmp/
+
+# Rust
+/target/
+**/*.rs.bk
+
+# WASM / JS
+node_modules/
+pkg/
+dist/
+.astro/
+*.tsbuildinfo
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Env (dotenvx keeps encrypted .env files committed; private keys never)
+.env.keys
+.env.local
+.env*.local
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
