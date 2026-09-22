@@ -43,7 +43,7 @@ const id = (g) => g.dataset.merlionId;
 const all = (el, sel) => [...el.querySelectorAll(sel)];
 const toggle = (el, c, on) => el.classList.toggle(c, on);
 // Two targets ({ n } or { e }) name the same element.
-const same = (a, b) => a && b && a.n === b.n && a.e === b.e;
+const same = (a, b) => a && b && a.n === b.n && a.e === b.e && a.c === b.c;
 
 /** The extension: attaches to one host and SVG and returns its cleanup (specs/interaction.md#loading). */
 export const interact = (host, svg) => {
@@ -84,6 +84,9 @@ export const interact = (host, svg) => {
   const collapsed = new Set();
   const hidden = new Set();
   const badges = new Map();
+  // Lit sets an extension supplies for a cluster the viewer cannot derive one for, by its
+  // `data-merlion-id`: a sequence's fragments and boxes (specs/interaction.md#highlight-set).
+  const groups = new Map();
   // The keyboard's walk: every node in outline order. A sequence appends its messages to it, gives
   // each message the outline line that numbers it and lights the activation bars of a lit
   // participant, all by filling in the model above (specs/sequence.md#interaction). That module
@@ -91,11 +94,16 @@ export const interact = (host, svg) => {
   // this one stays inside its budget (specs/viewer.md#constraints).
   const walk = order.map((i) => ({ n: nodes[i].id }));
   if (svg.classList.contains("merlion-sequence"))
-    import("./interact-seq.js").then((m) => (m.sequence(svg, nodes, edges, desc, walk, MerlionView.style), paint()));
+    import("./interact-seq.js").then(
+      (m) => (
+        m.sequence({ svg, nodes, edges, cls, desc, walk, groups, text: (el) => nameOf(textOf(el)), style: MerlionView.style }),
+        paint()
+      ),
+    );
 
   // Shown: the pin, else the keyboard's target as a preview.
   const shown = () => pin ?? active;
-  const elOf = (t) => (t.e >= 0 ? edges[t.e].el : byId.get(t.n).g);
+  const elOf = (t) => (t.c ? groups.get(t.c).g : t.e >= 0 ? edges[t.e].el : byId.get(t.n).g);
   const away = (t) => (t.e >= 0 ? gone.edges.get(t.e) === "hidden" : gone.nodes.has(t.n));
   const visible = () => walk.filter((t) => !away(t));
 
@@ -109,6 +117,9 @@ export const interact = (host, svg) => {
     const lbl = (e) => (e.label ? ` [${e.label}]` : "");
     const e = edges[t.e];
     const n = byId.get(t.n);
+    // A supplied group heads with its own line and says what it holds; it has no edge list.
+    const c = groups.get(t.c);
+    if (c) return add(c.line, "font-weight:600"), add(c.sub, "opacity:.7");
     // A message's outline line is its heading and its whole story: number, arrow and text.
     const ln = e?.line;
     add(ln ?? (e ? `${name(e.from)} ${e.g} ${name(e.to)}` : nameOf(n.L.filter((l) => !l.d)) || n.id), "font-weight:600");
@@ -127,13 +138,13 @@ export const interact = (host, svg) => {
     host.toggleAttribute("data-merlion-state", !!t);
     host.tip(t && elOf(t), t && fill(t));
     if (!t) return;
-    const f = focusSet(adj, edges, t, t.path);
+    const f = t.c ? groups.get(t.c) : focusSet(adj, edges, t, t.path);
     // An edge may end on a cluster (`A --> subgraph`): that end has no node group to light.
     for (const k of f.nodes) for (const el of byId.get(k)?.els ?? []) el.classList.add("merlion-lit");
     for (const i of f.edges) edges[i].el.classList.add("merlion-lit");
     elOf(t).classList.add("merlion-primary");
     // The polite live region reads the target's outline line.
-    const ln = (edges[t.e] ?? byId.get(t.n))?.line;
+    const ln = (edges[t.e] ?? byId.get(t.n) ?? groups.get(t.c))?.line;
     if (ln) host.say(ln);
   };
 
@@ -197,8 +208,11 @@ export const interact = (host, svg) => {
     active = null;
     if (a === "hide") hidden.add(target.n);
     else if (a === "collapse") {
+      // A cluster the SVG names collapses; one an extension lit set covers pins instead; one with
+      // neither does nothing, so a title that names no cluster never reaches the collapsed set.
       const k = id(t.closest(".merlion-cluster"));
-      if (k) collapsed.delete(k) || collapsed.add(k);
+      if (groups.has(k)) pin = same(pin, { c: k }) ? null : { c: k };
+      else if (k) collapsed.delete(k) || collapsed.add(k);
     } else pin = a === "clear" ? null : { ...target, path: a === "path" };
     apply();
   };

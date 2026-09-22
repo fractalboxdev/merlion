@@ -433,7 +433,12 @@ fn push_boxes(out: &mut String, cx: &Ctx) {
         }
         out.push_str("<g");
         attr(out, "class", &class);
-        let _ = write!(out, " data-merlion-index=\"{}\">", i);
+        let _ = write!(out, " data-merlion-id=\"box-{}\"", i);
+        let _ = write!(out, " data-merlion-index=\"{}\"", i);
+        if let Some((lo, hi)) = box_span(cx.seq, i) {
+            let _ = write!(out, " data-merlion-span=\"{} {}\"", lo, hi);
+        }
+        out.push('>');
         let paint = cluster_paint(&[], colour, cx.light);
         push_rect(
             out,
@@ -531,7 +536,45 @@ fn push_participants(out: &mut String, cx: &Ctx) {
     }
 }
 
+/// The first and last participant column a `box` holds, in declaration order: the columns its
+/// rect spans, which is what the viewer lights (specs/sequence.md#interaction). `None` for a box
+/// holding no participant, which spans nothing.
+fn box_span(seq: &Sequence, b: usize) -> Option<(usize, usize)> {
+    let members = &seq.boxes.get(b)?.participants;
+    let lo = *members.iter().min()?;
+    Some((lo, *members.iter().max().unwrap_or(&lo)))
+}
+
+/// The first and last [`Message::index`] each fragment encloses, over every section and every
+/// nested fragment: the rows its rect spans. `open[d]` is the fragment open at depth `d`, so a
+/// step at depth `d` closes everything deeper and lies inside every fragment still open.
+fn fragment_spans(steps: &[Step<'_>], n: usize) -> Vec<Option<(u32, u32)>> {
+    let mut spans: Vec<Option<(u32, u32)>> = alloc::vec![None; n];
+    let mut open: Vec<usize> = Vec::new();
+    for s in steps {
+        match s.ev {
+            Ev::Section { f, k: 0, .. } => {
+                open.truncate(s.depth);
+                open.push(f);
+            }
+            Ev::Message(m) => {
+                open.truncate(s.depth);
+                for &f in &open {
+                    let e = &mut spans[f];
+                    *e = Some(match *e {
+                        None => (m.index, m.index),
+                        Some((lo, hi)) => (lo.min(m.index), hi.max(m.index)),
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
+    spans
+}
+
 fn push_fragments(out: &mut String, cx: &Ctx, steps: &[Step<'_>]) {
+    let spans = fragment_spans(steps, cx.geom.fragments.len());
     for s in steps {
         let Ev::Section { frag, f, k } = s.ev else {
             continue;
@@ -560,8 +603,13 @@ fn push_fragments(out: &mut String, cx: &Ctx, steps: &[Step<'_>]) {
         let paint = cluster_paint(roles, fixed, cx.light);
         out.push_str("<g");
         attr(out, "class", &class);
+        let _ = write!(out, " data-merlion-id=\"frag-{}\"", f);
         attr(out, "data-merlion-kind", g.kind.as_str());
-        let _ = write!(out, " data-merlion-index=\"{}\">", f);
+        let _ = write!(out, " data-merlion-index=\"{}\"", f);
+        if let Some((lo, hi)) = spans.get(f).copied().flatten() {
+            let _ = write!(out, " data-merlion-span=\"{} {}\"", lo, hi);
+        }
+        out.push('>');
 
         push_rect(
             out,

@@ -19,11 +19,13 @@ Both layers compute the same highlight set; the acceptance tests hold them to it
 | Edge `e` | `e`, including its label and markers; the nodes named by its `data-merlion-from` and `data-merlion-to` |
 | Node `n`, path mode | `n`; every node reachable from `n` along edge direction (downstream) and every node that reaches `n` (upstream); every edge traversed by either search |
 | Edge `e`, path mode | `e`; the upstream set of its `from` node and the downstream set of its `to` node, with their edges |
+| A cluster an extension supplies a set for | Whatever that set names, by node id and edge index; the viewer derives none of it |
 
 - Edge direction is the source direction (`data-merlion-from` → `data-merlion-to`), whatever `data-merlion-back` says about the drawn direction. An edge with neither `marker-end` nor `marker-start` on its path (`---`) is followed both ways in path mode.
 - A self-loop is an incident edge of its node; parallel edges between the same pair are all incident.
 - Path mode is two breadth-first searches over per-node incidence lists: O(V + E).
-- Nodes and edges outside the lit set are dimmed. Clusters are never dimmed: a cluster group contains its members, so group opacity would dim them too, and the box and title are low-contrast already.
+- Nodes and edges outside the lit set are dimmed. Clusters are never dimmed: a cluster group contains its members, so group opacity would dim them too, and the box and title are low-contrast already. A pinned cluster is marked on its own rect instead, by the accent and `--merlion-highlight-stroke`.
+- A cluster is a target only where an extension supplies its lit set: a sequence does, for the fragments and boxes whose rects enclose rows and columns of the drawing ([sequence.md](sequence.md#interaction)). A flowchart supplies none, so its clusters collapse and never pin.
 - An edge endpoint that names no node group (an edge ending on a cluster) lights nothing at that end.
 - Invisible links (`~~~`) are not drawn and take no part.
 
@@ -112,7 +114,7 @@ Rules cost about 125 raw bytes and 17 gzip bytes per element, linear in V + E; r
 ### Loading
 
 - `<merlion-view>` imports `./interact.js` the first time it adopts an SVG with class `merlion`, so every Merlion diagram on a page is interactive with no extra script. `<merlion-view interactive="off">` runs no extension and loads nothing. Pages that wrap other renderers' SVGs never fetch the module. `import "@fractalboxdev/merlion-view/interact"` loads it eagerly.
-- `interact.js` imports `./interact-seq.js` for an SVG that also carries `merlion-sequence`, and repaints when it arrives. That module fills in the model `interact` has already read — the activation bars each participant lights, each message's outline line, and the messages at the end of the keyboard's walk ([sequence.md](sequence.md#interaction)) — so the interaction module holds the extension point and no sequence rule, and a page of flowcharts fetches neither the rules nor their bytes.
+- `interact.js` imports `./interact-seq.js` for an SVG that also carries `merlion-sequence`, and repaints when it arrives. That module fills in the model `interact` has already read — the activation bars each participant lights, each message's outline line, the messages at the end of the keyboard's walk, and a lit set for every fragment and box ([sequence.md](sequence.md#interaction)) — so the interaction module holds the extension points and no sequence rule, and a page of flowcharts fetches neither the rules nor their bytes.
 - The module registers through the base element's extension hook, `MerlionView.extend(fn)`: `fn(host, svg)` runs whenever a host adopts an SVG and returns a cleanup function, called when the SVG changes, the host disconnects or `interactive` becomes `"off"`. A `view` method on the returned function runs after every view change.
 - The base element provides the viewer chrome that extensions share ([viewer.md](viewer.md#extension-hook)): `tip(el, build)` (the popover), `say(text)` (the live region), `tap(e)` (click qualification) and `MerlionView.style(css)` (rules for the slotted SVG).
 - The extension activates only for an SVG with class `merlion` whose `.merlion-edge` groups all carry `data-merlion-from` and `data-merlion-to`.
@@ -126,7 +128,7 @@ A click commands the diagram only when it is a **tap**: it lands on the drawing 
 |---|---|---|---|
 | A node (shape or label) | Pin it; on the pinned node, clear | Pin in path mode; on a node pinned in path mode, clear | Hide the node |
 | An edge (path or label) | Pin it; on the pinned edge, clear | Pin in path mode | Pin it |
-| A cluster title or its badge | Collapse the cluster; on a collapsed one, expand | Same | Same |
+| A cluster title or its badge | Collapse the cluster; on a collapsed one, expand. A cluster with a supplied lit set pins instead; on the pinned one, clear. A cluster the SVG names with no `data-merlion-id` does neither | Same | Same |
 | The background (anywhere else in the host) | Clear | Clear | Clear |
 | A node inside `<a href>` | The link is followed; nothing is pinned | | |
 
@@ -193,13 +195,13 @@ The rules live in the base element's light-DOM sheet (`MerlionView.style`), a co
 
 Built with `textContent` from [Text reconstruction](#text-reconstruction), top to bottom:
 
-| Part | Node | Edge |
-|---|---|---|
-| Heading, bold | Title lines | `{from name} {glyph} {to name}` |
-| Body | Detail lines, one per line, muted | The edge label, if any |
-| Context, muted | Cluster path, if any | — |
-| Outgoing | One row per outgoing edge: `{glyph} {target name}` and the label in brackets | — |
-| Incoming | One row per incoming edge: `← {source name}` and the label in brackets | — |
+| Part | Node | Edge | Cluster with a supplied set |
+|---|---|---|---|
+| Heading, bold | Title lines | `{from name} {glyph} {to name}` | The line the extension gives it |
+| Body | Detail lines, one per line, muted | The edge label, if any | What it holds, counted, muted |
+| Context, muted | Cluster path, if any | — | — |
+| Outgoing | One row per outgoing edge: `{glyph} {target name}` and the label in brackets | — | — |
+| Incoming | One row per incoming edge: `← {source name}` and the label in brackets | — | — |
 
 - The popover is the base element's `part="tooltip"` element, in the host's shadow root, or inside the fullscreen `<dialog>` while it is open, since the modal dialog sits in the top layer above the host. `part` lets a page restyle it through `merlion-view::part(tooltip)` outside fullscreen.
 - It is `aria-hidden`, because the live region speaks the node's outline line ([Keyboard](#keyboard-and-screen-readers)), and it has `pointer-events: none`, so it never blocks a click or a text selection underneath.
@@ -264,8 +266,8 @@ The popover never overlaps `E`. Every view change (zoom, pan, fullscreen, resize
 
 | Item | Budget |
 |---|---|
-| `@fractalboxdev/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,132 B), enforced by `scripts/size.mjs` |
-| Its sequence module, loaded only for a sequence diagram | ≤ 1 KB (535 B), enforced by the same script |
+| `@fractalboxdev/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,237 B), enforced by `scripts/size.mjs` |
+| Its sequence module, loaded only for a sequence diagram | ≤ 1 KB (986 B), enforced by the same script |
 | Base `<merlion-view>` with the hook and the shared chrome | ≤ 6 KB (4,953 B), enforced by the same script |
 | Model and text | Built once per adopted SVG, O(V + E); popover text is rebuilt per pin from the target only |
 | Per pin | Class removal on the old lit set, class addition on the new one, one layout read to place the popover |

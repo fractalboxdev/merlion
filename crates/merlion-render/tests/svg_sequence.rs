@@ -450,13 +450,16 @@ fn elements_carry_their_groups_and_data_attributes() {
     let (seq, geom) = rich();
     let svg = draw(&seq, &geom);
     for needle in [
-        "<g class=\"merlion-cluster merlion-box merlion-bs-0\" data-merlion-index=\"0\">",
+        "<g class=\"merlion-cluster merlion-box merlion-bs-0\" data-merlion-id=\"box-0\" \
+         data-merlion-index=\"0\" data-merlion-span=\"1 2\">",
         "data-merlion-id=\"Alice\" data-merlion-kind=\"actor\" data-merlion-rank=\"0\" \
          id=\"mseq-n0\"",
         "data-merlion-id=\"DB\" data-merlion-kind=\"database\" data-merlion-rank=\"0\" \
          id=\"mseq-n2\"",
-        "data-merlion-kind=\"loop\" data-merlion-index=\"0\"",
-        "data-merlion-kind=\"alt\" data-merlion-index=\"1\"",
+        "data-merlion-id=\"frag-0\" data-merlion-kind=\"loop\" data-merlion-index=\"0\" \
+         data-merlion-span=\"1 3\"",
+        "data-merlion-id=\"frag-1\" data-merlion-kind=\"alt\" data-merlion-index=\"1\" \
+         data-merlion-span=\"2 3\"",
         "<g class=\"merlion-activation\" data-merlion-id=\"API\" data-merlion-depth=\"0\">",
         "data-merlion-from=\"Alice\" data-merlion-to=\"API\" data-merlion-placement=\"over\"",
         "data-merlion-from=\"Alice\" data-merlion-to=\"API\" data-merlion-index=\"0\" \
@@ -475,6 +478,44 @@ fn elements_carry_their_groups_and_data_attributes() {
     // Sequences reverse nothing and wrap nothing.
     assert!(!svg.contains("data-merlion-back"));
     assert!(!svg.contains("data-merlion-wrap"));
+}
+
+/// A fragment spans the rows it encloses and a box the columns it holds, so the viewer can light
+/// exactly what the rect draws around (specs/sequence.md#interaction).
+#[test]
+fn fragments_and_boxes_name_the_rows_and_columns_they_span() {
+    let (mut seq, mut geom) = rich();
+    // The nested `alt` spans messages 2..3, and the `loop` around it spans 1..3 through it.
+    let svg = draw(&seq, &geom);
+    assert!(svg.contains("data-merlion-id=\"frag-0\""), "{svg}");
+    assert!(svg.contains("data-merlion-span=\"1 3\""), "{svg}");
+    assert!(svg.contains("data-merlion-span=\"2 3\""), "{svg}");
+    // `box-0` holds the last two of three participants.
+    assert!(
+        svg.contains(
+            "data-merlion-id=\"box-0\" data-merlion-index=\"0\" data-merlion-span=\"1 2\""
+        ),
+        "{svg}"
+    );
+
+    // A fragment holding no message spans no row, so it carries no span and lights nothing.
+    seq.items = vec![Item::Fragment(fragment(
+        FragmentKind::Loop,
+        vec![section("idle", vec![])],
+    ))];
+    seq.messages = 0;
+    geom.messages.clear();
+    geom.fragments.truncate(1);
+    geom.activations.clear();
+    let svg = draw(&seq, &geom);
+    assert!(
+        svg.contains(
+            "data-merlion-id=\"frag-0\" data-merlion-kind=\"loop\" data-merlion-index=\"0\">"
+        ),
+        "{svg}"
+    );
+    // The box still holds its columns: an empty fragment is the only group that loses its span.
+    assert_eq!(svg.matches("data-merlion-span").count(), 1, "{svg}");
 }
 
 #[test]

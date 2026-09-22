@@ -1,7 +1,7 @@
 // Pure sequence logic behind @fractalboxdev/merlion-view/interact (specs/sequence.md#interaction), no DOM.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { messageLines, lineOf, messageTargets, barOwners } from "../interact-seq.js";
+import { messageLines, lineOf, messageTargets, barOwners, spanSet } from "../interact-seq.js";
 
 // The outline of crates/merlion-render/tests/fixtures/sequence/checkout-order.mmd.
 const desc = [
@@ -58,4 +58,49 @@ test("an activation bar joins the elements its participant lights, and none when
   const gateway = { els: ["g"] };
   const byId = new Map([["Gateway", gateway]]);
   assert.deepEqual(barOwners(["Gateway", "Ghost"], byId), [gateway.els, undefined]);
+});
+
+// crates/merlion-render/tests/fixtures/sequence/api-retry-backoff.mmd, in draw order.
+const retry = [
+  { from: "Client", to: "Gateway" },
+  { from: "Gateway", to: "Upstream" },
+  { from: "Upstream", to: "Gateway" },
+  { from: "Upstream", to: "Gateway" },
+  { from: "Gateway", to: "Gateway" },
+  { from: "Gateway", to: "Client" },
+  { from: "Gateway", to: "Client" },
+];
+const retryNodes = ["Client", "Gateway", "Upstream"].map((id) => ({ id }));
+
+test("a fragment lights the messages in the rows it spans and the participants they name", () => {
+  // `loop`, data-merlion-span="1 4": every message but the first and the last two.
+  assert.deepEqual(spanSet(false, 1, 4, retryNodes, retry, [0, 1, 2, 3, 4, 5, 6]), {
+    nodes: ["Gateway", "Upstream"],
+    edges: [1, 2, 3, 4],
+  });
+  // `break`, one row, one message, and a self-message names one participant twice.
+  assert.deepEqual(spanSet(false, 5, 5, retryNodes, retry, [0, 1, 2, 3, 4, 5, 6]), { nodes: ["Gateway", "Client"], edges: [5] });
+  assert.deepEqual(spanSet(false, 4, 4, retryNodes, retry, [0, 1, 2, 3, 4, 5, 6]), { nodes: ["Gateway"], edges: [4] });
+});
+
+test("a fragment reads the span as message indices, never as edge positions", () => {
+  // Draw order and source order differ: the edge at position 0 is message 4.
+  assert.deepEqual(spanSet(false, 0, 0, retryNodes, retry, [4, 0, 1, 2, 3, 5, 6]), { nodes: ["Gateway", "Upstream"], edges: [1] });
+});
+
+// crates/merlion-render/tests/fixtures/sequence/notes-and-boxes.mmd.
+const ride = [
+  { from: "Rider", to: "App" },
+  { from: "App", to: "Dispatch" },
+  { from: "Dispatch", to: "Driver" },
+  { from: "Driver", to: "Dispatch" },
+  { from: "Dispatch", to: "App" },
+];
+const rideNodes = ["Rider", "App", "Dispatch", "Driver"].map((id) => ({ id }));
+
+test("a box lights the columns it spans and only the messages with both ends among them", () => {
+  assert.deepEqual(spanSet(true, 0, 1, rideNodes, ride, [0, 1, 2, 3, 4]), { nodes: ["Rider", "App"], edges: [0] });
+  assert.deepEqual(spanSet(true, 2, 3, rideNodes, ride, [0, 1, 2, 3, 4]), { nodes: ["Dispatch", "Driver"], edges: [2, 3] });
+  // A box of one column: the participant, and any message it sends to itself.
+  assert.deepEqual(spanSet(true, 3, 3, rideNodes, ride, [0, 1, 2, 3, 4]), { nodes: ["Driver"], edges: [] });
 });
