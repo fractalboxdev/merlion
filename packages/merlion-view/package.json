@@ -1,0 +1,40 @@
+{
+  "name": "@fractalboxdev/merlion-view",
+  "version": "0.1.0",
+  "description": "<merlion-view>: pan, zoom and fullscreen for any inline SVG diagram. No dependencies.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fractalboxdev/merlion.git",
+    "directory": "packages/merlion-view"
+  },
+  "type": "module",
+  "sideEffects": [
+    "./merlion-view.js"
+  ],
+  "exports": {
+    ".": {
+      "types": "./merlion-view.d.ts",
+      "default": "./merlion-view.js"
+    },
+    "./zoom": {
+      "types": "./zoom.d.ts",
+      "default": "./zoom.js"
+    }
+  },
+  "types": "./merlion-view.d.ts",
+  "files": [
+    "merlion-view.js",
+    "merlion-view.d.ts",
+    "zoom.js",
+    "zoom.d.ts"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "size": "node scripts/size.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
