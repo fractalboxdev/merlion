@@ -18,7 +18,7 @@ export default defineConfig({
     starlight({
       title: "Merlion",
       description:
-        "Merlion renders Mermaid flowcharts to static, themeable, accessible SVG from a no_std Rust core shipped as a CLI and as WebAssembly.",
+        "Merlion renders Mermaid flowcharts, sequence diagrams and state diagrams to static, themeable, accessible SVG from a no_std Rust core shipped as a CLI and as WebAssembly.",
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/fractalboxdev/merlion" }],
       editLink: { baseUrl: "https://github.com/fractalboxdev/merlion/edit/main/docs/" },
       lastUpdated: false,
@@ -48,6 +48,7 @@ export default defineConfig({
             "guides/theming",
             "guides/roles-and-stylesheets",
             "guides/labels",
+            "guides/state-diagrams",
             "guides/stable-layout",
             "guides/viewer",
             "guides/diagnostics",
@@ -70,6 +71,7 @@ export default defineConfig({
                 "how-it-works/layout/stable-layout",
               ],
             },
+            "how-it-works/state-lowering",
             "how-it-works/stylesheet",
           ],
         },

@@ -23,7 +23,7 @@ Compatibility target: mermaid 12.0.0's state grammar (`packages/mermaid/src/diag
 - `State::parent` is the innermost composite state, `None` at the top level. `State::region` is the concurrency region inside that parent, `None` when the parent has none. A state's `children` are its direct members in declaration order, across every region.
 - `State::implicit` records a state first named by a transition rather than declared. Declaring a state only to name it is not idiomatic, so this carries **no** diagnostic, as with sequence participants ([sequence.md](sequence.md#diagnostics)).
 - `Transition::from` and `to` are indices into `states`; `[*]` resolves to the scope's `Start` or `End` state before the transition is recorded ([Start and end](#start-and-end)).
-- `Note::placement` is `Before` for `note left of` and `After` for `note right of`. The names are axis-relative because the note sits on the order axis whatever the direction ([Notes](#notes-1)).
+- `Note::placement` is `Before` for `note left of` and `After` for `note right of`. The names are axis-relative because the note sits on the order axis whatever the direction ([Notes](#notes)).
 
 ## Syntax
 
@@ -164,7 +164,7 @@ Limits reuse the fields of `options::Limits`: `nodes` bounds states, `edges` bou
 | `End` | Node, `Shape::FramedCircle`: a 20 px ring around a disc |
 | `Region` | Cluster nested in its composite's cluster, empty title |
 | `Transition` | Edge, `Stroke::Normal`, `arrow_end: Arrow::Arrow`, label the transition text |
-| `Note` | Not a graph element: reserved inside its state's extent and placed after layout ([Notes](#notes-2)) |
+| `Note` | Not a graph element: reserved inside its state's extent and placed after layout ([Note placement](#note-placement)) |
 
 ### What the lowering guarantees
 
@@ -190,7 +190,7 @@ Every option of [layout.md](layout.md#options) applies unchanged: `target_width`
 | 7. Clusters | Composite states and concurrency regions are clusters: members occupy a contiguous span per layer, the box pads them by 12 px plus the title height, and a transition across the boundary enters through a port. |
 | Stable layout | The hint is read and written, keyed by lowered node id, so `I020`, `I021` and `I022` all reach state diagrams. This is the visible difference from sequences, which write a hint and never read one. |
 
-### Notes
+### Note placement
 
 A note is geometry, not a graph node, so no layout phase changes for it. The lowering inflates its state's measured extent on the order axis — left for `Before`, right for `After` in `TB` / `BT`, above and below in `LR` / `RL` — by `NOTE_GAP + note_w`, and the engine reserves that space like any other node width. After layout, `layout::state::place_notes` splits the laid-out box: the state's own rect keeps its measured size at the far end, and the note box takes `note_w` at the near end, centred across the state's rect.
 

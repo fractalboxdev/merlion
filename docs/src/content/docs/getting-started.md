@@ -21,6 +21,18 @@ flowchart LR
   class cli,wasm output
 ```
 
+## Diagram types
+
+Every way in takes the same three headers and dispatches on them, so a `stateDiagram-v2` renders through the CLI, the WASM module, the rehype plugin and the Astro integration exactly as a flowchart does.
+
+| Header | Draws |
+|---|---|
+| `flowchart` / `graph` | Nodes, edges, subgraphs, over the layered engine |
+| `sequenceDiagram` | Participants, messages, activations, fragments, over a fixed geometry |
+| `stateDiagram` / `stateDiagram-v2` | States, transitions, composite and concurrent states, notes, over the layered engine — [State diagrams](/guides/state-diagrams/) |
+
+Any other header returns `E003`.
+
 ## CLI
 
 ```sh
@@ -108,4 +120,5 @@ This site is built that way. `docs/astro.config.mjs` registers the integration a
 
 - [Theming](/guides/theming/): tokens, `data-theme`, per-container variables.
 - [Roles and stylesheets](/guides/roles-and-stylesheets/): classes as roles, the stylesheet subset.
+- [State diagrams](/guides/state-diagrams/): the `stateDiagram-v2` syntax, its diagnostics, theming and interaction.
 - [How it works](/how-it-works/architecture/): the pipeline and every layout phase, drawn by Merlion.
