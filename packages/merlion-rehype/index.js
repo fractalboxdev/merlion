@@ -211,7 +211,7 @@ export default function rehypeMerlion(options = {}) {
     if (rendered > 0 && !o.fontCss && !fontWarned) {
       fontWarned = true;
       file.message(
-        "merlion: diagrams use font mode 'link'; load merlion-font.css on the page and set `fontCss: true` to silence this",
+        "merlion: diagrams use font mode 'link'; load @fractalboxdev/merlion-themes/merlion-font.css on the page and set `fontCss: true` to silence this",
         { ruleId: "font-css", source: "merlion" },
       );
     }

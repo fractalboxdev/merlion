@@ -52,7 +52,7 @@ Two foundation tokens drive the rest. The other roles default to mixes of those 
 | `--merlion-font-size` | `14px` (must match the measured size; see [text-measurement.md](text-measurement.md)) |
 | `--merlion-stroke` | `1.25px` |
 
-`@fractalboxdev/merlion-rehype` ships `merlion-themes.css`: light and dark defaults plus named themes. Every named theme is an original palette or one whose licence is recorded in [licensing.md](licensing.md).
+`@fractalboxdev/merlion-themes` ships `merlion-themes.css`: light and dark defaults plus named themes. Every named theme is an original palette or one whose licence is recorded in [licensing.md](licensing.md).
 
 ### Source styles: `classDef`, `style`, `linkStyle`
 

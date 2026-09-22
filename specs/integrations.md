@@ -79,7 +79,7 @@ unified().use(remarkParse).use(remarkRehype).use(rehypeMerlion, {
   source: "details",   // "details" | "none": keep the Mermaid source in a collapsed <details>
   cacheDir: ".merlion", // previous renders, used as layout hints
   viewer: true,        // wrap each SVG in <merlion-view>
-  fontCss: true,       // the page loads merlion-font.css; silences the font warning
+  fontCss: true,       // the page loads @fractalboxdev/merlion-themes/merlion-font.css; silences the font warning
 });
 ```
 
@@ -102,7 +102,7 @@ unified().use(remarkParse).use(remarkRehype).use(rehypeMerlion, {
 
 ## `@fractalboxdev/merlion-astro`
 
-Registers `@fractalboxdev/merlion-rehype` in `markdown.rehypePlugins` and adds `merlion-themes.css` plus the `<merlion-view>` script (only on pages that contain a diagram). Its options match the rehype plugin's.
+Registers `@fractalboxdev/merlion-rehype` in `markdown.rehypePlugins` and adds `merlion-themes.css`, `merlion-font.css` (both from `@fractalboxdev/merlion-themes`) and the `<merlion-view>` script (only on pages that contain a diagram). Its options match the rehype plugin's, except that `fontCss` names the font stylesheet to import (default `@fractalboxdev/merlion-themes/merlion-font.css`, `false` to skip it) and the plugin receives `fontCss: true` whenever one is imported.
 
 ## Editors
 

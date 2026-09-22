@@ -1,23 +1,31 @@
 {
   "name": "@fractalboxdev/merlion-themes",
   "version": "0.1.0",
-  "description": "Light, dark and named themes plus semantic-zoom rules for Merlion SVG diagrams, as CSS custom properties.",
-  "license": "MIT",
+  "description": "Light, dark and named themes, semantic-zoom rules and the Inter font stylesheet for Merlion SVG diagrams.",
+  "license": "MIT AND OFL-1.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/fractalboxdev/merlion",
     "directory": "packages/merlion-themes"
   },
   "files": [
-    "merlion-themes.css"
+    "merlion-themes.css",
+    "merlion-font.css",
+    "Inter-Regular.subset.woff2",
+    "Inter-SemiBold.subset.woff2",
+    "OFL.txt"
   ],
   "style": "merlion-themes.css",
   "exports": {
     ".": "./merlion-themes.css",
-    "./merlion-themes.css": "./merlion-themes.css"
+    "./merlion-themes.css": "./merlion-themes.css",
+    "./merlion-font.css": "./merlion-font.css"
   },
   "sideEffects": [
     "*.css"
   ],
-  "dependencies": {}
+  "dependencies": {},
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  }
 }

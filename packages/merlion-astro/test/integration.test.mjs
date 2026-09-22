@@ -30,7 +30,21 @@ test("registers the rehype plugin with the project root and the given options", 
 test("an explicit root wins over the Astro root; integration-only options stay out of the plugin", () => {
   const { updates } = setup({ root: "/elsewhere", themesCss: false });
   const [, opts] = updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0];
-  assert.deepEqual(opts, { root: "/elsewhere" });
+  assert.deepEqual(opts, { root: "/elsewhere", fontCss: true });
+});
+
+test("loads merlion-font.css by default and tells the plugin the page has the font", () => {
+  const { updates, scripts } = setup({});
+  const [, opts] = updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0];
+  assert.equal(opts.fontCss, true);
+  const css = scripts.filter((s) => s.stage === "page-ssr").map((s) => s.content);
+  assert.ok(css.includes('import "@fractalboxdev/merlion-themes/merlion-font.css";'), css);
+  const off = setup({ fontCss: false });
+  assert.equal(off.updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0][1].fontCss, false);
+  assert.ok(!off.scripts.some((s) => s.content.includes("merlion-font")));
+  const custom = setup({ fontCss: "./src/fonts.css" });
+  assert.equal(custom.updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0][1].fontCss, true);
+  assert.ok(custom.scripts.some((s) => s.content === 'import "./src/fonts.css";'));
 });
 
 test("excludes mermaid from syntax highlighting so the plugin sees the code block", () => {
@@ -50,16 +64,16 @@ test("excludes mermaid from syntax highlighting so the plugin sees the code bloc
 
 test("injects the theme stylesheet and a viewer loader that imports only when a diagram is on the page", () => {
   const { scripts } = setup({});
-  const css = scripts.find((s) => s.stage === "page-ssr");
-  assert.equal(css.content, 'import "@fractalboxdev/merlion-themes/merlion-themes.css";');
+  const css = scripts.filter((s) => s.stage === "page-ssr").map((s) => s.content);
+  assert.ok(css.includes('import "@fractalboxdev/merlion-themes/merlion-themes.css";'), css);
   const page = scripts.find((s) => s.stage === "page");
   assert.match(page.content, /document\.querySelector\("merlion-view"\)/);
   assert.match(page.content, /import\("@fractalboxdev\/merlion-view"\)/);
 });
 
 test("themesCss and viewer: false skip the injections", () => {
-  assert.deepEqual(setup({ themesCss: false, viewer: false }).scripts, []);
-  const custom = setup({ themesCss: "./src/diagram-theme.css" }).scripts.find((s) => s.stage === "page-ssr");
+  assert.deepEqual(setup({ themesCss: false, fontCss: false, viewer: false }).scripts, []);
+  const custom = setup({ themesCss: "./src/diagram-theme.css", fontCss: false }).scripts.find((s) => s.stage === "page-ssr");
   assert.equal(custom.content, 'import "./src/diagram-theme.css";');
 });
 

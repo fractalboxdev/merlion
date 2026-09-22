@@ -23,7 +23,7 @@ The SVG must be drawn in the font that was measured, or labels overflow their bo
 
 | `font` | Output | Use |
 |---|---|---|
-| `"link"` (default) | Nothing inline. `font-family: var(--merlion-font, Inter, …)`; the host page loads Inter | Sites that already serve Inter, or that include `merlion-font.css` from `@fractalboxdev/merlion-rehype`. `@fractalboxdev/merlion-astro` adds that stylesheet by default; the rehype plugin warns once per build when `font: "link"` is used and its `fontCss` option is not set, because a page without Inter draws in the fallback font and labels overflow |
+| `"link"` (default) | Nothing inline. `font-family: var(--merlion-font, Inter, …)`; the host page loads Inter | Sites that already serve Inter, or that include `merlion-font.css` from `@fractalboxdev/merlion-themes`: two `@font-face` rules for the committed subsets under the family `Merlion Inter` (so a site's own Inter is never replaced) and `--merlion-font` set to it on `:root`. `@fractalboxdev/merlion-astro` adds that stylesheet by default and passes `fontCss: true`; the rehype plugin warns once per build when `font: "link"` is used and its `fontCss` option is not set, because a page without Inter draws in the fallback font and labels overflow |
 | `"embed"` | The committed WOFF2 subset (covering exactly the table's coverage ranges) as a `data:` URI inside the SVG's `<style>` | Standalone SVG files |
 | `"system"` | Metrics for a system-font stack (`system-ui`) at a declared tolerance | Accepted drift of up to ±6% in label width; boxes get matching extra padding |
 

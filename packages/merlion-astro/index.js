@@ -1,11 +1,12 @@
 // Astro integration for Merlion (specs/integrations.md#fractalboxdevmerlion-astro).
-// Registers @fractalboxdev/merlion-rehype and adds the theme stylesheet and the
-// <merlion-view> script.
+// Registers @fractalboxdev/merlion-rehype and adds the theme and font stylesheets
+// and the <merlion-view> script.
 import { fileURLToPath } from "node:url";
 import rehypeMerlion from "@fractalboxdev/merlion-rehype";
 
 const NAME = "@fractalboxdev/merlion-astro";
 const THEMES = "@fractalboxdev/merlion-themes/merlion-themes.css";
+const FONT = "@fractalboxdev/merlion-themes/merlion-font.css";
 
 // The viewer module loads only on pages that contain a diagram: this loader is
 // a few bytes on every page, and the bundler splits the element into its own chunk.
@@ -25,12 +26,14 @@ const withoutMermaid = (hl) => {
  * @returns {import("astro").AstroIntegration}
  */
 export default function merlion(options = {}) {
-  const { themesCss = THEMES, ...rehypeOptions } = options;
+  const { themesCss = THEMES, fontCss = FONT, ...rehypeOptions } = options;
+  // `true` means the default stylesheet; a string names another one that loads Inter.
+  const fontSheet = fontCss === true ? FONT : fontCss;
   return {
     name: NAME,
     hooks: {
       "astro:config:setup": ({ config, updateConfig, injectScript }) => {
-        const pluginOptions = { ...rehypeOptions };
+        const pluginOptions = { ...rehypeOptions, fontCss: Boolean(fontSheet) };
         if (pluginOptions.root === undefined && config.root) pluginOptions.root = fileURLToPath(config.root);
         updateConfig({ markdown: { rehypePlugins: [[rehypeMerlion, pluginOptions]] } });
 
@@ -38,6 +41,7 @@ export default function merlion(options = {}) {
         if (hl) updateConfig({ markdown: { syntaxHighlight: hl } });
 
         if (themesCss) injectScript("page-ssr", `import ${JSON.stringify(themesCss)};`);
+        if (fontSheet) injectScript("page-ssr", `import ${JSON.stringify(fontSheet)};`);
         if (rehypeOptions.viewer !== false) injectScript("page", VIEWER_LOADER);
       },
     },
