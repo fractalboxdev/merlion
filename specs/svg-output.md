@@ -45,6 +45,7 @@ Two foundation tokens drive the rest. The other roles default to mixes of those 
 | `--merlion-border` | `color-mix(in oklab, var(--merlion-fg) 22%, var(--merlion-bg))` |
 | `--merlion-accent` | `#0969da` |
 | `--merlion-node-bg` / `-node-border` / `-node-text` | surface / border / fg |
+| `--merlion-node-detail` | muted (detail lines of title + detail node labels; see [Text](#text)) |
 | `--merlion-edge` / `-edge-label-bg` | line / bg |
 | `--merlion-cluster-bg` / `-cluster-border` | `color-mix(in oklab, var(--merlion-fg) 2%, var(--merlion-bg))` / border |
 | `--merlion-series-1` … `--merlion-series-8` | Categorical palette for charts, pie and gantt sections |
@@ -97,6 +98,12 @@ The root rule resets the text properties that inline SVG would otherwise inherit
 - Dropped characters: control characters other than tab and newline, and the non-characters U+FFFE and U+FFFF, so the SVG is well-formed XML 1.0.
 - Bidirectional formatting characters (U+202A–U+202E, U+2066–U+2069) are stripped with `W014 BidiControlStripped`. They can make a label display in a different order from its source text; right-to-left scripts render correctly without them through the Unicode bidirectional algorithm.
 - Markdown in labels (`**bold**`, `*italic*`, `` `code` ``) becomes `<tspan>` with `font-weight`, `font-style` or `font-family` set, measured with the matching weight table. Other HTML in labels is rendered as literal text.
+- **Title + detail node labels.** A node label whose first line (up to the first `<br>`) is one `**bold**` span, ignoring surrounding spaces, and which has at least one later line holding text renders in two tiers. Example: `q["**q-observe**<br/>250 push slots<br/>separate invocations"]`.
+  - The first line is the title: SemiBold at the font size, drawn like any other line.
+  - Every later line is a detail line, including wrapped continuations and empty lines between detail lines. A detail line is measured and drawn at 0.8 × the font size (11.2 px at 14 px) and wraps at the same maximum width; Markdown inside it keeps working at that size.
+  - Each detail line is a `<tspan class="merlion-detail">` with explicit `x`/`y`, a `font-size` presentation attribute equal to the measured size and `fill` set to the muted default. The embedded style adds `#{id} .merlion-detail { fill: var(--merlion-node-detail, var(--merlion-muted, #7b7d81)); font-size: 11.2px; }` (the `color-mix` fallback inside `@supports`, like every mixed role). The size is a literal, not a token, because it must match the measurement, as with `--merlion-font-size`. The rule appears only in diagrams that have detail lines.
+  - A source `color` (`classDef`, `style`) sets the fill of the `text` element, so it colours the title; detail lines keep `--merlion-node-detail`, which a host page or theme overrides to restyle them.
+  - Labels that do not match render exactly as other labels. Edge labels and cluster titles never split into tiers. The outline and `<desc>` carry the plain text of every line.
 
 ## Links
 

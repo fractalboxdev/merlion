@@ -65,10 +65,26 @@ pub struct Run {
     pub width: f64,
 }
 
+/// Detail lines of a title + detail node label are measured and drawn at this
+/// fraction of the font size (specs/text-measurement.md#measuring).
+pub const DETAIL_SCALE: f64 = 0.8;
+/// Extra space below the last title line of a title + detail label, as a fraction of
+/// the font size (2 px at 14 px).
+pub const DETAIL_GAP_EM: f64 = 1.0 / 7.0;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Line {
     pub runs: Vec<Run>,
     pub width: f64,
+    /// Font size the line is measured and drawn at, in px.
+    pub size: f64,
+    /// A detail line of a title + detail node label, drawn as `merlion-detail`.
+    pub detail: bool,
+    /// Height of the line box; the last title line of a title + detail label includes
+    /// the gap below it.
+    pub height: f64,
+    /// Distance from the line's top to its baseline.
+    pub ascent: f64,
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -76,10 +92,11 @@ pub struct LabelLayout {
     pub lines: Vec<Line>,
     /// Widest line.
     pub width: f64,
-    /// `lines.len() * line_height`.
+    /// Sum of the line heights.
     pub height: f64,
+    /// Line height at the label's font size.
     pub line_height: f64,
-    /// Distance from a line's top to its baseline.
+    /// Distance from a line's top to its baseline at the label's font size.
     pub ascent: f64,
 }
 
@@ -199,7 +216,17 @@ impl Measurer {
             start += len.max(1);
         }
         let width = runs.iter().fold(0.0, |a, r| a + r.width);
-        Line { runs, width }
+        let t = font::table(Weight::Regular);
+        Line {
+            runs,
+            width,
+            size: self.size,
+            detail: false,
+            height: self.px(t.ascender as i64 - t.descender as i64 + t.line_gap as i64),
+            // CSS places half the line gap above the ascender.
+            ascent: (t.ascender as f64 + t.line_gap as f64 / 2.0) * self.size
+                / t.units_per_em as f64,
+        }
     }
 }
 
@@ -293,12 +320,63 @@ fn wrap(m: &Measurer, glyphs: Vec<Glyph>, max_width: f64, out: &mut Vec<Line>) {
 ///
 /// Width is the sum of advances plus in-run pair kerning, scaled by
 /// `font_size / unitsPerEm`; each line is `ascender − descender + lineGap` tall
-/// (specs/text-measurement.md#measuring).
+/// (specs/text-measurement.md#measuring). Every line is measured at the font size;
+/// node labels go through [`layout_node_label`].
 pub fn layout_label(
     text: &str,
     style: &TextStyle,
     max_width: f64,
     diags: &mut Diagnostics,
+) -> LabelLayout {
+    layout(text, style, max_width, diags, false)
+}
+
+/// [`layout_label`] for a node label. A title + detail label ([`is_title_detail`])
+/// measures its first hard line, wrapped, at the font size and every later line at
+/// [`DETAIL_SCALE`] × the font size, with line height and ascent scaled the same way
+/// and [`DETAIL_GAP_EM`] × the font size added below the last title line. Any other
+/// label lays out exactly as [`layout_label`].
+pub fn layout_node_label(
+    text: &str,
+    style: &TextStyle,
+    max_width: f64,
+    diags: &mut Diagnostics,
+) -> LabelLayout {
+    layout(text, style, max_width, diags, true)
+}
+
+/// Whether a line is one `**bold**` span, ignoring surrounding spaces: it holds a
+/// non-space character and every character between the first and last non-space is bold.
+fn is_bold_line(line: &[markup::Styled]) -> bool {
+    let first = line.iter().position(|s| s.c != ' ');
+    let last = line.iter().rposition(|s| s.c != ' ');
+    match (first, last) {
+        (Some(a), Some(b)) => line.get(a..=b).is_some_and(|l| l.iter().all(|s| s.bold)),
+        _ => false,
+    }
+}
+
+fn parsed_is_title_detail(p: &markup::Parsed) -> bool {
+    match p.lines.split_first() {
+        Some((title, rest)) => {
+            is_bold_line(title) && rest.iter().any(|l| l.iter().any(|s| s.c != ' '))
+        }
+        None => false,
+    }
+}
+
+/// Whether a node label renders as title + detail (specs/svg-output.md#text): its first
+/// hard line is one `**bold**` span and a later hard line holds text.
+pub fn is_title_detail(text: &str) -> bool {
+    parsed_is_title_detail(&markup::parse(text))
+}
+
+fn layout(
+    text: &str,
+    style: &TextStyle,
+    max_width: f64,
+    diags: &mut Diagnostics,
+    node: bool,
 ) -> LabelLayout {
     let size = if style.font_size.is_finite() && style.font_size > 0.0 {
         style.font_size
@@ -327,12 +405,33 @@ pub fn layout_label(
             "bidirectional formatting characters removed from a label",
         );
     }
-    let mut lines = Vec::new();
-    for hard in parsed.lines {
-        let glyphs: Vec<Glyph> = hard.into_iter().map(|s| m.glyph(s)).collect();
-        wrap(&m, glyphs, max_width, &mut lines);
+    let tiered = node && parsed_is_title_detail(&parsed);
+    let mut dm = Measurer {
+        size: size * DETAIL_SCALE,
+        units_per_em: m.units_per_em,
+        base: *style,
+        unmeasured: None,
+    };
+    let mut lines: Vec<Line> = Vec::new();
+    for (i, hard) in parsed.lines.into_iter().enumerate() {
+        if !tiered || i == 0 {
+            let glyphs: Vec<Glyph> = hard.into_iter().map(|s| m.glyph(s)).collect();
+            wrap(&m, glyphs, max_width, &mut lines);
+            continue;
+        }
+        if i == 1 {
+            if let Some(last) = lines.last_mut() {
+                last.height += size * DETAIL_GAP_EM;
+            }
+        }
+        let from = lines.len();
+        let glyphs: Vec<Glyph> = hard.into_iter().map(|s| dm.glyph(s)).collect();
+        wrap(&dm, glyphs, max_width, &mut lines);
+        for l in lines.iter_mut().skip(from) {
+            l.detail = true;
+        }
     }
-    if let Some(c) = m.unmeasured {
+    if let Some(c) = m.unmeasured.or(dm.unmeasured) {
         diags.emit_once(
             Severity::Info,
             "I010",
@@ -352,8 +451,14 @@ pub fn layout_label(
     let width = lines
         .iter()
         .fold(0.0, |a: f64, l| if l.width > a { l.width } else { a });
+    // Uniform labels keep the product form, so their bits never depend on summation order.
+    let height = if tiered {
+        lines.iter().fold(0.0, |a: f64, l| a + l.height)
+    } else {
+        line_height * lines.len() as f64
+    };
     LabelLayout {
-        height: line_height * lines.len() as f64,
+        height,
         width,
         lines,
         line_height,

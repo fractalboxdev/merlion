@@ -362,3 +362,180 @@ fn width_tolerance_per_mode() {
     assert_eq!(width_tolerance(FontMode::Link), 1.0);
     assert_eq!(width_tolerance(FontMode::Embed), 1.0);
 }
+
+// ---------------------------------------------------------------------------------------
+// Title + detail node labels
+// ---------------------------------------------------------------------------------------
+
+fn node_lay(text: &str) -> LabelLayout {
+    let mut d = Diagnostics::new(false);
+    layout_node_label(text, &TextStyle::default(), 200.0, &mut d)
+}
+
+fn details(l: &LabelLayout) -> Vec<bool> {
+    l.lines.iter().map(|x| x.detail).collect()
+}
+
+const OBSERVE: &str = "**q-observe**<br/>250 push slots<br/>separate invocations";
+
+#[test]
+fn bold_first_line_with_more_lines_is_title_and_detail() {
+    assert!(is_title_detail(OBSERVE));
+    let l = node_lay(OBSERVE);
+    assert_eq!(
+        texts(&l),
+        ["q-observe", "250 push slots", "separate invocations"]
+    );
+    assert_eq!(details(&l), [false, true, true]);
+    assert_eq!(l.lines[0].size, 14.0);
+    assert!((l.lines[1].size - 14.0 * DETAIL_SCALE).abs() < EPS);
+    assert!((l.lines[2].size - 11.2).abs() < EPS);
+    assert_eq!(l.lines[0].runs[0].weight, Weight::SemiBold);
+    assert_eq!(l.lines[1].runs[0].weight, Weight::Regular);
+}
+
+#[test]
+fn labels_outside_the_pattern_are_not_title_and_detail() {
+    for s in [
+        "**only a title**",
+        "plain<br>two lines",
+        "a **t**<br>x",
+        "x<br>**t**",
+        "**a** b<br>x",
+        "**a** **b**<br>x",
+        "**t**<br>",
+        "**t**<br> <br>",
+        "**a `c` a**<br>x",
+        "",
+    ] {
+        assert!(!is_title_detail(s), "{s:?}");
+        let mut d = Diagnostics::new(false);
+        let node = layout_node_label(s, &TextStyle::default(), 200.0, &mut d);
+        let plain = layout_label(s, &TextStyle::default(), 200.0, &mut d);
+        assert_eq!(node, plain, "{s:?}");
+        assert!(node.lines.iter().all(|x| !x.detail && x.size == 14.0));
+    }
+}
+
+#[test]
+fn surrounding_spaces_and_nested_italic_keep_the_title() {
+    assert!(is_title_detail("  **t**  <br>x"));
+    assert!(is_title_detail("***t***<br>x"));
+    assert!(is_title_detail("**two words**<br>x"));
+}
+
+#[test]
+fn empty_detail_line_between_details_is_kept() {
+    let l = node_lay("**t**<br><br>x");
+    assert_eq!(details(&l), [false, true, true]);
+    assert!(l.lines[1].runs.is_empty());
+}
+
+#[test]
+fn detail_width_is_sum_of_advances_at_detail_size() {
+    let l = node_lay("**Title**<br>Hello world");
+    let w = expected("Hello world", Weight::Regular, 14.0 * DETAIL_SCALE);
+    assert!((l.lines[1].width - w).abs() < EPS);
+    let full = expected("Hello world", Weight::Regular, 14.0);
+    assert!((l.lines[1].width - full * DETAIL_SCALE).abs() < 1e-9);
+    assert!((l.lines[0].width - expected("Title", Weight::SemiBold, 14.0)).abs() < EPS);
+    assert!((l.width - l.lines[1].width).abs() < EPS);
+}
+
+#[test]
+fn line_heights_scale_with_size_and_sum_to_height() {
+    let l = node_lay(OBSERVE);
+    let gap = 14.0 * DETAIL_GAP_EM;
+    assert!((l.lines[0].height - (line_height(14.0) + gap)).abs() < EPS);
+    assert!((l.lines[1].height - line_height(11.2)).abs() < EPS);
+    assert!((l.lines[2].height - line_height(11.2)).abs() < EPS);
+    let sum: f64 = l.lines.iter().map(|x| x.height).sum();
+    assert!((l.height - sum).abs() < EPS);
+    assert!(l.height < 3.0 * line_height(14.0));
+    let t = table(Weight::Regular);
+    let ascent = |s: f64| (t.ascender as f64 + t.line_gap as f64 / 2.0) * s / 2048.0;
+    assert!((l.lines[0].ascent - ascent(14.0)).abs() < EPS);
+    assert!((l.lines[1].ascent - ascent(11.2)).abs() < EPS);
+}
+
+#[test]
+fn uniform_labels_carry_per_line_metrics() {
+    let (l, _) = lay("a<br>b");
+    for line in &l.lines {
+        assert_eq!(line.size, 14.0);
+        assert!(!line.detail);
+        assert!((line.height - l.line_height).abs() < EPS);
+        assert!((line.ascent - l.ascent).abs() < EPS);
+    }
+}
+
+#[test]
+fn detail_lines_wrap_and_continuations_stay_detail() {
+    let mut d = Diagnostics::new(false);
+    let max = 60.0;
+    let l = layout_node_label(
+        "**T**<br>alpha beta gamma delta epsilon",
+        &TextStyle::default(),
+        max,
+        &mut d,
+    );
+    assert!(l.lines.len() > 2);
+    assert!(!l.lines[0].detail);
+    assert!(l.lines[1..]
+        .iter()
+        .all(|x| x.detail && x.width <= max + EPS));
+    assert_eq!(
+        texts(&l)[1..].concat().replace(' ', ""),
+        "alphabetagammadeltaepsilon"
+    );
+}
+
+#[test]
+fn wrapped_title_lines_stay_title_and_gap_follows_the_last() {
+    let mut d = Diagnostics::new(false);
+    let l = layout_node_label(
+        "**alpha beta gamma**<br>x",
+        &TextStyle::default(),
+        60.0,
+        &mut d,
+    );
+    let n = l.lines.len();
+    assert!(n > 2);
+    assert!(l.lines[..n - 1].iter().all(|x| !x.detail && x.size == 14.0));
+    assert!((l.lines[0].height - line_height(14.0)).abs() < EPS);
+    assert!((l.lines[n - 2].height - line_height(14.0) - 14.0 * DETAIL_GAP_EM).abs() < EPS);
+    assert!(l.lines[n - 1].detail);
+}
+
+#[test]
+fn markdown_in_detail_lines_measures_at_detail_size() {
+    let l = node_lay("**T**<br>a *i* `c` **b**");
+    let runs = &l.lines[1].runs;
+    let s = 14.0 * DETAIL_SCALE;
+    assert!(runs.iter().any(|r| r.italic && r.text == "i"));
+    assert!(runs.iter().any(|r| r.code && r.text == "c"));
+    let b = runs.iter().find(|r| r.text == "b").unwrap();
+    assert_eq!(b.weight, Weight::SemiBold);
+    assert!((b.width - expected("b", Weight::SemiBold, s)).abs() < EPS);
+}
+
+#[test]
+fn detail_size_follows_the_font_size() {
+    let mut d = Diagnostics::new(false);
+    let l = layout_node_label("**T**<br>x", &style(20.0), 200.0, &mut d);
+    assert!((l.lines[1].size - 16.0).abs() < EPS);
+}
+
+#[test]
+fn plain_layout_never_splits_title_and_detail() {
+    let (l, _) = lay(OBSERVE);
+    assert!(l.lines.iter().all(|x| !x.detail && x.size == 14.0));
+}
+
+#[test]
+fn title_detail_is_deterministic() {
+    let a = node_lay(OBSERVE);
+    let b = node_lay(OBSERVE);
+    assert_eq!(a, b);
+    assert_eq!(a.height.to_bits(), b.height.to_bits());
+}

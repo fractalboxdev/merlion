@@ -148,7 +148,7 @@ fn measure_all(chart: &Flowchart, o: &Opts, wrap: f64, diags: &mut Diagnostics) 
     for node in &chart.nodes {
         let style = measure::text_style(chart, node, o.font_size);
         let l = if node.shape.draws_label() {
-            clean_label(text::layout_label(&node.label, &style, wrap, diags))
+            clean_label(text::layout_node_label(&node.label, &style, wrap, diags))
         } else {
             LabelLayout::default()
         };

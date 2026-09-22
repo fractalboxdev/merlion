@@ -74,6 +74,8 @@ pub enum Role {
     NodeBg,
     NodeBorder,
     NodeText,
+    /// Detail lines of title + detail node labels.
+    NodeDetail,
     Edge,
     EdgeLabelBg,
     ClusterBg,
@@ -93,6 +95,7 @@ impl Role {
             Role::NodeBg => "node-bg",
             Role::NodeBorder => "node-border",
             Role::NodeText => "node-text",
+            Role::NodeDetail => "node-detail",
             Role::Edge => "edge",
             Role::EdgeLabelBg => "edge-label-bg",
             Role::ClusterBg => "cluster-bg",
@@ -113,6 +116,7 @@ impl Role {
             Role::NodeBg => Def::Alias(Role::Surface),
             Role::NodeBorder => Def::Alias(Role::Border),
             Role::NodeText => Def::Alias(Role::Fg),
+            Role::NodeDetail => Def::Alias(Role::Muted),
             Role::Edge => Def::Alias(Role::Line),
             Role::EdgeLabelBg => Def::Alias(Role::Bg),
             Role::ClusterBorder => Def::Alias(Role::Border),
@@ -192,6 +196,17 @@ mod tests {
             Role::NodeText.var(true),
             "var(--merlion-node-text, var(--merlion-fg, #1f2328))"
         );
+    }
+
+    #[test]
+    fn node_detail_defaults_to_muted() {
+        assert_eq!(Role::NodeDetail.default_value(), MUTED);
+        assert_eq!(
+            Role::NodeDetail.var(false),
+            "var(--merlion-node-detail, var(--merlion-muted, #7b7d81))"
+        );
+        assert!(Role::NodeDetail.is_mixed());
+        assert!(Role::NodeDetail.var(true).contains("color-mix"));
     }
 
     #[test]

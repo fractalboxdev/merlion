@@ -37,6 +37,10 @@ fn lbl(text: &str) -> LabelLayout {
             Line {
                 width: r.width,
                 runs: vec![r],
+                size: FS,
+                detail: false,
+                height: 17.0,
+                ascent: 13.0,
             }
         })
         .collect();
@@ -796,6 +800,10 @@ fn markdown_runs_become_formatted_tspans() {
         lines: vec![Line {
             width: 63.0,
             runs: vec![b, it, code],
+            size: FS,
+            detail: false,
+            height: 17.0,
+            ascent: 13.0,
         }],
         width: 63.0,
         height: 17.0,

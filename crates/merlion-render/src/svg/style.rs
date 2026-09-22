@@ -153,11 +153,29 @@ pub struct SourceRule {
     pub body: String,
 }
 
+/// The `merlion-detail` rule for detail lines drawn at `size` px: the fill reads
+/// `--merlion-node-detail`; the size stays literal because it is the measured one.
+fn detail_rule(size: f64) -> Rule {
+    let mut px = String::new();
+    push_num(&mut px, size);
+    px.push_str("px");
+    Rule {
+        selector: ".merlion-detail",
+        decls: alloc::vec![
+            ("fill", Value::Role(Role::NodeDetail)),
+            ("font-size", Value::Lit(px)),
+        ],
+    }
+}
+
 /// The full `<style>` text (unescaped: it contains no `<` or `&` by construction).
+/// `detail_size` is the measured size of detail lines; the `merlion-detail` rule is
+/// written only when some label has them.
 pub fn build(
     id: &str,
     font: FontMode,
     font_size: f64,
+    detail_size: Option<f64>,
     font_css: Option<&str>,
     source: &[SourceRule],
 ) -> String {
@@ -166,7 +184,10 @@ pub fn build(
     if let Some(css) = font_css {
         out.push_str(css);
     }
-    let rules = base_rules();
+    let mut rules = base_rules();
+    if let Some(size) = detail_size.filter(|s| s.is_finite() && *s > 0.0) {
+        rules.push(detail_rule(size));
+    }
     for r in &rules {
         let mut body = String::new();
         for (prop, v) in &r.decls {
@@ -210,7 +231,7 @@ mod tests {
 
     #[test]
     fn reset_rule_matches_the_spec() {
-        let s = build("m1", FontMode::Link, 14.0, None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
         assert!(s.starts_with(
             "#m1 text { font-family: var(--merlion-font, Inter, ui-sans-serif, system-ui, sans-serif); \
              font-size: var(--merlion-font-size, 14px); font-weight: 400; font-style: normal; \
@@ -222,7 +243,7 @@ mod tests {
 
     #[test]
     fn node_rule_reads_tokens_with_literal_fallbacks() {
-        let s = build("m1", FontMode::Link, 14.0, None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
         assert!(s.contains(
             "#m1 .merlion-node>.merlion-shape{fill:var(--merlion-node-bg, var(--merlion-surface, #f5f5f5));\
              stroke:var(--merlion-node-border, var(--merlion-border, #c8c9cb));\
@@ -232,7 +253,7 @@ mod tests {
 
     #[test]
     fn color_mix_appears_only_inside_supports() {
-        let s = build("m1", FontMode::Link, 14.0, None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
         let at = s.find("@supports").unwrap();
         assert!(!s[..at].contains("color-mix"));
         assert!(s[at..].contains(
@@ -243,13 +264,34 @@ mod tests {
 
     #[test]
     fn no_custom_property_is_declared() {
-        let s = build("m1", FontMode::Link, 14.0, None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
         assert!(!s.contains("{--") && !s.contains(";--"));
     }
 
     #[test]
+    fn detail_rule_only_when_detail_lines_exist() {
+        let none = build("m1", FontMode::Link, 14.0, None, None, &[]);
+        assert!(!none.contains("merlion-detail"));
+        let s = build("m1", FontMode::Link, 14.0, Some(11.2), None, &[]);
+        assert!(
+            s.contains(
+                "#m1 .merlion-detail{fill:var(--merlion-node-detail, var(--merlion-muted, \
+                 #7b7d81));font-size:11.2px;}"
+            ),
+            "{}",
+            s
+        );
+        let at = s.find("@supports").unwrap();
+        assert!(s[at..].contains(
+            "#m1 .merlion-detail{fill:var(--merlion-node-detail, var(--merlion-muted, \
+             color-mix(in oklab, var(--merlion-fg, #1f2328) 55%, var(--merlion-bg, #ffffff))));}"
+        ));
+        assert!(!s.contains("}.merlion-detail") && !s.contains("{.merlion-detail"));
+    }
+
+    #[test]
     fn system_font_mode_uses_the_system_stack() {
-        let s = build("m1", FontMode::System, 13.5, None, &[]);
+        let s = build("m1", FontMode::System, 13.5, None, None, &[]);
         assert!(s.contains("var(--merlion-font, system-ui, sans-serif)"));
         assert!(s.contains("var(--merlion-font-size, 13.5px)"));
     }
@@ -260,7 +302,7 @@ mod tests {
             selector: String::from(".merlion-c-hot>.merlion-shape"),
             body: String::from("fill:red;"),
         }];
-        let s = build("m1", FontMode::Link, 14.0, None, &src);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &src);
         assert!(
             s.ends_with("}#m1 .merlion-c-hot>.merlion-shape{fill:red;}"),
             "{}",
