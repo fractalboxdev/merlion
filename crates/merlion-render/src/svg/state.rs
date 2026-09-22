@@ -26,7 +26,7 @@ use crate::layout::{StateLayout, CLUSTER_PAD};
 use crate::model::state::{StateKind, StateMachine};
 use crate::model::Stroke;
 use crate::numfmt::push_num;
-use crate::options::{Direction, FontMode, RenderOptions};
+use crate::options::{FontMode, RenderOptions};
 
 use super::escape::push_escaped;
 use super::style;
@@ -312,10 +312,29 @@ fn push_composite_open(out: &mut String, cx: &StateCtx, si: usize) {
     out.push('\n');
 }
 
-/// The dashed separator between region `ri` and its predecessor: the composite's inner
-/// width in `TB` / `BT` and its inner height in `LR` / `RL`, at the boundary between the
-/// two region boxes. `None` for the first region of a composite, and for a region whose
-/// composite, predecessor or geometry is missing.
+/// The midpoint of the gap between the intervals `a0..a1` and `b0..b1`, or `None` when
+/// they overlap.
+fn gap_mid(a0: f64, a1: f64, b0: f64, b1: f64) -> Option<(f64, f64)> {
+    if a1 <= b0 {
+        Some(((a1 + b0) / 2.0, b0 - a1))
+    } else if b1 <= a0 {
+        Some(((b1 + a0) / 2.0, a0 - b1))
+    } else {
+        None
+    }
+}
+
+/// The dashed separator between region `ri` and its predecessor: a line across the gap
+/// between the two region boxes, spanning the composite's inner extent on the other
+/// axis.
+///
+/// The axis is the one the boxes are apart on, not the one the diagram's direction
+/// names: the lowering makes each region an ordinary sibling cluster of its composite,
+/// and the layered engine places sibling clusters beside one another on the order axis,
+/// which runs across the direction. `None` for the first region of a composite, for a
+/// region whose composite, predecessor or geometry is missing, and for two boxes that
+/// overlap on both axes, where no line separates them and drawing one would only cross
+/// the states.
 fn region_divider(cx: &StateCtx, si: usize, ri: usize) -> Option<String> {
     let region = cx.sm.regions.get(ri)?;
     if region.index == 0 {
@@ -337,29 +356,31 @@ fn region_divider(cx: &StateCtx, si: usize, ri: usize) -> Option<String> {
     let prev = cx.base.geom.clusters.get(prev_si)?;
     let cur = cx.base.geom.clusters.get(si)?;
     let pad = CLUSTER_PAD;
-    // The boundary lies between the two boxes, whichever of them comes first on the axis.
-    let between = |pa: f64, pb: f64, ca: f64, cb: f64| {
-        if pa + pb / 2.0 <= ca + cb / 2.0 {
-            (pa + pb + ca) / 2.0
-        } else {
-            (ca + cb + pa) / 2.0
+    let (px, pw, py, ph) = (
+        finite(prev.x),
+        nonneg(prev.w),
+        finite(prev.y),
+        nonneg(prev.h),
+    );
+    let (cx0, cw, cy, ch) = (finite(cur.x), nonneg(cur.w), finite(cur.y), nonneg(cur.h));
+    let (ox, ow, oy, oh) = (
+        finite(outer.x),
+        nonneg(outer.w),
+        finite(outer.y),
+        nonneg(outer.h),
+    );
+    let horizontal = gap_mid(py, py + ph, cy, cy + ch);
+    let vertical = gap_mid(px, px + pw, cx0, cx0 + cw);
+    // Two boxes apart on both axes sit corner to corner; the wider gap is the one the
+    // reader sees as the boundary, and a tie goes to the layer axis so the choice is
+    // the same whichever order the regions came out in.
+    Some(match (horizontal, vertical) {
+        (Some((y, hg)), Some((_, vg))) if hg >= vg => {
+            marks::line_d((ox + pad, y), (ox + ow - pad, y))
         }
-    };
-    Some(match cx.base.geom.direction {
-        Direction::TB | Direction::BT => {
-            let y = between(finite(prev.y), nonneg(prev.h), finite(cur.y), nonneg(cur.h));
-            marks::line_d(
-                (finite(outer.x) + pad, y),
-                (finite(outer.x) + nonneg(outer.w) - pad, y),
-            )
-        }
-        Direction::LR | Direction::RL => {
-            let x = between(finite(prev.x), nonneg(prev.w), finite(cur.x), nonneg(cur.w));
-            marks::line_d(
-                (x, finite(outer.y) + pad),
-                (x, finite(outer.y) + nonneg(outer.h) - pad),
-            )
-        }
+        (Some((y, _)), None) => marks::line_d((ox + pad, y), (ox + ow - pad, y)),
+        (_, Some((x, _))) => marks::line_d((x, oy + pad), (x, oy + oh - pad)),
+        (None, None) => return None,
     })
 }
 

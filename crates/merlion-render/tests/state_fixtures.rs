@@ -304,6 +304,160 @@ fn the_drawing_sits_inside_the_view_box() {
     }
 }
 
+// ------------------------------------------------------------------ region dividers
+
+/// An axis-aligned segment, as `marks::line_d` writes one.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Seg {
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+}
+
+impl Seg {
+    /// Whether the segment passes through `b`. Both are axis-aligned, so this is the
+    /// overlap of two intervals per axis.
+    fn hits(&self, b: &Box2, eps: f64) -> bool {
+        let (sx0, sx1) = (self.x0.min(self.x1), self.x0.max(self.x1));
+        let (sy0, sy1) = (self.y0.min(self.y1), self.y0.max(self.y1));
+        sx0 < b.x1 - eps && b.x0 < sx1 - eps && sy0 < b.y1 - eps && b.y0 < sy1 - eps
+    }
+}
+
+/// Every `.merlion-region-divider` path, in document order.
+fn region_dividers(svg: &str) -> Vec<Seg> {
+    svg.match_indices("class=\"merlion-region-divider\"")
+        .map(|(at, _)| {
+            let rest = &svg[at..];
+            let d = rest
+                .split_once(" d=\"M")
+                .map(|(_, r)| r.split_once('"').map_or(r, |(v, _)| v))
+                .unwrap_or_else(|| panic!("no d on a divider: {}", &rest[..60.min(rest.len())]));
+            let (a, b) = d.split_once('L').unwrap_or_else(|| panic!("d={d:?}"));
+            let num = |s: &str| -> (f64, f64) {
+                let (x, y) = s.trim().split_once(' ').unwrap_or_else(|| panic!("{s:?}"));
+                (x.parse().expect("x"), y.parse().expect("y"))
+            };
+            let ((x0, y0), (x1, y1)) = (num(a), num(b));
+            Seg { x0, y0, x1, y1 }
+        })
+        .collect()
+}
+
+/// Region cluster boxes of every composite, in region order.
+fn region_boxes(layout: &StateLayout, sm: &StateMachine) -> Vec<Vec<Box2>> {
+    use merlion_render::layout::state::ClusterOrigin;
+    let mut out: Vec<Vec<Box2>> = Vec::new();
+    for parent in 0..sm.states.len() {
+        let mut boxes: Vec<(usize, Box2)> = Vec::new();
+        for (si, origin) in layout.lowering.cluster_of.iter().enumerate() {
+            let ClusterOrigin::Region(ri) = origin else {
+                continue;
+            };
+            let Some(region) = sm.regions.get(*ri) else {
+                continue;
+            };
+            if region.parent != parent {
+                continue;
+            }
+            boxes.push((
+                region.index,
+                Box2::of_cluster(&layout.geometry.graph.clusters[si]),
+            ));
+        }
+        if boxes.len() > 1 {
+            boxes.sort_by_key(|(i, _)| *i);
+            out.push(boxes.into_iter().map(|(_, b)| b).collect());
+        }
+    }
+    out
+}
+
+/// Whether `seg` lies strictly between `a` and `b` on the axis that separates them.
+fn separates(seg: &Seg, a: &Box2, b: &Box2) -> bool {
+    let between = |lo: f64, hi: f64, v: f64| lo < v && v < hi;
+    let vertical = (seg.x0 - seg.x1).abs() < 0.01;
+    let horizontal = (seg.y0 - seg.y1).abs() < 0.01;
+    if vertical && a.x1 <= b.x0 + 0.01 {
+        return between(a.x1 - 0.01, b.x0 + 0.01, seg.x0);
+    }
+    if vertical && b.x1 <= a.x0 + 0.01 {
+        return between(b.x1 - 0.01, a.x0 + 0.01, seg.x0);
+    }
+    if horizontal && a.y1 <= b.y0 + 0.01 {
+        return between(a.y1 - 0.01, b.y0 + 0.01, seg.y0);
+    }
+    if horizontal && b.y1 <= a.y0 + 0.01 {
+        return between(b.y1 - 0.01, a.y0 + 0.01, seg.y0);
+    }
+    false
+}
+
+/// Sources holding two and three concurrency regions, in both axes, beside the fixture
+/// corpus: the divider's axis follows the arrangement the engine produces, not the
+/// diagram's direction.
+fn concurrency_sources() -> Vec<(String, String)> {
+    [
+        (
+            "two-regions-tb",
+            "stateDiagram-v2\nstate Active {\n  [*] --> NumLockOff\n  --\n  [*] --> CapsLockOff\n}\n",
+        ),
+        (
+            "two-regions-lr",
+            "stateDiagram-v2\ndirection LR\nstate Active {\n  [*] --> NumLockOff\n  --\n  [*] --> CapsLockOff\n}\n",
+        ),
+        (
+            "three-regions",
+            "stateDiagram-v2\n  state s2 {\n  s3\n  --\n  s4\n  --\n  55\n  }\n",
+        ),
+        (
+            "three-regions-lr",
+            "stateDiagram-v2\n  direction RL\n  state s2 {\n  s3\n  --\n  s4\n  --\n  55\n  }\n",
+        ),
+    ]
+    .into_iter()
+    .map(|(n, s)| (String::from(n), String::from(s)))
+    .collect()
+}
+
+/// A divider marks where two regions meet. It is drawn on whichever axis the region
+/// boxes are actually apart on, never through the states, and no two dividers of one
+/// composite land on the same line (specs/state.md#groups-and-data-attributes).
+#[test]
+fn every_region_divider_falls_between_the_regions_it_separates() {
+    for (name, src) in fixtures().into_iter().chain(concurrency_sources()) {
+        let sm = machine(&src);
+        if sm.regions.is_empty() {
+            continue;
+        }
+        let layout = laid_out(&sm);
+        let svg = render(&src, &RenderOptions::default()).svg.expect(&name);
+        let dividers = region_dividers(&svg);
+        let expected = sm.regions.iter().filter(|r| r.index > 0).count();
+        assert_eq!(dividers.len(), expected, "{name}: {dividers:?}");
+
+        for (i, d) in dividers.iter().enumerate() {
+            for (j, other) in dividers.iter().enumerate().skip(i + 1) {
+                assert_ne!(d, other, "{name}: dividers {i} and {j} are the same line");
+            }
+            for (v, n) in layout.geometry.graph.nodes.iter().enumerate() {
+                assert!(
+                    !d.hits(&Box2::of_node(n), 0.01),
+                    "{name}: divider {i} {d:?} crosses state {v} {:?}",
+                    Box2::of_node(n)
+                );
+            }
+            let boxes = region_boxes(&layout, &sm);
+            let found = boxes
+                .iter()
+                .flat_map(|regions| regions.windows(2))
+                .any(|w| separates(d, &w[0], &w[1]));
+            assert!(found, "{name}: divider {i} {d:?} separates no two regions");
+        }
+    }
+}
+
 #[test]
 fn a_direction_statement_turns_the_whole_drawing() {
     let src = std::fs::read_to_string(

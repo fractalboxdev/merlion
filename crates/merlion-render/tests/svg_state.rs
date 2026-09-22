@@ -547,26 +547,59 @@ fn a_composite_state_is_a_cluster_and_a_region_is_not() {
     assert_eq!(svg.matches("class=\"merlion-cluster-box\"").count(), 1);
 }
 
+/// The `d` of the one `.merlion-region-divider` in `svg`.
+fn divider_d(svg: &str) -> &str {
+    let i = svg
+        .find("class=\"merlion-region-divider\"")
+        .unwrap_or_else(|| panic!("no divider in\n{svg}"));
+    svg[i..]
+        .split(" d=\"")
+        .nth(1)
+        .and_then(|s| s.split('"').next())
+        .expect("d")
+}
+
 #[test]
 fn a_divider_marks_every_region_after_the_first() {
     let svg = drawn();
     assert_eq!(svg.matches("class=\"merlion-region-divider\"").count(), 1);
-    // It spans the composite's inner width in TB and sits between the two regions.
-    let i = svg
-        .find("class=\"merlion-region-divider\"")
-        .expect("divider");
-    let dv = svg[i..]
-        .split(" d=\"")
-        .nth(1)
-        .and_then(|s| s.split('"').next())
-        .expect("d");
-    assert_eq!(dv, "M112 274.5L208 274.5", "{dv}");
+    assert!(svg.contains("stroke-dasharray=\"4 4\""), "{svg}");
     // Every drawn `d` is a finite path: the divider never writes `NaN`.
     for (tag, name, value) in all_attrs(&svg) {
         if tag == "path" && name == "d" {
             assert!(!value.contains("NaN") && !value.contains("inf"), "{value}");
         }
     }
+}
+
+/// The divider crosses the gap the two region boxes leave, on whichever axis they are
+/// apart on, and spans the composite's inner extent on the other one. The layered engine
+/// puts sibling clusters beside one another on the order axis, so `machine_geometry`'s
+/// regions sit side by side; stacked regions are the other arrangement the same rule
+/// covers (specs/state.md#groups-and-data-attributes).
+#[test]
+fn the_divider_crosses_the_gap_between_the_two_region_boxes() {
+    // Regions side by side: the divider is vertical, spanning the composite's height.
+    let mut layout = machine_layout();
+    layout.geometry.graph.clusters[1] = cluster_geom(110.0, 222.0, 45.0, 105.0, "");
+    layout.geometry.graph.clusters[2] = cluster_geom(165.0, 222.0, 45.0, 105.0, "");
+    let svg = draw(&machine(), &layout, &RenderOptions::default());
+    assert_eq!(divider_d(&svg), "M160 217L160 323");
+
+    // Regions stacked: the divider is horizontal, spanning the composite's width.
+    let mut layout = machine_layout();
+    layout.geometry.graph.clusters[1] = cluster_geom(110.0, 222.0, 100.0, 45.0, "");
+    layout.geometry.graph.clusters[2] = cluster_geom(110.0, 282.0, 100.0, 45.0, "");
+    let svg = draw(&machine(), &layout, &RenderOptions::default());
+    assert_eq!(divider_d(&svg), "M112 274.5L208 274.5");
+
+    // Two boxes that overlap on both axes have no boundary: nothing is drawn rather
+    // than a line through the states.
+    let mut layout = machine_layout();
+    layout.geometry.graph.clusters[1] = cluster_geom(110.0, 222.0, 100.0, 100.0, "");
+    layout.geometry.graph.clusters[2] = cluster_geom(120.0, 232.0, 100.0, 100.0, "");
+    let svg = draw(&machine(), &layout, &RenderOptions::default());
+    assert_eq!(svg.matches("class=\"merlion-region-divider\"").count(), 0);
 }
 
 #[test]

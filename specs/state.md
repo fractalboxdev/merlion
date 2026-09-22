@@ -232,7 +232,7 @@ States carry the node classes and transitions the edge classes, so the token res
 
 - `k` in `{id}-n{k}` is the lowered node index and in `{id}-e{k}` the transition index, matching [interaction.md](interaction.md#svg-additions).
 - `data-merlion-kind` is `simple`, `composite`, `choice`, `fork`, `join`, `start` or `end`, the lower-case name of `StateKind`.
-- A region group carries no `.merlion-cluster-box` and no title: UML draws the dashed separator alone, so the divider is the whole mark. The divider spans the composite's inner width in `TB` / `BT` and its inner height in `LR` / `RL`, one per region after the first, drawn at the boundary with its predecessor.
+- A region group carries no `.merlion-cluster-box` and no title: UML draws the dashed separator alone, so the divider is the whole mark. One divider is drawn per region after the first, across the gap its region box leaves with its predecessor's, spanning the composite's inner extent on the other axis. The axis is the one the two boxes are apart on, not the one the direction names: a region is an ordinary sibling cluster of its composite, and the layered engine places sibling clusters beside one another on the order axis, which runs across the direction. Two region boxes that overlap on both axes have no boundary, and no divider is drawn.
 - Draw order is the flowchart's — clusters, edges, nodes — with the notes last, so a note box covers the cluster tint behind it and nothing covers a note.
 - A region group is `merlion-region`, not `merlion-cluster`: it has no title to collapse and no box to mark, so the viewer's cluster gestures never target it.
 
