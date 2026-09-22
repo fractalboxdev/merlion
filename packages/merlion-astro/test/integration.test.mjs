@@ -262,3 +262,41 @@ test("the registered plugin renders a sequence diagram through the real WASM", a
   assert.ok(outlines[0].outline.startsWith("Sequence diagram. 2 participants, 3 messages."), outlines[0].outline);
   assert.ok(outlines[0].outline.includes("alt in stock:"), outlines[0].outline);
 });
+
+const STATE = [
+  "stateDiagram-v2",
+  "  accTitle: Order lifecycle",
+  "  [*] --> Draft",
+  "  Draft --> Review : submit",
+  "  state Review {",
+  "    [*] --> Editing",
+  "    Editing --> Approved",
+  "  }",
+  "  Review --> Published : approve",
+  "  note right of Published : The feed picks it up within a minute.",
+  "  Published --> [*]",
+].join("\n");
+
+test("the registered plugin renders a state diagram through the real WASM", async () => {
+  const { updates } = setup({ width: 480, fontCss: true });
+  const [plugin, opts] = updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0];
+  const outlines = [];
+  const tree = mermaidTree(STATE);
+  const file = vfile("/site/src/content/docs/lifecycle.md", "/site");
+  await plugin({ ...opts, outline: (info) => outlines.push(info) })(tree, file);
+
+  const [figure] = tree.children;
+  assert.equal(figure.tagName, "figure", JSON.stringify(file.messages.map(String)));
+  assert.equal(figure.children[0].tagName, "merlion-view");
+  const svg = rawSvg(figure);
+  assert.ok(svg.includes('class="merlion merlion-state"'), svg.slice(0, 300));
+  assert.ok(svg.includes('data-merlion-id="Draft"'), "states carry their ids");
+  assert.ok(svg.includes('class="merlion-cluster merlion-composite'), "the composite state is a cluster");
+  assert.ok(svg.includes('class="merlion-note"'), "the note is drawn");
+  assert.ok(/max-width:\d+(\.\d+)?px/.test(svg));
+  assert.deepEqual(file.messages.map(String), []);
+  assert.equal(outlines.length, 1);
+  assert.equal(outlines[0].path, "src/content/docs/lifecycle.md");
+  assert.ok(outlines[0].outline.startsWith("State diagram, top to bottom."), outlines[0].outline);
+  assert.ok(outlines[0].outline.includes("Draft → Review [submit]"), outlines[0].outline);
+});

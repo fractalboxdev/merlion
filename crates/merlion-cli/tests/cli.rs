@@ -872,3 +872,153 @@ fn sequence_check_locates_diagnostics_and_fix_applies_the_repair() {
     assert!(err.starts_with("bad.mmd:2:"), "{err}");
     assert_eq!(o.status.code(), Some(1), "{err}");
 }
+
+// ---------------------------------------------------------------------------------------
+// State diagrams (specs/state.md). A state machine lowers onto the flowchart engine, so the
+// commands carry it exactly as they carry a flowchart, hint included.
+
+const STATE: &str =
+    "stateDiagram-v2\n    [*] --> Idle\n    Idle --> Busy : work arrives\n    Busy --> Idle : the queue drains\n    Busy --> [*]\n";
+
+#[test]
+fn state_renders_through_every_output_path() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("state-render");
+    let o = merlion(&d, &["render"], Some(STATE));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert!(
+        stdout(&o).contains(r#"class="merlion merlion-state""#),
+        "{}",
+        stdout(&o)
+    );
+
+    fs::write(d.join("in.mmd"), STATE).unwrap();
+    let o = merlion(
+        &d,
+        &["render", "in.mmd", "-o", "out.svg", "--outline", "out.txt"],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let outline = fs::read_to_string(d.join("out.txt")).unwrap();
+    assert!(
+        outline.starts_with("State diagram, top to bottom. 4 states, 4 transitions."),
+        "{outline}"
+    );
+    assert!(outline.contains("Idle → Busy [work arrives]"), "{outline}");
+    assert_eq!(names(&d), vec!["in.mmd", "out.svg", "out.txt"]);
+
+    // The hint is the flowchart's, so a re-render reading the previous output repeats it.
+    let before = fs::read(d.join("out.svg")).unwrap();
+    let o = merlion(&d, &["render", "in.mmd", "-o", "out.svg"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert_eq!(fs::read(d.join("out.svg")).unwrap(), before);
+}
+
+#[test]
+fn state_renders_in_markdown_and_in_batch() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("state-md");
+    fs::create_dir(d.join("out")).unwrap();
+    let md = format!("# Doc\n\n```mermaid\n{STATE}```\n\ntext\n\n```mermaid\n{VALID}```\n");
+    fs::write(d.join("doc.md"), md).unwrap();
+    let o = merlion(&d, &["render", "doc.md", "-o", "out"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert!(fs::read_to_string(d.join("out/doc-1.svg"))
+        .unwrap()
+        .contains("merlion-state"));
+    assert!(!fs::read_to_string(d.join("out/doc-2.svg"))
+        .unwrap()
+        .contains("merlion-state"));
+
+    let d = tempdir("state-batch");
+    fs::create_dir(d.join("corpus")).unwrap();
+    fs::create_dir(d.join("out")).unwrap();
+    fs::write(d.join("corpus/state.mmd"), STATE).unwrap();
+    fs::write(d.join("corpus/seq.mmd"), SEQ).unwrap();
+    fs::write(d.join("corpus/flow.mmd"), VALID).unwrap();
+    let o = merlion(
+        &d,
+        &["render", "--batch", "corpus", "-o", "out", "--json-summary"],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let out = stdout(&o);
+    assert_eq!(out.lines().count(), 3, "{out}");
+    assert!(out.lines().all(|l| l.contains(r#""ok":true"#)), "{out}");
+    assert!(fs::read_to_string(d.join("out/state.svg"))
+        .unwrap()
+        .contains("merlion-state"));
+}
+
+#[test]
+fn state_json_carries_the_svg_and_the_outline() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("state-json");
+    let o = merlion(&d, &["render", "--json"], Some(STATE));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.starts_with(r#"{"svg":"<svg"#), "{out}");
+    assert!(
+        out.contains(r#""outline":"State diagram, top to bottom. 4 states, 4 transitions."#),
+        "{out}"
+    );
+    assert!(out.contains(r#""error":null}"#), "{out}");
+}
+
+#[test]
+fn state_outline_prints_the_text_alternative() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("state-outline");
+    let o = merlion(&d, &["outline"], Some(STATE));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let out = stdout(&o);
+    assert!(
+        out.starts_with("State diagram, top to bottom. 4 states, 4 transitions."),
+        "{out}"
+    );
+    assert!(out.contains("start → Idle"), "{out}");
+    assert!(
+        out.contains("Busy → Idle [the queue drains]; → end"),
+        "{out}"
+    );
+}
+
+#[test]
+fn state_check_locates_diagnostics_and_fix_applies_the_repair() {
+    let d = tempdir("state-check");
+    // An arrow other than `-->` is R018 (specs/state.md#diagnostics).
+    let src = "stateDiagram-v2\n    [*] --> Idle\n    Idle ->> Busy : work arrives\n";
+    let o = merlion(&d, &["check"], Some(src));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let err = stderr(&o);
+    assert!(err.contains("<stdin>:3:"), "{err}");
+    assert!(err.contains("R018"), "{err}");
+
+    fs::write(d.join("in.mmd"), src).unwrap();
+    let o = merlion(&d, &["check", "in.mmd", "--fix"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let after = fs::read_to_string(d.join("in.mmd")).unwrap();
+    assert_eq!(
+        after,
+        "stateDiagram-v2\n    [*] --> Idle\n    Idle --> Busy : work arrives\n"
+    );
+    assert!(merlion_render::check(&after, false)
+        .iter()
+        .all(|x| x.fix.is_none()));
+    assert_eq!(names(&d), vec!["in.mmd"]);
+
+    // An error in a state diagram exits 1 and prints in the shared format.
+    fs::write(d.join("bad.mmd"), "stateDiagram-v2\n    state\n").unwrap();
+    let o = merlion(&d, &["check", "bad.mmd"], None);
+    let err = stderr(&o);
+    assert!(err.starts_with("bad.mmd:2:"), "{err}");
+    assert_eq!(o.status.code(), Some(1), "{err}");
+}

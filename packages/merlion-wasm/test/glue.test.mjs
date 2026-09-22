@@ -182,6 +182,48 @@ test("a sequence repair crosses the boundary with its fix", () => {
   assert.ok(check(SEQ).every((d) => d.severity !== "error"), JSON.stringify(check(SEQ)));
 });
 
+const STATE =
+  "stateDiagram-v2\n    [*] --> Idle\n    Idle --> Busy : work arrives\n    Busy --> Idle : the queue drains\n    Busy --> [*]\n";
+
+test("a state diagram renders through the same API and returns its outline", () => {
+  const r = render(STATE, { idPrefix: "t1" });
+  assert.ok(r.svg?.includes('class="merlion merlion-state"'), JSON.stringify(r.diagnostics));
+  assert.equal(r.error, null);
+  assert.ok(r.outline.startsWith("State diagram, top to bottom. 4 states, 4 transitions."), r.outline);
+  assert.ok(r.outline.includes("Idle → Busy [work arrives]"), r.outline);
+  assert.deepEqual(Object.keys(r).sort(), ["diagnostics", "error", "fuelUsed", "outline", "svg"]);
+});
+
+test("a state diagram reads the flowchart layout hint it writes", () => {
+  const plain = render(STATE, { idPrefix: "t1" }).svg;
+  assert.match(plain, /data-merlion-layout="v1;TB;/);
+  const again = render(STATE, { idPrefix: "t1", hint: plain });
+  assert.equal(again.svg, plain);
+  assert.deepEqual(again.diagnostics.filter((d) => d.code.startsWith("I02")), []);
+  // A `direction` statement turns the drawing, as it turns a flowchart's.
+  const lr = render(`stateDiagram-v2\n    direction LR\n${STATE.slice("stateDiagram-v2\n".length)}`, { idPrefix: "t1" });
+  assert.match(lr.svg, /data-merlion-layout="v1;LR;/);
+});
+
+test("automatic tones reach a choice and a top-level composite state", () => {
+  const src =
+    "stateDiagram-v2\n    state pick <<choice>>\n    state Working {\n        [*] --> Step\n    }\n    [*] --> pick\n    pick --> Working\n";
+  const on = render(src, { idPrefix: "t2" }).svg;
+  assert.ok(on.includes("merlion-c-warn merlion-auto"), on);
+  assert.ok(on.includes("merlion-cc-series-1 merlion-auto"), on);
+  assert.ok(!render(src, { idPrefix: "t2", autoTone: false }).svg.includes("merlion-auto"));
+});
+
+test("a state repair crosses the boundary with its fix", () => {
+  const ds = check("stateDiagram-v2\n    [*] --> Idle\n    Idle ->> Busy : work arrives\n");
+  const r018 = ds.find((d) => d.code === "R018");
+  assert.ok(r018, JSON.stringify(ds));
+  assert.equal(r018.severity, "repair");
+  assert.equal(r018.line, 3);
+  assert.equal(typeof r018.fix.replacement, "string");
+  assert.ok(check(STATE).every((d) => d.severity !== "error"), JSON.stringify(check(STATE)));
+});
+
 const SHEET = `
 :root { --merlion-accent: #0f766e; --merlion-fg: #202830; --merlion-stroke: 1.5px; }
 [data-theme="dark"] { --merlion-bg: #101418; --merlion-fg: #e6e6e6; }

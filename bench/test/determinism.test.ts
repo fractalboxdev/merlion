@@ -44,8 +44,9 @@ describe("compareRenders", () => {
 
 describe("CORPORA", () => {
   it("names one directory of .mmd sources per corpus", () => {
-    expect(Object.keys(CORPORA)).toEqual(["compat", "compat-sequence", "sequence"]);
+    expect(Object.keys(CORPORA)).toEqual(["compat", "compat-sequence", "compat-state", "sequence", "state"]);
     expect(CORPORA.sequence).toBe(join(REPO_DIR, "crates", "merlion-render", "tests", "fixtures", "sequence"));
+    expect(CORPORA.state).toBe(join(REPO_DIR, "crates", "merlion-render", "tests", "fixtures", "state"));
     for (const dir of Object.values(CORPORA)) {
       expect(readdirSync(dir).filter((f) => f.endsWith(".mmd")).length).toBeGreaterThan(0);
     }
@@ -54,5 +55,10 @@ describe("CORPORA", () => {
   it("the sequence corpus holds sequence diagrams", () => {
     const names = readdirSync(CORPORA.sequence).filter((f) => f.endsWith(".mmd"));
     expect(names).toContain("checkout-order.mmd");
+  });
+
+  it("the state corpus holds state diagrams", () => {
+    const names = readdirSync(CORPORA.state).filter((f) => f.endsWith(".mmd"));
+    expect(names).toContain("order-lifecycle.mmd");
   });
 });
