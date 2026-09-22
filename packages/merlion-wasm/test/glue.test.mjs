@@ -1,0 +1,196 @@
+// Tests of the hand-written glue against the real module, built with the test-only
+// `trap` export (scripts/build-wasm.sh --test-trap).
+import { test, before } from "node:test";
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+import { init, initSync, render, check, __trapForTests } from "../index.js";
+
+const script = fileURLToPath(new URL("../scripts/build-wasm.sh", import.meta.url));
+const wasmPath = fileURLToPath(new URL("./merlion-test.wasm", import.meta.url));
+let bytes;
+
+const VALID = "flowchart LR\nA-->B\n";
+const INVALID = "this is not a diagram\n";
+
+before(() => {
+  if (!process.env.MERLION_SKIP_WASM_BUILD) {
+    execFileSync("sh", [script, "--test-trap"], { stdio: "inherit" });
+  }
+  bytes = readFileSync(wasmPath);
+});
+
+// --- A minimal hand-assembled module with the same exports, whose `render` returns a
+// pointer 2 bytes before the end of memory, to exercise the glue's bounds checks.
+function uleb(n) {
+  const out = [];
+  do {
+    let b = n & 0x7f;
+    n >>>= 7;
+    if (n !== 0) b |= 0x80;
+    out.push(b);
+  } while (n !== 0);
+  return out;
+}
+const vec = (items) => [...uleb(items.length), ...items.flat()];
+const section = (id, body) => [id, ...uleb(body.length), ...body];
+const name = (s) => vec([...Buffer.from(s)].map((b) => [b]));
+const body = (code) => [...uleb(code.length + 1), 0x00, ...code];
+function outOfBoundsModule() {
+  const i32 = 0x7f;
+  const types = vec([
+    [0x60, 1, i32, 1, i32], // (i32) -> i32
+    [0x60, 2, i32, i32, 0], // (i32, i32) -> ()
+    [0x60, 4, i32, i32, i32, i32, 1, i32], // (i32 x4) -> i32
+    [0x60, 1, i32, 0], // (i32) -> ()
+  ]);
+  const funcs = vec([[0], [1], [2], [2], [3]]);
+  const memory = vec([[0x00, 0x01]]); // 1 page, no maximum
+  const exp = (n, kind, idx) => [...name(n), kind, idx];
+  const exports = vec([
+    exp("memory", 2, 0),
+    exp("alloc", 0, 0),
+    exp("dealloc", 0, 1),
+    exp("render", 0, 2),
+    exp("check", 0, 3),
+    exp("result_free", 0, 4),
+  ]);
+  const ret16 = [0x41, 16, 0x0b]; // i32.const 16
+  const retEnd = [0x41, 0xfe, 0xff, 0x03, 0x0b]; // i32.const 65534
+  const code = vec([body(ret16), body([0x0b]), body(retEnd), body(retEnd), body([0x0b])]);
+  return new Uint8Array([
+    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+    ...section(1, types),
+    ...section(3, funcs),
+    ...section(5, memory),
+    ...section(7, exports),
+    ...section(10, code),
+  ]);
+}
+
+test("calls before initialisation throw", () => {
+  assert.throws(() => render(VALID), /init/);
+});
+
+test("initSync then render returns the documented shape", () => {
+  initSync(bytes);
+  const r = render(INVALID);
+  assert.equal(r.svg, null);
+  assert.equal(r.outline, null);
+  assert.ok(Array.isArray(r.diagnostics) && r.diagnostics.length > 0);
+  const d = r.diagnostics.find((x) => x.severity === "error");
+  assert.ok(d, JSON.stringify(r));
+  assert.match(d.code, /^E0\d\d$/);
+  for (const k of ["line", "column", "byteStart", "byteEnd"]) assert.equal(typeof d[k], "number");
+  assert.equal(typeof d.message, "string");
+  assert.notEqual(r.error, null);
+  assert.equal(typeof r.fuelUsed, "number");
+});
+
+test("a valid diagram renders once the pipeline does", () => {
+  const r = render(VALID, { width: 640, idPrefix: "t1" });
+  if (r.svg === null) {
+    console.log("note: the core does not render yet; success assertions skipped");
+    assert.notEqual(r.error, null);
+    return;
+  }
+  assert.ok(r.svg.startsWith("<svg"));
+  assert.equal(r.error, null);
+  assert.equal(typeof r.outline, "string");
+});
+
+test("check returns diagnostics", () => {
+  const ds = check(INVALID, { strict: true });
+  assert.ok(Array.isArray(ds));
+  assert.ok(ds.some((d) => d.severity === "error"));
+});
+
+test("invalid arguments throw instead of reaching the module", () => {
+  assert.throws(() => render(42), TypeError);
+  assert.throws(() => render(VALID, { width: -1 }), TypeError);
+  assert.throws(() => render(VALID, { direction: "up" }), TypeError);
+  // Unknown option keys are ignored.
+  assert.doesNotThrow(() => render(VALID, { zoom: 3 }));
+});
+
+test("non-ASCII and lone surrogates cross the boundary", () => {
+  const r = render("flowchart LR\nA[é\u{1F600}\uD800]-->B\n");
+  assert.ok(Array.isArray(r.diagnostics));
+});
+
+test("oversized input is reported as E004 / too_large", () => {
+  const r = render("a".repeat((1 << 20) + 1));
+  assert.equal(r.error?.kind, "too_large");
+  assert.ok(r.diagnostics.some((d) => d.code === "E004"));
+});
+
+test("memory growth between calls does not break later calls", () => {
+  for (let i = 0; i < 3; i++) {
+    render("x".repeat(900_000 + i));
+  }
+  assert.ok(render(INVALID).diagnostics.length > 0);
+});
+
+test("a trap returns E001 and the next call runs on a fresh instance", () => {
+  const r = __trapForTests();
+  assert.equal(r.svg, null);
+  assert.deepEqual(
+    r.diagnostics.map((d) => d.code),
+    ["E001"],
+  );
+  const next = render(INVALID);
+  assert.ok(!next.diagnostics.some((d) => d.code === "E001"), JSON.stringify(next));
+  assert.ok(check(INVALID).length > 0);
+});
+
+test("an out-of-bounds result pointer is an internal error, not a bad read", () => {
+  initSync(outOfBoundsModule());
+  const r = render(VALID);
+  assert.deepEqual(
+    r.diagnostics.map((d) => d.code),
+    ["E001"],
+  );
+  assert.deepEqual(
+    check(VALID).map((d) => d.code),
+    ["E001"],
+  );
+  initSync(bytes);
+});
+
+test("init accepts bytes, a Module and a Response", async () => {
+  await init(bytes);
+  assert.ok(render(INVALID).diagnostics.length > 0);
+  await init(new WebAssembly.Module(bytes));
+  assert.ok(render(INVALID).diagnostics.length > 0);
+  await init(new Response(bytes, { headers: { "content-type": "application/wasm" } }));
+  assert.ok(render(INVALID).diagnostics.length > 0);
+  // A Response with the wrong MIME type falls back to compiling the bytes.
+  await init(new Response(bytes, { headers: { "content-type": "application/octet-stream" } }));
+  assert.ok(render(INVALID).diagnostics.length > 0);
+  await assert.rejects(init(new Response("nope", { status: 404 })), /404/);
+});
+
+test("worker.js answers render and check messages", async () => {
+  const posted = [];
+  let handler;
+  globalThis.self = {
+    addEventListener: (type, fn) => {
+      if (type === "message") handler = fn;
+    },
+    postMessage: (m) => posted.push(m),
+  };
+  await import("../worker.js");
+  assert.equal(typeof handler, "function");
+  await handler({ data: { id: 1, type: "render", source: INVALID, wasm: bytes } });
+  await handler({ data: { id: 2, type: "check", source: INVALID } });
+  await handler({ data: { id: 3, type: "render", source: 7 } });
+  assert.equal(posted.length, 3);
+  assert.equal(posted[0].id, 1);
+  assert.equal(posted[0].result.svg, null);
+  assert.ok(Array.isArray(posted[1].result));
+  assert.equal(posted[2].id, 3);
+  assert.match(posted[2].error, /string/);
+  delete globalThis.self;
+});

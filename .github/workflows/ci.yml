@@ -1,0 +1,72 @@
+# Checks every push and pull request. Actions are pinned by commit SHA and the workflow
+# holds read-only permissions (specs/supply-chain.md#releases).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      # rustup installs the toolchain, targets and components pinned in rust-toolchain.toml.
+      - run: rustup toolchain install
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test --workspace --locked
+      - name: WASM build
+        run: cargo build --locked -p merlion-wasm --target wasm32-unknown-unknown
+      - name: Zero runtime dependencies
+        # merlion-render has an empty [dependencies] table; merlion-cli and merlion-wasm
+        # depend on merlion-render only; every npm package has "dependencies": {}.
+        run: |
+          deps() { awk '/^\[dependencies\]/{f=1;next} /^\[/{f=0} f && NF && !/^[[:space:]]*#/' "$1"; }
+          fail=0
+          if [ -n "$(deps crates/merlion-render/Cargo.toml)" ]; then
+            echo "::error file=crates/merlion-render/Cargo.toml::[dependencies] must be empty"; fail=1
+          fi
+          for c in crates/merlion-cli/Cargo.toml crates/merlion-wasm/Cargo.toml; do
+            if deps "$c" | grep -v '^merlion-render[[:space:]]*='; then
+              echo "::error file=$c::only merlion-render is allowed in [dependencies]"; fail=1
+            fi
+          done
+          for p in packages/*/package.json; do
+            # shellcheck disable=SC2016 # the backticks are JavaScript, not shell
+            node -e 'const p=require("./"+process.argv[1]); const d=p.dependencies; if (!d || Object.keys(d).length) { console.log(`::error file=${process.argv[1]}::"dependencies" must be {}`); process.exit(1) }' "$p" || fail=1
+          done
+          exit "$fail"
+
+  wasm-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: rustup toolchain install
+      - name: Shellcheck
+        run: shellcheck packages/*/scripts/*.sh
+      - name: Build merlion.wasm and record its SHA-256
+        run: sh packages/merlion-wasm/scripts/build-wasm.sh
+      - name: Node tests
+        run: node --test packages/merlion-wasm/test/*.test.mjs
