@@ -19,6 +19,12 @@ Any other header returns `UnsupportedDiagram { header }`, never a partial render
 
 Compatibility means rendering the same graph that mermaid 12.0.0 renders: the same nodes, edges, labels, clusters and directions. Pixel positions are not part of it. The benchmark reports the pass rate per diagram type against the mermaid repository's own demo and test diagrams ([benchmark.md](benchmark.md)).
 
+Subgraph ids follow mermaid's resolution, which happens after the whole source is read:
+
+- A node id that names a subgraph stands for the subgraph unless it is given a bracket shape, an `@{…}` `shape` or `label`, or a label by `R004`. So `id@{…}` with other keys (`view`, `algorithm`) configures the subgraph and never creates a node.
+- Named inside another subgraph, it nests that subgraph there, even when the subgraph is declared later; a link that would close a nesting cycle is not made. Parents always precede their children in the model.
+- As an edge endpoint it connects to the subgraph, which the model represents by the subgraph's first member node. An edge between a subgraph and one of its own members is dropped.
+
 ## Front matter and directives
 
 - YAML front matter (`---` … `---`) accepts `title`, `config.flowchart.curve`, `config.layout`, `accTitle`, `accDescr`.

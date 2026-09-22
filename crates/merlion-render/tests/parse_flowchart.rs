@@ -709,6 +709,109 @@ fn edges_to_subgraph_ids_map_to_the_first_member() {
     );
 }
 
+fn sub_ids(f: &merlion_render::model::Flowchart) -> Vec<(String, Option<String>)> {
+    f.subgraphs
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            if let Some(p) = s.parent {
+                assert!(p < i, "parent {p} of subgraph {i} does not precede it");
+            }
+            (s.id.clone(), s.parent.map(|p| f.subgraphs[p].id.clone()))
+        })
+        .collect()
+}
+
+#[test]
+fn subgraph_id_inside_a_subgraph_nests_it() {
+    // Named before it is declared (mermaid e2e "nested subgraphs in reverse order").
+    let f = chart(
+        "flowchart LR
+  a --> b
+  subgraph A
+  B
+  end
+  subgraph B
+  b
+  end",
+    );
+    let ids: Vec<_> = f.nodes.iter().map(|n| n.id.as_str()).collect();
+    assert_eq!(ids, vec!["a", "b"]);
+    assert_eq!(
+        sub_ids(&f),
+        vec![("A".into(), None), ("B".into(), Some("A".into()))]
+    );
+    assert_eq!(
+        node(&f, "b").subgraph.map(|s| f.subgraphs[s].id.as_str()),
+        Some("B")
+    );
+    // Several levels, parents declared after their children.
+    let f = chart(
+        "flowchart TB
+  b-->B
+  a-->c
+  subgraph O
+  A
+  end
+  subgraph B
+  c
+  end
+  subgraph A
+    a
+    b
+    B
+  end",
+    );
+    let ids: Vec<_> = f.nodes.iter().map(|n| n.id.as_str()).collect();
+    assert_eq!(ids, vec!["b", "a", "c"]);
+    let mut subs = sub_ids(&f);
+    subs.sort();
+    assert_eq!(
+        subs,
+        vec![
+            ("A".into(), Some("O".into())),
+            ("B".into(), Some("A".into())),
+            ("O".into(), None)
+        ]
+    );
+    assert_eq!(
+        edge_ids(&f),
+        vec![("b".into(), "c".into()), ("a".into(), "c".into())]
+    );
+}
+
+#[test]
+fn at_block_on_a_subgraph_id_is_not_a_node() {
+    let (f, _) = parse_ok(
+        "flowchart TD
+  start[Start] --> grp
+  subgraph grp[Grouped]
+    a[One]
+  end
+  grp@{ algorithm: elk.box }
+  grp --> done[Done]",
+    );
+    let ids: Vec<_> = f.nodes.iter().map(|n| n.id.as_str()).collect();
+    assert_eq!(ids, vec!["start", "a", "done"]);
+    assert_eq!(
+        edge_ids(&f),
+        vec![("start".into(), "a".into()), ("a".into(), "done".into())]
+    );
+}
+
+#[test]
+fn edge_between_a_subgraph_and_its_member_is_dropped() {
+    let f = chart(
+        "flowchart TB
+  Out --> In
+  subgraph Sub
+  In
+  end
+  Sub --> In",
+    );
+    assert_eq!(edge_ids(&f), vec![("Out".into(), "In".into())]);
+}
+
 #[test]
 fn subgraph_endpoints_never_get_r005() {
     // Referenced before the subgraph is declared: still maps to its first member.

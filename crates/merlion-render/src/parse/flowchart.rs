@@ -108,6 +108,9 @@ struct NodeB {
     span: Span,
     /// Given a shape, `@{…}`, a standalone statement, or renamed by `R004`.
     declared: bool,
+    /// Given a bracket shape, an `@{…}` shape or label, or a label by `R004`: a node
+    /// even when its id names a subgraph.
+    shaped: bool,
     /// End of the id at its first occurrence, where `R005` inserts a label.
     first_id: (usize, usize),
 }
@@ -760,7 +763,8 @@ impl P<'_, '_> {
 
         // Shape: `@{…}` or a bracket opener (optionally after spaces).
         let mut shape: Option<(Shape, Option<String>)> = None;
-        if self.starts_with("@{") {
+        let at_block = self.starts_with("@{");
+        if at_block {
             shape = Some(self.at_shape()?);
         } else {
             let save = self.pos;
@@ -818,6 +822,7 @@ impl P<'_, '_> {
                     subgraph: None,
                     span,
                     declared: false,
+                    shaped: false,
                     first_id: (start, id_end),
                 });
                 self.node_map.insert(id.clone(), self.nodes.len() - 1);
@@ -842,10 +847,12 @@ impl P<'_, '_> {
                 if let Some(node) = self.nodes.get_mut(n) {
                     node.label = raw.clone();
                     node.declared = true;
+                    node.shaped = true;
                 }
             }
         }
         if let (Some((s, label)), Some(node)) = (shape, self.nodes.get_mut(n)) {
+            node.shaped |= !at_block || label.is_some() || s != Shape::Rect;
             node.shape = s;
             if let Some(l) = label {
                 node.label = l;
@@ -1888,21 +1895,57 @@ impl P<'_, '_> {
         // Edges to a subgraph id: Mermaid connects the edge to the cluster. The model
         // has node-to-node edges only, so the endpoint becomes the subgraph's first
         // member node (in declaration order, nested subgraphs included).
-        let mut sub_by_id: BTreeMap<&str, usize> = BTreeMap::new();
+        let mut sub_by_id: BTreeMap<String, usize> = BTreeMap::new();
         for (i, s) in self.subs.iter().enumerate() {
-            sub_by_id.entry(s.id.as_str()).or_insert(i);
+            sub_by_id.entry(s.id.clone()).or_insert(i);
         }
+        // A node that only names a subgraph (a bare endpoint, a bare statement, or
+        // `id@{…}` without a shape or label) stands for the subgraph.
         let candidate: Vec<Option<usize>> = self
             .nodes
             .iter()
             .map(|n| {
-                if n.declared {
+                if n.shaped {
                     None
                 } else {
-                    sub_by_id.get(n.id.as_str()).copied()
+                    sub_by_id.get(&n.id).copied()
                 }
             })
             .collect();
+        // A subgraph named inside another subgraph nests there (mermaid resolves the
+        // name at the end, so the subgraph may be declared later). Links that would
+        // close a cycle are not made.
+        let ancestor_or_self = |subs: &[SubB], x: usize, mut cur: Option<usize>| {
+            let mut steps = 0usize;
+            while let Some(c) = cur {
+                if c == x {
+                    return true;
+                }
+                if steps > subs.len() {
+                    return true;
+                }
+                steps += 1;
+                cur = subs.get(c).and_then(|s| s.parent);
+            }
+            false
+        };
+        let mut absorbed: Vec<bool> = alloc::vec![false; self.nodes.len()];
+        for (n, node) in self.nodes.iter().enumerate() {
+            let (Some(x), Some(s)) = (candidate.get(n).copied().flatten(), node.subgraph) else {
+                continue;
+            };
+            let Some(parent) = self.subs.get(x).map(|sub| sub.parent) else {
+                continue;
+            };
+            if parent.is_none() && !ancestor_or_self(&self.subs, x, Some(s)) {
+                if let Some(sub) = self.subs.get_mut(x) {
+                    sub.parent = Some(s);
+                }
+            }
+            if self.subs.get(x).and_then(|sub| sub.parent) == Some(s) {
+                absorbed[n] = true;
+            }
+        }
         // First real member of every subgraph: each node walks up its ancestor chain,
         // which the nesting limit bounds, so this is O(nodes × nesting).
         let mut first_member: Vec<Option<usize>> = alloc::vec![None; self.subs.len()];
@@ -1929,6 +1972,24 @@ impl P<'_, '_> {
             .iter()
             .map(|c| c.and_then(|s| first_member.get(s).copied().flatten()))
             .collect();
+        // Whether node `m` lies inside subgraph `x` (at any depth).
+        let inside = |m: usize, x: usize| -> bool {
+            let cur = self.nodes.get(m).and_then(|node| node.subgraph);
+            ancestor_or_self(&self.subs, x, cur)
+        };
+        // An edge between a subgraph and one of its own members is dropped, as mermaid
+        // drops it.
+        let keep_edge = |a: usize, b: usize| -> bool {
+            let into = |sub: usize, other: usize| {
+                candidate.get(sub).copied().flatten().is_some_and(|x| {
+                    redirect.get(sub).copied().flatten().is_some()
+                        && candidate.get(other).copied().flatten().is_none()
+                        && inside(other, x)
+                })
+            };
+            !into(a, b) && !into(b, a)
+        };
+        let keep: Vec<bool> = self.edges.iter().map(|e| keep_edge(e.from, e.to)).collect();
         // A bare endpoint naming a subgraph is not a typo, so it never gets `R005`,
         // even when the subgraph is empty and the endpoint stays a node.
         let names_subgraph: Vec<bool> = candidate.iter().map(Option::is_some).collect();
@@ -1960,7 +2021,7 @@ impl P<'_, '_> {
         let mut new_index: Vec<Option<usize>> = alloc::vec![None; self.nodes.len()];
         let mut nodes: Vec<Node> = Vec::new();
         for (n, b) in core::mem::take(&mut self.nodes).into_iter().enumerate() {
-            if redirect.get(n).copied().flatten().is_some() {
+            if redirect.get(n).copied().flatten().is_some() || absorbed.get(n) == Some(&true) {
                 continue;
             }
             if let Some(slot) = new_index.get_mut(n) {
@@ -1982,7 +2043,7 @@ impl P<'_, '_> {
             new_index.get(target).copied().flatten()
         };
         let mut edges: Vec<Edge> = Vec::new();
-        for e in &self.edges {
+        for (e, _) in self.edges.iter().zip(&keep).filter(|(_, &k)| k) {
             if let (Some(from), Some(to)) = (resolve(e.from), resolve(e.to)) {
                 edges.push(Edge {
                     from,
@@ -2016,7 +2077,7 @@ impl P<'_, '_> {
                 Op::Style { id, span, style } => {
                     match by_id.get(&id).and_then(|&i| nodes.get_mut(i)) {
                         Some(node) => node.style.merge(&style),
-                        None if sub_by_id.contains_key(id.as_str()) => {}
+                        None if sub_by_id.contains_key(&id) => {}
                         None => self.diags.emit(
                             Severity::Warning,
                             "W010",
@@ -2058,13 +2119,41 @@ impl P<'_, '_> {
             e.style = s;
         }
 
-        let mut subgraphs: Vec<Subgraph> = self
-            .subs
-            .into_iter()
+        // Parents precede their children (nesting can point forwards after the
+        // resolution above): declaration order, each subgraph after its ancestors.
+        let k = self.subs.len();
+        let mut order: Vec<usize> = Vec::with_capacity(k);
+        let mut placed = alloc::vec![false; k];
+        for i in 0..k {
+            let mut chain = Vec::new();
+            let mut cur = Some(i);
+            while let Some(c) = cur {
+                if placed.get(c) != Some(&false) || chain.contains(&c) || chain.len() > k {
+                    break;
+                }
+                chain.push(c);
+                cur = self.subs.get(c).and_then(|s| s.parent);
+            }
+            for &c in chain.iter().rev() {
+                placed[c] = true;
+                order.push(c);
+            }
+        }
+        let mut new_sub = alloc::vec![0usize; k];
+        for (at, &old) in order.iter().enumerate() {
+            new_sub[old] = at;
+        }
+        for node in nodes.iter_mut() {
+            node.subgraph = node.subgraph.and_then(|s| new_sub.get(s).copied());
+        }
+        let mut old_subs: Vec<Option<SubB>> = self.subs.into_iter().map(Some).collect();
+        let mut subgraphs: Vec<Subgraph> = order
+            .iter()
+            .filter_map(|&old| old_subs.get_mut(old).and_then(Option::take))
             .map(|s| Subgraph {
                 id: s.id,
                 title: s.title,
-                parent: s.parent,
+                parent: s.parent.and_then(|p| new_sub.get(p).copied()),
                 nodes: Vec::new(),
                 direction: s.direction,
                 span: s.span,
