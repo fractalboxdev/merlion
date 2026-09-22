@@ -108,7 +108,7 @@ const loadCard = async (entry, i, wasm) => {
     svg = null;
   }
   if (!svg && entry.source && wasm) {
-    const out = wasm.render(entry.source, { id_prefix: `g${i + 1}` });
+    const out = wasm.render(entry.source, { idPrefix: `g${i + 1}` });
     svg = out.svg && parseSvg(out.svg);
     if (!svg) {
       const first = out.diagnostics?.[0];
@@ -171,8 +171,9 @@ const jumpTo = (line, column) => {
 const showDiagnostics = (list) => {
   diagList.replaceChildren(
     ...list.map((d) => {
-      const line = d.span?.line ?? 0;
-      const column = d.span?.column ?? 0;
+      // The @fractalboxdev/merlion-wasm Diagnostic: flat, 1-based, 0 without a location.
+      const line = d.line ?? 0;
+      const column = d.column ?? 0;
       const btn = h("button", { type: "button" });
       btn.append(
         h("span", { className: `sev-${d.severity}`, textContent: `${d.severity} ${d.code}` }),
@@ -187,15 +188,20 @@ const showDiagnostics = (list) => {
 const renderLive = (wasm) => {
   const t0 = performance.now();
   const options = {
-    id_prefix: "live",
-    target_width: Math.max(240, Math.round(preview.clientWidth - 32)),
+    idPrefix: "live",
+    width: Math.max(240, Math.round(preview.clientWidth - 32)),
     ...(previous ? { hint: previous } : {}),
   };
   let out;
   try {
     out = wasm.render(src.value, options);
   } catch (err) {
-    out = { svg: null, diagnostics: [{ severity: "error", code: "E001", message: String(err), span: null }] };
+    out = {
+      svg: null,
+      diagnostics: [
+        { severity: "error", code: "E001", line: 0, column: 0, byteStart: 0, byteEnd: 0, message: String(err), fix: null },
+      ],
+    };
   }
   const ms = performance.now() - t0;
   showDiagnostics(out.diagnostics ?? []);
