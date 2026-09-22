@@ -8,6 +8,15 @@ importers:
 
   .: {}
 
+  packages/merlion-astro:
+    devDependencies:
+      '@fractalboxdev/merlion-rehype':
+        specifier: workspace:*
+        version: link:../merlion-rehype
+      '@fractalboxdev/merlion-view':
+        specifier: workspace:*
+        version: link:../merlion-view
+
   packages/merlion-rehype:
     devDependencies:
       '@types/hast':
