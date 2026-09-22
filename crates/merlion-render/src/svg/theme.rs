@@ -29,10 +29,24 @@ pub const BORDER: &str = "#c8c9cb";
 pub const CLUSTER_BG: &str = "#fafafa";
 
 pub const FONT: &str = "Inter, ui-sans-serif, system-ui, sans-serif";
+/// Family name of the embedded subset in `font: "embed"` mode. It is Merlion-specific
+/// because an inline SVG's `@font-face` is visible to the whole host document, and a
+/// plain `Inter` face would replace the page's own Inter.
+pub const EMBED_FONT_FAMILY: &str = "Merlion Inter";
+/// Font stack for `font: "embed"`: the embedded family first, then the `link` stack.
+pub const FONT_EMBED: &str = "Merlion Inter, Inter, ui-sans-serif, system-ui, sans-serif";
 /// Font stack for `font: "system"` (specs/text-measurement.md#serving-the-font).
 pub const FONT_SYSTEM: &str = "system-ui, sans-serif";
 /// Family for `` `code` `` runs. Not a token: the token set is a public API (ADR-0005).
 pub const FONT_MONO: &str = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+/// The font stack drawn for `mode`.
+pub fn font_stack(mode: crate::options::FontMode) -> &'static str {
+    match mode {
+        crate::options::FontMode::Link => FONT,
+        crate::options::FontMode::Embed => FONT_EMBED,
+        crate::options::FontMode::System => FONT_SYSTEM,
+    }
+}
 /// `--merlion-stroke` default, in px.
 pub const STROKE: f64 = 1.25;
 

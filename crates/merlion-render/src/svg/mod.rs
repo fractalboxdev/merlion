@@ -48,6 +48,7 @@ use theme::Role;
 pub use escape::escape;
 pub use outline::plain_label;
 pub use shapes::ALL_SHAPES;
+pub use theme::EMBED_FONT_FAMILY;
 
 pub struct DrawOutput {
     pub svg: String,
@@ -62,15 +63,6 @@ const CHIP_RADIUS: f64 = 3.0;
 const CLUSTER_RADIUS: f64 = 4.0;
 /// Highest semantic-zoom rank (specs/viewer.md#semantic-zoom).
 const MAX_RANK: u8 = 15;
-
-/// WOFF2 `@font-face` rule for `font: "embed"`.
-///
-/// TODO(text): return the `@font-face` built by `crate::text` from the committed WOFF2
-/// subset (specs/text-measurement.md#serving-the-font), and write the OFL notice as an
-/// XML comment next to it. Until the subset lands, `embed` mode emits no font.
-fn embedded_font_css() -> Option<String> {
-    None
-}
 
 fn attr(out: &mut String, name: &str, value: &str) {
     out.push(' ');
@@ -570,8 +562,12 @@ pub fn draw_flowchart(
     push_escaped(&mut out, desc);
     out.push_str("</desc>\n");
 
+    // `font: "embed"` (specs/text-measurement.md#serving-the-font): the OFL notice as an
+    // XML comment, then the WOFF2 subset as the only `@font-face` of the style.
     let font_css = if opts.font == FontMode::Embed {
-        embedded_font_css()
+        out.push_str(&crate::text::ofl_xml_comment());
+        out.push('\n');
+        Some(crate::text::embedded_font_css(theme::EMBED_FONT_FAMILY))
     } else {
         None
     };
@@ -609,15 +605,7 @@ pub fn draw_flowchart(
     }
 
     out.push_str("<g class=\"merlion-diagram\"");
-    attr(
-        &mut out,
-        "font-family",
-        if opts.font == FontMode::System {
-            theme::FONT_SYSTEM
-        } else {
-            theme::FONT
-        },
-    );
+    attr(&mut out, "font-family", theme::font_stack(opts.font));
     attr_num(&mut out, "font-size", font_size);
     out.push_str(">\n");
 

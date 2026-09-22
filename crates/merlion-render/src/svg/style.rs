@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 use crate::numfmt::push_num;
 use crate::options::FontMode;
 
-use super::theme::{Role, FONT, FONT_MONO, FONT_SYSTEM, STROKE};
+use super::theme::{Role, FONT_MONO, STROKE};
 
 /// One base declaration: a CSS property reading either a colour role or a literal.
 enum Value {
@@ -132,11 +132,7 @@ fn push_rule(out: &mut String, id: &str, selector: &str, body: &str) {
 /// The text reset of specs/svg-output.md#embedded-style, verbatim apart from the
 /// font stack (`system` mode) and the size (the measured `font_size`).
 fn push_reset(out: &mut String, id: &str, font: FontMode, font_size: f64) {
-    let family = if font == FontMode::System {
-        FONT_SYSTEM
-    } else {
-        FONT
-    };
+    let family = super::theme::font_stack(font);
     let mut size = String::new();
     push_num(&mut size, font_size);
     out.push('#');

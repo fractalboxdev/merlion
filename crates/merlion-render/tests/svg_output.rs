@@ -8,8 +8,9 @@ use merlion_render::model::{
     Subgraph,
 };
 use merlion_render::options::{Direction, EdgeStyle, FontMode, RenderOptions};
+use merlion_render::svg::EMBED_FONT_FAMILY;
 use merlion_render::svg::{draw_flowchart, outline_flowchart, DrawOutput, ALL_SHAPES};
-use merlion_render::text::{LabelLayout, Line, Run, Weight};
+use merlion_render::text::{embedded_font_css, ofl_xml_comment, LabelLayout, Line, Run, Weight};
 
 // ---------------------------------------------------------------------------------------
 // Builders
@@ -379,8 +380,17 @@ fn css_selectors(css: &str) -> Vec<String> {
     sels
 }
 
-/// specs/svg-output.md: forbidden content and scoping.
+/// specs/svg-output.md: forbidden content and scoping. The one exemption is the
+/// embedded-font `@font-face` pair of `font: "embed"` mode, byte-for-byte as the core
+/// builds it; it may occur once, and every other `@font-face` or `url(data:…)` fails.
 fn assert_safe(svg: &str, id: &str) {
+    let allowed = embedded_font_css(EMBED_FONT_FAMILY);
+    assert!(
+        svg.matches(allowed.as_str()).count() <= 1,
+        "embedded font repeated"
+    );
+    let stripped = svg.replacen(allowed.as_str(), "", 1);
+    let svg = stripped.as_str();
     let lower = svg.to_ascii_lowercase();
     for bad in [
         "<script",
@@ -423,7 +433,7 @@ fn assert_safe(svg: &str, id: &str) {
     }
     let css = style_text(svg);
     assert!(!css.contains('<') && !css.contains('&'));
-    for bad in [":root", "html", "body", "@font-face"] {
+    for bad in [":root", "html", "body", "@font-face", "data:"] {
         assert!(!css.contains(bad), "css contains {}", bad);
     }
     for sel in css_selectors(css) {
@@ -641,13 +651,71 @@ fn text_reset_rule_is_present_verbatim() {
 }
 
 #[test]
-fn font_link_and_embed_emit_no_inline_font_yet() {
-    for font in [FontMode::Link, FontMode::Embed] {
+fn font_link_and_system_emit_no_inline_font() {
+    for font in [FontMode::Link, FontMode::System] {
         let o = RenderOptions { font, ..opts() };
         let (out, _) = draw_with(&sample(), &o);
         assert!(!out.svg.contains("@font-face"));
         assert!(!out.svg.contains("data:"));
+        assert!(!out.svg.contains("<!--"));
+        assert!(!out.svg.contains(EMBED_FONT_FAMILY));
     }
+}
+
+/// specs/text-measurement.md#serving-the-font: the WOFF2 subset as a `data:` URI under a
+/// Merlion-only family name, the OFL notice as an XML comment, and the family first in
+/// the stack.
+#[test]
+fn font_embed_inlines_the_subset_and_the_licence() {
+    let o = RenderOptions {
+        font: FontMode::Embed,
+        ..opts()
+    };
+    let (out, _) = draw_with(&sample(), &o);
+    let css = style_text(&out.svg);
+    let face = embedded_font_css(EMBED_FONT_FAMILY);
+    assert_eq!(out.svg.matches("@font-face").count(), 2);
+    assert!(css.contains(&face));
+    assert_eq!(out.svg.matches(ofl_xml_comment().as_str()).count(), 1);
+    let stack = format!(
+        "{}, Inter, ui-sans-serif, system-ui, sans-serif",
+        EMBED_FONT_FAMILY
+    );
+    assert!(css.starts_with(&format!(
+        "#m1 text {{ font-family: var(--merlion-font, {});",
+        stack
+    )));
+    assert!(out.svg.contains(&format!("font-family=\"{}\"", stack)));
+    assert_well_formed(&out.svg);
+    assert_safe(&out.svg, "m1");
+}
+
+#[test]
+#[should_panic(expected = "@font-face")]
+fn safety_check_rejects_a_second_font_face() {
+    let o = RenderOptions {
+        font: FontMode::Embed,
+        ..opts()
+    };
+    let (out, _) = draw_with(&sample(), &o);
+    let svg = out.svg.replacen(
+        "</style>",
+        "@font-face{font-family:\"x\";src:local(x)}</style>",
+        1,
+    );
+    assert_safe(&svg, "m1");
+}
+
+#[test]
+#[should_panic(expected = "external url")]
+fn safety_check_rejects_other_data_urls() {
+    let (out, _) = draw_with(&sample(), &opts());
+    let svg = out.svg.replacen(
+        "</style>",
+        "#m1 rect{fill:url(data:image/png;base64,AAAA)}</style>",
+        1,
+    );
+    assert_safe(&svg, "m1");
 }
 
 // ---------------------------------------------------------------------------------------
