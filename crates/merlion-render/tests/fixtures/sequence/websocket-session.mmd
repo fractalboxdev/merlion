@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Browser
+    participant Edge as Edge worker
+    participant Room@{ "type": "control" } as Room object
+
+    Browser->>+Edge: GET /ws (Upgrade: websocket)
+    create participant Socket@{ "type": "boundary" } as Socket
+    Edge->>Socket: 101 Switching Protocols
+    Edge->>+Room: attach(sessionId)
+    Room-->>-Edge: joined, 3 peers
+    Socket-)Browser: {"type":"hello","peers":3}
+    Browser-)Socket: {"type":"cursor","x":12,"y":40}
+    Socket-)Room: broadcast(cursor)
+    destroy Socket
+    Browser-xSocket: close(1000)
+    Edge-->>-Browser: session closed

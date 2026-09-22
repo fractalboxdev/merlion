@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Orchestrator
+    participant Orders
+    participant Payments
+    participant Inventory
+
+    Orchestrator->>+Orders: cancel(order 8812)
+    Orders-->>-Orchestrator: cancelled
+    rect rgb(255, 235, 235)
+        Note over Orchestrator,Inventory: Compensating transactions
+        par refund the card
+            Orchestrator->>+Payments: refund(49.00 EUR)
+            Payments-->>-Orchestrator: refunded
+        and restock the items
+            Orchestrator->>+Inventory: restock(sku A-19, qty 1)
+            Inventory-->>-Orchestrator: restocked
+        end
+    end
+    Orchestrator->>Orders: saga complete
