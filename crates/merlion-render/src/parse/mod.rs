@@ -1,5 +1,12 @@
 //! Parsers (specs/parser.md). STUB: owned by the parser workstream.
 
+pub mod config;
+pub mod cursor;
+pub mod directive;
+pub mod frontmatter;
+pub mod link;
+pub mod style;
+
 use crate::diag::Diagnostics;
 use crate::model::Diagram;
 use crate::options::Limits;
