@@ -247,15 +247,29 @@ fn kerning_does_not_cross_runs() {
 }
 
 #[test]
-fn code_measures_with_regular_table() {
+fn code_measures_at_the_monospace_advance() {
+    // Code spans draw in a monospace family: 0.6 em per glyph, 1 em for wide glyphs,
+    // whatever the weight (specs/svg-output.md#text).
     let mut d = Diagnostics::new(false);
     let s = TextStyle {
         weight: Weight::SemiBold,
         ..TextStyle::default()
     };
-    let l = layout_label("`abc`", &s, 200.0, &mut d);
-    assert!((l.width - expected("abc", Weight::Regular, 14.0)).abs() < EPS);
+    let l = layout_label("`illegal_fill()`", &s, 400.0, &mut d);
+    assert!((l.width - 14.0 * 0.6 * 14.0).abs() < 0.05, "{}", l.width);
     assert_eq!(l.lines[0].runs[0].weight, Weight::Regular);
+    assert!(l.lines[0].runs[0].code);
+    let l = layout_label("`中i`", &s, 400.0, &mut d);
+    assert!((l.width - 1.6 * 14.0).abs() < 0.05, "{}", l.width);
+    // The run after a code span starts where the monospace text ends.
+    let l = layout_label(
+        "`illegal_fill()` then",
+        &TextStyle::default(),
+        400.0,
+        &mut d,
+    );
+    let want = 14.0 * 0.6 * 14.0 + expected(" then", Weight::Regular, 14.0);
+    assert!((l.width - want).abs() < 0.05, "{} vs {}", l.width, want);
 }
 
 #[test]

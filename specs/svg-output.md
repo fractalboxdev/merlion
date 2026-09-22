@@ -96,7 +96,7 @@ The root rule resets the text properties that inline SVG would otherwise inherit
 - Text is escaped: `&`, `<`, `>`, `"`, `'` become entities in text and in attribute values.
 - Dropped characters: control characters other than tab and newline, and the non-characters U+FFFE and U+FFFF, so the SVG is well-formed XML 1.0.
 - Bidirectional formatting characters (U+202A–U+202E, U+2066–U+2069) are stripped with `W014 BidiControlStripped`. They can make a label display in a different order from its source text; right-to-left scripts render correctly without them through the Unicode bidirectional algorithm.
-- Markdown in labels (`**bold**`, `*italic*`, `` `code` ``) becomes `<tspan>` with `font-weight`, `font-style` or `font-family` set, measured with the matching weight table. Other HTML in labels is rendered as literal text.
+- Markdown in labels (`**bold**`, `*italic*`, `` `code` ``) becomes `<tspan>` with `font-weight`, `font-style` or `font-family` set. Bold and italic runs are measured with the matching weight table. Code runs are drawn in `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` and measured at a fixed 0.6 em per glyph (1 em for CJK, Hangul and fullwidth glyphs, 0 for combining marks), with no kerning: those fonts draw Latin at 0.55–0.602 em, so the estimate is within 0.01 em per glyph and errs wide except against 0.602 em fonts. Other HTML in labels is rendered as literal text.
 
 ## Links
 

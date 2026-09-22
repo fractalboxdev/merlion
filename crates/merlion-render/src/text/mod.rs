@@ -60,7 +60,7 @@ pub struct Run {
     pub text: String,
     pub weight: Weight,
     pub italic: bool,
-    /// From `` `code` ``: drawn in a monospace family (measured with the Regular table).
+    /// From `` `code` ``: drawn in a monospace family and measured at its fixed advance.
     pub code: bool,
     pub width: f64,
 }
@@ -127,6 +127,22 @@ fn extent(prev: Option<&Glyph>, seq: &[Glyph]) -> i64 {
     units
 }
 
+/// Advance of a monospace glyph, in em: `ui-monospace`, SF Mono, Menlo, Consolas and
+/// DejaVu Sans Mono all draw Latin at 0.55–0.602 em, so 0.6 em errs wide.
+const CODE_ADVANCE_EM: f64 = 0.6;
+
+/// Advance of `c` in a code span, in font units: 0 for combining marks, 1 em for wide
+/// glyphs, [`CODE_ADVANCE_EM`] otherwise. Code spans carry no kerning.
+fn code_advance(c: char, units_per_em: u16) -> u16 {
+    if font::is_zero_width(c) {
+        0
+    } else if font::is_wide(c) {
+        units_per_em
+    } else {
+        crate::math::round(f64::from(units_per_em) * CODE_ADVANCE_EM) as u16
+    }
+}
+
 struct Measurer {
     size: f64,
     units_per_em: f64,
@@ -142,8 +158,8 @@ impl Measurer {
     }
 
     fn glyph(&mut self, s: markup::Styled) -> Glyph {
-        // Code spans use the Regular table (specs/svg-output.md#text); `**` and a
-        // SemiBold base style use SemiBold.
+        // Code spans draw in a monospace family and are measured at its fixed advance
+        // (specs/svg-output.md#text); `**` and a SemiBold base style use SemiBold.
         let weight = if s.code {
             Weight::Regular
         } else if s.bold || self.base.weight == Weight::SemiBold {
@@ -152,6 +168,7 @@ impl Measurer {
             Weight::Regular
         };
         let (advance, left, right) = match font::table(weight).glyph(s.c) {
+            _ if s.code => (code_advance(s.c, font::table(weight).units_per_em), 0, 0),
             font::Glyph::Known {
                 advance,
                 left,
