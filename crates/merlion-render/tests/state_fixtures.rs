@@ -458,6 +458,45 @@ fn every_region_divider_falls_between_the_regions_it_separates() {
     }
 }
 
+/// The text alternative describes the drawing. A transition between a composite state
+/// and a state nested inside it has no two endpoints in the lowered graph and is not
+/// drawn, so the outline neither lists nor counts it, and says how many it left out
+/// (specs/state.md#text-alternative).
+#[test]
+fn the_outline_lists_and_counts_only_the_transitions_that_are_drawn() {
+    let dropped_case = "stateDiagram-v2\nstate Outer {\n  A --> B\n}\nOuter --> A\nB --> Outer\n";
+    for (name, src) in fixtures().into_iter().chain([(
+        String::from("composite-to-member"),
+        String::from(dropped_case),
+    )]) {
+        let r = render(&src, &RenderOptions::default());
+        let svg = r.svg.expect(&name);
+        let outline = r.outline.expect(&name);
+        let drawn = svg
+            .matches("class=\"merlion-edge merlion-transition\"")
+            .count();
+        assert_eq!(
+            outline.matches('→').count(),
+            drawn,
+            "{name}: outline lists {} transitions, the SVG draws {drawn}\n{outline}",
+            outline.matches('→').count()
+        );
+        let header = outline.lines().next().expect("a header");
+        assert!(
+            header.contains(&format!("{drawn} transition")),
+            "{name}: {header} against {drawn} drawn"
+        );
+        let sm = machine(&src);
+        let left_out = sm.transitions.len() - drawn;
+        if left_out > 0 {
+            assert!(
+                outline.contains(&format!("{left_out} transition")),
+                "{name}: nothing says {left_out} transitions are not drawn\n{outline}"
+            );
+        }
+    }
+}
+
 #[test]
 fn a_direction_statement_turns_the_whole_drawing() {
     let src = std::fs::read_to_string(

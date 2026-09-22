@@ -235,6 +235,8 @@ Failed → Queued [retry]
 
 The outline reads the machine, not the graph it lowers to: a transition naming `Running` prints that name rather than the first member inside it, a generated `[*]` prints as `start` or `end`, and a composite state heads the lines of the states it holds.
 
+It describes what is drawn. A transition between a composite state and a state inside it is not drawn, so the outline neither lists nor counts it, and a closing line says how many the drawing leaves out.
+
 ## Limits
 
 | Limit | Value |

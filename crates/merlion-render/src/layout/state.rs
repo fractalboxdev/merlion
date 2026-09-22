@@ -283,10 +283,7 @@ pub fn lower(
     // a state inside it has no two endpoints and is dropped.
     let rep = representatives(sm, &l);
     for (t, tr) in sm.transitions.iter().enumerate() {
-        if tr.from >= n || tr.to >= n {
-            continue;
-        }
-        if tr.from != tr.to && (nested_in(sm, tr.from, tr.to) || nested_in(sm, tr.to, tr.from)) {
+        if transition_is_dropped(sm, t) {
             continue;
         }
         let (Some(from), Some(to)) = (
@@ -334,6 +331,27 @@ fn scope_cluster(
         Some(c) => Some(c),
         None => l.cluster_for.get(parent).copied().flatten(),
     }
+}
+
+/// Whether the lowering drops the transition `sm.transitions[t]`.
+///
+/// A composite state becomes a cluster, which the graph represents by a member node, so
+/// a transition between a composite and a state nested inside it has no two endpoints
+/// and is not drawn — the flowchart rule for a subgraph endpoint, and mermaid's own
+/// (specs/state.md#what-the-lowering-guarantees). A transition naming a state the model
+/// does not hold is dropped as well.
+///
+/// The predicate reads the model alone, so the text alternative describes the same set
+/// of transitions the SVG draws without laying the machine out first.
+pub fn transition_is_dropped(sm: &StateMachine, t: usize) -> bool {
+    let Some(tr) = sm.transitions.get(t) else {
+        return true;
+    };
+    let n = sm.states.len();
+    if tr.from >= n || tr.to >= n {
+        return true;
+    }
+    tr.from != tr.to && (nested_in(sm, tr.from, tr.to) || nested_in(sm, tr.to, tr.from))
 }
 
 /// Whether state `inner` lies inside composite state `outer`, at any depth.

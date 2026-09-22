@@ -17,6 +17,11 @@
 //! composite state prints that state's name rather than its first member, and a
 //! generated `[*]` state prints as `start` or `end` rather than as `root_start`.
 //!
+//! It describes the drawing, so it lists and counts only the transitions the lowering
+//! keeps: one between a composite state and a state nested inside it is not drawn
+//! ([`crate::layout::state::transition_is_dropped`]) and a closing line says how many
+//! there were, rather than naming an edge no sighted reader can find.
+//!
 //! A state gets a line when it has outgoing transitions, has none at all, or sits inside
 //! a composite state, the flowchart rule; a state inside one is prefixed with its
 //! composite path as a heading, so every line stands on its own when read aloud. The
@@ -94,18 +99,17 @@ fn placement_word(p: NotePlacement) -> &'static str {
 
 /// The outline of `sm`, in the source direction.
 pub fn outline(sm: &StateMachine) -> String {
-    let mut out = String::from("State diagram, ");
-    out.push_str(direction_phrase(sm.direction));
-    out.push_str(". ");
-    count(&mut out, sm.states.len(), "state", "states");
-    out.push_str(", ");
-    count(&mut out, sm.transitions.len(), "transition", "transitions");
-    out.push('.');
-
     let n = sm.states.len();
     let mut outgoing: Vec<Vec<usize>> = alloc::vec![Vec::new(); n];
     let mut has_edge = alloc::vec![false; n];
+    let mut drawn = 0usize;
+    let mut left_out = 0usize;
     for (ti, t) in sm.transitions.iter().enumerate() {
+        if crate::layout::state::transition_is_dropped(sm, ti) {
+            left_out += 1;
+            continue;
+        }
+        drawn += 1;
         if let Some(v) = outgoing.get_mut(t.from) {
             v.push(ti);
         }
@@ -115,6 +119,14 @@ pub fn outline(sm: &StateMachine) -> String {
             }
         }
     }
+
+    let mut out = String::from("State diagram, ");
+    out.push_str(direction_phrase(sm.direction));
+    out.push_str(". ");
+    count(&mut out, sm.states.len(), "state", "states");
+    out.push_str(", ");
+    count(&mut out, drawn, "transition", "transitions");
+    out.push('.');
 
     for (i, s) in sm.states.iter().enumerate() {
         let outs = outgoing.get(i).map(Vec::as_slice).unwrap_or(&[]);
@@ -159,6 +171,17 @@ pub fn outline(sm: &StateMachine) -> String {
         out.push_str(&state_name(sm, note.state));
         out.push_str(": ");
         out.push_str(&plain_label(&note.text));
+    }
+
+    if left_out > 0 {
+        out.push('\n');
+        count(&mut out, left_out, "transition", "transitions");
+        let _ = write!(
+            out,
+            " of the {} in the source {} not drawn.",
+            sm.transitions.len(),
+            if left_out == 1 { "is" } else { "are" }
+        );
     }
     out
 }
@@ -226,9 +249,12 @@ mod tests {
             }],
             ..StateMachine::default()
         };
+        // The transition names a state the model does not hold, so it is not drawn and
+        // the outline neither lists nor counts it.
         assert_eq!(
             outline(&sm),
-            "State diagram, top to bottom. 1 state, 1 transition.\nA → ?\nNote left of ?: hi there"
+            "State diagram, top to bottom. 1 state, 0 transitions.\nA\nNote left of ?: hi there\n\
+             1 transition of the 1 in the source is not drawn."
         );
     }
 }

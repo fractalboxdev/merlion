@@ -286,6 +286,7 @@ Note right of Draft: Waits for the author
 ```
 
 - The outline reads the state machine, not the lowered graph: a transition naming a composite state prints that state's name rather than its first member, and a generated `[*]` state prints as `start` or `end` rather than as `root_start`.
+- It describes what is drawn, so it lists and counts only the transitions the lowering keeps: a transition between a composite state and a state nested inside it has no two endpoints and is dropped ([Lowering](#what-the-lowering-guarantees)). A final line, `N transition(s) of the M in the source is/are not drawn.`, names how many, so a reader of the text alternative is never sent looking for an edge no sighted reader can find.
 - A choice, fork or join prints as its id followed by its kind in parentheses — `if_state (choice)` — since it draws no label and the reader has nothing else to go on.
 - A note prints one line per note after the last line of the state it belongs to.
 - `accDescr` replaces the outline in `<desc>` and not in the plain-text return, as in flowcharts.
