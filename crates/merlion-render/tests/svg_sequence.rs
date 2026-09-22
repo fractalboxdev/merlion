@@ -483,8 +483,8 @@ fn elements_paint_in_the_spec_order() {
     let svg = draw(&seq, &geom);
     let order = [
         "merlion-box",
-        "merlion-lifeline",
         "merlion-fragment",
+        "merlion-lifeline",
         "merlion-activation",
         "merlion-note",
         "merlion-message",
@@ -495,6 +495,30 @@ fn elements_paint_in_the_spec_order() {
         assert!(i > last, "{name} out of order in\n{svg}");
         last = i;
     }
+}
+
+#[test]
+fn a_participant_created_inside_a_fragment_paints_over_its_box() {
+    // A `create`d participant's head sits at its creating message's row, so a
+    // fragment enclosing that row covers it unless the column paints later.
+    let (mut seq, mut geom) = rich();
+    seq.participants[2].created_by = Some(1);
+    geom.participants[2].head = Rect {
+        x: 350.0,
+        y: 170.0,
+        w: 80.0,
+        h: 32.0,
+    };
+    geom.participants[2].foot = None;
+    geom.participants[2].lifeline = (202.0, 300.0);
+    let svg = draw(&seq, &geom);
+    // `rich()`'s outer `loop` box spans y 150..310, so it encloses that head.
+    let column = at(&svg, "data-merlion-id=\"DB\"");
+    let frag = at(&svg, "merlion-fragment");
+    assert!(
+        column > frag,
+        "the fragment box paints over the created head box in\n{svg}"
+    );
 }
 
 #[test]

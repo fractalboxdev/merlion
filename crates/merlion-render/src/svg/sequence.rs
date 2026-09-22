@@ -973,8 +973,8 @@ pub fn draw_sequence(
         stroke: stroke_attr(&light.table),
     };
     push_boxes(&mut out, &cx);
-    push_participants(&mut out, &cx);
     push_fragments(&mut out, &cx, &steps);
+    push_participants(&mut out, &cx);
     push_activations(&mut out, &cx);
     push_notes(&mut out, &cx, &steps);
     push_messages(&mut out, &cx, &steps);

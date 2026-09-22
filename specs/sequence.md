@@ -243,7 +243,7 @@ Participants carry the node classes and messages the edge classes, so the token 
 | Box | `<g class="merlion-cluster merlion-box" data-merlion-index="{n}">` | `.merlion-cluster-box`, `.merlion-cluster-title` |
 
 - `k` in `{id}-n{k}` is the participant's 0-based declaration index and in `{id}-e{k}` the message's index, matching [interaction.md](interaction.md#svg-additions).
-- Draw order: boxes, lifelines, fragments, activations, notes, messages. Later elements paint over earlier ones, so a message's label chip covers the fragment box behind it.
+- Draw order: boxes, fragments, columns, activations, notes, messages. Later elements paint over earlier ones, so a message's label chip covers the fragment box behind it. A fragment box is filled, so it precedes the columns it encloses: a lifeline stays visible inside a fragment, and the head box of a participant `create`d inside one is not painted over.
 - `data-merlion-back` and `data-merlion-wrap` never appear: sequences reverse nothing and wrap nothing.
 
 ### Theme tokens
