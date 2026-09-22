@@ -122,7 +122,7 @@ node demo/build-gallery.mjs                             # demo/gallery/*.svg and
 node demo/serve.mjs                                     # http://localhost:4173/demo/ (PORT to change)
 ```
 
-The demo holds a live editor with diagnostics and stable re-layout while typing, and a gallery of the test fixtures and twelve diagrams from the mermaid corpus.
+The demo holds a live editor with diagnostics and stable re-layout while typing, a roles section (built-in roles plus `demo/stylesheet.css`, linked as `demo/stylesheet.compiled.css` from `merlion css`, beside standalone light and dark renders with the themes baked in), and a gallery of the test fixtures and twelve diagrams from the mermaid corpus.
 
 ## Licence
 

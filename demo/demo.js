@@ -83,11 +83,31 @@ const wasmReady = (async () => {
 // ---- Gallery ---------------------------------------------------------------
 
 const cards = $("#cards");
+const roleCards = $("#role-cards");
+
+/** Standalone renders with a theme baked in, shown as images so no page CSS reaches them. */
+const bakedFigures = (baked) =>
+  h(
+    "div",
+    { className: "baked" },
+    ...baked.map((b) =>
+      h(
+        "figure",
+        { className: `baked-${b.theme}` },
+        h("img", { src: b.file, alt: `The same diagram rendered standalone with the ${b.theme} theme baked in` }),
+        h("figcaption", { textContent: `Standalone, ${b.theme} theme baked in` }),
+      ),
+    ),
+  );
 
 const loadCard = async (entry, i, wasm) => {
   const view = document.createElement("merlion-view");
   const body = h("div", {}, view);
   const card = h("article", { className: "card" }, h("h3", { textContent: entry.title ?? entry.file }), body);
+  if (Array.isArray(entry.baked) && entry.baked.length) {
+    card.classList.add("wide");
+    card.append(bakedFigures(entry.baked));
+  }
   if (entry.source) {
     card.append(
       h(
@@ -98,7 +118,7 @@ const loadCard = async (entry, i, wasm) => {
       ),
     );
   }
-  cards.append(card);
+  (entry.origin === "roles" ? roleCards : cards).append(card);
 
   let svg = null;
   try {

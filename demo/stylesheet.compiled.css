@@ -1,0 +1,13 @@
+.merlion .merlion-c-queue {
+  --merlion-tone: #7a4fb5;
+}
+[data-theme="dark"] .merlion .merlion-c-queue {
+  --merlion-tone: #b79cf0;
+}
+.merlion .merlion-cc-senders {
+  --merlion-tone: #1b8a8f;
+  --merlion-dash: 2 3;
+}
+[data-theme="dark"] .merlion .merlion-cc-senders {
+  --merlion-tone: #5cc8cc;
+}

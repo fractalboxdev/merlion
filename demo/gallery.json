@@ -1,7 +1,8 @@
 [
   {
     "title": "Viewer fixture: a wide pipeline",
-    "file": "fixtures/wide-pipeline.svg",
+    "file": "gallery/wide-pipeline.svg",
+    "source": "flowchart LR\n  accTitle: Release pipeline\n  commit[Commit] --> lint[Lint] --> test[Unit tests] --> build[Build wasm] --> opt[wasm-opt] --> hash[Hash check] --> sign[Sign tag] --> attest[Attest] --> npm[Publish npm] --> crates[Publish crates] --> announce[Announce]\n",
     "origin": "showcase"
   },
   {
@@ -21,6 +22,22 @@
     "file": "gallery/request.svg",
     "source": "---\ntitle: Request lifecycle\n---\nflowchart LR\n  client([Client]) --> edge[Edge cache]\n  edge -->|hit| client\n  edge -->|miss| app[App server]\n  app --> db[(Database)]\n  app --> queue[[Queue]]\n  queue --> worker[Worker]\n  worker --> db\n  app --> edge\n",
     "origin": "showcase"
+  },
+  {
+    "title": "Two tier roles",
+    "file": "gallery/roles-two-tier-roles.svg",
+    "source": "flowchart LR\n  accTitle: Push scheduler with roles\n  cron[\"**cron trigger**<br/>every minute<br/>idempotent run key\"]\n  subgraph wf[\"durable workflow\"]\n    lease[\"**lease**<br/>one run per window<br/>90 s TTL\"]\n    due[\"**due set**<br/>scan schedules<br/>next_at ≤ now\"]\n    budget[\"**budget**<br/>250 push slots<br/>per-tenant caps\"]\n    enqueue[\"**enqueue**<br/>batches of 100<br/>dedupe by job id\"]\n    wait[\"**wait**<br/>sleep until acked<br/>or 30 s timeout\"]\n    finalize[\"**finalize**<br/>record outcomes<br/>advance next_at\"]\n    release[\"**release**<br/>drop the lease\"]\n    lease --> due --> budget --> enqueue --> wait --> finalize --> release\n  end\n  q[(\"**push queue**<br/>at-least-once<br/>visibility 60 s\")]\n  subgraph consumers[\"consumers\"]\n    c1[\"**sender A**<br/>APNs\"]\n    c2[\"**sender B**<br/>FCM\"]\n    c3[\"**sender C**<br/>web push\"]\n  end\n  dlq[(\"**dead letters**<br/>after 5 attempts<br/>kept 14 days\")]\n  cron --> lease\n  enqueue e1@-->|batch| q\n  q --> c1 & c2 & c3\n  c1 & c2 & c3 -.->|ack| wait\n  q e2@-->|max retries| dlq\n  class cron accent\n  class lease,release muted\n  class budget warn\n  class finalize ok\n  class dlq danger\n  class e1 async\n  class e2 failure\n  class wf group\n  class q queue\n  class consumers senders\n",
+    "origin": "roles",
+    "baked": [
+      {
+        "theme": "light",
+        "file": "gallery/roles-two-tier-roles-light.svg"
+      },
+      {
+        "theme": "dark",
+        "file": "gallery/roles-two-tier-roles-dark.svg"
+      }
+    ]
   },
   {
     "title": "Ci pipeline",

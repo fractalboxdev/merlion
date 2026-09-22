@@ -1,7 +1,11 @@
 [
   {
     "title": "Viewer fixture: a wide pipeline",
-    "file": "fixtures/wide-pipeline.svg"
+    "file": "gallery/wide-pipeline.svg",
+    "options": {
+      "width": 1600
+    },
+    "source": "flowchart LR\n  accTitle: Release pipeline\n  commit[Commit] --> lint[Lint] --> test[Unit tests] --> build[Build wasm] --> opt[wasm-opt] --> hash[Hash check] --> sign[Sign tag] --> attest[Attest] --> npm[Publish npm] --> crates[Publish crates] --> announce[Announce]\n"
   },
   {
     "title": "Build pipeline",

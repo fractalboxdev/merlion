@@ -18,6 +18,8 @@
       })();
     </script>
     <link id="themes-css" rel="stylesheet" href="../packages/merlion-themes/merlion-themes.css" />
+    <!-- demo/stylesheet.css compiled by `merlion css`; the source stylesheet is never linked. -->
+    <link rel="stylesheet" href="stylesheet.compiled.css" />
     <link rel="stylesheet" href="demo.css" />
     <script type="module" src="demo.js"></script>
   </head>
@@ -77,6 +79,20 @@ flowchart LR
             </div>
           </div>
         </div>
+      </section>
+
+      <section class="gallery roles" aria-labelledby="roles-h">
+        <div class="section-head">
+          <h2 id="roles-h">Roles and stylesheet</h2>
+          <p>
+            Classes are roles. <code>accent</code>, <code>ok</code>, <code>warn</code>, <code>danger</code>,
+            <code>muted</code>, the dashed cluster <code>group</code> and the edges <code>failure</code> and
+            <code>async</code> take their tones from the theme; <code>queue</code> and <code>senders</code> come from
+            <code>demo/stylesheet.css</code>, which the page links only as compiled CSS. The inline diagram follows the
+            theme switch above; the two images are standalone SVGs with the light and dark themes baked in.
+          </p>
+        </div>
+        <div id="role-cards" class="cards"></div>
       </section>
 
       <section class="gallery" aria-labelledby="gallery-h">

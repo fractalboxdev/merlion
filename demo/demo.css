@@ -395,3 +395,39 @@ details pre {
     display: none;
   }
 }
+
+/* Roles section: standalone renders with a baked theme, side by side. */
+.baked {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.baked figure {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.baked img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The images are transparent; paint each baked theme's own --merlion-bg behind it. */
+.baked .baked-light img {
+  background: #ffffff;
+}
+
+.baked .baked-dark img {
+  background: #16191d;
+}
+
+.baked figcaption {
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  color: var(--muted);
+}
