@@ -5,11 +5,13 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 pub mod sequence;
+pub mod state;
 
 use crate::diag::Span;
 use crate::options::Direction;
 
 pub use sequence::Sequence;
+pub use state::StateMachine;
 
 /// One variant per diagram type. A diagram is built once per render and moved twice, so
 /// the variants hold their models inline rather than behind a box.
@@ -19,6 +21,8 @@ pub enum Diagram {
     Flowchart(Flowchart),
     /// specs/sequence.md
     Sequence(Sequence),
+    /// specs/state.md
+    State(StateMachine),
 }
 
 impl Diagram {
@@ -26,6 +30,7 @@ impl Diagram {
         match self {
             Diagram::Flowchart(_) => "flowchart",
             Diagram::Sequence(_) => "sequence",
+            Diagram::State(_) => "state",
         }
     }
 }

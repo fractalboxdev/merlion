@@ -14,7 +14,8 @@
 //! | Stable layout | [`hint`], [`order`] |
 //!
 //! Sequence diagrams have a fixed geometry and run none of these phases: [`sequence`]
-//! (specs/sequence.md#layout).
+//! (specs/sequence.md#layout). State diagrams run all of them: [`state`] lowers a state
+//! machine onto the graph this engine already takes (specs/state.md#lowering).
 
 mod acyclic;
 mod coords;
@@ -29,6 +30,7 @@ mod pack;
 mod pipeline;
 mod route;
 pub mod sequence;
+pub mod state;
 
 use crate::diag::Diagnostics;
 use crate::fuel::Fuel;
@@ -38,6 +40,7 @@ use crate::options::RenderOptions;
 
 pub use pipeline::{CLUSTER_PAD, MARGIN};
 pub use sequence::layout_sequence;
+pub use state::{layout_state, StateLayout};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LayoutError {

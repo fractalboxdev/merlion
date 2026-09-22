@@ -23,6 +23,7 @@ Merlion renders Mermaid diagrams to static, themeable, accessible SVG. It is a R
 | [text-measurement.md](text-measurement.md) | Font metric tables, label sizing |
 | [layout.md](layout.md) | Layered layout, crossing minimisation, container fit, stable layout, edge routing |
 | [sequence.md](sequence.md) | `sequenceDiagram`: syntax, model, column and row geometry, SVG contract |
+| [state.md](state.md) | `stateDiagram-v2`: syntax, model, lowering onto the layered engine, SVG contract |
 | [svg-output.md](svg-output.md) | The SVG contract: CSS variables, roles, the stylesheet subset and baked palettes, accessibility, ids, data attributes, escaping |
 | [security.md](security.md) | Threat model, output safety, resource bounds, fuzzing |
 | [viewer.md](viewer.md) | `<merlion-view>` pan, zoom, semantic zoom |

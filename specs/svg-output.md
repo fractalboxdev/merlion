@@ -244,6 +244,7 @@ Hooks for maths, extended label formatting and icons ([ADR-0002](adr/0002-zero-r
 - Clusters: `<g class="merlion-cluster" data-merlion-id="…">` with members nested inside.
 - Edges: `<g class="merlion-edge" data-merlion-from="…" data-merlion-to="…">`, with `data-merlion-back="true"` on reversed edges and `merlion-c-{name}` for each role given through the edge's id.
 - Sequence participants carry the node classes and sequence messages the edge classes, so every rule above reaches them ([sequence.md](sequence.md#groups-and-data-attributes)).
+- A state diagram's states, transitions and composite states are the nodes, edges and clusters of the graph it lowers to, so every rule above reaches them unchanged ([state.md](state.md#groups-and-data-attributes)).
 - Source ids in `data-merlion-*` values are escaped the same way as text. Where a source id becomes part of an XML id or of the layout hint, it is encoded into `[A-Za-z0-9-_]`: ASCII letters, digits and `-` stay, `_` becomes `__`, and every other byte of its UTF-8 form becomes `_` plus two lowercase hex digits. The encoding is injective, so distinct source ids never collide.
 
 ## Layout hint

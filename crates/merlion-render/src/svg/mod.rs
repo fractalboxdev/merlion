@@ -29,6 +29,7 @@ mod path;
 mod roles;
 pub mod sequence;
 mod shapes;
+pub mod state;
 mod style;
 pub mod theme;
 mod tree;
@@ -57,6 +58,7 @@ pub use escape::escape;
 pub use outline::plain_label;
 pub use sequence::{draw_sequence, outline_sequence};
 pub use shapes::ALL_SHAPES;
+pub use state::{draw_state, outline_state};
 pub use theme::EMBED_FONT_FAMILY;
 
 pub struct DrawOutput {

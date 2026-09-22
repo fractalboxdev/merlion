@@ -1,6 +1,6 @@
 # Layout
 
-Graph-shaped diagrams (flowchart, state, class, ER) use one layered layout engine. The engine follows the Sugiyama framework with three additions: it fits the container, it keeps nodes stable across edits, and it layers flowcharts by control flow. The origin of the implementation is decided in [ADR-0004](adr/0004-layout-implementation.md). The algorithms are taken from the published literature cited below, never from code under an incompatible licence ([licensing.md](licensing.md)).
+Graph-shaped diagrams (flowchart, state, class, ER) use one layered layout engine. A state machine reaches it by lowering to the same graph a flowchart is, so it runs every phase below with no step of its own ([state.md](state.md#lowering)). The engine follows the Sugiyama framework with three additions: it fits the container, it keeps nodes stable across edits, and it layers flowcharts by control flow. The origin of the implementation is decided in [ADR-0004](adr/0004-layout-implementation.md). The algorithms are taken from the published literature cited below, never from code under an incompatible licence ([licensing.md](licensing.md)).
 
 ## Options
 
@@ -19,7 +19,7 @@ Graph-shaped diagrams (flowchart, state, class, ER) use one layered layout engin
 
 ### 1. Cycle removal
 
-- **Flowcharts.** The engine adds a virtual root with an edge to every entry node and computes the dominator tree from it. Entry nodes are the nodes with no incoming edges; when a strongly connected component of the condensation has no incoming edge from outside it, its first declared node is also an entry. An edge whose target dominates its source is a loop back-edge and is reversed.
+- **Flowcharts and state diagrams.** The engine adds a virtual root with an edge to every entry node and computes the dominator tree from it. Entry nodes are the nodes with no incoming edges; when a strongly connected component of the condensation has no incoming edge from outside it, its first declared node is also an entry. An edge whose target dominates its source is a loop back-edge and is reversed.
 - **Remaining cycles.** Irreducible cycles (a jump into the middle of a loop) contain no edge to a dominator, so they survive the step above. So does every cycle in the other graph types. For each strongly connected component that still has a cycle, the engine reverses a feedback arc set chosen by the Eades–Lin–Smyth greedy heuristic.
 - Reversed edges are drawn in their original direction and marked as back-edges (`data-merlion-back="true"`).
 
@@ -27,8 +27,8 @@ Graph-shaped diagrams (flowchart, state, class, ER) use one layered layout engin
 
 Every forward edge `u → v` gets `layer(v) > layer(u)`.
 
-- **Flowcharts:** longest-path layering from the virtual root over the acyclic graph left by phase 1. A node sits below all of its non-back-edge predecessors, and therefore below its dominators, which keeps the happens-before order readable (VEIL; Schaad, Ben-Nun, Hoefler, 2025). A source (a node with no predecessor) then moves down to one `min_len` above its highest successor, so a second entry point sits next to the node it feeds instead of at the top with a long edge; a source has no predecessor to stay below, so the invariant above still holds. The dominator tree also orders nodes within a layer: phase 3 starts from a depth-first order of the dominator tree, so a node's dominated region stays contiguous.
-- **Other graph types:** network simplex (Gansner et al.), minimising total edge length.
+- **Flowcharts and state diagrams:** longest-path layering from the virtual root over the acyclic graph left by phase 1. A node sits below all of its non-back-edge predecessors, and therefore below its dominators, which keeps the happens-before order readable (VEIL; Schaad, Ben-Nun, Hoefler, 2025). A source (a node with no predecessor) then moves down to one `min_len` above its highest successor, so a second entry point sits next to the node it feeds instead of at the top with a long edge; a source has no predecessor to stay below, so the invariant above still holds. The dominator tree also orders nodes within a layer: phase 3 starts from a depth-first order of the dominator tree, so a node's dominated region stays contiguous.
+- **Class and ER diagrams:** network simplex (Gansner et al.), minimising total edge length.
 - Edges spanning more than one layer get dummy nodes, one per intermediate layer. The layered graph's size and layer count are checked against the limits in [architecture.md](architecture.md#boundaries) before phase 3.
 
 ### 3. Crossing minimisation
