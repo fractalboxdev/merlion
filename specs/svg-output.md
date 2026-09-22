@@ -49,6 +49,7 @@ Two foundation tokens drive the rest. The other roles default to mixes of those 
 | `--merlion-node-detail` | muted (detail lines of title + detail node labels; see [Text](#text)) |
 | `--merlion-edge` / `-edge-label-bg` | line / bg |
 | `--merlion-cluster-bg` / `-cluster-border` | `color-mix(in oklab, var(--merlion-fg) 2%, var(--merlion-bg))` / border |
+| `--merlion-note-bg` / `-note-border` | bg / warn (the note box of a state diagram; its own pair, so an annotation never paints as a state) |
 | `--merlion-series-1` … `--merlion-series-8` | `#0969da`, `#d4762c`, `#2e8b57`, `#b8408f`, `#6f5bd6`, `#1b98a6`, `#b59a16`, `#c4453d`: the categorical palette for charts, pie and gantt sections, and the tones of the cluster roles `series-1` … `series-8` ([Automatic tones](#automatic-tones)) |
 | `--merlion-font` | `Inter, ui-sans-serif, system-ui, sans-serif` |
 | `--merlion-font-size` | `14px` (must match the measured size; see [text-measurement.md](text-measurement.md)) |

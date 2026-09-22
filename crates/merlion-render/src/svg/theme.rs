@@ -99,11 +99,15 @@ pub enum Role {
     EdgeLabelBg,
     ClusterBg,
     ClusterBorder,
+    /// Note box of a state diagram. Its own role, not `node-bg`, so an annotation never
+    /// paints as a state (specs/state.md#theme-tokens).
+    NoteBg,
+    NoteBorder,
 }
 
 impl Role {
     /// Every role, in token-table order.
-    pub const ALL: [Role; 19] = [
+    pub const ALL: [Role; 21] = [
         Role::Bg,
         Role::Fg,
         Role::Muted,
@@ -123,6 +127,8 @@ impl Role {
         Role::EdgeLabelBg,
         Role::ClusterBg,
         Role::ClusterBorder,
+        Role::NoteBg,
+        Role::NoteBorder,
     ];
 
     /// The role whose token is `--merlion-{name}`.
@@ -151,6 +157,8 @@ impl Role {
             Role::EdgeLabelBg => "edge-label-bg",
             Role::ClusterBg => "cluster-bg",
             Role::ClusterBorder => "cluster-border",
+            Role::NoteBg => "note-bg",
+            Role::NoteBorder => "note-border",
         }
     }
 
@@ -175,6 +183,8 @@ impl Role {
             Role::Edge => Def::Alias(Role::Line),
             Role::EdgeLabelBg => Def::Alias(Role::Bg),
             Role::ClusterBorder => Def::Alias(Role::Border),
+            Role::NoteBg => Def::Alias(Role::Bg),
+            Role::NoteBorder => Def::Alias(Role::Warn),
         }
     }
 

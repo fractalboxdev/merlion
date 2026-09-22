@@ -169,7 +169,7 @@ A transition to an undeclared state is not repaired: naming a state in a transit
 
 ## Theming
 
-State diagrams introduce no theme token. Every mark reuses one a flowchart already defines, so every palette, every theme and every compiled stylesheet colours a state machine without a change ([Theming](/guides/theming/)).
+State diagrams add one pair of tokens, `--merlion-note-bg` and `--merlion-note-border`, so a note reads as an annotation rather than as another state. Every other mark reuses a token a flowchart already defines, so every palette, every theme and every compiled stylesheet colours a state machine without a change ([Theming](/guides/theming/)).
 
 | Mark | Token |
 |---|---|
@@ -177,7 +177,7 @@ State diagrams introduce no theme token. Every mark reuses one a flowchart alrea
 | Start and end discs, fork and join bars | `--merlion-fg` fill, `--merlion-node-border` stroke |
 | Transition and its arrowhead | `--merlion-edge` |
 | Transition label | `--merlion-fg` over `--merlion-edge-label-bg` |
-| Note box, note connector | `--merlion-surface` and `--merlion-border`, `--merlion-line` dashed |
+| Note box, note connector | `--merlion-note-bg` and `--merlion-note-border` (bg / warn), `--merlion-line` dashed |
 | Composite box and title, region divider | `--merlion-cluster-bg`, `--merlion-cluster-border` |
 
 The marks that draw in ink — start, end, fork and join — take `--merlion-fg` through their element classes rather than through a role, so they stay solid under every theme and no automatic tone tints them.

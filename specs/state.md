@@ -238,7 +238,7 @@ States carry the node classes and transitions the edge classes, so the token res
 
 ### Theme tokens
 
-State diagrams introduce no token. Each element reuses an existing one, so `merlion-themes.css`, every palette and every stylesheet theme colour them without a change:
+State diagrams introduce one pair of tokens, `--merlion-note-bg` and `--merlion-note-border`, because a note is an annotation and must not read as a state: sharing `--merlion-node-bg` made the two boxes byte-identical in fill and stroke. Every other element reuses an existing token, so `merlion-themes.css`, every palette and every stylesheet theme colour a state machine without a change:
 
 | Element | Token |
 |---|---|
@@ -246,7 +246,7 @@ State diagrams introduce no token. Each element reuses an existing one, so `merl
 | Start and end discs, fork and join bars | `--merlion-fg` fill, `--merlion-node-border` stroke |
 | Transition line and its marker | `--merlion-edge` |
 | Transition label | `--merlion-fg` over `--merlion-edge-label-bg` |
-| Note box | `--merlion-surface`, `--merlion-border` |
+| Note box | `--merlion-note-bg`, `--merlion-note-border` (bg / warn) |
 | Note connector | `--merlion-line`, dashed `4 4` |
 | Composite box and title | `--merlion-cluster-bg`, `--merlion-cluster-border` |
 | Region divider | `--merlion-cluster-border`, dashed `4 4` |

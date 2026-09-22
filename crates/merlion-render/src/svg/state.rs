@@ -449,8 +449,8 @@ fn push_notes(out: &mut String, cx: &StateCtx) {
         attr_num(out, "y", y);
         attr_num(out, "width", w);
         attr_num(out, "height", h);
-        attr(out, "fill", &cx.base.light.lit(Role::Surface));
-        attr(out, "stroke", &cx.base.light.lit(Role::Border));
+        attr(out, "fill", &cx.base.light.lit(Role::NoteBg));
+        attr(out, "stroke", &cx.base.light.lit(Role::NoteBorder));
         attr(out, "stroke-width", &cx.stroke);
         out.push_str("/>");
 

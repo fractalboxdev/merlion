@@ -644,6 +644,37 @@ fn the_ink_marks_are_solid_and_take_no_tone() {
     assert!(shape.contains(&format!("fill=\"{INK}\"")), "{shape}");
 }
 
+/// A note is an annotation, not a state, and reads as one: its box differs from a state
+/// box in both fill and stroke, in the presentation attributes and in the CSS the
+/// stylesheet resolves (specs/state.md#theme-tokens).
+#[test]
+fn a_note_box_never_reads_as_a_state_box() {
+    let svg = drawn();
+    let attrs_of = |needle: &str| -> (String, String) {
+        let i = svg
+            .find(needle)
+            .unwrap_or_else(|| panic!("{needle}\n{svg}"));
+        let tag = &svg[i..i + svg[i..].find("/>").expect("close")];
+        let pick = |name: &str| {
+            tag.split(&format!(" {name}=\""))
+                .nth(1)
+                .and_then(|s| s.split('"').next())
+                .unwrap_or_else(|| panic!("no {name} on {tag}"))
+                .to_string()
+        };
+        (pick("fill"), pick("stroke"))
+    };
+    // `Draft` is the one plain state whose shape is drawn with the node paint.
+    let state = attrs_of("class=\"merlion-shape\" d=\"M20 70");
+    let note = attrs_of("class=\"merlion-note-box\"");
+    assert_ne!(state, note, "a note is painted exactly like a state");
+
+    // The tokens differ too, so a stylesheet that sets neither still tells them apart.
+    let css = style_text(&svg);
+    assert!(css.contains("--merlion-note-bg"), "{css}");
+    assert!(css.contains("--merlion-note-border"), "{css}");
+}
+
 #[test]
 fn the_state_rules_are_scoped_to_the_root_id() {
     let svg = drawn();

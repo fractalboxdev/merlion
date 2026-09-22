@@ -39,6 +39,7 @@ Two foundations drive the rest. The other roles default to `color-mix(in oklab, 
 | `--merlion-node-detail` | muted | Detail lines of [title + detail labels](/guides/labels/) |
 | `--merlion-edge` / `-edge-label-bg` | line / bg | Edges and their label chips |
 | `--merlion-cluster-bg` / `-cluster-border` | fg 2% into bg / border | Subgraphs |
+| `--merlion-note-bg` / `-note-border` | bg / warn | Note boxes of a state diagram |
 | `--merlion-series-1` … `-8` | categorical palette | Charts, pie and gantt sections |
 | `--merlion-font` | `Inter, ui-sans-serif, system-ui, sans-serif` | Label font family |
 | `--merlion-font-size` | `14px` | Must match the measured size |

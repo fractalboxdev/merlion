@@ -92,8 +92,8 @@ pub fn state_rules(t: &Table) -> Vec<RoleRule> {
             t,
             ".merlion-note>.merlion-note-box",
             &[
-                ("fill", V::Role(Role::Surface)),
-                ("stroke", V::Role(Role::Border)),
+                ("fill", V::Role(Role::NoteBg)),
+                ("stroke", V::Role(Role::NoteBorder)),
                 ("stroke-width", V::Width),
             ],
         ),
