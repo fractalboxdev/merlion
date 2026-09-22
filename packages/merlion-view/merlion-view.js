@@ -29,7 +29,7 @@ const BUTTONS = [
 ];
 
 // Controls fade in on hover or focus and stay visible on touch devices (`hover: none`).
-const CSS = `:host{display:block;position:relative;overflow:hidden;touch-action:pan-x pan-y}
+const CSS = `:host{display:grid;align-items:center;justify-items:center;position:relative;overflow:hidden;touch-action:pan-x pan-y}
 :host([zoomed]){touch-action:none;cursor:grab}
 :host(:focus-visible){outline:2px solid var(--merlion-accent,#0969da);outline-offset:2px}
 .c{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity .15s}

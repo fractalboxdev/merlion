@@ -296,8 +296,15 @@ textarea {
   flex: 1;
   min-height: 300px;
   padding: 16px;
-  display: grid;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* The viewer takes the pane's full height: the diagram centres inside it and the
+   zoom controls sit in the pane's top-right corner, clear of the drawing. */
+.preview > merlion-view {
+  flex: 1 1 auto;
 }
 
 .preview.stale merlion-view {

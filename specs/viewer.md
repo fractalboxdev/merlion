@@ -23,6 +23,7 @@ A custom element that adds pan, zoom and fullscreen to any SVG. It is optional: 
 - The controls (zoom in, zoom out, reset, fullscreen) are `<button>` elements with `aria-label`s, shown on hover or focus and always shown on touch devices.
 - The element is focusable (`tabindex="0"`) and announces the SVG's `<title>` as its accessible name.
 - With `prefers-reduced-motion`, zoom and reset jump instead of animating.
+- The element fills whatever height its container gives it and centres the SVG inside that box; the controls sit in the element's top-right corner. A container taller than the diagram therefore keeps the controls clear of the drawing.
 - The element shows the controls only when the SVG's natural width exceeds its container, or with the `controls="always"` attribute.
 
 ## Semantic zoom
