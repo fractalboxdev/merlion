@@ -11,13 +11,7 @@ fn hundredths(v: f64) -> i64 {
     }
     let scaled = v * 100.0;
     // Clamp to the exactly-representable integer range; real coordinates are far smaller.
-    let scaled = if scaled > 9.0e15 {
-        9.0e15
-    } else if scaled < -9.0e15 {
-        -9.0e15
-    } else {
-        scaled
-    };
+    let scaled = scaled.clamp(-9.0e15, 9.0e15);
     let t = scaled as i64; // truncates toward zero, saturates
     let frac = scaled - t as f64;
     if frac >= 0.5 {
