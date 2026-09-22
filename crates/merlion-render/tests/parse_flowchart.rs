@@ -1345,3 +1345,16 @@ fn long_single_line_input_stays_fast() {
     assert_eq!(f.nodes.len(), 2_000);
     assert_eq!(count(&d, "R001"), 1_999);
 }
+
+#[test]
+fn style_and_class_apply_to_subgraphs() {
+    let (f, d) = parse_ok(
+        "flowchart TD\nsubgraph foo [Foo]\nA\nend\nstyle foo fill:#F99,color:blue\nclassDef hot stroke:red\nclass foo hot",
+    );
+    let s = f.subgraphs.iter().find(|s| s.id == "foo").unwrap();
+    assert!(s.style.fill.is_some() && s.style.color.is_some());
+    assert_eq!(s.classes, vec!["hot".to_string()]);
+    // The subgraph's style is not a node's.
+    assert!(node(&f, "A").style.is_empty() && node(&f, "A").classes.is_empty());
+    assert!(d.iter().all(|x| x.code == "I030"), "{d:#?}");
+}

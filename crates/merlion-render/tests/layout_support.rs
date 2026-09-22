@@ -92,6 +92,8 @@ impl B {
             parent,
             nodes: nodes.to_vec(),
             direction: None,
+            classes: Vec::new(),
+            style: Default::default(),
             span: Default::default(),
         });
         for &n in nodes {

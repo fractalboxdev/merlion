@@ -232,12 +232,46 @@ impl SourceStyles {
     }
 }
 
+impl SourceStyles {
+    /// Rules for a cluster: its box and its title, reached by child combinators so the
+    /// members nested in the cluster keep their own colours.
+    fn add_cluster(&mut self, class: &str, style: &Style) -> bool {
+        self.fixed_colour |= color::is_fixed(&style.fill)
+            || color::is_fixed(&style.stroke)
+            || color::is_fixed(&style.color);
+        let mut any = false;
+        for (sel, body) in [
+            (
+                alloc::format!("{}>.merlion-cluster-box", class),
+                color::shape_decls(style, true),
+            ),
+            (
+                alloc::format!("{}>.merlion-cluster-title", class),
+                color::text_decls(style),
+            ),
+        ] {
+            if !body.is_empty() {
+                self.rules.push(SourceRule {
+                    selector: sel,
+                    body,
+                });
+                any = true;
+            }
+        }
+        any
+    }
+}
+
 fn node_style_class(i: usize) -> String {
     alloc::format!("merlion-ns-{}", i)
 }
 
 fn edge_style_class(i: usize) -> String {
     alloc::format!("merlion-es-{}", i)
+}
+
+fn cluster_style_class(i: usize) -> String {
+    alloc::format!("merlion-ss-{}", i)
 }
 
 struct Ctx<'a> {
@@ -248,6 +282,10 @@ struct Ctx<'a> {
     /// Per node: the generated style class, when its `style` produced rules.
     node_class: Vec<bool>,
     edge_class: Vec<bool>,
+    /// Per cluster: whether its `style` produced rules; and the `classDef` names used
+    /// by some cluster whose rules exist.
+    cluster_class: Vec<bool>,
+    cluster_defs: Vec<String>,
 }
 
 fn node_id(chart: &Flowchart, i: usize) -> &str {
@@ -417,7 +455,21 @@ fn push_cluster_open(out: &mut String, cx: &Ctx, si: usize) {
     let Some(sg) = cx.chart.subgraphs.get(si) else {
         return;
     };
-    out.push_str("<g class=\"merlion-cluster\"");
+    let mut class = String::from("merlion-cluster");
+    let mut seen: Vec<&str> = Vec::new();
+    for name in &sg.classes {
+        if cx.cluster_defs.contains(name) && !seen.contains(&name.as_str()) {
+            seen.push(name);
+            class.push_str(" merlion-cc-");
+            class.push_str(name);
+        }
+    }
+    if cx.cluster_class.get(si).copied().unwrap_or(false) {
+        class.push(' ');
+        class.push_str(&cluster_style_class(si));
+    }
+    out.push_str("<g");
+    attr(out, "class", &class);
     attr(out, "data-merlion-id", &sg.id);
     out.push_str(">\n");
     let Some(g) = cx.geom.clusters.get(si) else {
@@ -478,6 +530,26 @@ pub fn draw_flowchart(
             );
         }
     }
+    // Clusters: classDef rules for the names some cluster uses, then `style`.
+    let mut cluster_defs: Vec<String> = Vec::new();
+    for cd in &chart.class_defs {
+        if color::is_valid_class_name(&cd.name)
+            && !cluster_defs.contains(&cd.name)
+            && chart.subgraphs.iter().any(|s| s.classes.contains(&cd.name))
+            && src.add_cluster(&alloc::format!(".merlion-cc-{}", cd.name), &cd.style)
+        {
+            cluster_defs.push(cd.name.clone());
+        }
+    }
+    let cluster_class: Vec<bool> = chart
+        .subgraphs
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            !s.style.is_empty()
+                && src.add_cluster(&alloc::format!(".{}", cluster_style_class(i)), &s.style)
+        })
+        .collect();
     let node_class: Vec<bool> = chart
         .nodes
         .iter()
@@ -522,6 +594,8 @@ pub fn draw_flowchart(
         id: &id,
         node_class,
         edge_class,
+        cluster_class,
+        cluster_defs,
     };
 
     let (w, h) = (nonneg(geom.width), nonneg(geom.height));

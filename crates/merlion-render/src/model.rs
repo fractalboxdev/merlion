@@ -196,6 +196,10 @@ pub struct Subgraph {
     /// Direct member nodes in declaration order (not nodes of nested subgraphs).
     pub nodes: Vec<usize>,
     pub direction: Option<Direction>,
+    /// `class <subgraph id> …`, in order; names already validated.
+    pub classes: Vec<String>,
+    /// `style <subgraph id> …`; it styles the cluster box and title only.
+    pub style: Style,
     pub span: Span,
 }
 

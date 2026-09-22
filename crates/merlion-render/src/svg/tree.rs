@@ -173,6 +173,8 @@ mod tests {
             parent,
             nodes: vec![],
             direction: None,
+            classes: Vec::new(),
+            style: Default::default(),
             span: Default::default(),
         }
     }

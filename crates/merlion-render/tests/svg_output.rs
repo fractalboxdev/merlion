@@ -85,6 +85,8 @@ fn subgraph(id: &str, title: &str, parent: Option<usize>, nodes: Vec<usize>) -> 
         parent,
         nodes,
         direction: None,
+        classes: Vec::new(),
+        style: Style::default(),
         span: Span::default(),
     }
 }
@@ -1312,4 +1314,29 @@ fn large_chart_is_well_formed() {
     assert_well_formed(&out.svg);
     assert_safe(&out.svg, "m1");
     assert_eq!(count(&out.svg, "class=\"merlion-edge\""), n - 1);
+}
+
+#[test]
+fn subgraph_style_and_class_reach_only_the_box_and_title() {
+    let mut c = styled_chart();
+    c.subgraphs[0].style = Style {
+        fill: Some(Color::Named("red")),
+        color: Some(Color::Named("blue")),
+        ..Style::default()
+    };
+    c.subgraphs[0].classes = vec!["hot".into(), "x\"><script>".into()];
+    let out = draw(&c);
+    let css = style_text(&out.svg);
+    assert!(out.svg.contains(
+        "<g class=\"merlion-cluster merlion-cc-hot merlion-ss-0\" data-merlion-id=\"build\""
+    ));
+    assert!(css.contains("#m1 .merlion-ss-0>.merlion-cluster-box{fill:red;}"));
+    assert!(css.contains("#m1 .merlion-ss-0>.merlion-cluster-title{fill:blue;}"));
+    assert!(css.contains(
+        "#m1 .merlion-cc-hot>.merlion-cluster-box{fill:#ff0000;stroke:hsla(120, 50%, 25%, 0.5);stroke-width:3px;}"
+    ));
+    assert!(css.contains("#m1 .merlion-cc-hot>.merlion-cluster-title{fill:white;font-weight:600;}"));
+    // Child combinators only: member nodes keep their own colours.
+    assert!(!css.contains(".merlion-ss-0 text") && !css.contains(".merlion-cc-hot text"));
+    assert_safe(&out.svg, "m1");
 }

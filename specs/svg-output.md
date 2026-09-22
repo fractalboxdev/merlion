@@ -70,6 +70,7 @@ Mermaid style statements are free-form CSS in the source. The parser reads each 
 - Any other property or value is dropped with `W010 StyleRejected` (an `Error` under `strict`).
 - A `classDef` name must match `[A-Za-z_][A-Za-z0-9_-]{0,63}`; otherwise the statement is dropped with `W011 ClassNameRejected`. It is emitted as the class `merlion-c-{name}`, so it can't collide with the host page's classes.
 - Source-style rules target the shapes and `text` elements inside the class (`#{id} .merlion-c-{name} text { … }`), which is more specific than the text reset below, so a source `font-weight` or `color` applies.
+- `style` and `class` on a subgraph id style the cluster box and title only: the cluster carries `merlion-ss-{index}` for `style` and `merlion-cc-{name}` for each class, and their rules use child combinators (`#{id} .merlion-cc-{name} > .merlion-cluster-box`, `… > .merlion-cluster-title`), so member nodes and nested clusters keep their own colours.
 - A fixed colour set in the source stays fixed in every theme; the parser emits `I030 FixedColour` so authors know.
 
 ### Embedded style

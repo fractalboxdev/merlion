@@ -2084,6 +2084,8 @@ impl P<'_, '_> {
             .enumerate()
             .map(|(i, n)| (n.id.clone(), i))
             .collect();
+        // Subgraph ids that no node took: `class` and `style` apply to the cluster.
+        let mut sub_look: BTreeMap<String, (Vec<String>, Style)> = BTreeMap::new();
         for op in core::mem::take(&mut self.ops) {
             match op {
                 Op::Class { id, class } => {
@@ -2091,12 +2093,19 @@ impl P<'_, '_> {
                         if !node.classes.contains(&class) {
                             node.classes.push(class);
                         }
+                    } else if sub_by_id.contains_key(&id) {
+                        let classes = &mut sub_look.entry(id).or_default().0;
+                        if !classes.contains(&class) {
+                            classes.push(class);
+                        }
                     }
                 }
                 Op::Style { id, span, style } => {
                     match by_id.get(&id).and_then(|&i| nodes.get_mut(i)) {
                         Some(node) => node.style.merge(&style),
-                        None if sub_by_id.contains_key(&id) => {}
+                        None if sub_by_id.contains_key(&id) => {
+                            sub_look.entry(id).or_default().1.merge(&style);
+                        }
                         None => self.diags.emit(
                             Severity::Warning,
                             "W010",
@@ -2169,13 +2178,18 @@ impl P<'_, '_> {
         let mut subgraphs: Vec<Subgraph> = order
             .iter()
             .filter_map(|&old| old_subs.get_mut(old).and_then(Option::take))
-            .map(|s| Subgraph {
-                id: s.id,
-                title: s.title,
-                parent: s.parent.and_then(|p| new_sub.get(p).copied()),
-                nodes: Vec::new(),
-                direction: s.direction,
-                span: s.span,
+            .map(|s| {
+                let (classes, style) = sub_look.remove(&s.id).unwrap_or_default();
+                Subgraph {
+                    id: s.id,
+                    title: s.title,
+                    parent: s.parent.and_then(|p| new_sub.get(p).copied()),
+                    nodes: Vec::new(),
+                    direction: s.direction,
+                    classes,
+                    style,
+                    span: s.span,
+                }
             })
             .collect();
         for (i, n) in nodes.iter().enumerate() {
