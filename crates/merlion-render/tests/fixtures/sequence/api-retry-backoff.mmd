@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber 1 1
+    participant Client
+    participant Gateway
+    participant Upstream
+
+    Client->>+Gateway: GET /v1/reports
+    loop Up to 4 attempts, 100ms doubling
+        Gateway->>+Upstream: GET /reports
+        alt 200 OK
+            Upstream-->>-Gateway: 12 KiB of JSON
+        else 503 Service Unavailable
+            Upstream--xGateway: connection reset
+            Gateway->>Gateway: sleep(backoff)
+        end
+    end
+    break attempts exhausted
+        Gateway-->>Client: 504 Gateway Timeout
+    end
+    Gateway-->>-Client: 200 OK

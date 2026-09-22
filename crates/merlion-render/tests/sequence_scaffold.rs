@@ -35,11 +35,15 @@ fn parse_sequence(src: &str) -> Sequence {
 #[test]
 fn the_header_dispatches_to_the_sequence_parser() {
     let s = parse_sequence(SRC);
-    assert!(
-        s.participants.is_empty(),
-        "the scaffold parses no statements"
+    assert_eq!(
+        s.participants
+            .iter()
+            .map(|p| p.id.as_str())
+            .collect::<Vec<_>>(),
+        ["Alice", "John"]
     );
-    assert!(s.items.is_empty());
+    assert_eq!(s.items.len(), 2);
+    assert_eq!(s.messages, 2);
 }
 
 #[test]

@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor Customer
+    participant Web as Web app
+    participant API as API gateway
+    participant Bank
+
+    Customer->>Web: Place order
+    Web->>API: POST /orders
+    loop Every minute
+        API->>Bank: Authorise payment
+        Bank-->>API: Approved
+    end
+    alt bank declines
+        Bank-->>Web: Declined
+    else bank approves
+        Web-->>Customer: Order confirmed
+    end
+    Note over Customer,Bank: One order, one transaction

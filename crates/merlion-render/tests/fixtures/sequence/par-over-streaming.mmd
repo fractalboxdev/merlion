@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client
+    participant Router
+    participant Model as Streaming model
+    participant Trace@{ "type": "entity" } as Trace collector
+
+    Client->>+Router: POST /v1/messages (stream=true)
+    Router->>+Model: forward prompt, 2 400 tokens
+    par_over tokens and telemetry share the wall clock
+        Model--)Router: token deltas
+        Router--)Client: SSE data frames
+    and
+        Router-)Trace: span(ttft=180ms)
+    end
+    Model-->>-Router: stop_reason=end_turn
+    Router-->>-Client: message_stop

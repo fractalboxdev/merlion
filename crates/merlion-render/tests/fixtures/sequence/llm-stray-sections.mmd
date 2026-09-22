@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Browser
+    participant CDN
+    participant Origin
+
+    Browser->>CDN: GET /app.js
+    alt cache hit
+        CDN-->>Browser: 200 OK (from edge)
+    else cache miss
+        CDN->>Origin: GET /app.js
+        Origin-->>CDN: 200 OK
+    end
+    else stale while revalidate
+    CDN-->>Browser: 200 OK (stale)
+    end
+    Browser->>CDN: GET /app.css

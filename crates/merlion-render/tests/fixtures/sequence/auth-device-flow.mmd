@@ -1,0 +1,27 @@
+---
+title: Device authorisation grant
+---
+sequenceDiagram
+    autonumber
+    actor User
+    participant CLI as Device CLI
+    participant Auth@{ "type": "boundary", "alias": "Auth server" }
+    participant Store@{ "type": "database" } as Token store
+
+    User->>CLI: merlion login
+    CLI->>+Auth: POST /device/code
+    Auth-->>-CLI: user_code, verification_uri, interval=5s
+    Note over User,CLI: The CLI prints the code and waits
+
+    User->>Auth: Opens the verification page and approves
+    loop Every 5s until approved or expired
+        CLI->>+Auth: POST /token (grant_type=device_code)
+        alt still pending
+            Auth-->>CLI: 400 authorization_pending
+        else approved
+            Auth->>+Store: Persist refresh token
+            Store-->>-Auth: ok
+            Auth-->>-CLI: access_token, refresh_token
+        end
+    end
+    CLI->>User: Signed in as user@example.com

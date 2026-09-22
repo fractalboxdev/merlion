@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber 10 5
+    participant Cron
+    participant Reporter
+    participant Mailer
+
+    Cron->>Reporter: build(weekly digest)
+    Reporter->>Reporter: aggregate 14 sources
+    Reporter->>Mailer:wrap: Send the digest to every subscriber of the weekly report
+    Mailer-->>Cron:nowrap: queued 4 812 messages
+    autonumber off
+    Cron->>Reporter: build(daily digest)

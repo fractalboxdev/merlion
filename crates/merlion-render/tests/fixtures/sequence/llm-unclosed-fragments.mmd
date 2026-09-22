@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Scheduler
+    participant Worker
+    participant Metrics
+
+    Scheduler->>Worker: lease(job 91)
+    loop until the lease expires
+        Worker->>Metrics: heartbeat(job 91)
+        opt backlog over 1000
+            Worker->>Scheduler: request another worker
+    Worker-->>Scheduler: done(job 91)

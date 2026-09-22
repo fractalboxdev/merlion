@@ -1,0 +1,19 @@
+%%{init: {"merlion": {"autoTone": false}}}%%
+sequenceDiagram
+    title Release train
+    participant Dev as Developer
+    participant CI
+    participant Registry@{ "type": "database" }
+    participant Prod as Production
+
+    Dev->>CI: push tag v4.2.0
+    activate CI
+    CI->>CI: cargo test --workspace
+    CI->>CI: cargo clippy -- -D warnings
+    opt benchmarks changed
+        CI->>CI: cargo bench -- --save-baseline v4.2.0
+    end
+    CI->>Registry: publish merlion-render 4.2.0
+    deactivate CI
+    Registry-->>Prod: pull 4.2.0
+    Note left of Dev: The train leaves every Thursday

@@ -1,0 +1,21 @@
+sequenceDiagram
+    %% The on-call path, from page to all-clear.
+    accTitle: Incident escalation
+    accDescr {
+        A failing health check pages the on-call engineer, who acknowledges within
+        five minutes or the page escalates to the secondary.
+    }
+    participant Probe as Health probe    # the /healthz poller, every 10s
+    participant Pager
+    actor Primary as Primary on-call
+    actor Secondary as Secondary on-call
+
+    Probe->>Pager: health check failed 3 times in a row
+    Pager->>+Primary: page(sev 2)
+    alt acknowledged within 5 minutes
+        Primary-->>-Pager: ack
+    else no acknowledgement
+        Pager->>Secondary: escalate(sev 2)
+        Secondary-->>Pager: ack
+    end
+    Note over Primary,Secondary: The all-clear closes the incident for both

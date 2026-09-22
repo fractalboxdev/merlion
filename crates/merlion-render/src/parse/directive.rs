@@ -72,6 +72,30 @@ pub fn parse_directive(
     Ok(Directive { kind, value })
 }
 
+/// Parses one JSON value, for a `@{ … }` block outside a directive
+/// (specs/sequence.md#participants). `base` is `inner`'s byte offset in the source, and
+/// text after the value is an error, so the whole block is read or none of it is.
+pub fn parse_value(
+    inner: &str,
+    base: usize,
+    max_depth: usize,
+    max_string: usize,
+) -> Result<Value, JsonError> {
+    let mut p = Json {
+        s: inner,
+        pos: 0,
+        base,
+        max_depth,
+        max_string,
+    };
+    let value = p.value(0)?;
+    p.skip_ws();
+    if p.pos < inner.len() {
+        return Err(p.malformed("unexpected text after the value"));
+    }
+    Ok(value)
+}
+
 struct Json<'a> {
     s: &'a str,
     pos: usize,

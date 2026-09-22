@@ -1,0 +1,25 @@
+sequenceDiagram
+    accTitle: Card payment with 3-D Secure
+    accDescr: The checkout service authorises a card, steps up to 3-D Secure when the issuer asks for it, and captures on success.
+    actor Shopper
+    participant Checkout
+    participant PSP as Payment provider
+    participant Issuer
+
+    Shopper->>+Checkout: Pay 49.00 EUR
+    Checkout->>+PSP: POST /payments
+    critical authorise the card
+        PSP->>+Issuer: Authorisation request
+        Issuer-->>-PSP: challenge_required
+    option issuer asks for a challenge
+        create participant ThreeDS as 3-D Secure page
+        PSP->>ThreeDS: Redirect the shopper
+        ThreeDS->>Shopper: Enter the one-time code
+        Shopper->>ThreeDS: 483912
+        destroy ThreeDS
+        ThreeDS-->>PSP: challenge_passed
+    option issuer declines
+        PSP-->>Checkout: declined (insufficient funds)
+    end
+    PSP-->>-Checkout: captured
+    Checkout-->>-Shopper: Order confirmed

@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Runner
+    participant Artifacts
+    link Runner: Logs @ https://example.com/runs/91/logs
+    links Artifacts: {"Bundle": "https://example.com/runs/91/bundle.zip"}
+    properties Runner: {"class": "self-hosted"}
+    details Runner: {"region": "eu-central-1"}
+
+    Runner->>Artifacts: upload(bundle.zip, 18 MiB)
+    Artifacts-->>Runner: stored, sha256 4f2a…
+    Runner->>Artifacts: upload(coverage.json, 240 KiB)

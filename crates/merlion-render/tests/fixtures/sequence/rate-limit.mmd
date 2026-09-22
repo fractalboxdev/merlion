@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber 1.05 0.1
+    actor Caller
+    participant Edge
+    participant Limiter@{ "type": "control" } as Token bucket
+    participant Origin
+
+    Caller->>Edge: GET /v1/search
+    Edge->>+Limiter: take(1)
+    alt tokens available
+        Limiter-->>-Edge: allowed, 17 left
+        Edge->>Origin: GET /v1/search
+        Origin-->>Edge: 200 OK
+        Edge-->>Caller: 200 OK
+    else bucket empty
+        Limiter-->>Edge: denied, refill in 800ms
+        Edge--xCaller: 429 Too Many Requests
+    end
