@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { COMPAT_STATE_DIR } from "../src/paths.ts";
@@ -99,6 +100,28 @@ describe("the compat-state corpus", () => {
       const src = readFileSync(join(COMPAT_STATE_DIR, `${e.name}.mmd`), "utf8");
       expect(src).toMatch(/stateDiagram(-v2)?\b/i);
       expect(e.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+  });
+
+  // mermaid's e2e `.mmd` fixtures are inserted into an HTML page, so the browser
+  // decodes their entities before the parser reads them. Left encoded, `<<fork>>`
+  // reaches the grammar as text and is dropped, and the corpus exercises no bar at all
+  // while still reporting a pass rate (specs/benchmark.md#corpora).
+  it("carries no HTML entity spelling, so the fork and join bars are exercised", () => {
+    const names = readdirSync(COMPAT_STATE_DIR).filter((f) => f.endsWith(".mmd"));
+    const encoded = names.filter((f) => /&(lt|gt|amp|#\d+);/.test(readFileSync(join(COMPAT_STATE_DIR, f), "utf8")));
+    expect(encoded).toEqual([]);
+    const withBars = names.filter((f) => /<<\s*(fork|join)\s*>>/.test(readFileSync(join(COMPAT_STATE_DIR, f), "utf8")));
+    expect(withBars.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("digests match the files on disk", () => {
+    const manifest = JSON.parse(readFileSync(join(COMPAT_STATE_DIR, "manifest.json"), "utf8")) as {
+      diagrams: Array<{ name: string; sha256: string }>;
+    };
+    for (const e of manifest.diagrams) {
+      const src = readFileSync(join(COMPAT_STATE_DIR, `${e.name}.mmd`), "utf8").replace(/\n$/, "");
+      expect(createHash("sha256").update(src, "utf8").digest("hex")).toBe(e.sha256);
     }
   });
 });

@@ -276,7 +276,11 @@ export const extractDiagrams = (path: string, content: string, kind: DiagramKind
   if (path.endsWith(".html")) blocks = extractHtmlPreBlocks(content);
   else if (path.endsWith(".md")) blocks = extractMarkdownFences(content);
   else if (/\.(js|ts)$/.test(path)) blocks = extractTemplateLiterals(content);
-  else if (path.endsWith(".mmd")) blocks = [dedent(content)];
+  // A `.mmd` under `e2e/diagrams/` is inserted into an HTML page by mermaid's own
+  // harness, so the browser decodes its entities before the parser sees them: the four
+  // fork and join fixtures spell the markers `&lt;&lt;fork&gt;&gt;`, which mermaid draws
+  // as bars and Merlion would drop with `W024`.
+  else if (path.endsWith(".mmd")) blocks = [dedent(decodeEntities(content))];
   else blocks = [];
   return blocks.filter((b) => isKind[kind](b) && hasStatements(b));
 };

@@ -227,6 +227,15 @@ describe("extractDiagrams", () => {
     expect(extractDiagrams("a.spec.ts", "const base = `flowchart`;")).toEqual([]);
     expect(extractDiagrams("a.txt", "graph TD")).toEqual([]);
   });
+
+  // mermaid's e2e harness inserts a `.mmd` fixture into an HTML page, so the browser
+  // decodes its entities before the parser reads them. The fork and join fixtures spell
+  // their markers that way, and left encoded they reach the grammar as text.
+  it("decodes the entities a .mmd fixture carries", () => {
+    expect(extractDiagrams("e2e/diagrams/state-diagram-v2/f.mmd", "stateDiagram-v2\nstate f &lt;&lt;fork&gt;&gt;\n", "state")).toEqual([
+      "stateDiagram-v2\nstate f <<fork>>",
+    ]);
+  });
 });
 
 describe("sourceSlug", () => {

@@ -367,14 +367,14 @@
       "source": "e2e/diagrams/state-diagram/should-render-forks-and-joins.mmd",
       "block": 1,
       "sourceBlob": "0ed73ffba0a753933aa9f6a28abf5bc752da5c3c",
-      "sha256": "0a8bf810e416a7a082b8f30c6a2f307b932c5032ea5c52ab9b7740748d43991e"
+      "sha256": "34b0c90354d5e1ddc2eef5066851fd0ea534cdbf4d8a8e22c3b513d368940c59"
     },
     {
       "name": "e2e-should-render-forks-in-composit-states",
       "source": "e2e/diagrams/state-diagram/should-render-forks-in-composit-states.mmd",
       "block": 1,
       "sourceBlob": "d2bb3ca3e189597bc2d81636dd40ef25405f4e8d",
-      "sha256": "7addeab00065409ea29cf4b449b549055402b00523a75b3a93e534624c16138c"
+      "sha256": "0ed418551d28771b6f68568091ec84f31a0bfbe7d4c294de0b9b08c11780345d"
     },
     {
       "name": "e2e-should-render-multiple-composit-states",
@@ -773,14 +773,14 @@
       "source": "e2e/diagrams/state-diagram-v2/v2-should-render-forks-and-joins.mmd",
       "block": 1,
       "sourceBlob": "28af48431441c2bc366f998e1f761a96385a3161",
-      "sha256": "b9303e2893acbde4063309444fc13aa3c34484b156f4159a0e426151ebed7fe0"
+      "sha256": "0f2d23d05a40ca4ebdbac85df74b4769bb8324d9e696ed9659e305d880056066"
     },
     {
       "name": "e2e-v2-should-render-forks-in-composite-states",
       "source": "e2e/diagrams/state-diagram-v2/v2-should-render-forks-in-composite-states.mmd",
       "block": 1,
       "sourceBlob": "05112ecec7c447acc5cb39cdd693ec1fc201d658",
-      "sha256": "e5575ed84738784a8b387fa3c9f0cc8ebf93f1e4c3efe1e61213915e6461144f"
+      "sha256": "7ab50692497531d5423b2f77a4f5a6151bcf15d523536cfbe71cd7725c150053"
     },
     {
       "name": "e2e-v2-should-render-multiple-composite-states",

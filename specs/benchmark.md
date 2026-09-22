@@ -27,6 +27,8 @@ Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 | `llm` | MermaidSeqBench (132 cases) plus generated diagrams with known syntax errors | Apache-2.0, fetched at run time |
 | `edits` | Pairs (diagram, diagram after a one-line edit): add node, add edge, remove edge, rename label | Original |
 
+A diagram is extracted as the browser would read it: an end-to-end `.mmd` fixture is inserted into an HTML page by mermaid's own harness, so its entities are decoded before the parser sees them. `state f &lt;&lt;fork&gt;&gt;` left encoded reaches the grammar as text and is dropped, which is how four fork and join fixtures came to sit in `compat-state` exercising no bar while still counting towards the pass rate.
+
 ## Metrics
 
 | Dimension | Metric | Notes |
