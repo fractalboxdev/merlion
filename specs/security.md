@@ -29,7 +29,7 @@ Ids: the default `{id}` is a 32-bit FNV prefix, and a colliding source can be fo
 
 ## Resource bounds
 
-Limits on input size, declared and layered graph size, layer count, nesting depth and label length are in [architecture.md](architecture.md#boundaries). Every phase draws from one fuel counter ([ADR-0008](adr/0008-deterministic-work-budget.md)), so the worst-case render time is a function of the input and options alone. The parsers track recursion depth explicitly, so deep input returns `E010` instead of exhausting the stack; in WASM a stack overflow would trap and leave the instance unusable. The WASM glue recovers from any trap by re-instantiating ([integrations.md](integrations.md#fractalboxdevmerlion-wasm)).
+Limits on input size, declared and layered graph size, layer count, nesting depth and label length are in [architecture.md](architecture.md#boundaries). Every phase draws from one fuel counter ([ADR-0008](adr/0008-deterministic-work-budget.md)), so the worst-case render time is a function of the input and options alone. The layout hint is parsed once per render, after one optional fuel unit per byte is drawn; a hint the remaining fuel cannot cover is dropped with `I022`. The parsers track recursion depth explicitly, so deep input returns `E010` instead of exhausting the stack; in WASM a stack overflow would trap and leave the instance unusable. The WASM glue recovers from any trap by re-instantiating ([integrations.md](integrations.md#fractalboxdevmerlion-wasm)).
 
 ## Fuzzing
 

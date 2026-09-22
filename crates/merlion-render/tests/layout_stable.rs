@@ -245,3 +245,58 @@ fn packed_components_report_hint_survival_once() {
     let (_, d) = run_with(&c1, &with_hint("not a hint"));
     assert_eq!(codes(&d), vec!["I022"]);
 }
+
+/// `n` isolated nodes: `n` packed components.
+fn isolated(n: usize) -> Flowchart {
+    let mut b = B::new();
+    for i in 0..n {
+        b.node(&format!("n{}", i));
+    }
+    b.c
+}
+
+#[test]
+fn a_hint_is_charged_once_per_byte_whatever_the_component_count() {
+    // specs/security.md#resource-bounds: hint parsing draws from the fuel counter,
+    // once for the whole diagram, not once per packed component.
+    let c = isolated(40);
+    let g0 = run(&c);
+    let mut h = hint_of(&c, &g0);
+    let pad: Vec<String> = (0..40)
+        .map(|i| format!("pad{}{}", i, "x".repeat(200)))
+        .collect();
+    h.push_str(&format!(";{}:{}", g0.layers.len() + 1, pad.join(",")));
+    let base = run_with(&c, &RenderOptions::default()).0.unwrap().fuel_used;
+    let hinted = run_with(&c, &with_hint(&h)).0.unwrap().fuel_used;
+    assert!(
+        hinted >= base + h.len() as u64,
+        "{} vs {} + {}",
+        hinted,
+        base,
+        h.len()
+    );
+    assert!(
+        hinted < base + 3 * h.len() as u64,
+        "{} vs {} + {}",
+        hinted,
+        base,
+        h.len()
+    );
+}
+
+#[test]
+fn a_hint_the_fuel_cannot_cover_is_dropped() {
+    let c = isolated(8);
+    let g0 = run(&c);
+    let base = g0.fuel_used;
+    let mut h = hint_of(&c, &g0);
+    h.push_str(&format!(";{}:{}", g0.layers.len() + 1, "y".repeat(50_000)));
+    let opts = RenderOptions {
+        fuel: base + 1_000,
+        hint: Some(h),
+        ..RenderOptions::default()
+    };
+    let (g, d) = run_with(&c, &opts);
+    assert!(g.is_ok());
+    assert_eq!(codes(&d), vec!["I022"]);
+}

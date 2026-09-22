@@ -1421,14 +1421,12 @@ fn fit_steps(base: &Base, m: &Meas, first: Cand, budget: &mut Budget, fuel: &mut
 /// (specs/layout.md#stable-layout).
 fn read_hint(
     chart: &Flowchart,
-    opts: &RenderOptions,
+    parsed: Option<&ParsedHint>,
     layer: &[usize],
     diags: &mut Diagnostics,
     stats: Option<&mut HintStats>,
 ) -> Option<(Vec<Option<usize>>, Direction)> {
-    let text = opts.hint.as_deref()?;
-    let lim = opts.limits;
-    let Some(h) = hint::parse(text, lim.nodes, lim.layers, lim.input_bytes) else {
+    let Ok(h) = parsed? else {
         if let Some(s) = stats {
             s.malformed = true;
             return None;
@@ -1486,6 +1484,22 @@ fn read_hint(
     Some((ranks, h.direction))
 }
 
+/// The layout hint, parsed once per render: `Err` when it is malformed, of an unknown
+/// version, too large, or costs more fuel than is left.
+type ParsedHint = Result<hint::Hint, ()>;
+
+/// Parses `opts.hint`, charging one optional fuel unit per byte before parsing
+/// (specs/security.md#resource-bounds). A hint the fuel cannot cover is dropped.
+fn parse_hint(opts: &RenderOptions, fuel: &mut Fuel) -> Option<ParsedHint> {
+    let text = opts.hint.as_deref()?;
+    let cost = u64::try_from(text.len()).unwrap_or(u64::MAX);
+    if fuel.burn_optional(cost).is_err() {
+        return Some(Err(()));
+    }
+    let lim = opts.limits;
+    Some(hint::parse(text, lim.nodes, lim.layers, lim.input_bytes).ok_or(()))
+}
+
 /// Hint survival summed over the components of a packed layout; the diagnostics are
 /// emitted once for the whole diagram.
 #[derive(Default)]
@@ -1508,9 +1522,10 @@ pub fn run(
     if chart.edges.len() > lim.edges {
         return Err(LayoutError::TooLarge { what: "edges" });
     }
+    let parsed = parse_hint(opts, fuel);
     match pack::components(chart) {
-        Some(comps) => run_packed(chart, opts, &comps, fuel, diags),
-        None => run_one(chart, opts, fuel, diags, None),
+        Some(comps) => run_packed(chart, opts, parsed.as_ref(), &comps, fuel, diags),
+        None => run_one(chart, opts, parsed.as_ref(), fuel, diags, None),
     }
 }
 
@@ -1520,6 +1535,7 @@ pub fn run(
 fn run_packed(
     chart: &Flowchart,
     opts: &RenderOptions,
+    parsed: Option<&ParsedHint>,
     comps: &[pack::Component],
     fuel: &mut Fuel,
     diags: &mut Diagnostics,
@@ -1529,12 +1545,7 @@ fn run_packed(
         direction: DirectionOption::FromSource,
         ..opts.clone()
     };
-    let lim = opts.limits;
-    let hint_dir = opts
-        .hint
-        .as_deref()
-        .and_then(|t| hint::parse(t, lim.nodes, lim.layers, lim.input_bytes))
-        .map(|h| h.direction);
+    let hint_dir = parsed.and_then(|h| h.as_ref().ok()).map(|h| h.direction);
     let first_dir = match hint_dir {
         Some(d) if o.auto => d,
         _ => chart.direction,
@@ -1547,7 +1558,14 @@ fn run_packed(
         let mut geoms = Vec::with_capacity(comps.len());
         for c in comps {
             let sub = pack::sub_chart(chart, c, dir);
-            geoms.push(run_one(&sub, &sub_opts, fuel, diags, Some(&mut stats))?);
+            geoms.push(run_one(
+                &sub,
+                &sub_opts,
+                parsed,
+                fuel,
+                diags,
+                Some(&mut stats),
+            )?);
         }
         let g = pack::merge(
             chart,
@@ -1614,6 +1632,7 @@ fn run_packed(
 fn run_one(
     chart: &Flowchart,
     opts: &RenderOptions,
+    parsed: Option<&ParsedHint>,
     fuel: &mut Fuel,
     diags: &mut Diagnostics,
     stats: Option<&mut HintStats>,
@@ -1666,7 +1685,7 @@ fn run_one(
         return Err(LayoutError::TooLarge { what: "layers" });
     }
 
-    let hinted = read_hint(chart, opts, &layer, diags, stats);
+    let hinted = read_hint(chart, parsed, &layer, diags, stats);
     let base_dir = match (&hinted, o.auto) {
         (Some((_, d)), true) => *d,
         _ => chart.direction,
