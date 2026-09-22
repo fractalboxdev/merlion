@@ -349,3 +349,45 @@ fn auto_direction_packs_components_in_the_direction_that_fits() {
     assert_eq!(g.direction, Direction::LR);
     assert!(g.width <= 720.0);
 }
+
+/// An LR chain of `n` nodes whose labels are one `len`-letter word each.
+fn wordy_chain(n: usize, len: usize) -> merlion_render::model::Flowchart {
+    let mut b = B::new().dir(Direction::LR);
+    let word = "W".repeat(len);
+    let mut prev = None;
+    for i in 0..n {
+        let v = b.shape(
+            &format!("y{}", i),
+            &word,
+            merlion_render::model::Shape::Rect,
+        );
+        if let Some(p) = prev {
+            b.edge(p, v);
+        }
+        prev = Some(v);
+    }
+    b.c
+}
+
+#[test]
+fn label_measurement_draws_fuel() {
+    // specs/security.md#resource-bounds: measuring (and container fit's re-measuring)
+    // costs one fuel unit per label byte, so label-heavy input cannot outrun the budget.
+    let c = wordy_chain(12, 2_000);
+    let bytes = 12 * 2_000u64;
+    let unbounded = RenderOptions {
+        target_width: f64::INFINITY,
+        ..RenderOptions::default()
+    };
+    let free = run_with(&c, &unbounded).0.unwrap().fuel_used;
+    assert!(free >= bytes, "{} < {}", free, bytes);
+    let fitted = run(&c).fuel_used;
+    assert!(fitted >= free + bytes, "{} < {} + {}", fitted, free, bytes);
+    // A budget that covers one layout but not the re-measuring still renders.
+    let tight = RenderOptions {
+        fuel: free + bytes / 2,
+        ..RenderOptions::default()
+    };
+    let g = run_with(&c, &tight).0.unwrap();
+    assert!(g.fuel_used <= free + bytes / 2);
+}

@@ -135,14 +135,97 @@ fn clean_label(mut l: LabelLayout) -> LabelLayout {
     l
 }
 
-fn measure_all(chart: &Flowchart, o: &Opts, wrap: f64, diags: &mut Diagnostics) -> Meas {
-    // The box widens by the font mode's tolerance; lines keep their measured widths and
-    // stay centred, so the extra room splits evenly on both sides.
-    let clean_label = |l: LabelLayout| {
-        let mut l = clean_label(l);
-        l.width *= o.tolerance;
-        l
+/// Fuel for measuring labels: one unit per byte of label text
+/// (specs/security.md#resource-bounds).
+fn measure_cost<'a>(labels: impl Iterator<Item = &'a str>) -> u64 {
+    labels.fold(0u64, |a, t| {
+        a.saturating_add(u64::try_from(t.len()).unwrap_or(u64::MAX))
+    })
+}
+
+/// The text of every label `measure_all` lays out.
+fn label_texts(chart: &Flowchart) -> impl Iterator<Item = &str> {
+    let nodes = chart
+        .nodes
+        .iter()
+        .filter(|n| n.shape.draws_label())
+        .map(|n| n.label.as_str());
+    let edges = chart.edges.iter().filter_map(|e| e.label.as_deref());
+    let titles = chart.subgraphs.iter().map(|s| s.title.as_str());
+    nodes.chain(edges).chain(titles)
+}
+
+/// A measured label, widened by the font mode's tolerance; lines keep their measured
+/// widths and stay centred, so the extra room splits evenly on both sides.
+fn measured(o: &Opts, l: LabelLayout) -> LabelLayout {
+    let mut l = clean_label(l);
+    l.width *= o.tolerance;
+    l
+}
+
+/// Whether a label measured as `l` can change when wrapped at `wrap`: greedy wrapping at
+/// a width no line exceeds reproduces the same lines.
+fn may_rewrap(o: &Opts, l: &LabelLayout, wrap: f64) -> bool {
+    o.tolerance < 1.0 || l.width > wrap
+}
+
+/// `prev` re-measured at the narrower `wrap`: only labels wider than `wrap` are laid out
+/// again, each drawing one optional fuel unit per byte first.
+fn remeasure(
+    chart: &Flowchart,
+    o: &Opts,
+    prev: &Meas,
+    wrap: f64,
+    diags: &mut Diagnostics,
+    fuel: &mut Fuel,
+) -> Result<Meas, OutOfFuel> {
+    let mut m = prev.clone();
+    for (v, node) in chart.nodes.iter().enumerate() {
+        let Some(old) = m.node_label.get(v) else {
+            continue;
+        };
+        if !node.shape.draws_label() || !may_rewrap(o, old, wrap) {
+            continue;
+        }
+        fuel.burn_optional(measure_cost(core::iter::once(node.label.as_str())))?;
+        let style = measure::text_style(chart, node, o.font_size);
+        let l = measured(o, text::layout_label(&node.label, &style, wrap, diags));
+        if let Some(sz) = m.size.get_mut(v) {
+            *sz = measure::node_size(node.shape, l.width, l.height);
+        }
+        m.node_label[v] = l;
+    }
+    for (e, edge) in chart.edges.iter().enumerate() {
+        let (Some(Some(old)), Some(t)) = (m.edge_label.get(e), edge.label.as_deref()) else {
+            continue;
+        };
+        if !may_rewrap(o, old, wrap) {
+            continue;
+        }
+        fuel.burn_optional(measure_cost(core::iter::once(t)))?;
+        let style = measure::style_to_text(&edge.style, o.font_size);
+        m.edge_label[e] = Some(measured(o, text::layout_label(t, &style, wrap, diags)));
+    }
+    let base = TextStyle {
+        font_size: o.font_size,
+        weight: Weight::Regular,
+        italic: false,
     };
+    for (c, sub) in chart.subgraphs.iter().enumerate() {
+        let Some(old) = m.title.get(c) else {
+            continue;
+        };
+        if sub.title.is_empty() || !may_rewrap(o, old, wrap) {
+            continue;
+        }
+        fuel.burn_optional(measure_cost(core::iter::once(sub.title.as_str())))?;
+        m.title[c] = measured(o, text::layout_label(&sub.title, &base, wrap, diags));
+    }
+    Ok(m)
+}
+
+fn measure_all(chart: &Flowchart, o: &Opts, wrap: f64, diags: &mut Diagnostics) -> Meas {
+    let clean_label = |l: LabelLayout| measured(o, l);
     let mut node_label = Vec::with_capacity(chart.nodes.len());
     let mut size = Vec::with_capacity(chart.nodes.len());
     for node in &chart.nodes {
@@ -1640,6 +1723,8 @@ fn run_one(
     let lim = opts.limits;
     let o = Opts::new(opts);
     let n = chart.nodes.len();
+    fuel.burn(measure_cost(label_texts(chart)))
+        .map_err(too_large_fuel)?;
     let meas = measure_all(chart, &o, o.wrap_width, diags);
 
     // Phase 1: cycle removal over the edges between distinct, valid nodes.
@@ -1771,7 +1856,7 @@ fn reduce_wrap(
             return None;
         }
         wrap = next;
-        let m = measure_all(base.chart, &base.o, wrap, &mut scratch);
+        let m = remeasure(base.chart, &base.o, &prev, wrap, &mut scratch, fuel).ok()?;
         if m == prev {
             continue;
         }
