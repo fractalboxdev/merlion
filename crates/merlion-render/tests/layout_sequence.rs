@@ -544,6 +544,34 @@ fn a_wide_diagram_narrows_toward_the_target() {
 }
 
 #[test]
+fn a_diagram_that_cannot_fit_keeps_its_labels_unwrapped() {
+    let mut s = S::new();
+    let v = [
+        s.labelled("a", "Customer relationship manager"),
+        s.labelled("b", "Payment authorisation service"),
+        s.labelled("c", "Settlement ledger and journal"),
+        s.labelled("d", "Notification delivery gateway"),
+        s.labelled("e", "Reconciliation batch runner"),
+    ];
+    let m = s.msg(v[0], v[1], "declined (insufficient funds)");
+    let seq = s.done(vec![m]);
+    let g = run(&seq);
+    check(&seq, &g);
+    // The head boxes alone overflow the target, so no wrap width reaches it.
+    assert!(
+        g.width > 720.0,
+        "precondition: the diagram fits after all: {}",
+        g.width
+    );
+    let (_, _, label) = g.messages[0].label.as_ref().expect("message label");
+    assert_eq!(
+        label.lines.len(),
+        1,
+        "the label wrapped for a fit the diagram never reaches"
+    );
+}
+
+#[test]
 fn fit_never_shrinks_a_gap_past_the_minimum() {
     let mut s = S::new();
     let v = s.ps(&["A", "B", "C", "D", "E", "F", "G", "H"]);

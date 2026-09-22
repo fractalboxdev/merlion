@@ -212,8 +212,8 @@ A fragment box spans from the leftmost to the rightmost column its items touch, 
 Container fit follows [layout.md](layout.md#5-container-fit) in spirit and in this order:
 
 1. Shrink every column gap proportionally toward `COLUMN_GAP_MIN`, keeping the requirements of step 3 above satisfied.
-2. Reduce the label wrap width in steps of 20 px down to 120 px and lay out again, charging optional fuel for each re-measurement.
-3. Keep the result wider than `target_width`; `<merlion-view>` zooms it ([viewer.md](viewer.md)).
+2. Reduce the label wrap width in steps of 20 px down to 120 px and lay out again, charging optional fuel for each re-measurement. The widest wrap width that brings the drawing to `target_width` wins.
+3. A diagram that no wrap width brings to `target_width` keeps the layout at the full wrap width: wrapping a label buys a fit the diagram never reaches, and costs a line of text and the height it adds. The result stays wider than `target_width`; `<merlion-view>` zooms it ([viewer.md](viewer.md)).
 
 Height is never fitted: a sequence diagram scrolls.
 

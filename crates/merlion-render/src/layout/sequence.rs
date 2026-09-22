@@ -12,7 +12,8 @@
 //! 3. Walk the item tree into rows, tracking the open activation bars per column, and
 //!    close each fragment box around the rows it encloses ([`Build`]).
 //! 4. Fit the container: shrink the gaps toward [`COLUMN_GAP_MIN`], then narrow the
-//!    wrap width in [`WRAP_STEP_PX`] steps down to [`MIN_WRAP_WIDTH`].
+//!    wrap width in [`WRAP_STEP_PX`] steps down to [`MIN_WRAP_WIDTH`]. The widest wrap
+//!    that reaches `target_width` wins; a diagram no wrap reaches keeps the full width.
 //!
 //! Coordinates are built with the first column's centre at the origin and the head
 //! boxes at `y = 0`; the finished drawing is translated so its bounding box starts at
@@ -1181,16 +1182,20 @@ pub fn layout_sequence(
     }
 
     let mut wrap = o.wrap_width;
+    // The widest wrap that fits wins; when no wrap fits, the least-wrapped layout does.
+    // Narrowing a label buys a fit the diagram never reaches, and costs legibility and
+    // height (specs/sequence.md#fragments-and-container-fit).
     let mut best: Option<SequenceGeometry> = None;
     loop {
         let m = measure(seq, &o, wrap, diags);
         let g = fit_gaps(seq, &o, &m, fuel);
         let fits = g.width <= o.target_width;
-        best = Some(match best {
-            Some(b) if b.width <= g.width => b,
-            _ => g,
-        });
-        if fits || wrap <= MIN_WRAP_WIDTH {
+        if fits {
+            best = Some(g);
+            break;
+        }
+        best.get_or_insert(g);
+        if wrap <= MIN_WRAP_WIDTH {
             break;
         }
         // Each re-measurement is optional work, charged per byte.
