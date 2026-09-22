@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-19--remove-edge",
+  "source": "demos-flowchart-19",
+  "kind": "remove-edge",
+  "before": "graph TD\nA([stadium shape test])\nA -->|Get money| B([Go shopping])\nB --> C([Let me think...<br />Do I want something for work,<br />something to spend every free second with,<br />or something to get around?])\nC -->|One| D([Laptop])\nC -->|Two| E([iPhone])\nC -->|Three| F([Car<br/>wroom wroom])\nclick A \"flowchart.html#link-clicked\" \"link test\"\nclick B testClick \"click test\"\nclassDef someclass fill:#f96;\nclass A someclass;\nclass C someclass;",
+  "after": "graph TD\nA([stadium shape test])\nA -->|Get money| B([Go shopping])\nB --> C([Let me think...<br />Do I want something for work,<br />something to spend every free second with,<br />or something to get around?])\nC -->|One| D([Laptop])\nC -->|Two| E([iPhone])\nF([Car<br/>wroom wroom])\nclick A \"flowchart.html#link-clicked\" \"link test\"\nclick B testClick \"click test\"\nclassDef someclass fill:#f96;\nclass A someclass;\nclass C someclass;"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-03--add-node",
+  "source": "demos-flowchart-03",
+  "kind": "add-node",
+  "before": "---\ntitle: What to buy\n---\ngraph TD\n  accTitle: What to buy\n  accDescr: Options of what to buy with Christmas money\n  A[Christmas] -->|Get money| B(Go shopping)\n  B --> C{Let me thinksssssx<br/>sssssssssssssssssssuuu<br />tttsssssssssssssssssssssss}\n  C -->|One| D[Laptop]\n  C -->|Two| E[iPhone]\n  C -->|Three| F[Car]",
+  "after": "---\ntitle: What to buy\n---\ngraph TD\n  accTitle: What to buy\n  accDescr: Options of what to buy with Christmas money\n  A[Christmas] -->|Get money| B(Go shopping)\n  B --> C{Let me thinksssssx<br/>sssssssssssssssssssuuu<br />tttsssssssssssssssssssssss}\n  C -->|One| D[Laptop]\n  C -->|Two| E[iPhone]\n  C -->|Three| F[Car]\n  benchNewNode[New node]"
+}

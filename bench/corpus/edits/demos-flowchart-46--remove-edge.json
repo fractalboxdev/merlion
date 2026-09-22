@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-46--remove-edge",
+  "source": "demos-flowchart-46",
+  "kind": "remove-edge",
+  "before": "graph TD\nA[Christmas] -->|Get money| B(Go shopping)\nB --> C{Let me thinksssssx<br />sssssssssssssssssssuuu<br />tttsssssssssssssssssssssss}\nC -->|One| D[Laptop]\nC -->|Two| E[iPhone]\nC -->|Three| F[Car]",
+  "after": "graph TD\nA[Christmas] -->|Get money| B(Go shopping)\nB --> C{Let me thinksssssx<br />sssssssssssssssssssuuu<br />tttsssssssssssssssssssssss}\nC -->|One| D[Laptop]\nC -->|Two| E[iPhone]\nF[Car]"
+}
