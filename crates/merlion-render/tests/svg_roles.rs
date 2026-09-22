@@ -383,3 +383,46 @@ fn hostile_role_names_never_reach_the_output() {
     let (svg, _) = run("flowchart LR\na e1@--> b\nclass e1 x\"><script>\nclass a y}body{x\nsubgraph g\nc\nend\nclass g z<>");
     assert!(!svg.contains("script") && !svg.contains("body{"));
 }
+
+// ---------------------------------------------------------------------------------------
+// Cost bounds
+// ---------------------------------------------------------------------------------------
+
+fn render_plain(src: &str) -> merlion_render::RenderResult {
+    let opts = RenderOptions {
+        id_prefix: Some("m1".into()),
+        ..RenderOptions::default()
+    };
+    render(src, &opts)
+}
+
+#[test]
+fn a_shared_edge_id_cannot_fan_roles_out_across_edges() {
+    let mut base = String::from("flowchart LR\n");
+    for _ in 0..400 {
+        base.push_str("a zq@--> b\n");
+    }
+    let mut src = base.clone();
+    for i in 0..2000 {
+        src.push_str(&format!("class zq c{}\n", i));
+    }
+    let b = render_plain(&base);
+    let r = render_plain(&src);
+    let (bs, rs) = (b.svg.unwrap(), r.svg.unwrap());
+    // The id stays with the first edge, which keeps at most 32 roles.
+    assert_eq!(rs.matches("<g class=\"merlion-edge merlion-c-").count(), 1);
+    assert!(
+        rs.len() < bs.len() + 16 * 1024,
+        "{} bytes vs {} without roles",
+        rs.len(),
+        bs.len()
+    );
+    assert!(r.fuel_used > b.fuel_used, "roles are charged to fuel");
+}
+
+#[test]
+fn applied_roles_are_charged_to_fuel() {
+    let plain = render_plain("flowchart LR\na --> b");
+    let roled = render_plain("flowchart LR\na e1@--> b\nclass a,e1 r1,r2,r3");
+    assert_eq!(roled.fuel_used, plain.fuel_used + 6);
+}

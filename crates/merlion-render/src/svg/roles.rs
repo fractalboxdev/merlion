@@ -30,7 +30,7 @@ pub const TONE_TEXT: u8 = 75;
 pub const ROLE_DASH: &str = "6 4";
 
 /// The element kind a role applies to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Kind {
     Node,
     Edge,

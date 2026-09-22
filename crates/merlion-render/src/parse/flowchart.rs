@@ -188,6 +188,10 @@ const AT_SHAPES: &[(&str, Shape)] = &[
     ("window-pane", Shape::WindowPane),
 ];
 
+/// Classes one node, edge or cluster keeps (specs/architecture.md#boundaries); a class
+/// past the cap is dropped with `W020`.
+pub const MAX_CLASSES: usize = 32;
+
 struct NodeB {
     id: String,
     label: String,
@@ -733,6 +737,9 @@ impl P<'_, '_> {
             self.skip_hws();
             let next = self.group()?;
             let span = self.span(prev.start, next.end);
+            // On a fan-out the id names one edge, from the last source to the first
+            // target, as in mermaid's `addLink`; the other edges of the link get none.
+            let (last_a, first_b) = (prev.nodes.last().copied(), next.nodes.first().copied());
             for &a in &prev.nodes {
                 for &b in &next.nodes {
                     if self.edges.len() >= self.opts.limits.edges {
@@ -747,7 +754,11 @@ impl P<'_, '_> {
                         arrow_end: tok.end,
                         min_len: tok.min_len,
                         span,
-                        id: edge_id.clone(),
+                        id: if Some(a) == last_a && Some(b) == first_b {
+                            edge_id.clone()
+                        } else {
+                            None
+                        },
                     });
                 }
             }
@@ -788,13 +799,32 @@ impl P<'_, '_> {
     }
 
     /// Reads an edge id (`e1@-->`): `class e1 <name>` gives the edge a role and
-    /// `e1@{…}` configures it (specs/parser.md#error-tolerance).
+    /// `e1@{…}` configures it (specs/parser.md#error-tolerance). An id already given to
+    /// an earlier edge stays with that edge: `R008` drops it here, so one `class`
+    /// statement never reaches more than one edge.
     fn edge_id(&mut self) -> Option<String> {
-        let end = self.scan_id(self.pos);
-        if end > self.pos && self.byte(end) == Some(b'@') && self.is_link_start(end + 1) {
-            let id = self.src.get(self.pos..end).unwrap_or("").to_string();
-            self.edge_ids.insert(id.clone());
+        let start = self.pos;
+        let end = self.scan_id(start);
+        if end > start && self.byte(end) == Some(b'@') && self.is_link_start(end + 1) {
+            let id = self.src.get(start..end).unwrap_or("").to_string();
             self.pos = end + 1;
+            if self.edge_ids.contains(&id) {
+                let span = self.span(start, end + 1);
+                self.repair(
+                    "R008",
+                    span,
+                    alloc::format!(
+                        "edge id `{}` already names an earlier edge; dropped here",
+                        excerpt(&id)
+                    ),
+                    Fix {
+                        span,
+                        replacement: String::new(),
+                    },
+                );
+                return None;
+            }
+            self.edge_ids.insert(id.clone());
             return Some(id);
         }
         None
@@ -2162,25 +2192,47 @@ impl P<'_, '_> {
             .collect();
         // Subgraph ids that no node took: `class` and `style` apply to the cluster.
         let mut sub_look: BTreeMap<String, (Vec<String>, Style)> = BTreeMap::new();
+        // Edge ids are unique (`R008`), so an id names at most one edge.
+        let edge_by_id: BTreeMap<String, usize> = edges
+            .iter()
+            .enumerate()
+            .filter_map(|(i, e)| e.id.clone().map(|id| (id, i)))
+            .collect();
+        // Elements that reached `MAX_CLASSES` and dropped a class (`W020`, once each).
+        let mut capped: BTreeSet<String> = BTreeSet::new();
         for op in core::mem::take(&mut self.ops) {
             match op {
                 Op::Class { id, class } => {
-                    if let Some(node) = by_id.get(&id).and_then(|&i| nodes.get_mut(i)) {
-                        if !node.classes.contains(&class) {
-                            node.classes.push(class);
-                        }
+                    let classes = if let Some(node) = by_id.get(&id).and_then(|&i| nodes.get_mut(i))
+                    {
+                        Some(&mut node.classes)
                     } else if sub_by_id.contains_key(&id) {
-                        let classes = &mut sub_look.entry(id).or_default().0;
-                        if !classes.contains(&class) {
-                            classes.push(class);
-                        }
+                        Some(&mut sub_look.entry(id.clone()).or_default().0)
                     } else {
-                        // An edge id: every edge declared with it takes the role.
-                        for e in edges.iter_mut() {
-                            if e.id.as_deref() == Some(id.as_str()) && !e.classes.contains(&class) {
-                                e.classes.push(class.clone());
-                            }
-                        }
+                        edge_by_id
+                            .get(&id)
+                            .and_then(|&i| edges.get_mut(i))
+                            .map(|e| &mut e.classes)
+                    };
+                    let Some(classes) = classes else {
+                        continue;
+                    };
+                    if classes.contains(&class) {
+                        continue;
+                    }
+                    if classes.len() < MAX_CLASSES {
+                        classes.push(class);
+                    } else if capped.insert(id.clone()) {
+                        self.diags.emit(
+                            Severity::Warning,
+                            "W020",
+                            Span::default(),
+                            alloc::format!(
+                                "`{}` already has {} classes; further classes dropped",
+                                excerpt(&id),
+                                MAX_CLASSES
+                            ),
+                        );
                     }
                 }
                 Op::Style { id, span, style } => {

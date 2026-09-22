@@ -1462,11 +1462,13 @@ fn edge_ids_are_kept_and_take_classes() {
 }
 
 #[test]
-fn an_edge_id_on_a_chain_applies_to_every_edge_of_that_link() {
+fn an_edge_id_on_a_fan_out_names_the_edge_from_the_last_source_to_the_first_target() {
     let (f, _) = parse_ok("flowchart LR\nA & B e1@--> C\nclass e1 hot");
     assert_eq!(f.edges.len(), 2);
-    assert!(f.edges.iter().all(|e| e.classes == ["hot"]));
-    assert!(f.edges.iter().all(|e| e.id.as_deref() == Some("e1")));
+    assert_eq!(f.edges[0].id, None);
+    assert!(f.edges[0].classes.is_empty());
+    assert_eq!(f.edges[1].id.as_deref(), Some("e1"));
+    assert_eq!(f.edges[1].classes, ["hot"]);
 }
 
 #[test]

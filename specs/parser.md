@@ -51,10 +51,11 @@ In the default mode, the parser applies each repair below, records it as a `Repa
 | `R005` | An edge to a node id that is never declared | Declare the node with its id as the label (Mermaid behaviour; recorded because it often hides a typo) |
 | `R006` | Markdown code fence left inside the source | Strip it |
 | `R007` | Tabs mixed with spaces in indentation-sensitive types (mindmap, kanban) | Treat each tab as 4 spaces |
+| `R008` | An edge id (`e1@-->`) already given to an earlier edge | Drop the id from the later edge; the id keeps naming the first edge |
 
 A syntax error that no rule repairs stops parsing and returns an `Error` diagnostic with its location and the tokens expected at that point.
 
-Style statements (`classDef`, `style`, `linkStyle`) and `click` statements are parsed into typed values and validated as specified in [svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle); the parser never passes their text through. Edge ids (`a e1@--> b`) are kept in the model: `class e1 <name>` gives the edge a role ([svg-output.md](svg-output.md#roles)), and `e1@{…}` still configures it. TODO(owner): decide what `class` does with an id that names both a node and an edge. Subgraphs nest at most 64 deep (`E010 NestingTooDeep`); the parser tracks depth explicitly, so deep input fails with a diagnostic instead of exhausting the stack.
+Style statements (`classDef`, `style`, `linkStyle`) and `click` statements are parsed into typed values and validated as specified in [svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle); the parser never passes their text through. Edge ids (`a e1@--> b`) are kept in the model: `class e1 <name>` gives the edge a role ([svg-output.md](svg-output.md#roles)), and `e1@{…}` still configures it. An edge id names exactly one edge: on a fan-out (`a & b e1@--> c & d`) it names the edge from the last source to the first target, as mermaid does, and a later link reusing it loses it with `R008`. An element keeps at most 32 classes from `class` and `:::`; further classes are dropped with one `W020` per element. TODO(owner): decide what `class` does with an id that names both a node and an edge. Subgraphs nest at most 64 deep (`E010 NestingTooDeep`); the parser tracks depth explicitly, so deep input fails with a diagnostic instead of exhausting the stack.
 
 ## Diagnostics
 
@@ -94,6 +95,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `W017` StylesheetRuleRejected | Warning | A rule declaring a token under a selector or at-rule outside the subset; or a role left out of the embedded style by the 16 KiB cap |
 | `W018` StylesheetDeclarationRejected | Warning | A property outside the token list, a font token, or a value outside the token's grammar |
 | `W019` StylesheetReferenceInvalid | Warning | `var()` naming an undefined token, forming a cycle, or nested deeper than 8 |
+| `W020` ClassesTruncated | Warning | An element given more than 32 classes; the rest are dropped |
 | `I010` UnmeasuredGlyph | Info | Code point outside the font table ([text-measurement.md](text-measurement.md)) |
 | `I011` ThemeConfigIgnored | Info | `theme`, `themeVariables` or `look` in front matter or `%%{init}%%` |
 | `I020` LayoutHintDiscarded | Info | Fewer than 50% of nodes survive ([layout.md](layout.md#stable-layout)) |
@@ -103,7 +105,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I031` ClickCallbackIgnored | Info | `click` callback or `call` dropped |
 | `I032` StylesheetRulesIgnored | Info | Count of stylesheet rules declaring no `--merlion-*` token |
 | `I033` ToneMasked | Info | A source `style` colour, or a `classDef` colour whose token the stylesheet leaves unset, overrides a stylesheet tone on the same element |
-| `R001`–`R007` | Repair | See [Error tolerance](#error-tolerance) |
+| `R001`–`R008` | Repair | See [Error tolerance](#error-tolerance) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
 

@@ -1,4 +1,4 @@
-//! Error tolerance: repairs R001–R006 and their fixes (specs/parser.md#error-tolerance).
+//! Error tolerance: repairs R001–R008 and their fixes (specs/parser.md#error-tolerance).
 
 mod parse_support;
 
@@ -268,4 +268,60 @@ fn every_repair_carries_a_fix() {
         .collect();
     assert!(repairs.len() >= 6, "{d:#?}");
     assert!(repairs.iter().all(|x| x.fix.is_some()));
+}
+
+// ---------------------------------------------------------------- R008
+
+#[test]
+fn r008_a_repeated_edge_id_stays_with_its_first_edge() {
+    let src = "flowchart LR\na[A] e1@--> b[B]\nb e1@--> c[C]\nclass e1 hot";
+    let (f, d) = parse_ok(src);
+    assert_eq!(codes(&d), vec!["R008"]);
+    assert_eq!((d[0].span.line, d[0].span.column), (3, 3));
+    assert_eq!(f.edges[0].id.as_deref(), Some("e1"));
+    assert_eq!(f.edges[1].id, None);
+    assert_eq!(f.edges[0].classes, ["hot"]);
+    assert!(f.edges[1].classes.is_empty());
+    let (out, f2) = assert_fix_round_trip(src, &["R008"]);
+    assert_eq!(
+        out,
+        "flowchart LR\na[A] e1@--> b[B]\nb --> c[C]\nclass e1 hot"
+    );
+    assert_eq!(f2.edges.len(), 2);
+}
+
+#[test]
+fn an_edge_id_on_a_fan_out_names_one_edge() {
+    let (f, d) = parse_ok("flowchart LR\na & b e1@--> c & d\nclass e1 hot");
+    assert!(!has(&d, "R008"), "{d:#?}");
+    assert_eq!(f.edges.len(), 4);
+    // a->c, a->d, b->c, b->d: the id names b->c (last source, first target).
+    for (i, e) in f.edges.iter().enumerate() {
+        if i == 2 {
+            assert_eq!(e.id.as_deref(), Some("e1"));
+            assert_eq!(e.classes, ["hot"]);
+        } else {
+            assert_eq!(e.id, None);
+            assert!(e.classes.is_empty());
+        }
+    }
+}
+
+#[test]
+fn classes_per_element_are_capped_at_32() {
+    let mut src = String::from("flowchart LR\nsubgraph g\na\nend\na e1@--> b\n");
+    for i in 0..40 {
+        src.push_str(&format!("class a,e1,g c{i}\n"));
+    }
+    let (f, d) = parse_ok(&src);
+    assert_eq!(node(&f, "a").classes.len(), 32);
+    assert_eq!(node(&f, "a").classes[31], "c31");
+    assert_eq!(f.edges[0].classes.len(), 32);
+    assert_eq!(f.subgraphs[0].classes.len(), 32);
+    // One warning per element, not one per dropped class.
+    assert_eq!(count(&d, "W020"), 3, "{d:#?}");
+    // A class given twice counts once.
+    let (f, d) = parse_ok("flowchart LR\na:::x:::x\nclass a x");
+    assert_eq!(node(&f, "a").classes, ["x"]);
+    assert!(!has(&d, "W020"));
 }

@@ -84,8 +84,9 @@ Byte-identical output on x86-64, arm64 and wasm32 rests on these rules:
 | Stylesheet theme names / role selectors / block depth | 16 / 256 / 2 | `Error` `E013` |
 | Stylesheet `var()` resolution depth | 8 | `Warning` `W019` |
 | Embedded style added by a palette, per diagram | 16 KiB | Unused roles never embedded; roles over the cap dropped with `W017` |
+| Classes per node, edge or cluster | 32 | Dropped with `W020 ClassesTruncated` |
 | Label length | 4,096 bytes | Truncated at a character boundary with `W012 LabelTruncated` |
-| Fuel per diagram | See [ADR-0008](adr/0008-deterministic-work-budget.md) | Optional passes stop; exhaustion in a mandatory phase returns `TooLarge` |
+| Fuel per diagram | See [ADR-0008](adr/0008-deterministic-work-budget.md); role work is charged before layout, one unit per class on an element and per palette tone | Optional passes stop; exhaustion in a mandatory phase returns `TooLarge` |
 
 - Every limit is configurable by the caller. The dummy-node limit exists because an edge spanning L layers adds L − 1 dummy nodes: 2,000 nodes and 2,000 long edges would otherwise reach 4 million.
 - The core has no panics on any input, and no unbounded recursion: every recursive parser carries a depth counter. A fuzz target covers each parser separately and the whole pipeline ([security.md](security.md#fuzzing)).

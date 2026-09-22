@@ -185,6 +185,15 @@ pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
     let mut fuel = fuel::Fuel::new(opts.fuel);
     match &diagram {
         Diagram::Flowchart(chart) => {
+            // Draw-time role work: one unit per class applied to an element and per
+            // palette tone (specs/adr/0008-deterministic-work-budget.md).
+            if fuel.burn(svg::role_units(chart, opts)).is_err() {
+                return RenderResult::failed(
+                    RenderError::TooLarge { what: "fuel" },
+                    diags.items,
+                    fuel.used(),
+                );
+            }
             let geom = match layout::layout_flowchart(chart, opts, &mut fuel, &mut diags) {
                 Ok(g) => g,
                 Err(layout::LayoutError::TooLarge { what }) => {

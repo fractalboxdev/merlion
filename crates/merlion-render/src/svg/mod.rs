@@ -31,6 +31,7 @@ mod style;
 pub mod theme;
 mod tree;
 
+use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt::Write;
@@ -231,69 +232,79 @@ struct MarkerDef {
 
 /// The markers the drawn edges use: role-less markers first in the fixed order arrow,
 /// circle, cross, then role markers in first-use order.
-fn collect_markers(chart: &Flowchart, geom: &Geometry, layer: &Layer) -> Vec<MarkerDef> {
+fn collect_markers(chart: &Flowchart, geom: &Geometry, roles: &Roles, layer: &Layer) -> Markers {
     let mut plain: Vec<MarkerDef> = Vec::new();
     let mut roled: Vec<MarkerDef> = Vec::new();
-    let mut sets: Vec<Vec<String>> = Vec::new();
-    for (e, _) in chart.edges.iter().zip(geom.edges.iter()) {
+    let mut seen: BTreeSet<(u8, &[String])> = BTreeSet::new();
+    let mut sets: BTreeMap<&[String], usize> = BTreeMap::new();
+    for (i, (e, _)) in chart.edges.iter().zip(geom.edges.iter()).enumerate() {
         if e.stroke == Stroke::Invisible {
             continue;
         }
-        let roles = valid_classes(&e.classes);
+        let r = roles.edge(i);
         for a in [e.arrow_start, e.arrow_end] {
             let Some(kind) = marker_name(a) else {
                 continue;
             };
-            let target = if roles.is_empty() {
-                &mut plain
-            } else {
-                &mut roled
-            };
-            if target.iter().any(|m| m.kind == a && m.roles == roles) {
+            if !seen.insert((marker_order(a), r)) {
                 continue;
             }
-            let name = match roles.as_slice() {
+            let name = match r {
                 [] => String::from(kind),
                 [one] => alloc::format!("{}-c-{}", kind, one),
                 _ => {
-                    let k = match sets.iter().position(|s| *s == roles) {
-                        Some(k) => k,
-                        None => {
-                            sets.push(roles.clone());
-                            sets.len() - 1
-                        }
-                    };
+                    let next = sets.len();
+                    let k = *sets.entry(r).or_insert(next);
                     alloc::format!("{}-r{}", kind, k)
                 }
             };
             let colour = layer
-                .role_paint(Kind::Edge, &roles)
+                .role_paint(Kind::Edge, r)
                 .0
                 .unwrap_or_else(|| layer.lit(Role::Edge));
+            let target = if r.is_empty() { &mut plain } else { &mut roled };
             target.push(MarkerDef {
                 kind: a,
-                roles: roles.clone(),
+                roles: r.to_vec(),
                 name,
                 colour,
             });
         }
     }
-    let order = |a: Arrow| match a {
+    plain.sort_by_key(|m| marker_order(m.kind));
+    plain.extend(roled);
+    let by_key = plain
+        .iter()
+        .enumerate()
+        .map(|(i, m)| ((marker_order(m.kind), m.roles.clone()), i))
+        .collect();
+    Markers {
+        defs: plain,
+        by_key,
+    }
+}
+
+fn marker_order(a: Arrow) -> u8 {
+    match a {
         Arrow::Arrow => 0,
         Arrow::Circle => 1,
         _ => 2,
-    };
-    plain.sort_by_key(|m| order(m.kind));
-    plain.extend(roled);
-    plain
+    }
 }
 
-/// The marker id suffix for an edge head.
-fn marker_ref<'a>(markers: &'a [MarkerDef], kind: Arrow, roles: &[String]) -> Option<&'a str> {
-    markers
-        .iter()
-        .find(|m| m.kind == kind && m.roles == roles)
-        .map(|m| m.name.as_str())
+/// The markers in `<defs>` order, and each one's index by (head kind, roles).
+struct Markers {
+    defs: Vec<MarkerDef>,
+    by_key: BTreeMap<(u8, Vec<String>), usize>,
+}
+
+impl Markers {
+    /// The marker id suffix for an edge head.
+    fn find(&self, kind: Arrow, roles: &[String]) -> Option<&str> {
+        marker_name(kind)?;
+        let i = *self.by_key.get(&(marker_order(kind), roles.to_vec()))?;
+        self.defs.get(i).map(|m| m.name.as_str())
+    }
 }
 
 /// `<defs>` with each used marker once. Markers are 10 × 10 user units with the tip at
@@ -355,6 +366,72 @@ fn valid_classes(classes: &[String]) -> Vec<String> {
         }
     }
     out
+}
+
+/// The valid roles of every element, computed once per draw, and the (kind, role) pairs
+/// some drawn element carries.
+struct Roles {
+    node: Vec<Vec<String>>,
+    edge: Vec<Vec<String>>,
+    cluster: Vec<Vec<String>>,
+    used: BTreeSet<(Kind, String)>,
+}
+
+impl Roles {
+    fn new(chart: &Flowchart) -> Self {
+        let node: Vec<Vec<String>> = chart
+            .nodes
+            .iter()
+            .map(|n| valid_classes(&n.classes))
+            .collect();
+        let edge: Vec<Vec<String>> = chart
+            .edges
+            .iter()
+            .map(|e| valid_classes(&e.classes))
+            .collect();
+        let cluster: Vec<Vec<String>> = chart
+            .subgraphs
+            .iter()
+            .map(|s| valid_classes(&s.classes))
+            .collect();
+        let mut used = BTreeSet::new();
+        for r in node.iter().flatten() {
+            used.insert((Kind::Node, r.clone()));
+        }
+        for (r, e) in edge.iter().zip(chart.edges.iter()) {
+            if e.stroke != Stroke::Invisible {
+                for x in r {
+                    used.insert((Kind::Edge, x.clone()));
+                }
+            }
+        }
+        for r in cluster.iter().flatten() {
+            used.insert((Kind::Cluster, r.clone()));
+        }
+        Roles {
+            node,
+            edge,
+            cluster,
+            used,
+        }
+    }
+
+    fn node(&self, i: usize) -> &[String] {
+        self.node.get(i).map_or(&[], Vec::as_slice)
+    }
+
+    fn edge(&self, i: usize) -> &[String] {
+        self.edge.get(i).map_or(&[], Vec::as_slice)
+    }
+
+    fn cluster(&self, i: usize) -> &[String] {
+        self.cluster.get(i).map_or(&[], Vec::as_slice)
+    }
+
+    /// Whether some drawn element of `kind` carries role `name`.
+    fn uses(&self, kind: Kind, name: &str) -> bool {
+        self.used.contains(&(kind, String::from(name)))
+    }
 }
 
 /// The literal paint of one element: what its presentation attributes carry.
@@ -544,7 +621,8 @@ struct Ctx<'a> {
     /// Per cluster: whether its `style` produced rules; and the `classDef` names used
     /// by some cluster whose rules exist.
     cluster_class: Vec<bool>,
-    markers: Vec<MarkerDef>,
+    markers: Markers,
+    roles: &'a Roles,
     light: Layer<'a>,
 }
 
@@ -577,11 +655,11 @@ fn push_node(out: &mut String, cx: &Ctx, i: usize, diags: &mut Diagnostics) {
         out.push('>');
     }
     out.push_str("<g");
-    attr(out, "class", &node_classes(node, i, cx));
+    attr(out, "class", &node_classes(i, cx));
     attr(out, "data-merlion-id", &node.id);
     let rank = if g.rank > MAX_RANK { MAX_RANK } else { g.rank };
     let _ = write!(out, " data-merlion-rank=\"{}\">", rank);
-    let paint = node_paint(cx.chart, node, &cx.light);
+    let paint = node_paint(cx.chart, node, cx.roles.node(i), &cx.light);
     out.push_str("<path class=\"merlion-shape\"");
     attr(out, "d", &shapes::shape_d(node.shape, g.x, g.y, g.w, g.h));
     attr(out, "fill", &paint.fill);
@@ -607,8 +685,7 @@ fn push_node(out: &mut String, cx: &Ctx, i: usize, diags: &mut Diagnostics) {
     out.push('\n');
 }
 
-fn node_paint(chart: &Flowchart, node: &Node, layer: &Layer) -> Paint {
-    let roles = valid_classes(&node.classes);
+fn node_paint(chart: &Flowchart, node: &Node, roles: &[String], layer: &Layer) -> Paint {
     let mut p = Paint {
         fill: layer.lit(Role::NodeBg),
         stroke: layer.lit(Role::NodeBorder),
@@ -618,32 +695,35 @@ fn node_paint(chart: &Flowchart, node: &Node, layer: &Layer) -> Paint {
     p.roles(
         layer,
         Kind::Node,
-        &roles,
+        roles,
         Role::NodeBg,
         TONE_FILL,
         Role::NodeText,
     );
-    p.class_defs(chart, &roles, true, layer);
+    p.class_defs(chart, roles, true, layer);
     p.style(&node.style, true);
     p
 }
 
-fn edge_paint(chart: &Flowchart, e: &Edge, layer: &Layer) -> Paint {
-    let roles = valid_classes(&e.classes);
+fn edge_paint(chart: &Flowchart, e: &Edge, roles: &[String], layer: &Layer) -> Paint {
     let mut p = Paint {
         fill: String::from("none"),
         stroke: layer.lit(Role::Edge),
         text: layer.lit(Role::Fg),
         dash: (e.stroke == Stroke::Dotted).then(|| String::from("3 3")),
     };
-    p.roles(layer, Kind::Edge, &roles, Role::Edge, 0, Role::Fg);
-    p.class_defs(chart, &roles, false, layer);
+    p.roles(layer, Kind::Edge, roles, Role::Edge, 0, Role::Fg);
+    p.class_defs(chart, roles, false, layer);
     p.style(&e.style, false);
     p
 }
 
-fn cluster_paint(chart: &Flowchart, sg: &crate::model::Subgraph, layer: &Layer) -> Paint {
-    let roles = valid_classes(&sg.classes);
+fn cluster_paint(
+    chart: &Flowchart,
+    sg: &crate::model::Subgraph,
+    roles: &[String],
+    layer: &Layer,
+) -> Paint {
     let mut p = Paint {
         fill: layer.lit(Role::ClusterBg),
         stroke: layer.lit(Role::ClusterBorder),
@@ -653,27 +733,27 @@ fn cluster_paint(chart: &Flowchart, sg: &crate::model::Subgraph, layer: &Layer) 
     p.roles(
         layer,
         Kind::Cluster,
-        &roles,
+        roles,
         Role::ClusterBg,
         TONE_CLUSTER_FILL,
         Role::Fg,
     );
-    p.class_defs(chart, &roles, true, layer);
+    p.class_defs(chart, roles, true, layer);
     p.style(&sg.style, true);
     p
 }
 
-fn push_role_classes(c: &mut String, prefix: &str, classes: &[String]) {
-    for name in valid_classes(classes) {
+fn push_role_classes(c: &mut String, prefix: &str, roles: &[String]) {
+    for name in roles {
         c.push(' ');
         c.push_str(prefix);
-        c.push_str(&name);
+        c.push_str(name);
     }
 }
 
-fn node_classes(node: &Node, i: usize, cx: &Ctx) -> String {
+fn node_classes(i: usize, cx: &Ctx) -> String {
     let mut c = String::from("merlion-node");
-    push_role_classes(&mut c, "merlion-c-", &node.classes);
+    push_role_classes(&mut c, "merlion-c-", cx.roles.node(i));
     if cx.node_class.get(i).copied().unwrap_or(false) {
         c.push(' ');
         c.push_str(&node_style_class(i));
@@ -691,7 +771,7 @@ fn push_edge(out: &mut String, cx: &Ctx, ei: usize) {
     let d = path::edge_d(&g.points, cx.opts.edge_style);
     out.push_str("<g");
     let mut class = String::from("merlion-edge");
-    push_role_classes(&mut class, "merlion-c-", &e.classes);
+    push_role_classes(&mut class, "merlion-c-", cx.roles.edge(ei));
     if cx.edge_class.get(ei).copied().unwrap_or(false) {
         class.push(' ');
         class.push_str(&edge_style_class(ei));
@@ -706,13 +786,13 @@ fn push_edge(out: &mut String, cx: &Ctx, ei: usize) {
         out.push_str(" data-merlion-wrap=\"true\"");
     }
     out.push('>');
-    let paint = edge_paint(cx.chart, e, &cx.light);
-    push_edge_path(out, cx, e, &d, &paint);
+    let paint = edge_paint(cx.chart, e, cx.roles.edge(ei), &cx.light);
+    push_edge_path(out, cx, ei, e, &d, &paint);
     push_edge_label(out, g, &paint.text, &cx.light);
     out.push_str("</g>\n");
 }
 
-fn push_edge_path(out: &mut String, cx: &Ctx, e: &Edge, d: &str, paint: &Paint) {
+fn push_edge_path(out: &mut String, cx: &Ctx, ei: usize, e: &Edge, d: &str, paint: &Paint) {
     let mut class = String::from("merlion-edge-path");
     let mut width = cx.light.table.stroke_px();
     match e.stroke {
@@ -732,9 +812,9 @@ fn push_edge_path(out: &mut String, cx: &Ctx, e: &Edge, d: &str, paint: &Paint) 
     if let Some(dash) = &paint.dash {
         attr(out, "stroke-dasharray", dash);
     }
-    let roles = valid_classes(&e.classes);
+    let roles = cx.roles.edge(ei);
     for (a, which) in [(e.arrow_start, "marker-start"), (e.arrow_end, "marker-end")] {
-        if let Some(m) = marker_ref(&cx.markers, a, &roles) {
+        if let Some(m) = cx.markers.find(a, roles) {
             let _ = write!(out, " {}=\"url(#{}-{})\"", which, cx.id, m);
         }
     }
@@ -782,7 +862,7 @@ fn push_cluster_open(out: &mut String, cx: &Ctx, si: usize) {
         return;
     };
     let mut class = String::from("merlion-cluster");
-    push_role_classes(&mut class, "merlion-cc-", &sg.classes);
+    push_role_classes(&mut class, "merlion-cc-", cx.roles.cluster(si));
     if cx.cluster_class.get(si).copied().unwrap_or(false) {
         class.push(' ');
         class.push_str(&cluster_style_class(si));
@@ -800,7 +880,7 @@ fn push_cluster_open(out: &mut String, cx: &Ctx, si: usize) {
     attr_num(out, "width", nonneg(g.w));
     attr_num(out, "height", nonneg(g.h));
     attr_num(out, "rx", CLUSTER_RADIUS);
-    let paint = cluster_paint(cx.chart, sg, &cx.light);
+    let paint = cluster_paint(cx.chart, sg, cx.roles.cluster(si), &cx.light);
     attr(out, "fill", &paint.fill);
     attr(out, "stroke", &paint.stroke);
     attr(out, "stroke-width", &stroke_attr(&cx.light.table));
@@ -820,27 +900,6 @@ fn push_cluster_open(out: &mut String, cx: &Ctx, si: usize) {
     out.push('\n');
 }
 
-/// Rules of the built-in roles the diagram uses on their element kind, in table order
-/// (specs/svg-output.md#built-in-roles).
-/// Whether some element of `kind` carries role `name`.
-fn uses_role(chart: &Flowchart, kind: Kind, name: &str) -> bool {
-    match kind {
-        Kind::Node => chart
-            .nodes
-            .iter()
-            .any(|n| valid_classes(&n.classes).iter().any(|c| c == name)),
-        Kind::Edge => chart
-            .edges
-            .iter()
-            .filter(|e| e.stroke != Stroke::Invisible)
-            .any(|e| valid_classes(&e.classes).iter().any(|c| c == name)),
-        Kind::Cluster => chart
-            .subgraphs
-            .iter()
-            .any(|s| valid_classes(&s.classes).iter().any(|c| c == name)),
-    }
-}
-
 fn kind_rules(
     t: &Table,
     kind: Kind,
@@ -857,9 +916,9 @@ fn kind_rules(
 
 /// Rules of the built-in roles the diagram uses on their element kind, in table order
 /// (specs/svg-output.md#built-in-roles).
-fn built_in_rules(chart: &Flowchart, layer: &Layer) -> Vec<RoleRule> {
+fn built_in_rules(roles: &Roles, layer: &Layer) -> Vec<RoleRule> {
     let mut out = Vec::new();
-    for b in BUILT_IN.iter().filter(|b| uses_role(chart, b.kind, b.name)) {
+    for b in BUILT_IN.iter().filter(|b| roles.uses(b.kind, b.name)) {
         let tone = b.tone.map(|r| Tone::of_role(&layer.table, r));
         out.extend(kind_rules(
             &layer.table,
@@ -895,7 +954,7 @@ fn rules_bytes(prefix: usize, rules: &[RoleRule]) -> usize {
 /// Rules of the palette's role tones for the roles the diagram uses, light and dark,
 /// within [`PALETTE_STYLE_BUDGET`]; a role past the budget is left out with `W017`.
 fn palette_rules(
-    chart: &Flowchart,
+    roles: &Roles,
     id: &str,
     light: &Layer,
     dark: Option<&Layer>,
@@ -905,7 +964,7 @@ fn palette_rules(
     for layer in core::iter::once(light).chain(dark) {
         for kind in [Kind::Node, Kind::Edge, Kind::Cluster] {
             for t in layer.tones(kind) {
-                if uses_role(chart, kind, &t.name) && !keys.contains(&(kind, t.name.clone())) {
+                if roles.uses(kind, &t.name) && !keys.contains(&(kind, t.name.clone())) {
                     keys.push((kind, t.name.clone()));
                 }
             }
@@ -949,7 +1008,7 @@ fn palette_rules(
 /// `I033 ToneMasked` (specs/svg-output.md#precedence): a source literal overrides a
 /// palette tone on the same element: a `style` colour, or a `classDef` colour whose
 /// token the palette leaves unset.
-fn tone_masked(chart: &Flowchart, layer: &Layer) -> bool {
+fn tone_masked(chart: &Flowchart, roles: &Roles, layer: &Layer) -> bool {
     let toned = |kind: Kind, roles: &[String]| {
         layer
             .tones(kind)
@@ -972,17 +1031,17 @@ fn tone_masked(chart: &Flowchart, layer: &Layer) -> bool {
                     })
             })
     };
-    let node = chart.nodes.iter().any(|n| {
-        let r = valid_classes(&n.classes);
-        toned(Kind::Node, &r) && masks(&r, &n.style)
+    let node = chart.nodes.iter().enumerate().any(|(i, n)| {
+        let r = roles.node(i);
+        toned(Kind::Node, r) && masks(r, &n.style)
     });
-    let edge = chart.edges.iter().any(|e| {
-        let r = valid_classes(&e.classes);
-        toned(Kind::Edge, &r) && masks(&r, &e.style)
+    let edge = chart.edges.iter().enumerate().any(|(i, e)| {
+        let r = roles.edge(i);
+        toned(Kind::Edge, r) && masks(r, &e.style)
     });
-    let cluster = chart.subgraphs.iter().any(|s| {
-        let r = valid_classes(&s.classes);
-        toned(Kind::Cluster, &r) && masks(&r, &s.style)
+    let cluster = chart.subgraphs.iter().enumerate().any(|(i, s)| {
+        let r = roles.cluster(i);
+        toned(Kind::Cluster, r) && masks(r, &s.style)
     });
     node || edge || cluster
 }
@@ -997,16 +1056,15 @@ struct StyleClasses {
 
 /// Source-style rules for one layer: classDef rules (nodes, then edges that use the
 /// class), cluster classDef rules, then node `style`, cluster `style` and `linkStyle`.
-fn source_rules(chart: &Flowchart, layer: &Layer) -> (Vec<SourceRule>, StyleClasses) {
+fn source_rules(
+    chart: &Flowchart,
+    roles: &Roles,
+    layer: &Layer,
+) -> (Vec<SourceRule>, StyleClasses) {
     let mut src = SourceStyles {
         rules: Vec::new(),
         fixed_colour: false,
     };
-    let edge_roles: Vec<Vec<String>> = chart
-        .edges
-        .iter()
-        .map(|e| valid_classes(&e.classes))
-        .collect();
     let values = |name: &str| {
         [ClassProp::Fill, ClassProp::Stroke, ClassProp::Color].map(|p| layer.class_value(name, p))
     };
@@ -1023,7 +1081,7 @@ fn source_rules(chart: &Flowchart, layer: &Layer) -> (Vec<SourceRule>, StyleClas
         };
         let class = alloc::format!(".merlion-c-{}", cd.name);
         src.add(&class, &cd.style, ".merlion-shape", true, Some(&token));
-        if edge_roles.iter().any(|r| r.contains(&cd.name)) {
+        if roles.edge.iter().any(|r| r.contains(&cd.name)) {
             let body = color::shape_decls(&cd.style, false, Some(&token));
             if !body.is_empty() {
                 src.rules.push(SourceRule {
@@ -1034,9 +1092,7 @@ fn source_rules(chart: &Flowchart, layer: &Layer) -> (Vec<SourceRule>, StyleClas
         }
     }
     for cd in &chart.class_defs {
-        if color::is_valid_class_name(&cd.name)
-            && chart.subgraphs.iter().any(|s| s.classes.contains(&cd.name))
-        {
+        if color::is_valid_class_name(&cd.name) && roles.uses(Kind::Cluster, &cd.name) {
             let v = values(&cd.name);
             let token = ClassToken {
                 name: &cd.name,
@@ -1106,6 +1162,22 @@ fn source_rules(chart: &Flowchart, layer: &Layer) -> (Vec<SourceRule>, StyleClas
     )
 }
 
+/// Fuel units of the role work a draw does: one per class on a node, edge or cluster,
+/// and one per palette tone in each table.
+pub fn role_units(chart: &Flowchart, opts: &RenderOptions) -> u64 {
+    let classes: usize = chart.nodes.iter().map(|n| n.classes.len()).sum::<usize>()
+        + chart.edges.iter().map(|e| e.classes.len()).sum::<usize>()
+        + chart
+            .subgraphs
+            .iter()
+            .map(|s| s.classes.len())
+            .sum::<usize>();
+    let tones = opts.palette.as_ref().map_or(0, |p| {
+        p.light.tones.len() + p.dark.as_ref().map_or(0, |d| d.tones.len())
+    });
+    (classes + tones) as u64
+}
+
 /// Outline only, without layout (for `merlion outline`), in the source direction.
 pub fn outline_flowchart(chart: &Flowchart) -> String {
     outline::outline(chart, chart.direction)
@@ -1132,7 +1204,8 @@ pub fn draw_flowchart(
         .as_ref()
         .and_then(|p| p.dark.as_ref())
         .map(|d| Layer::new(Some(d)));
-    let (src_rules, flags) = source_rules(chart, &light);
+    let roles = Roles::new(chart);
+    let (src_rules, flags) = source_rules(chart, &roles, &light);
     if flags.fixed_colour {
         diags.emit_once(
             Severity::Info,
@@ -1141,7 +1214,9 @@ pub fn draw_flowchart(
             crate::parse::style::FIXED_COLOUR_MESSAGE,
         );
     }
-    if tone_masked(chart, &light) || dark.as_ref().is_some_and(|d| tone_masked(chart, d)) {
+    if tone_masked(chart, &roles, &light)
+        || dark.as_ref().is_some_and(|d| tone_masked(chart, &roles, d))
+    {
         diags.emit_once(
             Severity::Info,
             "I033",
@@ -1149,15 +1224,15 @@ pub fn draw_flowchart(
             "a source colour overrides a stylesheet tone on the same element",
         );
     }
-    let (palette_light, palette_dark) = palette_rules(chart, &id, &light, dark.as_ref(), diags);
-    let mut role_rules = built_in_rules(chart, &light);
+    let (palette_light, palette_dark) = palette_rules(&roles, &id, &light, dark.as_ref(), diags);
+    let mut role_rules = built_in_rules(&roles, &light);
     role_rules.extend(palette_light);
     let dark_rules = dark.as_ref().map(|d| {
-        let mut r = built_in_rules(chart, d);
+        let mut r = built_in_rules(&roles, d);
         r.extend(palette_dark);
-        (r, source_rules(chart, d).0)
+        (r, source_rules(chart, &roles, d).0)
     });
-    let markers = collect_markers(chart, geom, &light);
+    let markers = collect_markers(chart, geom, &roles, &light);
     let cx = Ctx {
         chart,
         geom,
@@ -1167,6 +1242,7 @@ pub fn draw_flowchart(
         edge_class: flags.edge,
         cluster_class: flags.cluster,
         markers,
+        roles: &roles,
         light,
     };
 
@@ -1250,7 +1326,7 @@ pub fn draw_flowchart(
     ));
     out.push_str("</style>\n");
 
-    push_defs(&mut out, &id, &cx.markers);
+    push_defs(&mut out, &id, &cx.markers.defs);
 
     if opts.background {
         out.push_str("<rect class=\"merlion-bg\" x=\"0\" y=\"0\"");
