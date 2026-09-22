@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, writeFileSync as write } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import rehypeMerlion from "@fractalboxdev/merlion-rehype";
 import merlion from "../index.js";
 
@@ -81,4 +84,57 @@ test("published package has no runtime dependencies; astro is a peer (specs/supp
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
   assert.deepEqual(pkg.dependencies, {});
   assert.ok(pkg.peerDependencies.astro);
+});
+
+// --- The `stylesheet` option: compiled once in the config hook, written under Astro's
+// cache directory and imported as page CSS; the source stylesheet never reaches a page.
+
+const SHEET = ':root { --merlion-accent: #0f766e; }\n.merlion-c-store { --merlion-tone: #b8408f; }\n';
+
+const setupAsync = async (options, dir) => {
+  const updates = [];
+  const scripts = [];
+  const logs = [];
+  const integration = merlion(options);
+  await integration.hooks["astro:config:setup"]({
+    config: { root: pathToFileURL(`${dir}/`), cacheDir: pathToFileURL(`${dir}/node_modules/.astro/`), markdown: {} },
+    updateConfig: (c) => updates.push(c),
+    injectScript: (stage, content) => scripts.push({ stage, content }),
+    logger: { warn: (m) => logs.push(["warn", m]), info: (m) => logs.push(["info", m]), error: (m) => logs.push(["error", m]) },
+  });
+  return { updates, scripts, logs };
+};
+
+const project = () => realpathSync(mkdtempSync(join(tmpdir(), "merlion-astro-")));
+
+test("stylesheet: compiled once through the WASM module, written as an asset and imported on pages", async () => {
+  const dir = project();
+  write(join(dir, "diagram.css"), SHEET);
+  const { updates, scripts } = await setupAsync({ stylesheet: "diagram.css" }, dir);
+  const asset = join(dir, "node_modules/.astro/merlion/stylesheet.css");
+  assert.equal(
+    readFileSync(asset, "utf8"),
+    ":root {\n  --merlion-accent: #0f766e;\n}\n.merlion .merlion-c-store {\n  --merlion-tone: #b8408f;\n}\n",
+  );
+  assert.deepEqual(readdirSync(join(dir, "node_modules/.astro/merlion")), ["stylesheet.css"]);
+  const css = scripts.filter((s) => s.stage === "page-ssr").map((s) => s.content);
+  // Theme tokens first, then the compiled stylesheet, so its rules win.
+  assert.deepEqual(css.slice(-1), [`import ${JSON.stringify(asset)};`]);
+  assert.ok(css.indexOf('import "@fractalboxdev/merlion-themes/merlion-themes.css";') < css.length - 1);
+  // The plugin does not compile it again.
+  const [, opts] = updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0];
+  assert.equal(opts.stylesheet, undefined);
+});
+
+test("stylesheet: warnings go to the logger; strict errors and refused paths fail the build", async () => {
+  const dir = project();
+  write(join(dir, "warn.css"), ":root { --merlion-bg: #fff; --merlion-font: Comic; }\n");
+  const { logs } = await setupAsync({ stylesheet: "warn.css" }, dir);
+  assert.ok(logs.some(([level, m]) => level === "warn" && /warn\.css:1:\d+: W018/.test(m)), JSON.stringify(logs));
+  await assert.rejects(setupAsync({ stylesheet: "warn.css", strict: true }, dir), /W018/);
+  await assert.rejects(setupAsync({ stylesheet: "../outside.css" }, dir), /outside the project root/);
+  const fresh = project();
+  write(join(fresh, "big.css"), `/*${"x".repeat(64 * 1024)}*/`);
+  await assert.rejects(setupAsync({ stylesheet: "big.css" }, fresh), /E013/);
+  assert.ok(!existsSync(join(fresh, "node_modules/.astro/merlion/stylesheet.css")));
 });

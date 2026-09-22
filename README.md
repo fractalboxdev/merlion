@@ -85,7 +85,7 @@ const html = await unified()
   .process("```mermaid\nflowchart LR\n  a --> b\n```\n");
 ```
 
-Each ```` ```mermaid ```` block becomes a `<figure>` holding the inline SVG. A block that fails to parse stays a code block and its diagnostics land on the vfile. Astro sites add `@fractalboxdev/merlion-astro` to `integrations` instead.
+Each ```` ```mermaid ```` block becomes a `<figure>` holding the inline SVG. A block that fails to parse stays a code block and its diagnostics land on the vfile. Astro sites add `@fractalboxdev/merlion-astro` to `integrations` instead. With `stylesheet: "diagram.css"` both compile the stylesheet once per build: the rehype plugin exposes the page CSS as `file.data.merlion.css`, and the Astro integration writes it as an asset imported after `merlion-themes.css`.
 
 ## Tests
 

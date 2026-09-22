@@ -6,6 +6,7 @@
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import { cacheKey, contentHash, idPrefix } from "./fnv.js";
 import { CacheRefused, openCache, readEntry, writeEntry } from "./cache.js";
+import { readStylesheet, StylesheetRefused } from "./stylesheet.js";
 
 export { fnv1a64, idPrefix, cacheKey } from "./fnv.js";
 
@@ -89,6 +90,12 @@ const normalise = (options) => {
     throw new TypeError('merlion-rehype: `source` must be "details" or "none"');
   }
   if (o.render !== undefined && typeof o.render !== "function") throw new TypeError("merlion-rehype: `render` must be a function");
+  if (o.stylesheet !== undefined && typeof o.stylesheet !== "string") {
+    throw new TypeError("merlion-rehype: `stylesheet` must be a path");
+  }
+  if (o.compileStylesheet !== undefined && typeof o.compileStylesheet !== "function") {
+    throw new TypeError("merlion-rehype: `compileStylesheet` must be a function");
+  }
   o.strict = Boolean(o.strict);
   return o;
 };
@@ -123,12 +130,53 @@ const internalError = (err) => ({
 const reported = (d) => d && (d.severity === "error" || d.severity === "warning" || d.severity === "repair");
 
 /**
+ * Reads the stylesheet `o.stylesheet` under `root` with the file-handling rules and
+ * compiles it: `{ css, messages }`, where `css` is the page CSS (null when refused or
+ * failed) and `messages` are `[ruleId, reason, fatal]`, `fatal` only under `o.strict`.
+ * Shared with @fractalboxdev/merlion-astro.
+ * @param {{ stylesheet: string, strict?: boolean, compileStylesheet?: Function }} o
+ * @param {string} root
+ */
+export const compileStylesheetFile = async (o, root) => {
+  const messages = [];
+  let text;
+  try {
+    text = readStylesheet(root, o.stylesheet);
+  } catch (err) {
+    if (!(err instanceof StylesheetRefused)) throw err;
+    const code = err.code === "E013" ? "E013 " : "";
+    messages.push([err.code, `merlion stylesheet refused: ${code}${err.message}`, o.strict]);
+    return { css: null, messages };
+  }
+  const compile = o.compileStylesheet ?? (await import("./wasm.js").then((m) => m.loadWasmCompile()));
+  let res;
+  try {
+    res = await compile(text, { strict: Boolean(o.strict) });
+  } catch (err) {
+    res = { css: null, diagnostics: [internalError(err)] };
+  }
+  for (const d of Array.isArray(res?.diagnostics) ? res.diagnostics : []) {
+    if (!reported(d)) continue;
+    const at = d.line > 0 ? `${o.stylesheet}:${d.line}:${d.column || 1}` : o.stylesheet;
+    messages.push([d.code ?? "E001", `${at}: ${d.code ?? "E001"} ${d.message ?? "compile failed"}`, d.severity === "error" && o.strict]);
+  }
+  const css = typeof res?.css === "string" ? res.css : null;
+  if (css === null && !messages.some((m) => m[2])) {
+    messages.push(["stylesheet", `merlion stylesheet ${o.stylesheet} failed to compile; diagrams use the page's other styles`, o.strict]);
+  }
+  return { css, messages };
+};
+
+/**
  * @param {import("./index.js").Options} [options]
  */
 export default function rehypeMerlion(options = {}) {
   const o = normalise(options);
   let fontWarned = false;
   let loading = null;
+  // The stylesheet is read and compiled once per plugin instance, i.e. once per build.
+  let sheet = null;
+  let sheetReported = false;
   const getRender = () => o.render ?? (loading ??= import("./wasm.js").then((m) => m.loadWasmRender()));
 
   return async (tree, file) => {
@@ -137,6 +185,19 @@ export default function rehypeMerlion(options = {}) {
     const render = await getRender();
     const root = o.root ?? file.cwd ?? ".";
     const relPath = relPathOf(file, root);
+
+    if (o.stylesheet !== undefined) {
+      const { css, messages } = await (sheet ??= compileStylesheetFile(o, root));
+      if (!sheetReported) {
+        sheetReported = true;
+        for (const [ruleId, reason, fatal] of messages) {
+          if (fatal) file.fail(reason, { ruleId, source: "merlion" });
+          file.message(reason, { ruleId, source: "merlion" });
+        }
+      }
+      // Page CSS for the diagrams of this file; inline renders never receive a palette.
+      if (css !== null) file.data.merlion = { ...file.data.merlion, css };
+    }
 
     let cache = null;
     if (o.cacheDir) {

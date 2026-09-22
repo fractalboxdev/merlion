@@ -10,7 +10,23 @@ const PKG = "@fractalboxdev/merlion-wasm";
  * Import the WASM package, run `initSync`, and return its `render`. `pkg` names the
  * package to load; only tests pass another name.
  */
-export const loadWasmRender = async (pkg = PKG) => {
+export const loadWasmRender = async (pkg = PKG) => (await loadWasm(pkg)).render;
+
+/** The initialised package's `compileStylesheet`. */
+export const loadWasmCompile = async (pkg = PKG) => (await loadWasm(pkg)).compileStylesheet;
+
+/** One initialisation per package name, shared by `render` and `compileStylesheet`. */
+const loaded = new Map();
+const loadWasm = (pkg) => {
+  if (!loaded.has(pkg)) {
+    const p = initWasm(pkg);
+    p.catch(() => loaded.delete(pkg));
+    loaded.set(pkg, p);
+  }
+  return loaded.get(pkg);
+};
+
+const initWasm = async (pkg) => {
   let mod;
   let entry;
   try {
@@ -28,5 +44,8 @@ export const loadWasmRender = async (pkg = PKG) => {
       .map((n) => join(dir, n))[0];
   if (!wasm) throw new Error(`${pkg}: no .wasm file next to ${entry}`);
   mod.initSync(readFileSync(wasm));
-  return (source, options) => mod.render(source, options);
+  return {
+    render: (source, options) => mod.render(source, options),
+    compileStylesheet: (css, options) => mod.compileStylesheet(css, options),
+  };
 };

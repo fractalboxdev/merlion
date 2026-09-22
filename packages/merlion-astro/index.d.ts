@@ -13,11 +13,19 @@ export interface Options extends Omit<RehypeOptions, "fontCss"> {
    * or false to skip it. Default "@fractalboxdev/merlion-themes/merlion-themes.css".
    */
   themesCss?: string | false;
+  /**
+   * A Merlion stylesheet (specs/svg-output.md#stylesheet), relative to the project root.
+   * Compiled once per build, written to `<cacheDir>/merlion/stylesheet.css` and imported
+   * on every page after `themesCss`; the source file never reaches a page. Warnings are
+   * logged; a refused path, a limit (E013) or a failed compile fails the build.
+   */
+  stylesheet?: string;
 }
 
 /**
  * Registers @fractalboxdev/merlion-rehype in `markdown.rehypePlugins`, excludes
- * mermaid from syntax highlighting, imports the theme and font stylesheets, and loads
+ * mermaid from syntax highlighting, imports the theme and font stylesheets and the
+ * compiled `stylesheet`, and loads
  * <merlion-view> on pages that contain a diagram (unless `viewer: false`).
  * `root` defaults to the Astro project root.
  */

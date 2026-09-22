@@ -21,6 +21,7 @@
     "index.d.ts",
     "fnv.js",
     "cache.js",
+    "stylesheet.js",
     "wasm.js"
   ],
   "engines": {
