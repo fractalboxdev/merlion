@@ -83,7 +83,11 @@ export interface Options {
   compileStylesheet?: CompileStylesheet;
 }
 
-/** Replaces `pre > code.language-mermaid` with a figure holding the inline SVG. Async: use `process`, not `processSync`. */
+/**
+ * Replaces `pre > code.language-mermaid` with a figure holding the inline SVG; `width=<px>`
+ * in the fence meta (```mermaid width=1600) sets that block's width. Async: use
+ * `process`, not `processSync`.
+ */
 declare function rehypeMerlion(options?: Options): (tree: Root, file: VFile) => Promise<void>;
 export default rehypeMerlion;
 

@@ -1,0 +1,9 @@
+# Written by scripts/prepare.mjs before every dev and build run: the WASM build copied
+# from packages/merlion-wasm, and the gallery generated from the repository's fixtures.
+/public/merlion.wasm
+/public/merlion-wasm.js
+/public/gallery/
+/src/content/docs/gallery/
+
+# wrangler's local state
+/.wrangler/

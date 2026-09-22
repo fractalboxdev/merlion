@@ -1,0 +1,32 @@
+{
+  "name": "docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gallery": "node scripts/prepare.mjs",
+    "dev": "node scripts/prepare.mjs && astro dev",
+    "build": "node scripts/prepare.mjs && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "deploy": "pnpm run build && wrangler deploy",
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@astrojs/markdown-satteri": "0.4.1",
+    "@astrojs/starlight": "0.42.2",
+    "@fractalboxdev/merlion-astro": "workspace:*",
+    "@fractalboxdev/merlion-rehype": "workspace:*",
+    "@fractalboxdev/merlion-themes": "workspace:*",
+    "@fractalboxdev/merlion-view": "workspace:*",
+    "@fractalboxdev/merlion-wasm": "workspace:*",
+    "astro": "7.3.3",
+    "cookie": "2.0.1",
+    "starlight-links-validator": "0.26.0",
+    "typescript": "5.9.3",
+    "wrangler": "4.136.2"
+  }
+}

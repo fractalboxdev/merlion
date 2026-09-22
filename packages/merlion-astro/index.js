@@ -5,6 +5,7 @@ import { closeSync, fsyncSync, mkdirSync, openSync, renameSync, unlinkSync, writ
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import rehypeMerlion, { compileStylesheetFile } from "@fractalboxdev/merlion-rehype";
+import merlionSatteri from "@fractalboxdev/merlion-rehype/satteri";
 
 const NAME = "@fractalboxdev/merlion-astro";
 const THEMES = "@fractalboxdev/merlion-themes/merlion-themes.css";
@@ -69,6 +70,30 @@ const buildStylesheet = async (options, root, cacheDir, logger) => {
 };
 
 /**
+ * Puts the plugin where the configured Markdown processor runs it. Astro 7 has a
+ * `markdown.processor`: Sätteri (the default) takes hast plugins and never runs the
+ * deprecated `markdown.rehypePlugins`; unified takes rehype plugins. The plugin goes
+ * first in either list so it claims mermaid blocks before a code-block transformer
+ * (Expressive Code, in Starlight) rewrites them. Astro 5 and 6 have no processor and
+ * read `markdown.rehypePlugins`.
+ */
+const registerPlugin = (processor, pluginOptions, updateConfig, logger) => {
+  if (!processor) {
+    updateConfig({ markdown: { rehypePlugins: [[rehypeMerlion, pluginOptions]] } });
+  } else if (processor.name === "satteri" && Array.isArray(processor.options?.hastPlugins)) {
+    const onMessage = (m) => {
+      const at = m.line > 0 ? `${m.file}:${m.line}:${m.column}` : m.file;
+      (logger ?? console).warn(`${at}: ${m.reason}`);
+    };
+    processor.options.hastPlugins.unshift(merlionSatteri({ ...pluginOptions, onMessage }));
+  } else if (processor.name === "unified" && Array.isArray(processor.options?.rehypePlugins)) {
+    processor.options.rehypePlugins.unshift([rehypeMerlion, pluginOptions]);
+  } else {
+    throw new Error(`${NAME}: markdown.processor "${processor.name}" is not supported; use satteri() or unified()`);
+  }
+};
+
+/**
  * @param {import("./index.js").Options} [options]
  * @returns {import("astro").AstroIntegration}
  */
@@ -92,7 +117,7 @@ export default function merlion(options = {}) {
                 config.cacheDir ?? new URL("node_modules/.astro/", config.root),
                 logger,
               );
-        updateConfig({ markdown: { rehypePlugins: [[rehypeMerlion, pluginOptions]] } });
+        registerPlugin(config.markdown?.processor, pluginOptions, updateConfig, logger);
 
         const hl = withoutMermaid(config.markdown?.syntaxHighlight ?? "shiki");
         if (hl) updateConfig({ markdown: { syntaxHighlight: hl } });

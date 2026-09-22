@@ -13,12 +13,19 @@
     ".": {
       "types": "./index.d.ts",
       "default": "./index.js"
+    },
+    "./satteri": {
+      "types": "./satteri.d.ts",
+      "default": "./satteri.js"
     }
   },
   "types": "./index.d.ts",
   "files": [
     "index.js",
     "index.d.ts",
+    "satteri.js",
+    "satteri.d.ts",
+    "session.js",
     "fnv.js",
     "cache.js",
     "stylesheet.js",
@@ -45,6 +52,7 @@
     "rehype-stringify": "10.0.1",
     "remark-parse": "11.0.0",
     "remark-rehype": "11.1.2",
+    "satteri": "0.10.5",
     "unified": "11.0.5",
     "vfile": "6.0.3"
   }

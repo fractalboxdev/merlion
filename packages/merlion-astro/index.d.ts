@@ -23,7 +23,9 @@ export interface Options extends Omit<RehypeOptions, "fontCss"> {
 }
 
 /**
- * Registers @fractalboxdev/merlion-rehype in `markdown.rehypePlugins`, excludes
+ * Registers @fractalboxdev/merlion-rehype with the Markdown processor (first in
+ * Sätteri's `hastPlugins` or unified's `rehypePlugins`; `markdown.rehypePlugins` on
+ * Astro 5 and 6), excludes
  * mermaid from syntax highlighting, imports the theme and font stylesheets and the
  * compiled `stylesheet`, and loads
  * <merlion-view> on pages that contain a diagram (unless `viewer: false`).
