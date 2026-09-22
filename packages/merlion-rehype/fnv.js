@@ -1,5 +1,5 @@
 // FNV-1a 64 over UTF-8 bytes, and the ids and cache keys derived from it
-// (specs/integrations.md#fractalboxdevmerlion-rehype, specs/svg-output.md#ids-and-data-attributes).
+// (specs/integrations.md#fractalboxmerlion-rehype, specs/svg-output.md#ids-and-data-attributes).
 
 const OFFSET = 0xcbf29ce484222325n;
 const PRIME = 0x100000001b3n;

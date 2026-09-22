@@ -1,5 +1,5 @@
 // Web Worker entry: runs `render`/`check`/`compileStylesheet` off the main thread
-// (specs/integrations.md#fractalboxdevmerlion-wasm).
+// (specs/integrations.md#fractalboxmerlion-wasm).
 //
 // Request:  { id, type: "render" | "check" | "compileStylesheet", source, options?, wasm? }
 //           `source` is the stylesheet text for "compileStylesheet".

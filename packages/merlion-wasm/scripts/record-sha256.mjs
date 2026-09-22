@@ -1,6 +1,6 @@
 // Records the SHA-256 of <pkg>/merlion.wasm in <pkg>/package.json under
 // merlion.wasmSha256. The value is what a consumer compares against the release's build
-// attestation and published checksums (specs/integrations.md#fractalboxdevmerlion-wasm).
+// attestation and published checksums (specs/integrations.md#fractalboxmerlion-wasm).
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

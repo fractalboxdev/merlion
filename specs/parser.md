@@ -78,7 +78,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 
 | Code | Severity | Meaning |
 |---|---|---|
-| `E001` InternalError | Error | The WASM instance trapped and was replaced ([integrations.md](integrations.md#fractalboxdevmerlion-wasm)) |
+| `E001` InternalError | Error | The WASM instance trapped and was replaced ([integrations.md](integrations.md#fractalboxmerlion-wasm)) |
 | `E002` SyntaxError | Error | Syntax error no repair covers; the message names the expected tokens |
 | `E003` UnsupportedDiagram | Error | The header names a diagram type Merlion does not render, or there is no header |
 | `E004` TooLarge | Error | Input over its size limit, a structural limit exceeded, or mandatory-phase fuel exhausted |

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds merlion.wasm from crates/merlion-wasm (specs/integrations.md#fractalboxdevmerlion-wasm).
+# Builds merlion.wasm from crates/merlion-wasm (specs/integrations.md#fractalboxmerlion-wasm).
 #
 #   scripts/build-wasm.sh              release build: writes merlion.wasm and records its
 #                                      SHA-256 in package.json under merlion.wasmSha256

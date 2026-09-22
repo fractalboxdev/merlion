@@ -87,7 +87,7 @@ const reported = (d) => d && (d.severity === "error" || d.severity === "warning"
  * Reads the stylesheet `o.stylesheet` under `root` with the file-handling rules and
  * compiles it: `{ css, messages }`, where `css` is the page CSS (null when refused or
  * failed) and `messages` are `[ruleId, reason, fatal]`, `fatal` only under `o.strict`.
- * Shared with @fractalboxdev/merlion-astro.
+ * Shared with @fractalbox/merlion-astro.
  * @param {{ stylesheet: string, strict?: boolean, compileStylesheet?: Function }} o
  * @param {string} root
  */
@@ -280,7 +280,7 @@ export const createSession = (options) => {
             fontWarned = true;
             out.push({
               reason:
-                "merlion: diagrams use font mode 'link'; load @fractalboxdev/merlion-themes/merlion-font.css on the page and set `fontCss: true` to silence this",
+                "merlion: diagrams use font mode 'link'; load @fractalbox/merlion-themes/merlion-font.css on the page and set `fontCss: true` to silence this",
               ruleId: "font-css",
               place: undefined,
               fatal: false,

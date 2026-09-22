@@ -3,7 +3,7 @@ title: Getting started
 description: Render Mermaid flowcharts with the merlion CLI, the WebAssembly module, the rehype plugin or the Astro integration, from a checkout of the repository.
 ---
 
-Merlion ships four ways in, all over the same core and all producing the same bytes for the same input: the `merlion` CLI, the `@fractalboxdev/merlion-wasm` module, the `@fractalboxdev/merlion-rehype` plugin and the `@fractalboxdev/merlion-astro` integration. The npm packages are workspace packages of the repository and are not yet published, so every command below runs from a checkout.
+Merlion ships four ways in, all over the same core and all producing the same bytes for the same input: the `merlion` CLI, the `@fractalbox/merlion-wasm` module, the `@fractalbox/merlion-rehype` plugin and the `@fractalbox/merlion-astro` integration. The npm packages are workspace packages of the repository and are not yet published, so every command below runs from a checkout.
 
 ```mermaid
 flowchart LR
@@ -61,9 +61,9 @@ sh packages/merlion-wasm/scripts/build-wasm.sh          # writes packages/merlio
 
 ```js
 import { readFileSync } from "node:fs";
-import { initSync, render } from "@fractalboxdev/merlion-wasm";
+import { initSync, render } from "@fractalbox/merlion-wasm";
 
-initSync(readFileSync(new URL("./node_modules/@fractalboxdev/merlion-wasm/merlion.wasm", import.meta.url)));
+initSync(readFileSync(new URL("./node_modules/@fractalbox/merlion-wasm/merlion.wasm", import.meta.url)));
 const { svg, diagnostics } = render("flowchart LR\n  a --> b\n", { width: 640, idPrefix: "d1" });
 ```
 
@@ -76,7 +76,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
-import rehypeMerlion from "@fractalboxdev/merlion-rehype";
+import rehypeMerlion from "@fractalbox/merlion-rehype";
 
 const html = await unified()
   .use(remarkParse)
@@ -93,7 +93,7 @@ Each ```` ```mermaid ```` block becomes a `<figure>` holding the inline SVG insi
 ```js
 // astro.config.mjs
 import { defineConfig } from "astro/config";
-import merlion from "@fractalboxdev/merlion-astro";
+import merlion from "@fractalbox/merlion-astro";
 
 export default defineConfig({
   integrations: [merlion({ stylesheet: "src/styles/diagrams.css" })],

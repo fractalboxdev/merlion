@@ -1,7 +1,7 @@
 /* Test fixture: merlion-themes.css with the built-in role tones in every theme
  * (specs/svg-output.md#built-in-roles). Tone values are placeholders for the compiler tests. */
 /*
- * @fractalboxdev/merlion-themes: theme tokens for Merlion SVG diagrams.
+ * @fractalbox/merlion-themes: theme tokens for Merlion SVG diagrams.
  *
  * Every Merlion SVG reads --merlion-* custom properties with literal fallbacks
  * (specs/svg-output.md#theming). The mixed roles (--merlion-muted, -line, -surface,

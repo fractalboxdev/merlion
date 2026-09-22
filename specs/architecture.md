@@ -32,11 +32,11 @@ The diagram model is one tagged enum per diagram type (`Flowchart`, `Sequence`, 
 |---|---|---|
 | `merlion-render` | Rust library (crates.io), `#![no_std]` + `alloc` | Parse, measure, layout, draw; the stylesheet compiler. No I/O. |
 | `merlion-cli` | Rust binary (crates.io); the installed command is `merlion` | Argument parsing, file and stdin I/O, reading layout hints from files |
-| `merlion-wasm` | Rust `cdylib` → `.wasm`, `publish = false` | Raw `extern "C"` exports over the core; ships only inside `@fractalboxdev/merlion-wasm` |
-| `@fractalboxdev/merlion-wasm` | npm | The `.wasm` file plus hand-written JS glue and `.d.ts` |
-| `@fractalboxdev/merlion-rehype` | npm | rehype plugin over `@fractalboxdev/merlion-wasm` |
-| `@fractalboxdev/merlion-astro` | npm | Astro integration registering the rehype plugin |
-| `@fractalboxdev/merlion-view` | npm | `<merlion-view>` web component, independent of the renderer |
+| `merlion-wasm` | Rust `cdylib` → `.wasm`, `publish = false` | Raw `extern "C"` exports over the core; ships only inside `@fractalbox/merlion-wasm` |
+| `@fractalbox/merlion-wasm` | npm | The `.wasm` file plus hand-written JS glue and `.d.ts` |
+| `@fractalbox/merlion-rehype` | npm | rehype plugin over `@fractalbox/merlion-wasm` |
+| `@fractalbox/merlion-astro` | npm | Astro integration registering the rehype plugin |
+| `@fractalbox/merlion-view` | npm | `<merlion-view>` web component, independent of the renderer |
 | `tools/fontgen` | Rust binary, not published | Generates the committed font metric tables |
 | `bench/` | Not published | Benchmark harness ([benchmark.md](benchmark.md)) |
 
@@ -44,7 +44,7 @@ The diagram model is one tagged enum per diagram type (`Flowchart`, `Sequence`, 
 
 | Surface | Pattern | Examples |
 |---|---|---|
-| npm package | `@fractalboxdev/merlion-<part>` | `@fractalboxdev/merlion-wasm`, `@fractalboxdev/merlion-rehype` |
+| npm package | `@fractalbox/merlion-<part>` | `@fractalbox/merlion-wasm`, `@fractalbox/merlion-rehype` |
 | Rust crate | `merlion-<part>` (crates.io has no scopes) | `merlion-render`, `merlion-cli` |
 | Command | `merlion` | `merlion render`, `merlion check` |
 | Custom element | `merlion-<name>` | `<merlion-view>` |
@@ -57,8 +57,8 @@ The diagram model is one tagged enum per diagram type (`Flowchart`, `Sequence`, 
 
 ## Targets
 
-- **Build time, the primary target.** The CLI or `@fractalboxdev/merlion-rehype` renders at build time; pages ship SVG and no renderer.
-- **Browser, secondary.** `@fractalboxdev/merlion-wasm` serves live editors, previews and diagrams written at runtime, e.g. by an LLM in chat ([ADR-0003](adr/0003-prerender-first.md)).
+- **Build time, the primary target.** The CLI or `@fractalbox/merlion-rehype` renders at build time; pages ship SVG and no renderer.
+- **Browser, secondary.** `@fractalbox/merlion-wasm` serves live editors, previews and diagrams written at runtime, e.g. by an LLM in chat ([ADR-0003](adr/0003-prerender-first.md)).
 
 ## Determinism
 

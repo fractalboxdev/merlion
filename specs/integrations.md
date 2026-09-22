@@ -33,7 +33,7 @@ The CLI runs in CI against repositories it doesn't control, so every write assum
 - Arguments are parsed by hand with the standard library ([supply-chain.md](supply-chain.md)).
 - Distributed as prebuilt binaries for macOS (arm64, x86_64), Linux (x86_64, arm64, musl static) and Windows (x86_64), and through `cargo install`.
 
-## `@fractalboxdev/merlion-wasm`
+## `@fractalbox/merlion-wasm`
 
 ```ts
 export function init(wasm?: BufferSource | URL | Response): Promise<void>; // browser
@@ -91,17 +91,17 @@ interface RenderResult {
   - serialises calls: `render` is not re-entrant on one instance.
 - The package's `dependencies` field is empty and it has no install scripts. `package.json` records the `.wasm` file's SHA-256 under `merlion.wasmSha256`. That value sits in the same tarball as the file, so it proves nothing by itself; it is the value to compare against the release's build attestation and published checksums ([supply-chain.md](supply-chain.md#releases)).
 
-## `@fractalboxdev/merlion-rehype`
+## `@fractalbox/merlion-rehype`
 
 ```ts
-import rehypeMerlion from "@fractalboxdev/merlion-rehype";
+import rehypeMerlion from "@fractalbox/merlion-rehype";
 unified().use(remarkParse).use(remarkRehype).use(rehypeMerlion, {
   width: 720,          // RenderOptions.width
   strict: false,
   source: "details",   // "details" | "none": keep the Mermaid source in a collapsed <details>
   cacheDir: ".merlion", // previous renders, used as layout hints
   viewer: true,        // wrap each SVG in <merlion-view>
-  fontCss: true,       // the page loads @fractalboxdev/merlion-themes/merlion-font.css; silences the font warning
+  fontCss: true,       // the page loads @fractalbox/merlion-themes/merlion-font.css; silences the font warning
   stylesheet: "diagram.css", // compiled once per build; never passed to inline renders
 });
 ```
@@ -124,11 +124,11 @@ unified().use(remarkParse).use(remarkRehype).use(rehypeMerlion, {
 - Writes to `cacheDir` follow the CLI's [file handling](#file-handling) rules.
 - `stylesheet` is read under the CLI's [file handling](#file-handling) rules (inside `root`, not a symbolic link, at most 64 KiB from its metadata), compiled once per plugin instance through `compileStylesheet` (the `compileStylesheet` option replaces the WASM compiler), and exposed as `file.data.merlion.css` on files with a diagram. Its warnings and errors are reported once, on the first such file, with the stylesheet's path and position; under `strict` an error fails that file. Inline diagrams are rendered without a palette; the page's cascade themes them.
 - The fence's info string after the language carries per-block options as `key=value` words: `width=<px>` (a positive number) sets that block's container width (```` ```mermaid width=1600 ````) and enters the cache hash. An invalid value is reported with rule `fence-meta` and the block renders at `width`; other keys are ignored.
-- `@fractalboxdev/merlion-rehype/satteri` exports the same rendering as a Sätteri hast plugin factory (`hastPlugins`, Astro 7's default Markdown processor), with the same figure, ids, cache and stylesheet handling. Sätteri has no vfile, so every message goes to `onMessage({ reason, ruleId, file, line, column, fatal })`, by default `console.warn` as `file:line:col: reason`; a fatal message (an error under `strict`) throws and fails the document.
+- `@fractalbox/merlion-rehype/satteri` exports the same rendering as a Sätteri hast plugin factory (`hastPlugins`, Astro 7's default Markdown processor), with the same figure, ids, cache and stylesheet handling. Sätteri has no vfile, so every message goes to `onMessage({ reason, ruleId, file, line, column, fatal })`, by default `console.warn` as `file:line:col: reason`; a fatal message (an error under `strict`) throws and fails the document.
 
-## `@fractalboxdev/merlion-astro`
+## `@fractalbox/merlion-astro`
 
-Registers `@fractalboxdev/merlion-rehype` where the configured Markdown processor runs it: first in `processor.options.hastPlugins` (the Sätteri adapter, Astro 7's default), first in `processor.options.rehypePlugins` (`unified()`), or in `markdown.rehypePlugins` when Astro has no `markdown.processor` (Astro 5 and 6). First, so it claims mermaid blocks before a code-block transformer such as Starlight's Expressive Code rewrites them; any other processor fails the build. Diagnostics go to the Astro logger. It adds `merlion-themes.css`, `merlion-font.css` (both from `@fractalboxdev/merlion-themes`), the compiled `stylesheet` when one is set (compiled once in `astro:config:setup`, written to `<cacheDir>/merlion/stylesheet.css` and imported after the theme tokens; a refused path, `E013` or a failed compile fails the build, warnings are logged), and the `<merlion-view>` script, only on pages that contain a diagram. Its options match the rehype plugin's, except that `fontCss` names the font stylesheet to import (default `@fractalboxdev/merlion-themes/merlion-font.css`, `false` to skip it) and the plugin receives `fontCss: true` whenever one is imported.
+Registers `@fractalbox/merlion-rehype` where the configured Markdown processor runs it: first in `processor.options.hastPlugins` (the Sätteri adapter, Astro 7's default), first in `processor.options.rehypePlugins` (`unified()`), or in `markdown.rehypePlugins` when Astro has no `markdown.processor` (Astro 5 and 6). First, so it claims mermaid blocks before a code-block transformer such as Starlight's Expressive Code rewrites them; any other processor fails the build. Diagnostics go to the Astro logger. It adds `merlion-themes.css`, `merlion-font.css` (both from `@fractalbox/merlion-themes`), the compiled `stylesheet` when one is set (compiled once in `astro:config:setup`, written to `<cacheDir>/merlion/stylesheet.css` and imported after the theme tokens; a refused path, `E013` or a failed compile fails the build, warnings are logged), and the `<merlion-view>` script, only on pages that contain a diagram. Its options match the rehype plugin's, except that `fontCss` names the font stylesheet to import (default `@fractalbox/merlion-themes/merlion-font.css`, `false` to skip it) and the plugin receives `fontCss: true` whenever one is imported.
 
 ## Editors
 
@@ -147,9 +147,9 @@ A CLI subcommand speaking the Language Server Protocol over stdio, covering `.mm
 ### VS Code and Cursor: `merlion-vscode`
 
 Cursor runs VS Code extensions (installed from Open VSX), so one extension serves both. It is published to the Visual Studio Marketplace and to Open VSX. TODO(owner): the Marketplace publisher id.
-- **Preview:** contributes `markdown.markdownItPlugins` and extends the built-in preview's markdown-it. Mermaid fences render through `@fractalboxdev/merlion-wasm` (`initSync`) in the extension host, synchronously, so the preview webview receives finished SVG and runs no renderer.
+- **Preview:** contributes `markdown.markdownItPlugins` and extends the built-in preview's markdown-it. Mermaid fences render through `@fractalbox/merlion-wasm` (`initSync`) in the extension host, synchronously, so the preview webview receives finished SVG and runs no renderer.
 - **Theme:** maps VS Code theme colours (`--vscode-editor-background`, `--vscode-editor-foreground`, …) onto `--merlion-*` in a preview stylesheet. The diagram follows the editor theme with no re-render.
-- **Zoom:** `@fractalboxdev/merlion-view` is loaded as a preview script.
+- **Zoom:** `@fractalbox/merlion-view` is loaded as a preview script.
 - **Language features:** starts `merlion lsp` from the bundled binary for the current platform. The extension build takes each binary from the signed release and checks its SHA-256 against the release attestation; it never rebuilds them.
 - **Rendering cost:** the extension host is shared by every extension, so the preview renders with a lower `fuel` limit than the CLI and shows the diagnostic in place of a diagram that exceeds it.
 - **Standalone files:** a custom editor for `.mmd`/`.mermaid` shows source and preview side by side.

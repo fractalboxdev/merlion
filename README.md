@@ -24,11 +24,11 @@ Pre-1.0 ([roadmap](specs/roadmap.md)). Flowcharts only; other diagram types retu
 |---|---|
 | `merlion-render` (core) | `crates/merlion-render` |
 | `merlion` CLI | `crates/merlion-cli` |
-| `@fractalboxdev/merlion-wasm` | `crates/merlion-wasm`, `packages/merlion-wasm` |
-| `@fractalboxdev/merlion-rehype` | `packages/merlion-rehype` |
-| `@fractalboxdev/merlion-astro` | `packages/merlion-astro` |
-| `@fractalboxdev/merlion-view` (`<merlion-view>` pan and zoom) | `packages/merlion-view` |
-| `@fractalboxdev/merlion-themes` | `packages/merlion-themes` |
+| `@fractalbox/merlion-wasm` | `crates/merlion-wasm`, `packages/merlion-wasm` |
+| `@fractalbox/merlion-rehype` | `packages/merlion-rehype` |
+| `@fractalbox/merlion-astro` | `packages/merlion-astro` |
+| `@fractalbox/merlion-view` (`<merlion-view>` pan and zoom) | `packages/merlion-view` |
+| `@fractalbox/merlion-themes` | `packages/merlion-themes` |
 
 ## Quick start
 
@@ -64,9 +64,9 @@ sh packages/merlion-wasm/scripts/build-wasm.sh          # writes packages/merlio
 
 ```js
 import { readFileSync } from "node:fs";
-import { initSync, render } from "@fractalboxdev/merlion-wasm";
+import { initSync, render } from "@fractalbox/merlion-wasm";
 
-initSync(readFileSync(new URL("./node_modules/@fractalboxdev/merlion-wasm/merlion.wasm", import.meta.url)));
+initSync(readFileSync(new URL("./node_modules/@fractalbox/merlion-wasm/merlion.wasm", import.meta.url)));
 const { svg, diagnostics } = render("flowchart LR\n  a --> b\n", { width: 640, idPrefix: "d1" });
 ```
 
@@ -77,7 +77,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
-import rehypeMerlion from "@fractalboxdev/merlion-rehype";
+import rehypeMerlion from "@fractalbox/merlion-rehype";
 
 const html = await unified()
   .use(remarkParse)
@@ -92,7 +92,7 @@ const html = await unified()
 ```js
 // astro.config.mjs
 import { defineConfig } from "astro/config";
-import merlion from "@fractalboxdev/merlion-astro";
+import merlion from "@fractalbox/merlion-astro";
 
 export default defineConfig({
   integrations: [merlion({ stylesheet: "src/styles/diagrams.css" })],

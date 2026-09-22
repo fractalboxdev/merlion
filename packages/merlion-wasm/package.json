@@ -1,5 +1,5 @@
 {
-  "name": "@fractalboxdev/merlion-wasm",
+  "name": "@fractalbox/merlion-wasm",
   "version": "0.1.0",
   "description": "Merlion's Mermaid-to-SVG renderer as WebAssembly, with hand-written glue and no dependencies.",
   "license": "MIT",

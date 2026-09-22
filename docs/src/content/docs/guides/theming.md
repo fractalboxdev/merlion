@@ -49,7 +49,7 @@ The mixed roles live inside `@supports (color: color-mix(in oklab, #000, #fff))`
 
 ## The shipped themes
 
-`@fractalboxdev/merlion-themes` ships `merlion-themes.css`. It sets the foundations, the accent, the three role tones and the series palette for each theme:
+`@fractalbox/merlion-themes` ships `merlion-themes.css`. It sets the foundations, the accent, the three role tones and the series palette for each theme:
 
 | Selector | Theme |
 |---|---|
@@ -62,7 +62,7 @@ The mixed roles live inside `@supports (color: color-mix(in oklab, #000, #fff))`
 Link it once per page, before any stylesheet of your own:
 
 ```html
-<link rel="stylesheet" href="/node_modules/@fractalboxdev/merlion-themes/merlion-themes.css" />
+<link rel="stylesheet" href="/node_modules/@fractalbox/merlion-themes/merlion-themes.css" />
 ```
 
 The Astro integration imports it on every page ([Getting started](/getting-started/)). A `data-theme` attribute on `<html>` themes the page; the same attribute on any ancestor of a diagram themes that subtree.
