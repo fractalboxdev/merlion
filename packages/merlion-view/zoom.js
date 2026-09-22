@@ -100,6 +100,13 @@ export const rankLimit = (px) => {
   return Math.min(MAX_RANK, Math.max(0, r));
 };
 
+/**
+ * Rank limit for the current view: semantic zoom declutters only once the user zooms
+ * out past the fit view (s < 1). The fit view and every zoom-in keep every label, even
+ * when a wide diagram fitted to its container draws them below 9 px.
+ */
+export const semanticLimit = (fontSize, fit, s) => (s < 1 ? rankLimit(labelPx(fontSize, fit, s)) : null);
+
 /** Controls show when the SVG is wider than its container, or with controls="always". */
 export const needsControls = (natural, container, attr) =>
   attr === "always" || (finite(natural) && natural > container);

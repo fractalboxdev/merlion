@@ -13,6 +13,7 @@ import {
   keyView,
   rankLimit,
   labelPx,
+  semanticLimit,
   needsControls,
   viewBoxSize,
   transformOf,
@@ -151,4 +152,14 @@ test("viewBoxSize parses the viewBox attribute", () => {
 test("transformOf renders a CSS transform with origin at the top-left", () => {
   assert.equal(transformOf({ s: 2, x: 10, y: -5.5 }), "translate(10px,-5.5px) scale(2)");
   assert.equal(transformOf(IDENTITY), "");
+});
+
+test("semanticLimit never declutters the fit view or a zoomed-in view", () => {
+  // A wide diagram fitted at 0.3x draws 4.2 px labels, but the fit view keeps everything.
+  assert.equal(semanticLimit(14, 0.3, 1), null);
+  assert.equal(semanticLimit(14, 0.3, 2), null);
+  // Zooming out past the fit view engages the rank limit.
+  assert.equal(semanticLimit(14, 0.3, 0.5), rankLimit(labelPx(14, 0.3, 0.5)));
+  // Legible labels never engage it, even below the fit view.
+  assert.equal(semanticLimit(14, 1, 0.9), null);
 });

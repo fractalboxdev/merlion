@@ -28,7 +28,7 @@ A custom element that adds pan, zoom and fullscreen to any SVG. It is optional: 
 
 ## Semantic zoom
 
-When the zoom scale falls below a threshold, labels would render below 9 px on screen. At that point, the viewer adds `merlion-zoomed-out` to the host and sets `data-merlion-rank-limit="{0..15}"` on it. CSS can't compare an attribute numerically against a variable in every supported browser, so `merlion-themes.css` ships one generated selector per pair of limit and rank (`[data-merlion-rank-limit="2"] [data-merlion-rank="3"]`, …; 120 selectors for ranks 0–15). Those rules hide the labels of nodes whose rank exceeds the limit and collapse clusters to their titles. The viewer only toggles a class and an attribute on the host; the SVG is never modified, and no request is made.
+When the user zooms out past the fit view and labels would render below 9 px on screen, the viewer adds `merlion-zoomed-out` to the host and sets `data-merlion-rank-limit="{0..15}"` on it. CSS can't compare an attribute numerically against a variable in every supported browser, so `merlion-themes.css` ships one generated selector per pair of limit and rank (`[data-merlion-rank-limit="2"] [data-merlion-rank="3"]`, …; 120 selectors for ranks 0–15). Those rules hide the labels of nodes whose rank exceeds the limit. Semantic zoom hides labels only: node shapes, edges and cluster members stay drawn at every zoom level. The fit view and every zoom-in keep every label, even when a wide diagram fitted to its container draws them below 9 px, so a diagram never loses content before the reader interacts with it. The viewer only toggles a class and an attribute on the host; the SVG is never modified, and no request is made.
 
 ## Constraints
 

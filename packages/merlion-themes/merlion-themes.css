@@ -112,14 +112,10 @@
 /*
  * Semantic zoom (specs/viewer.md#semantic-zoom). <merlion-view> sets the class
  * merlion-zoomed-out and data-merlion-rank-limit="{0..15}" on its host when labels
- * would render below 9 px. One selector per (limit, rank) pair with rank > limit,
- * 120 in all, hides the labels of nodes ranked above the limit; clusters collapse
- * to their box and title.
+ * would render below 9 px after zooming out past the fit view. One selector per
+ * (limit, rank) pair with rank > limit, 120 in all, hides the labels of nodes ranked
+ * above the limit. Shapes, edges and cluster members always stay drawn.
  */
-.merlion-zoomed-out .merlion-cluster .merlion-node,
-.merlion-zoomed-out .merlion-cluster .merlion-edge {
-  visibility: hidden;
-}
 
 [data-merlion-rank-limit="0"] [data-merlion-rank="1"] text,
 [data-merlion-rank-limit="0"] [data-merlion-rank="2"] text,

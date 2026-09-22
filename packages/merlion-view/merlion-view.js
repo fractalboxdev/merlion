@@ -7,8 +7,7 @@ import {
   wheelFactor,
   pinchFactor,
   keyView,
-  labelPx,
-  rankLimit,
+  semanticLimit,
   needsControls,
   viewBoxSize,
   transformOf,
@@ -165,7 +164,7 @@ export class MerlionView extends Base {
       // CSS px per viewBox unit at fit; client sizes ignore the transform.
       const fit = Math.min(svg.clientWidth / vb.w, (svg.clientHeight || Infinity) / vb.h);
       const fs = parseFloat(getComputedStyle(svg).getPropertyValue("--merlion-font-size")) || 14;
-      if (fit > 0) limit = rankLimit(labelPx(fs, fit, this.#v.s));
+      if (fit > 0) limit = semanticLimit(fs, fit, this.#v.s);
     }
     this.classList.toggle("merlion-zoomed-out", limit !== null);
     if (limit === null) this.removeAttribute("data-merlion-rank-limit");
