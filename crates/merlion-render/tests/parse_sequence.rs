@@ -266,7 +266,7 @@ fn an_alias_runs_to_the_end_of_the_line() {
 #[test]
 fn an_alias_keeps_line_breaks() {
     let s = sq("participant API as Public<br/>API");
-    assert_eq!(labels(&s), ["Public<br>API"]);
+    assert_eq!(labels(&s), ["Public\nAPI"]);
 }
 
 #[test]
@@ -598,6 +598,35 @@ fn wrap_is_stripped_from_the_label() {
 }
 
 #[test]
+fn an_alias_takes_the_same_wrap_annotations() {
+    let s = sq("participant A as wrap:Extremely long");
+    assert_eq!(find(&s, "A").wrap, Some(true));
+    assert_eq!(labels(&s), ["Extremely long"]);
+    let s = sq("participant A as nowrap: Extremely long");
+    assert_eq!(find(&s, "A").wrap, Some(false));
+    assert_eq!(labels(&s), ["Extremely long"]);
+    let s = sq("participant A as Alice");
+    assert_eq!(find(&s, "A").wrap, None);
+}
+
+#[test]
+fn a_note_takes_the_same_wrap_annotations() {
+    let s = sq("Note over A:wrap: hi there");
+    assert_eq!(notes(&s)[0].wrap, Some(true));
+    assert_eq!(notes(&s)[0].text, "hi there");
+    let s = sq("Note right of A:nowrap:hi there");
+    assert_eq!(notes(&s)[0].wrap, Some(false));
+    assert_eq!(notes(&s)[0].text, "hi there");
+    let s = sq("Note over A: hi there");
+    assert_eq!(notes(&s)[0].wrap, None);
+    assert_eq!(notes(&s)[0].text, "hi there");
+    // A space before the keyword leaves it as note text, as it does for a message.
+    let s = sq("Note over A: wrap: hi");
+    assert_eq!(notes(&s)[0].wrap, None);
+    assert_eq!(notes(&s)[0].text, "wrap: hi");
+}
+
+#[test]
 fn a_label_that_starts_with_the_word_wrap_is_text() {
     let m = sq("A->>B: wrap: the box");
     assert_eq!(only_message(&m).label, "wrap: the box");
@@ -737,7 +766,7 @@ fn a_note_declares_a_participant_implicitly() {
 #[test]
 fn note_text_keeps_line_breaks_and_entities() {
     let s = sq("Note over A: first<br/>second #hearts;");
-    assert_eq!(notes(&s)[0].text, "first<br>second ♥");
+    assert_eq!(notes(&s)[0].text, "first\nsecond ♥");
 }
 
 #[test]
@@ -904,12 +933,12 @@ fn rect_carries_a_typed_colour() {
     let f = fragments(&s)[0];
     assert_eq!(
         f.kind,
-        FragmentKind::Rect(Color::Rgba {
+        FragmentKind::Rect(Some(Color::Rgba {
             r: 191,
             g: 223,
             b: 255,
             a: 255
-        })
+        }))
     );
     assert_eq!(count(&d, "I030"), 1, "{d:#?}");
 }
@@ -930,10 +959,30 @@ fn rect_accepts_rgba_and_hsl() {
 }
 
 #[test]
-fn rect_without_a_colour_is_e002() {
-    let (r, d) = try_parse("sequenceDiagram\n    rect\n      A->>B: hi\n    end\n");
-    assert!(matches!(r, Err(ParseError::Failed)), "{r:?}");
-    assert!(has(&d, "E002"), "{d:#?}");
+fn rect_without_a_colour_takes_the_theme_tint() {
+    let (s, d) = sq_d("rect\n  A->>B: hi\nend");
+    assert_eq!(fragments(&s)[0].kind, FragmentKind::Rect(None));
+    // No colour is named, so nothing is fixed and `I030` has nothing to report.
+    assert_eq!(count(&d, "I030"), 0, "{d:#?}");
+    assert!(!has(&d, "E002"), "{d:#?}");
+}
+
+#[test]
+fn rect_keeps_a_label_after_the_missing_colour() {
+    let (s, _) = sq_d("rect the retry window\n  A->>B: hi\nend");
+    let f = fragments(&s)[0];
+    assert_eq!(f.kind, FragmentKind::Rect(None));
+    assert_eq!(f.sections[0].label, "the retry window");
+}
+
+#[test]
+fn rect_transparent_is_a_colour_the_source_names() {
+    let (s, d) = sq_d("rect transparent\n  A->>B: hi\nend");
+    assert_eq!(
+        fragments(&s)[0].kind,
+        FragmentKind::Rect(Some(Color::Transparent))
+    );
+    assert_eq!(count(&d, "I030"), 1, "{d:#?}");
 }
 
 #[test]

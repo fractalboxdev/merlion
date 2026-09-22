@@ -226,7 +226,7 @@ fn source_rules(seq: &Sequence, frags: &[FragmentKind]) -> (Vec<SourceRule>, Vec
         .iter()
         .enumerate()
         .map(|(i, k)| match k {
-            FragmentKind::Rect(c) => add(fragment_style_class(i), c),
+            FragmentKind::Rect(Some(c)) => add(fragment_style_class(i), c),
             _ => false,
         })
         .collect();
@@ -554,7 +554,7 @@ fn push_fragments(out: &mut String, cx: &Ctx, steps: &[Step<'_>]) {
             class.push_str(super::auto::MARKER);
         }
         let fixed = match &frag.kind {
-            FragmentKind::Rect(c) => Some(c),
+            FragmentKind::Rect(c) => c.as_ref(),
             _ => None,
         };
         let paint = cluster_paint(roles, fixed, cx.light);

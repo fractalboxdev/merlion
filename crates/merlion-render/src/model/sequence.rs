@@ -51,6 +51,8 @@ pub struct Participant {
     pub created_by: Option<u32>,
     /// `destroy`: the index of the message that ends this lifeline.
     pub destroyed_by: Option<u32>,
+    /// `:wrap:` / `:nowrap:` opening the `as` alias, as on a message.
+    pub wrap: Option<bool>,
     pub span: Span,
 }
 
@@ -64,6 +66,7 @@ impl Default for Participant {
             implicit: false,
             created_by: None,
             destroyed_by: None,
+            wrap: None,
             span: Span::default(),
         }
     }
@@ -248,6 +251,8 @@ pub struct Note {
     /// Equal to `from` unless the note spans a pair.
     pub to: usize,
     pub text: String,
+    /// `:wrap:` / `:nowrap:` straight after the colon, as on a message.
+    pub wrap: Option<bool>,
     pub span: Span,
 }
 
@@ -281,9 +286,10 @@ pub enum FragmentKind {
     /// Sections come from `option`.
     Critical,
     Break,
-    /// `rect rgb(…)`: a tinted background, with the colour typed. A source literal, so
-    /// it emits `I030 FixedColour` and takes no automatic tone.
-    Rect(Color),
+    /// `rect`: a tinted background. A named colour is a source literal, so it emits
+    /// `I030 FixedColour` and takes no automatic tone; `rect` alone carries `None` and
+    /// takes the theme's cluster tint, as mermaid 12 does.
+    Rect(Option<Color>),
 }
 
 impl FragmentKind {

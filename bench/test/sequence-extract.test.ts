@@ -70,6 +70,30 @@ describe("extractSequence", () => {
     expect(d.notes.map((n) => n.text)).toEqual(["The pickup pin is dragged before sending", "held for 15s"]);
   });
 
+  it("joins the lines mermaid wraps one message label over", () => {
+    // mermaid draws one `messageText` per wrapped line, above the line it labels.
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" aria-roledescription="sequence">
+<text x="175" y="89" class="messageText" style="font-size: 16px;"><tspan x="175">Hello John,</tspan></text>
+<text x="175" y="106" class="messageText" style="font-size: 16px;"><tspan x="175">how are you?</tspan></text>
+<line x1="75" y1="138" x2="275" y2="138" class="messageLine0"/>
+<text x="175" y="153" class="messageText" style="font-size: 16px;"><tspan x="175">Fine</tspan></text>
+<line x1="275" y1="202" x2="75" y2="202" class="messageLine1"/>
+</svg>`;
+    const d = extractSequence(svg);
+    expect(d.messages.map((m) => m.label)).toEqual(["Hello John, how are you?", "Fine"]);
+    expect(d.messages[0]!.lines).toEqual(["Hello John,", "how are you?"]);
+  });
+
+  it("leaves a message mermaid draws unlabelled empty", () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" aria-roledescription="sequence">
+<line x1="75" y1="100" x2="275" y2="100" class="messageLine0"/>
+<text x="175" y="145" class="messageText" style="font-size: 16px;"><tspan x="175">second</tspan></text>
+<line x1="275" y1="180" x2="75" y2="180" class="messageLine1"/>
+</svg>`;
+    const d = extractSequence(svg);
+    expect(d.messages.map((m) => m.label)).toEqual(["", "second"]);
+  });
+
   it("joins the lines mermaid draws for one multi-line participant label", () => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 200" aria-roledescription="sequence">
 <rect x="550" y="0" width="150" height="74" class="actor actor-top" name="John"/>

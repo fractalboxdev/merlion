@@ -336,7 +336,13 @@ impl MeasState<'_, '_> {
                     }
                 }
                 Item::Note(note) => {
-                    let l = self.label(&note.text, self.wrap);
+                    // `:nowrap:` keeps the note on one line whatever its width.
+                    let w = if note.wrap == Some(false) {
+                        f64::INFINITY
+                    } else {
+                        self.wrap
+                    };
+                    let l = self.label(&note.text, w);
                     let bw = l.width + 2.0 * NOTE_PAD.0;
                     self.m.note.push(l);
                     let (a, b) = (umin(note.from, note.to), umax(note.from, note.to));
@@ -411,7 +417,13 @@ fn measure(seq: &Sequence, o: &Opts, wrap: f64, diags: &mut Diagnostics) -> Meas
         items: 0,
     };
     for p in &seq.participants {
-        let l = measured(o, text::layout_label(&p.label, &style, wrap, diags));
+        // `:nowrap:` keeps the head label on one line whatever its width.
+        let pw = if p.wrap == Some(false) {
+            f64::INFINITY
+        } else {
+            wrap
+        };
+        let l = measured(o, text::layout_label(&p.label, &style, pw, diags));
         let mut w = max(l.width + 2.0 * HEAD_PAD.0, HEAD_MIN.0);
         let mut h = max(l.height + 2.0 * HEAD_PAD.1, HEAD_MIN.1);
         if p.kind == ParticipantKind::Actor {

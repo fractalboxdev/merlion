@@ -41,28 +41,9 @@ fn count(out: &mut String, n: usize, one: &str, many: &str) {
     let _ = write!(out, "{} {}", n, if n == 1 { one } else { many });
 }
 
-/// Case-insensitive `<br>`, `<br/>`, `<br />` at the start of `s`; returns its length.
-fn br_len(s: &str) -> Option<usize> {
-    let b = s.as_bytes();
-    if b.len() < 4
-        || b[0] != b'<'
-        || !b[1].eq_ignore_ascii_case(&b'b')
-        || !b[2].eq_ignore_ascii_case(&b'r')
-    {
-        return None;
-    }
-    let mut i = 3;
-    if b.get(i) == Some(&b' ') {
-        i += 1;
-    }
-    if b.get(i) == Some(&b'/') {
-        i += 1;
-    }
-    (b.get(i) == Some(&b'>')).then_some(i + 1)
-}
-
-/// Label as plain text: `<br>` becomes a space, paired Markdown delimiters
-/// (`**`, `*`, `` ` ``) are removed, whitespace collapses, dropped characters vanish.
+/// Label as plain text: a hard line break (`\n`) becomes a space, paired Markdown
+/// delimiters (`**`, `*`, `` ` ``) are removed, whitespace collapses, dropped
+/// characters vanish. A `<br>` still in the label came from `#lt;br#gt;` and is text.
 pub fn plain_label(label: &str) -> String {
     // Pass 1: split into tokens so delimiters can be paired.
     enum Tok<'a> {
@@ -73,9 +54,9 @@ pub fn plain_label(label: &str) -> String {
     let mut toks: Vec<Tok> = Vec::new();
     let mut rest = label;
     while !rest.is_empty() {
-        if let Some(n) = br_len(rest) {
+        if rest.starts_with('\n') {
             toks.push(Tok::Space);
-            rest = rest.get(n..).unwrap_or("");
+            rest = rest.get(1..).unwrap_or("");
         } else if rest.starts_with("**") {
             toks.push(Tok::Delim("**"));
             rest = rest.get(2..).unwrap_or("");
@@ -86,9 +67,7 @@ pub fn plain_label(label: &str) -> String {
             let end = rest
                 .char_indices()
                 .skip(1)
-                .find(|(i, c)| {
-                    *c == '*' || *c == '`' || br_len(rest.get(*i..).unwrap_or("")).is_some()
-                })
+                .find(|(_, c)| *c == '*' || *c == '`' || *c == '\n')
                 .map(|(i, _)| i)
                 .unwrap_or(rest.len());
             toks.push(Tok::Text(rest.get(..end).unwrap_or("")));
@@ -268,7 +247,9 @@ mod tests {
 
     #[test]
     fn plain_label_strips_markup() {
-        assert_eq!(plain_label("a<br>b<BR/>c<br />d"), "a b c d");
+        assert_eq!(plain_label("a\nb\nc\nd"), "a b c d");
+        // A `<br>` in the label is text the source escaped, not a break.
+        assert_eq!(plain_label("a<br>b"), "a<br>b");
         assert_eq!(plain_label("**bold** and *it* `code`"), "bold and it code");
         assert_eq!(plain_label("2 * 3"), "2 * 3");
         assert_eq!(plain_label("  lots   of\tspace "), "lots of space");

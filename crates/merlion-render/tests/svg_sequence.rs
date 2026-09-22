@@ -69,6 +69,7 @@ fn message(index: u32, from: usize, to: usize, text: &str) -> Message {
 
 fn note(placement: Placement, from: usize, to: usize, text: &str) -> Note {
     Note {
+        wrap: None,
         placement,
         from,
         to,
@@ -736,7 +737,7 @@ fn a_source_colour_is_a_fixed_rule_and_an_info() {
         span: Span::default(),
     }];
     seq.items.push(Item::Fragment(fragment(
-        FragmentKind::Rect(Color::Named("aqua")),
+        FragmentKind::Rect(Some(Color::Named("aqua"))),
         vec![section("", vec![])],
     )));
     geom.boxes = vec![BoxGeom {
@@ -751,7 +752,7 @@ fn a_source_colour_is_a_fixed_rule_and_an_info() {
         label_y: 10.0,
     }];
     geom.fragments = vec![FragmentGeom {
-        kind: FragmentKind::Rect(Color::Named("aqua")),
+        kind: FragmentKind::Rect(Some(Color::Named("aqua"))),
         box_: Rect {
             x: 20.0,
             y: 200.0,

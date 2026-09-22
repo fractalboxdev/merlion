@@ -58,6 +58,18 @@ A syntax error that no rule repairs stops parsing and returns an `Error` diagnos
 
 Style statements (`classDef`, `style`, `linkStyle`) and `click` statements are parsed into typed values and validated as specified in [svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle); the parser never passes their text through. Edge ids (`a e1@--> b`) are kept in the model: `class e1 <name>` gives the edge a role ([svg-output.md](svg-output.md#roles)), and `e1@{…}` still configures it. An edge id names exactly one edge: on a fan-out (`a & b e1@--> c & d`) it names the edge from the last source to the first target, as mermaid does, and a later link reusing it loses it with `R008`. An element keeps at most 32 classes from `class` and `:::`; further classes are dropped with one `W020` per element. TODO(owner): decide what `class` does with an id that names both a node and an edge. Subgraphs nest at most 64 deep (`E010 NestingTooDeep`); the parser tracks depth explicitly, so deep input fails with a diagnostic instead of exhausting the stack.
 
+## Labels and entity codes
+
+A label reaches the model normalised, in this order:
+
+1. A Markdown string (`` "`…`" ``) loses its backticks.
+2. Every `<br>` variant — `<br>`, `<br/>`, `<br />`, any case, spaces before the `/` or `>` — and every newline inside a quoted label becomes a `\n`, the model's hard line break.
+3. Each line is trimmed, then its Mermaid entity codes (`#quot;`, `#35;`, `#x2665;`, the named codes) are decoded.
+
+The order of 2 and 3 is the contract, not an implementation detail. `#lt;br#gt;` is how a source writes a literal `<br>`: decoding it before the split would produce a `<br>` indistinguishable from the source's own, and the text stage would break the line and swallow the text. Splitting first keeps it. A code can never decode to a `\n` — `decode_entity` refuses control characters — so the separator is unforgeable and a `<br>` left in the model is always text.
+
+The text stage splits a label at `\n` and at nothing else ([text-measurement.md](text-measurement.md)); `<br>` is source syntax, never model text.
+
 ## Diagnostics
 
 ```

@@ -41,11 +41,13 @@ export interface SequenceCompat {
 
 /**
  * Labels compared as a multiset with whitespace removed: the two renderers wrap
- * at different points, and neither wrap position is a compatibility claim.
+ * at different points, and neither wrap position is a compatibility claim. The
+ * zero-width characters mermaid inserts at a wrap point go with the whitespace,
+ * for the same reason.
  */
 const multiset = (labels: readonly string[]): string[] =>
   labels
-    .map((l) => l.replace(/\s+/g, ""))
+    .map((l) => l.replace(/[\s\u200B-\u200D\uFEFF]+/g, ""))
     .filter((l) => l.length > 0)
     .sort();
 

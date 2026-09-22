@@ -249,7 +249,7 @@ pub struct Node {
     /// Source id, after any `R004` rename.
     pub id: String,
     /// Label text with quotes removed and Mermaid entity codes (`#quot;`, `#35;`) decoded.
-    /// May contain `<br>` and Markdown (`**bold**`, `*italic*`, `` `code` ``); the text stage interprets them.
+    /// May contain a hard line break (`\n`) and Markdown (`**bold**`, `*italic*`, `` `code` ``); the text stage interprets them. A `<br>` in the text came from `#lt;br#gt;` and is drawn as text.
     pub label: String,
     pub shape: Shape,
     /// `class` statements and `:::name` shorthand, in order; names already validated.
