@@ -486,3 +486,49 @@ fn rhombus_and_circle_labels_fit_inside() {
         }
     }
 }
+
+/// specs/text-measurement.md#serving-the-font: `font: "system"` draws in a stack measured
+/// with Inter's tables at ±6%, so every label box is 6% wider; the text itself is not.
+#[test]
+fn system_font_widens_label_boxes_by_the_tolerance() {
+    use merlion_render::options::FontMode;
+    use merlion_render::text::width_tolerance;
+    let mut b = B::new();
+    let a = b.shape("a", "a fairly long label", Shape::Rect);
+    let z = b.node("z");
+    b.edge_full(a, z, Some("edge label"), 1, Stroke::Normal);
+    let link = run(&b.c);
+    let sys = run_with(
+        &b.c,
+        &RenderOptions {
+            font: FontMode::System,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .expect("layout");
+    let tol = width_tolerance(FontMode::System);
+    assert!(tol > 1.0);
+    let (ln, sn) = (&link.nodes[0], &sys.nodes[0]);
+    assert_eq!(sn.label.lines, ln.label.lines);
+    assert!((sn.label.width - ln.label.width * tol).abs() < 1e-9);
+    assert!((sn.w - (ln.w + ln.label.width * (tol - 1.0))).abs() < 1e-9);
+    assert_eq!(sn.h, ln.h);
+    let (le, se) = (
+        link.edges[0].label.as_ref().expect("label"),
+        sys.edges[0].label.as_ref().expect("label"),
+    );
+    assert!((se.label.width - le.label.width * tol).abs() < 1e-9);
+    for font in [FontMode::Link, FontMode::Embed] {
+        let g = run_with(
+            &b.c,
+            &RenderOptions {
+                font,
+                ..RenderOptions::default()
+            },
+        )
+        .0
+        .expect("layout");
+        assert_eq!(g.nodes[0].w, ln.w);
+    }
+}

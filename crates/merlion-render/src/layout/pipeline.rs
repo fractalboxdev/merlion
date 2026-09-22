@@ -77,6 +77,8 @@ struct Opts {
     stability: usize,
     font_size: f64,
     wrap_width: f64,
+    /// Label-box width factor of the font mode (`text::width_tolerance`).
+    tolerance: f64,
 }
 
 fn finite_or(v: f64, default: f64) -> f64 {
@@ -100,6 +102,7 @@ impl Opts {
             stability: usize::try_from(o.stability).unwrap_or(usize::MAX),
             font_size: clamp(finite_or(o.font_size, 14.0), 1.0, 1_000.0),
             wrap_width: clamp(finite_or(o.wrap_width, 200.0), 1.0, 100_000.0),
+            tolerance: text::width_tolerance(o.font),
         }
     }
 }
@@ -132,6 +135,13 @@ fn clean_label(mut l: LabelLayout) -> LabelLayout {
 }
 
 fn measure_all(chart: &Flowchart, o: &Opts, wrap: f64, diags: &mut Diagnostics) -> Meas {
+    // The box widens by the font mode's tolerance; lines keep their measured widths and
+    // stay centred, so the extra room splits evenly on both sides.
+    let clean_label = |l: LabelLayout| {
+        let mut l = clean_label(l);
+        l.width *= o.tolerance;
+        l
+    };
     let mut node_label = Vec::with_capacity(chart.nodes.len());
     let mut size = Vec::with_capacity(chart.nodes.len());
     for node in &chart.nodes {
