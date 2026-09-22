@@ -35,10 +35,12 @@ Keywords are case-insensitive, as in mermaid's lexer. A statement ends at a newl
 Still
 state "This is a state description" as s2
 s2 : This is a state description
+state "Some long name" as s3 : The description
 ```
 
 - A bare id declares a simple state whose label is the id.
-- `state "<description>" as <id>` and `<id> : <description>` both set the label; a later `<id> : <text>` replaces it. The description runs to the end of the line and may contain `<br/>`.
+- `state "<description>" as <id>`, `state <id> : <description>` and `<id> : <description>` all describe a state. The first description replaces the id the state is named by and every later one adds a line, so the three forms above in that order label `s3` `Some long name` over `The description`, as mermaid's description list does. A description runs to the end of the statement and may contain `<br/>`.
+- Text after the state id that the grammar has no place for — `state s2 &lt;&lt;fork&gt;&gt;`, the entity spelling an HTML source carries — is dropped with `W024`, together with the rest of its line, as mermaid's lexer drops it.
 - A state named by a transition before any declaration is declared at that point, with its id as its label and `implicit` set.
 - `<id>:::<class>` applies a role where the id stands, on either side of a transition ([Styling](#styling)).
 
@@ -68,7 +70,7 @@ state "Another Composite" as NamedComposite { … }
 NamedComposite: Another Composite
 ```
 
-A composite state holds any statement a top level holds, nested to `limits.nesting` (64); deeper input is `E010 NestingTooDeep`. `state <id> { … }` and `state "<description>" as <id> { … }` both open one, and a later `<id>: <text>` labels it. A composite with no members lowers to a simple state, so a transition naming it still lands somewhere ([Lowering](#lowering)).
+A composite state holds any statement a top level holds, nested to `limits.nesting` (64); deeper input is `E010 NestingTooDeep`. `state <id> { … }` and `state "<description>" as <id> { … }` both open one, and a later `<id>: <text>` labels it. The `{` opens the body where it stands or on a later line, so `state <id>` and a `{` on the next line are one statement. A composite with no members lowers to a simple state, so a transition naming it still lands somewhere ([Lowering](#lowering)).
 
 mermaid refuses a transition between members of two different composite states. Merlion draws it: the layout routes an edge across a cluster boundary through a port on it ([layout.md](layout.md#7-clusters-subgraphs)), so the graph the source describes is the graph the reader sees.
 
@@ -135,7 +137,7 @@ Codes shared with flowcharts keep their meaning: `E002`, `E004`, `E010`, `E011`,
 
 | Code | Severity | Meaning |
 |---|---|---|
-| `W024` StateStatementIgnored | Warning | `hide empty description`, `scale … width`, a floating note (`note "…" as <id>`) or a `click` tooltip dropped |
+| `W024` StateStatementIgnored | Warning | `hide empty description`, `scale … width`, a floating note (`note "…" as <id>`), a `click` tooltip or text after a state id dropped |
 | `W025` StateKindRejected | Warning | `<<…>>` or `[[…]]` naming something other than `choice`, `fork` or `join`; the state stays `Simple` |
 | `R014` StateNotClosed | Repair | `state <id> {` without `}`; closed at end of input |
 | `R015` UnmatchedStateEnd | Repair | `}` with no open composite state; dropped |

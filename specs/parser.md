@@ -64,7 +64,7 @@ A label reaches the model normalised, in this order:
 
 1. A Markdown string (`` "`…`" ``) loses its backticks.
 2. Every `<br>` variant — `<br>`, `<br/>`, `<br />`, any case, spaces before the `/` or `>` — and every newline inside a quoted label becomes a `\n`, the model's hard line break.
-3. Each line is trimmed, then its Mermaid entity codes (`#quot;`, `#35;`, `#x2665;`, the named codes) are decoded.
+3. Each line is trimmed, then its Mermaid entity codes (`#quot;`, `#35;`, `#x2665;`, the named codes) are decoded. The named codes cover the ASCII punctuation a label cannot carry as itself, each spelled as HTML5 spells it — `#colon;`, `#semi;`, `#lpar;`, `#rpar;`, `#lbrace;`, `#rbrace;`, `#lbrack;`, `#rbrack;`, `#num;`, `#percnt;`, `#commat;`, `#dollar;`, `#excl;`, `#quest;`, `#sol;`, `#bsol;`, `#verbar;`, `#lowbar;`, `#ast;`, `#plus;`, `#equals;`, `#period;`, `#comma;`, `#grave;` — beside the typographic names (`#hearts;`, `#mdash;`, `#nbsp;`, …). A name the table does not hold stays literal.
 
 The order of 2 and 3 is the contract, not an implementation detail. `#lt;br#gt;` is how a source writes a literal `<br>`: decoding it before the split would produce a `<br>` indistinguishable from the source's own, and the text stage would break the line and swallow the text. Splitting first keeps it. A code can never decode to a `\n` — `decode_entity` refuses control characters — so the separator is unforgeable and a `<br>` left in the model is always text.
 

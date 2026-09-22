@@ -165,18 +165,30 @@ fn normalise_br(s: &str) -> String {
     out
 }
 
-/// Named entity codes Mermaid labels commonly use (`#name;`).
+/// Named entity codes Mermaid labels commonly use (`#name;`), sorted for the binary
+/// search. The ASCII punctuation names are the way a label carries a character the
+/// grammar reserves — `test({ foo#colon; 'far' })` — and each is spelled as HTML5
+/// spells it.
 const NAMED: &[(&str, char)] = &[
     ("amp", '&'),
     ("apos", '\''),
+    ("ast", '*'),
+    ("bsol", '\\'),
     ("bull", '•'),
     ("cent", '¢'),
+    ("colon", ':'),
+    ("comma", ','),
+    ("commat", '@'),
     ("copy", '©'),
     ("darr", '↓'),
     ("deg", '°'),
     ("divide", '÷'),
+    ("dollar", '$'),
+    ("equals", '='),
     ("euro", '€'),
+    ("excl", '!'),
     ("ge", '≥'),
+    ("grave", '`'),
     ("gt", '>'),
     ("harr", '↔'),
     ("hearts", '♥'),
@@ -184,24 +196,39 @@ const NAMED: &[(&str, char)] = &[
     ("infin", '∞'),
     ("laquo", '«'),
     ("larr", '←'),
+    ("lbrace", '{'),
+    ("lbrack", '['),
     ("le", '≤'),
+    ("lowbar", '_'),
+    ("lpar", '('),
     ("lt", '<'),
     ("mdash", '—'),
     ("middot", '·'),
     ("nbsp", '\u{a0}'),
     ("ndash", '–'),
     ("ne", '≠'),
+    ("num", '#'),
     ("para", '¶'),
+    ("percnt", '%'),
+    ("period", '.'),
+    ("plus", '+'),
     ("plusmn", '±'),
     ("pound", '£'),
+    ("quest", '?'),
     ("quot", '"'),
     ("raquo", '»'),
     ("rarr", '→'),
+    ("rbrace", '}'),
+    ("rbrack", ']'),
     ("reg", '®'),
+    ("rpar", ')'),
     ("sect", '§'),
+    ("semi", ';'),
+    ("sol", '/'),
     ("times", '×'),
     ("trade", '™'),
     ("uarr", '↑'),
+    ("verbar", '|'),
     ("yen", '¥'),
 ];
 
@@ -317,6 +344,24 @@ mod tests {
             "#\"&AA#bogus;#"
         );
         assert_eq!(clean_label("#1;#127;"), "#1;#127;");
+    }
+
+    #[test]
+    fn the_reserved_punctuation_has_a_named_code() {
+        // The characters a label cannot carry as themselves, each by the HTML name
+        // mermaid's own diagrams write: `test({ foo#colon; 'far' })`.
+        assert_eq!(
+            clean_label("#colon;#semi;#lpar;#rpar;#lbrace;#rbrace;#lbrack;#rbrack;"),
+            ":;(){}[]"
+        );
+        assert_eq!(
+            clean_label("#num;#percnt;#commat;#dollar;#excl;#quest;#sol;#bsol;"),
+            "#%@$!?/\\"
+        );
+        assert_eq!(
+            clean_label("#verbar;#lowbar;#ast;#plus;#equals;#period;#comma;#grave;"),
+            "|_*+=.,`"
+        );
     }
 
     #[test]

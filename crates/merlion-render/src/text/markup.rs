@@ -163,8 +163,14 @@ fn pair(toks: &[Tok]) -> Vec<Role> {
             if *t != kind || roles.get(i) != Some(&Role::Literal) {
                 continue;
             }
-            let prev = i.checked_sub(1).and_then(|p| toks.get(p));
-            let next = toks.get(i + 1);
+            // A run of the same delimiter flanks as one, so the text on each side of the
+            // whole run decides whether it opens or closes: `State1___` neither opens nor
+            // closes and every character of it is drawn.
+            let prev = (0..i).rev().find(|&p| toks.get(p) != Some(&kind));
+            let prev = prev.and_then(|p| toks.get(p));
+            let next = (i + 1..toks.len())
+                .find(|&n| toks.get(n) != Some(&kind))
+                .and_then(|n| toks.get(n));
             let under = kind == Tok::Under;
             let can_close = !is_space(prev) && !(under && is_alnum(next));
             let can_open = !is_space(next) && !(under && is_alnum(prev));
@@ -332,6 +338,19 @@ mod tests {
             ("snake_case_name".into(), "...............".into())
         );
         assert_eq!(one("a *b*c"), ("a bc".into(), "..I.".into()));
+    }
+
+    #[test]
+    fn a_run_of_delimiters_flanks_as_one() {
+        // A trailing run follows the end of the line, so it opens nothing and every
+        // character of it is drawn (CommonMark 0.31 §6.2, the delimiter run).
+        assert_eq!(
+            one("State1_____________"),
+            ("State1_____________".into(), ".".repeat(19))
+        );
+        assert_eq!(one("a___").0, "a___");
+        assert_eq!(one("___a").0, "___a");
+        assert_eq!(one("a ___ b").0, "a ___ b");
     }
 
     #[test]

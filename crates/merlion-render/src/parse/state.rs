@@ -157,6 +157,9 @@ struct StateB {
     style: Style,
     link: Option<Link>,
     implicit: bool,
+    /// Whether a description already names the state, so the next one adds a line
+    /// rather than replacing the id (specs/state.md#states).
+    described: bool,
     span: Span,
     /// Concurrency regions, filled when the composite closes with two or more of them.
     regions: Vec<RegionB>,
@@ -493,6 +496,7 @@ impl P<'_, '_> {
             style: Style::default(),
             link: None,
             implicit: true,
+            described: false,
             span,
             regions: Vec::new(),
             pseudo: None,
@@ -533,6 +537,7 @@ impl P<'_, '_> {
             style: Style::default(),
             link: None,
             implicit: true,
+            described: false,
             span,
             regions: Vec::new(),
             pseudo: Some((scope, start)),
@@ -880,12 +885,27 @@ impl P<'_, '_> {
         let i = self.resolve(e, true, span)?;
         let raw = text.get(colon + 1..).unwrap_or("");
         let label = self.finish_label(raw, start + colon + 1, end);
+        self.add_description(i, label);
         if let Some(s) = self.states.get_mut(i) {
-            s.label = label;
             s.implicit = false;
             s.span = span;
         }
         Ok(())
+    }
+
+    /// Adds one description to a state: the first replaces the id the state is named by,
+    /// and every later one adds a line, as mermaid's description list does
+    /// (specs/state.md#states).
+    fn add_description(&mut self, i: usize, text: String) {
+        if let Some(s) = self.states.get_mut(i) {
+            if s.described {
+                s.label.push('\n');
+                s.label.push_str(&text);
+            } else {
+                s.label = text;
+                s.described = true;
+            }
+        }
     }
 
     /// A bare `a` or `a:::role`, which declares the state.
@@ -904,8 +924,9 @@ impl P<'_, '_> {
 
     // ------------------------------------------------------------ state declarations
 
-    /// `state <id>`, `state "<description>" as <id>`, `state <id> <<choice>>` and any of
-    /// them followed by `{` (specs/state.md#states).
+    /// `state <id>`, `state "<description>" as <id>`, `state <id> <<choice>>`, any of
+    /// them followed by `: <description>` or by `{` (specs/state.md#states). Text the
+    /// grammar has no place for is dropped with `W024`, as mermaid's lexer drops it.
     fn state_stmt(&mut self, kw_start: usize) -> Result<bool, Stop> {
         self.skip_hws();
         let mut described: Option<(usize, usize)> = None;
@@ -936,6 +957,15 @@ impl P<'_, '_> {
             .char_at(self.pos)
             .is_some_and(|c| !c.is_whitespace() && !matches!(c, ';' | '{' | '}' | '<' | '['))
         {
+            // A single `:` ends the id and opens a description; `:::` is the role
+            // shorthand and belongs to the endpoint.
+            if self.char_at(self.pos) == Some(':') {
+                if !self.rest_at(self.pos).starts_with(":::") {
+                    break;
+                }
+                self.pos += 3;
+                continue;
+            }
             self.pos += self.char_at(self.pos).map_or(1, char::len_utf8);
         }
         let id_end = self.pos;
@@ -949,7 +979,37 @@ impl P<'_, '_> {
         self.skip_hws();
         let kind = self.state_marker();
         self.skip_hws();
+        // `{` opens the body where it stands or on a later line: mermaid's lexer reads
+        // the two as one statement, and the corpus writes both.
+        if self.char_at(self.pos) != Some('{') {
+            let mut at = self.pos;
+            while self.char_at(at).is_some_and(char::is_whitespace) {
+                at += self.char_at(at).map_or(1, char::len_utf8);
+            }
+            if self.char_at(at) == Some('{') {
+                self.pos = at;
+            }
+        }
         let composite = self.char_at(self.pos) == Some('{');
+        // `state <id> : <description>`, the alias form's description repeated on the
+        // same line, and any other text the grammar has no place for.
+        let mut trailing: Option<(usize, usize)> = None;
+        if !composite {
+            let described_here = self.char_at(self.pos) == Some(':');
+            // A description ends where any statement ends; text the grammar has no place
+            // for runs to the end of the line, because mermaid's lexer drops the line and
+            // its `;` and `}` never separate statements there.
+            let stop = if described_here {
+                self.stmt_end(self.pos)
+            } else {
+                self.eol_from(self.pos)
+            };
+            let rest = cut_comment(self.src.get(self.pos..stop).unwrap_or(""));
+            if !rest.trim().is_empty() {
+                trailing = Some((self.pos, self.pos + rest.len()));
+                self.pos += rest.len();
+            }
+        }
         let stmt_end = if composite { self.pos + 1 } else { self.pos };
         let span = self.stmt_span(kw_start, stmt_end);
         let i = self.state_ref(&id, span)?;
@@ -961,8 +1021,23 @@ impl P<'_, '_> {
         }
         if let Some((s, e)) = described {
             let label = self.finish_label(self.src.get(s..e).unwrap_or(""), s, e);
-            if let Some(st) = self.states.get_mut(i) {
-                st.label = label;
+            self.add_description(i, label);
+        }
+        if let Some((s, e)) = trailing {
+            match self.src.get(s..e).unwrap_or("").strip_prefix(':') {
+                Some(raw) => {
+                    let label = self.finish_label(raw, s + 1, e);
+                    self.add_description(i, label);
+                }
+                None => self.warn(
+                    "W024",
+                    s,
+                    e,
+                    alloc::format!(
+                        "`{}` follows the state id and is dropped",
+                        excerpt(self.src.get(s..e).unwrap_or("").trim())
+                    ),
+                ),
             }
         }
         if let Some(st) = self.states.get_mut(i) {

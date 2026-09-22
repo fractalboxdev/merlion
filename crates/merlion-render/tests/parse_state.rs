@@ -221,9 +221,63 @@ fn a_description_without_spaces_around_the_colon_still_parses() {
 }
 
 #[test]
-fn a_later_description_replaces_an_earlier_one() {
+fn a_later_description_adds_a_line() {
     let s = st("state \"first\" as A\nA : second\n");
-    assert_eq!(labels(&s), ["second"]);
+    assert_eq!(labels(&s), ["first\nsecond"]);
+}
+
+#[test]
+fn a_third_description_adds_a_third_line() {
+    let s = st("A : one\nA : two\nA : three\n");
+    assert_eq!(labels(&s), ["one\ntwo\nthree"]);
+}
+
+#[test]
+fn the_alias_form_takes_a_description_after_the_colon() {
+    let s = st("state \"Some long name\" as S1: The description\n");
+    assert_eq!(ids(&s), ["S1"]);
+    assert_eq!(labels(&s), ["Some long name\nThe description"]);
+}
+
+#[test]
+fn a_bare_declaration_takes_a_description_after_the_colon() {
+    let s = st("state S1 : only\n");
+    assert_eq!(labels(&s), ["only"]);
+}
+
+#[test]
+fn an_opening_brace_on_the_next_line_opens_the_composite() {
+    let s = st("state Outer\n{\nA --> B\n}\nOuter --> C\n");
+    assert_eq!(ids(&s), ["Outer", "A", "B", "C"]);
+    assert_eq!(find(&s, "Outer").kind, StateKind::Composite);
+    assert_eq!(
+        find(&s, "A").parent.map(|p| s.states[p].id.as_str()),
+        Some("Outer")
+    );
+}
+
+#[test]
+fn a_brace_on_the_next_line_of_the_alias_form_opens_the_composite() {
+    let s = st("state \"Outside\" as Outer\n  {\n  A --> B\n  }\n");
+    assert_eq!(find(&s, "Outer").kind, StateKind::Composite);
+    assert_eq!(find(&s, "Outer").label, "Outside");
+}
+
+#[test]
+fn a_role_shorthand_after_the_state_keyword_is_not_a_description() {
+    let (s, _) = st_d("classDef hot fill:#f00\nstate A:::hot\n");
+    assert_eq!(ids(&s), ["A"]);
+    assert_eq!(labels(&s), ["A"]);
+    assert_eq!(find(&s, "A").classes, ["hot"]);
+}
+
+#[test]
+fn text_after_the_state_id_is_dropped_with_w024() {
+    let (s, d) = st_d("state fork_state &lt;&lt;fork&gt;&gt;\nfork_state --> A\n");
+    assert_eq!(ids(&s), ["fork_state", "A"]);
+    assert_eq!(labels(&s), ["fork_state", "A"]);
+    assert_eq!(kinds(&s), [StateKind::Simple, StateKind::Simple]);
+    assert!(has(&d, "W024"), "{d:#?}");
 }
 
 #[test]
