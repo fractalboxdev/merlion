@@ -455,3 +455,45 @@ fn a_class_def_named_like_a_built_in_role_replaces_the_built_in_role() {
     }
     assert!(svg.contains("<text class=\"merlion-label\" fill=\"#1f2328\">"));
 }
+
+#[test]
+fn an_edge_role_never_reaches_a_node_label_with_the_same_class() {
+    let svg = svg_of("flowchart LR\na[A] e1@--> b[B]\nclass e1 failure\nclass b failure");
+    for e in engines(&svg, &[]) {
+        let label = node_part(&e, "b", "merlion-label");
+        assert_eq!(rgba8(&computed(&e, label, "fill")), rgba8("#1f2328"));
+        let text = edge_part(&e, "b", "merlion-edge-path");
+        assert_eq!(computed(&e, text, "stroke"), DANGER);
+    }
+}
+
+#[test]
+fn role_label_rules_rank_between_the_base_rule_and_source_text_rules() {
+    // Built-in tone on labels of every kind, then a classDef colour and a node style
+    // colour that must win over it.
+    let svg = svg_of(
+        "flowchart LR\nsubgraph g [G]\na[A]:::danger\nend\na e1@-->|x| b[B]:::danger\nb --> c[C]:::danger\nclass e1 failure\nclass g grp\nclass c hot\nclassDef hot color:#00aa00\nstyle b color:#0000ff",
+    );
+    for e in engines(&svg, &[]) {
+        let a = node_part(&e, "a", "merlion-label");
+        assert!(same(
+            &computed(&e, a, "fill"),
+            &mix(DANGER, "#1f2328", 75.0),
+            1
+        ));
+        let t = edge_part(&e, "b", "merlion-edge-text");
+        assert!(same(
+            &computed(&e, t, "fill"),
+            &mix(DANGER, "#1f2328", 75.0),
+            1
+        ));
+        assert_eq!(
+            computed(&e, node_part(&e, "b", "merlion-label"), "fill"),
+            "#0000ff"
+        );
+        assert_eq!(
+            computed(&e, node_part(&e, "c", "merlion-label"), "fill"),
+            "#00aa00"
+        );
+    }
+}

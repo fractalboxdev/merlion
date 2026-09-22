@@ -265,6 +265,15 @@ pub fn assert_safe_style(css: &str, id: &str) {
         rest = &r[1..];
     }
     let prefixes = scoped_prefixes(id);
+    // librsvg drops every rule that contains `:where()`; only the per-element token
+    // reset, which a CSS-less renderer does not need, may use it.
+    for sel in css_selectors(css) {
+        assert!(
+            !sel.contains(":where(") || sel.starts_with(&format!(":where(#{} .merlion-node, ", id)),
+            "`:where()` outside the token reset: {:?}",
+            sel
+        );
+    }
     for sel in css_selectors(css) {
         for part in sel.split(',') {
             let part = part.trim();

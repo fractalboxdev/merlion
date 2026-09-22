@@ -8,9 +8,13 @@
 //!
 //! Selectors keep the specificity that the precedence of the spec needs: shapes, paths,
 //! markers and boxes use `.merlion-c-{name}>.merlion-shape` and the like (1,2,0), the
-//! same as the base rules and `classDef` rules, so source order decides; labels use
-//! `:where()` so they tie with the base label rule (1,1,0) and lose to every `classDef`
-//! and `style` text rule (1,1,1).
+//! same as the base rules and `classDef` rules, so source order decides. Labels use a
+//! type selector, `.merlion-c-{name}>text` on nodes and `.merlion-c-{name}>*>text` on
+//! edges, whose label sits inside the label group (both 1,1,1): each beats the base
+//! label rule (1,1,0), ties the `classDef` and `style` text rules
+//! (`.merlion-c-{name} text`), and loses to them because they come later. The child
+//! combinators keep an edge role off a node label with the same class and back. No role rule uses `:where()`, which librsvg
+//! drops together with the whole rule.
 
 use alloc::format;
 use alloc::string::String;
@@ -191,7 +195,7 @@ pub fn node_rules(t: &Table, name: &str, tone: Option<&Tone>, dash: Option<&str>
     ));
     if let Some(tn) = tone {
         out.push(rule(
-            format!(".merlion-c-{}>:where(.merlion-label)", name),
+            format!(".merlion-c-{}>text", name),
             format!(
                 "fill:{};",
                 mix_lit(&tn.lit, &t.lit(Role::NodeText), TONE_TEXT)
@@ -234,7 +238,7 @@ pub fn edge_rules(t: &Table, name: &str, tone: Option<&Tone>, dash: Option<&str>
             m,
         ));
         out.push(rule(
-            format!(".merlion-c-{} :where(.merlion-edge-text)", name),
+            format!(".merlion-c-{}>*>text", name),
             format!("fill:{};", mix_lit(&tn.lit, &t.lit(Role::Fg), TONE_TEXT)),
             mixed_fill(t, tn, TONE_TEXT, Role::Fg),
         ));
@@ -270,7 +274,7 @@ pub fn cluster_rules(
     ));
     if let Some(tn) = tone {
         out.push(rule(
-            format!(".merlion-cc-{}>:where(.merlion-cluster-title)", name),
+            format!(".merlion-cc-{}>text", name),
             format!("fill:{};", mix_lit(&tn.lit, &t.lit(Role::Fg), TONE_TEXT)),
             mixed_fill(t, tn, TONE_TEXT, Role::Fg),
         ));
@@ -313,7 +317,7 @@ mod tests {
             "fill:color-mix(in oklab, var(--merlion-tone, var(--merlion-danger, #cf222e)) 14%, var(--merlion-node-bg"
         ));
         assert!(!r[0].mixed.contains("stroke:"));
-        assert_eq!(r[1].selector, ".merlion-c-danger>:where(.merlion-label)");
+        assert_eq!(r[1].selector, ".merlion-c-danger>text");
     }
 
     #[test]

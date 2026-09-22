@@ -299,6 +299,8 @@ fn parse_compound(s: &str) -> Compound {
                     panic!("unsupported pseudo {:?}", s);
                 }
             }
+            // The universal selector: matches any element, zero specificity.
+            "*" => rest = body,
             _ => {
                 let n = rest.find(['.', '#', '[', ':']).unwrap_or(rest.len());
                 c.tag = Some(rest[..n].to_string());
