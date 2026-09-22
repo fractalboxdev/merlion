@@ -1,6 +1,7 @@
 //! Layered layout (specs/layout.md). STUB: owned by the layout workstream.
 
 mod acyclic;
+mod coords;
 mod layering;
 mod lgraph;
 mod measure;
