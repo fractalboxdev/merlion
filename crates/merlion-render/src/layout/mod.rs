@@ -2,6 +2,7 @@
 
 mod acyclic;
 mod layering;
+mod lgraph;
 mod measure;
 
 use crate::diag::Diagnostics;
