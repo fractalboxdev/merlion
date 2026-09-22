@@ -14,7 +14,7 @@ use alloc::vec::Vec;
 use super::coords::{self, Pad, Rect};
 use super::fit;
 use super::hint;
-use super::lgraph::{self, BuildError, BuildIn, Clusters, EdgeIn, Extent, Kind, LGraph};
+use super::lgraph::{self, BuildError, BuildIn, Chain, Clusters, EdgeIn, Extent, Kind, LGraph};
 use super::measure;
 use super::order::{self, Stable};
 use super::pack;
@@ -24,7 +24,7 @@ use crate::diag::{Diagnostics, Severity, Span};
 use crate::fuel::{Fuel, OutOfFuel};
 use crate::geometry::{chip_size, ClusterGeom, EdgeGeom, EdgeLabelGeom, Geometry, NodeGeom, Point};
 use crate::math::{abs, clamp, hypot, max, min};
-use crate::model::Flowchart;
+use crate::model::{Arrow, Flowchart};
 use crate::options::{Direction, DirectionOption, EdgeStyle, RenderOptions};
 use crate::text::{self, LabelLayout, TextStyle, Weight};
 
@@ -38,6 +38,9 @@ pub const TITLE_TOP: f64 = CLUSTER_PAD / 2.0;
 /// Clearance kept around an edge-label chip when it is placed and when space is
 /// reserved for it.
 pub const LABEL_CLEAR: f64 = 4.0;
+/// Length of an edge-end marker along its path: markers are 10 × 10 with the tip on
+/// the path's end (svg/mod.rs). Label chips keep off it.
+pub const MARKER_LEN: f64 = 10.0;
 /// Gap between a self-loop and its label.
 pub const LOOP_LABEL_GAP: f64 = 4.0;
 /// Container fit reduces the wrap width in these steps, down to [`MIN_WRAP_WIDTH`].
@@ -647,11 +650,18 @@ fn coordinates(
         let (_, t) = axes(dir, cw, chh);
         let gap = g.nodes.get(ch.nodes[0]).map_or(0, |v| v.layer);
         if let Some(mg) = min_gap.get_mut(gap) {
-            *mg = max(*mg, t + 2.0 * LABEL_CLEAR);
+            let (up, down) = marker_room(base.chart, ch);
+            *mg = max(*mg, t + 2.0 * LABEL_CLEAR + up + down);
         }
     }
     for (gap, group) in gap_label_groups(g, m, dir, &x) {
-        let need: f64 = group.iter().map(|&(_, t)| t + 2.0 * LABEL_CLEAR).sum();
+        let (up, down) = group_marker_room(base.chart, g, &group);
+        let need: f64 = group
+            .iter()
+            .map(|&(_, t)| t + 2.0 * LABEL_CLEAR)
+            .sum::<f64>()
+            + up
+            + down;
         if let Some(mg) = min_gap.get_mut(gap) {
             *mg = max(*mg, need);
         }
@@ -721,6 +731,66 @@ fn gap_label_groups(g: &LGraph, m: &Meas, dir: Direction, x: &[f64]) -> Vec<(usi
     out
 }
 
+/// Room a chain's end markers take at the (upper, lower) side of a gap it crosses, in
+/// the layout frame: the marker at the edge's target end sits at the lower layer unless
+/// the chain is reversed.
+fn marker_room(chart: &Flowchart, ch: &Chain) -> (f64, f64) {
+    let Some(edge) = chart.edges.get(ch.edge) else {
+        return (0.0, 0.0);
+    };
+    let len = |a: Arrow| if a == Arrow::None { 0.0 } else { MARKER_LEN };
+    let (start, end) = (len(edge.arrow_start), len(edge.arrow_end));
+    if ch.reversed {
+        (end, start)
+    } else {
+        (start, end)
+    }
+}
+
+/// The largest upper and lower marker room over a group of chains.
+fn group_marker_room(chart: &Flowchart, g: &LGraph, group: &LabelGroup) -> (f64, f64) {
+    group
+        .iter()
+        .filter_map(|&(ci, _)| g.chains.get(ci))
+        .map(|ch| marker_room(chart, ch))
+        .fold((0.0, 0.0), |a, b| (max(a.0, b.0), max(a.1, b.1)))
+}
+
+/// Boxes covered by the end markers of an edge drawn along `pts` (screen frame): the
+/// last (first) [`MARKER_LEN`] px of the path, [`MARKER_LEN`] wide.
+fn marker_boxes(pts: &[(f64, f64)], start: Arrow, end: Arrow) -> Vec<BoxF> {
+    let mut out = Vec::new();
+    let mut add = |tip: (f64, f64), from: (f64, f64)| {
+        let (dx, dy) = (tip.0 - from.0, tip.1 - from.1);
+        let len = hypot(dx, dy);
+        if len.is_nan() || len <= 0.0 {
+            return;
+        }
+        let (ux, uy) = (dx / len, dy / len);
+        let base = (tip.0 - ux * MARKER_LEN, tip.1 - uy * MARKER_LEN);
+        let (nx, ny) = (-uy * MARKER_LEN / 2.0, ux * MARKER_LEN / 2.0);
+        let xs = [tip.0, base.0 + nx, base.0 - nx];
+        let ys = [tip.1, base.1 + ny, base.1 - ny];
+        out.push((
+            xs.iter().copied().fold(f64::MAX, min),
+            ys.iter().copied().fold(f64::MAX, min),
+            xs.iter().copied().fold(f64::MIN, max),
+            ys.iter().copied().fold(f64::MIN, max),
+        ));
+    };
+    if let [a, b, ..] = pts {
+        if start != Arrow::None {
+            add(*a, *b);
+        }
+    }
+    if let [.., b, a] = pts {
+        if end != Arrow::None {
+            add(*a, *b);
+        }
+    }
+    out
+}
+
 /// The point where a route (layout frame) first reaches layer-axis coordinate `y`.
 fn at_layer_y(points: &[(f64, f64)], y: f64) -> Option<(f64, f64)> {
     points.windows(2).find_map(|s| {
@@ -755,14 +825,17 @@ fn centred(x: f64, y: f64, w: f64, h: f64, pad: f64) -> BoxF {
 
 /// Label position on `points` (screen frame): the midpoint of the longest segment,
 /// moved along the edge in both directions until the chip (with [`LABEL_CLEAR`]/2
-/// around it) overlaps no node and no placed label (specs/layout.md#6-edge-routing).
-/// Falls back to the first spot clear of nodes, then to the midpoint. Each tried spot
-/// draws optional fuel; without fuel the midpoint is used.
+/// around it) overlaps no node, no box in `avoid` (the edge's own markers) and no
+/// placed label (specs/layout.md#6-edge-routing). Falls back to the first spot clear of
+/// nodes and labels, then to the first clear of nodes and `avoid`, then to the first
+/// clear of nodes, then to the midpoint.
+/// Each tried spot draws optional fuel; without fuel the midpoint is used.
 fn place_label(
     points: &[(f64, f64)],
     w: f64,
     h: f64,
     nodes: &[BoxF],
+    avoid: &[BoxF],
     placed: &[BoxF],
     fuel: &mut Fuel,
 ) -> Option<(f64, f64)> {
@@ -811,6 +884,11 @@ fn place_label(
         .copied()
         .filter(|&b| boxes_overlap(b, area))
         .collect();
+    let near_avoid: Vec<BoxF> = avoid
+        .iter()
+        .copied()
+        .filter(|&b| boxes_overlap(b, area))
+        .collect();
     let near_labels: Vec<BoxF> = placed
         .iter()
         .copied()
@@ -818,6 +896,8 @@ fn place_label(
         .collect();
     let step = max(2.0, total / MAX_LABEL_SAMPLES as f64);
     let mut node_free: Option<(f64, f64)> = None;
+    let mut label_free: Option<(f64, f64)> = None;
+    let mut any_free: Option<(f64, f64)> = None;
     let mut k = 0usize;
     loop {
         let off = step * k.div_ceil(2) as f64;
@@ -830,7 +910,7 @@ fn place_label(
             continue;
         }
         if fuel
-            .burn_optional((near.len() + near_labels.len()) as u64 + 1)
+            .burn_optional((near.len() + near_avoid.len() + near_labels.len()) as u64 + 1)
             .is_err()
         {
             break;
@@ -840,14 +920,17 @@ fn place_label(
         if near.iter().any(|&n| boxes_overlap(n, b)) {
             continue;
         }
-        if near_labels.iter().all(|&l| !boxes_overlap(l, b)) {
-            return Some(p);
+        let clear_of_labels = near_labels.iter().all(|&l| !boxes_overlap(l, b));
+        let clear_of_avoid = near_avoid.iter().all(|&a| !boxes_overlap(a, b));
+        match (clear_of_labels, clear_of_avoid) {
+            (true, true) => return Some(p),
+            (true, false) if label_free.is_none() => label_free = Some(p),
+            (false, true) if node_free.is_none() => node_free = Some(p),
+            _ => {}
         }
-        if node_free.is_none() {
-            node_free = Some(p);
-        }
+        any_free.get_or_insert(p);
     }
-    Some(node_free.unwrap_or(mid))
+    Some(label_free.or(node_free).or(any_free).unwrap_or(mid))
 }
 
 /// Phases 5 (wrap translation), 6 and 7 for one set of coordinates: node, edge,
@@ -1024,8 +1107,13 @@ fn finish(
         if part(gap) != part(gap + 1) {
             continue;
         }
-        let lo = bot.get(gap).copied().unwrap_or(0.0) + sh(gap).1;
-        let hi = top.get(gap + 1).copied().unwrap_or(lo) + sh(gap).1;
+        // The slots leave the markers at both ends of the gap uncovered.
+        let (up, down) = group_marker_room(chart, g, &group);
+        let lo = bot.get(gap).copied().unwrap_or(0.0) + sh(gap).1 + up;
+        let hi = max(
+            top.get(gap + 1).copied().unwrap_or(lo) + sh(gap).1 - down,
+            lo,
+        );
         let k = group.len() as f64;
         for (i, &(ci, _)) in group.iter().enumerate() {
             let yi = lo + (hi - lo) * (i as f64 + 0.5) / k;
@@ -1117,7 +1205,10 @@ fn finish(
             continue;
         };
         let (cw, ch) = chip_size(l);
-        if let Some(p) = place_label(&edge_pts[e], cw, ch, &node_boxes, &placed, fuel) {
+        let markers = chart.edges.get(e).map_or_else(Vec::new, |edge| {
+            marker_boxes(&edge_pts[e], edge.arrow_start, edge.arrow_end)
+        });
+        if let Some(p) = place_label(&edge_pts[e], cw, ch, &node_boxes, &markers, &placed, fuel) {
             placed.push(centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0));
             labels[e] = Some(EdgeLabelGeom {
                 x: p.0,
@@ -1932,7 +2023,7 @@ mod tests {
         let pts = [(0.0, 0.0), (0.0, 100.0)];
         let node = (-20.0, 40.0, 20.0, 60.0);
         let mut fuel = Fuel::new(1_000_000);
-        let (x, y) = place_label(&pts, 10.0, 10.0, &[node], &[], &mut fuel).unwrap();
+        let (x, y) = place_label(&pts, 10.0, 10.0, &[node], &[], &[], &mut fuel).unwrap();
         assert_eq!(x, 0.0);
         assert!(!boxes_overlap(
             centred(x, y, 10.0, 10.0, LABEL_CLEAR / 2.0),
@@ -1941,7 +2032,7 @@ mod tests {
         // Without fuel the midpoint is used.
         let mut empty = Fuel::new(0);
         assert_eq!(
-            place_label(&pts, 10.0, 10.0, &[node], &[], &mut empty),
+            place_label(&pts, 10.0, 10.0, &[node], &[], &[], &mut empty),
             Some((0.0, 50.0))
         );
     }
