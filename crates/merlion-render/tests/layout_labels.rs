@@ -36,6 +36,7 @@ fn corpus() -> Vec<(String, Flowchart)> {
             let mut d = Diagnostics::new(false);
             match parse(&src, &po, &mut d).ok()? {
                 Diagram::Flowchart(c) => Some((p.file_name()?.to_string_lossy().into(), c)),
+                _ => None,
             }
         })
         .collect()

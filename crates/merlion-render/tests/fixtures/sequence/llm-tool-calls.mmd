@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant User
+    participant Agent
+    participant Tools as Tool runtime
+    participant Search as Search API
+
+    User->>Agent: Which release broke the p95?
+    Agent->>Tools: tool_use(search, {"q": "p95 regression"})
+    Tools->>Search GET /search?q=p95+regression
+    Search-->>Tools: 3 hits
+    Tools-->>Agent: tool_result(3 hits)
+    alt enough evidence
+        Agent->>User: Release 4.2 doubled the p95
+    else needs another call
+        Agent->>Tools: tool_use(fetch, {"url": "..."})
+        Tools-->>Agent: tool_result(body)
+        Agent->>User: Release 4.2 doubled the p95

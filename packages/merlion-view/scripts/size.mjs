@@ -1,14 +1,15 @@
 // Size budgets (specs/viewer.md#constraints, specs/interaction.md#performance-and-budgets):
-// the base <merlion-view> ≤ 6 KB and the interact module ≤ 3 KB, minified and gzipped.
-// Each entry is bundled with esbuild on its own, gzipped at level 9, and fails above its budget.
-// The base loads interact.js on demand, so neither bundle counts the other.
+// the base <merlion-view> ≤ 6 KB, the interact module ≤ 3.25 KB and its sequence module ≤ 1 KB,
+// minified and gzipped. Each entry is bundled with esbuild on its own, gzipped at level 9, and
+// fails above its budget. Every module loads on demand, so no bundle counts another.
 import { build } from "esbuild";
 import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 export const BUDGETS = [
   ["merlion-view", "../merlion-view.js", 6 * 1024, ["./interact.js"]],
-  ["merlion-view/interact", "../interact.js", 3 * 1024, ["./merlion-view.js"]],
+  ["merlion-view/interact", "../interact.js", 3.25 * 1024, ["./merlion-view.js", "./interact-seq.js"]],
+  ["merlion-view/interact-seq", "../interact-seq.js", 1024, []],
 ];
 
 let failed = false;

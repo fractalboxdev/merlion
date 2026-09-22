@@ -1,0 +1,18 @@
+sequenceDiagram
+    box Aqua Mobile clients
+        actor Rider
+        participant App as Rider app
+    end
+    box rgba(255, 240, 200, 0.6) Dispatch
+        participant Dispatch
+        participant Driver
+    end
+
+    Rider->>App: Request a ride
+    Note right of Rider: The pickup pin is <br/>dragged before sending
+    App->>Dispatch: POST /rides
+    Note over Dispatch,Driver: Dispatch holds the offer for 15s
+    Dispatch->>Driver: Offer ride 4471
+    Driver-->>Dispatch: accepted
+    Note left of Driver: Declining releases the offer to the next driver
+    Dispatch-->>App: driver assigned, ETA 4 min

@@ -25,6 +25,7 @@ pub fn parse_ok(src: &str) -> (Flowchart, Vec<Diagnostic>) {
     let (r, d) = try_parse(src);
     match r {
         Ok(Diagram::Flowchart(f)) => (f, d),
+        Ok(other) => panic!("expected a flowchart, got a {}", other.type_name()),
         Err(e) => panic!("parse failed for {src:?}: {e:?}\n{d:#?}"),
     }
 }

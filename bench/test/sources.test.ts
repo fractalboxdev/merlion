@@ -7,6 +7,7 @@ import {
   extractMarkdownFences,
   extractTemplateLiterals,
   isFlowchart,
+  isSequence,
   sourceSlug,
 } from "../src/corpus/sources.ts";
 
@@ -99,7 +100,61 @@ describe("selectSourcePaths", () => {
   });
 });
 
+describe("isSequence", () => {
+  it("accepts a sequenceDiagram header, whatever its case", () => {
+    expect(isSequence("sequenceDiagram\nA->>B: hi")).toBe(true);
+    expect(isSequence("sequenceDiagram")).toBe(true);
+    expect(isSequence("SequenceDiagram\nA->>B: hi")).toBe(true);
+    expect(isSequence("sequenceDiagram;A->>B: hi")).toBe(true);
+  });
+  it("skips front matter, directives and comments before the header", () => {
+    expect(isSequence("---\ntitle: x\n---\nsequenceDiagram\nA->>B: hi")).toBe(true);
+    expect(isSequence("%%{init: {'theme':'dark'}}%%\n%% a comment\n\nsequenceDiagram")).toBe(true);
+  });
+  it("rejects other diagram types", () => {
+    expect(isSequence("graph TD\nA-->B")).toBe(false);
+    expect(isSequence("sequenceDiagrams\nA->>B: hi")).toBe(false);
+    expect(isSequence("---\ntitle: never closed\nsequenceDiagram")).toBe(false);
+  });
+});
+
+describe("selectSourcePaths for sequences", () => {
+  it("keeps demo pages, the sequence syntax doc and sequence e2e sources", () => {
+    const tree = [
+      "demos/sequence.html",
+      "demos/flowchart.html",
+      "packages/mermaid/src/docs/syntax/flowchart.md",
+      "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "e2e/rendering/flowchart/flowchart-v2.spec.js",
+      "e2e/rendering/sequence/sequencediagram.spec.js",
+      "e2e/rendering/sequence/sequenceDiagram-redux-themes.spec.ts",
+      "e2e/diagrams/sequence/should-render-a-simple-sequence-diagram.mmd",
+      "e2e/diagrams/flowchart/1-a.mmd",
+      "e2e/platform/dev-diagrams/diagrams/sequence-fixes/01-actor-vs-database.mmd",
+    ];
+    expect(selectSourcePaths(tree, "sequence")).toEqual([
+      "demos/flowchart.html",
+      "demos/sequence.html",
+      "e2e/diagrams/sequence/should-render-a-simple-sequence-diagram.mmd",
+      "e2e/rendering/sequence/sequenceDiagram-redux-themes.spec.ts",
+      "e2e/rendering/sequence/sequencediagram.spec.js",
+      "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+    ]);
+  });
+});
+
 describe("extractDiagrams", () => {
+  it("keeps sequence diagrams when asked for them", () => {
+    const html = `<pre class="mermaid">sequenceDiagram\nA->>B: hi</pre><pre class="mermaid">graph TD\nA</pre>`;
+    expect(extractDiagrams("a.html", html, "sequence")).toEqual(["sequenceDiagram\nA->>B: hi"]);
+    expect(extractDiagrams("a.html", html, "flowchart")).toEqual(["graph TD\nA"]);
+    expect(extractDiagrams("a.mmd", "\n  sequenceDiagram\n    A->>B: hi\n", "sequence")).toEqual([
+      "sequenceDiagram\n  A->>B: hi",
+    ]);
+    // A bare header with no statements is not a diagram.
+    expect(extractDiagrams("a.mmd", "sequenceDiagram", "sequence")).toEqual([]);
+  });
+
   it("dispatches on the file type and keeps flowcharts only", () => {
     expect(extractDiagrams("a.html", `<pre class="mermaid">graph TD\nA</pre><pre class="mermaid">pie\n"a": 1</pre>`)).toEqual([
       "graph TD\nA",
@@ -120,5 +175,13 @@ describe("sourceSlug", () => {
     expect(sourceSlug("packages/mermaid/src/docs/syntax/flowchart.md")).toBe("docs-flowchart");
     expect(sourceSlug("e2e/rendering/flowchart/flowchart-v2.spec.js")).toBe("e2e-flowchart-v2");
     expect(sourceSlug("e2e/diagrams/flowchart/dagre/7-Some Name.mmd")).toBe("e2e-dagre-7-some-name");
+  });
+  it("shortens the sequence sources the same way", () => {
+    expect(sourceSlug("demos/sequence.html")).toBe("demos-sequence");
+    expect(sourceSlug("packages/mermaid/src/docs/syntax/sequenceDiagram.md")).toBe("docs-sequencediagram");
+    expect(sourceSlug("e2e/rendering/sequence/sequencediagram-v2.spec.js")).toBe("e2e-sequence-v2");
+    expect(sourceSlug("e2e/diagrams/sequence/should-render-a-simple-sequence-diagram.mmd")).toBe(
+      "e2e-should-render-a-simple-sequence-diagram",
+    );
   });
 });

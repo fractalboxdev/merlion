@@ -207,7 +207,7 @@ const isShape = (e: XmlElement): boolean => SHAPES.has(e.name);
  * start (a `<tspan>` carrying `x`, `y` or `dy`, or mermaid's `row` class), so wrapped
  * lines and `<br>` compare equal to the source label with spaces.
  */
-const labelText = (texts: readonly XmlElement[]): string => {
+export const labelText = (texts: readonly XmlElement[]): string => {
   let out = "";
   const walk = (e: XmlElement): void => {
     for (const c of e.children) {

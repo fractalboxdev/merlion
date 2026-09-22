@@ -134,10 +134,10 @@ cd bench
 pnpm install --ignore-workspace
 pnpm bench run --renderers merlion,mermaid-dagre,mermaid-elk
 pnpm bench report
-pnpm bench determinism [--font link|embed|system]       # CLI --batch vs WASM, byte for byte
+pnpm bench determinism [--corpus compat|sequence] [--font link|embed|system]   # CLI --batch vs WASM, byte for byte
 ```
 
-`pnpm bench determinism` renders every compat diagram with `merlion render --batch` and through the WASM module and fails on any difference. CI runs it for all three font modes.
+`pnpm bench determinism` renders a corpus with `merlion render --batch` and through the WASM module and fails on any difference. Two corpora: `compat`, the mermaid flowcharts, and `sequence`, the core's sequence fixtures. CI runs every corpus in all three font modes.
 
 ## Licence
 

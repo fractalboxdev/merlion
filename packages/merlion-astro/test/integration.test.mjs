@@ -182,3 +182,83 @@ test("unified processor: rehypeMerlion first in processor.options.rehypePlugins"
 test("an unknown markdown processor fails the build instead of skipping every diagram", async () => {
   await assert.rejects(withProcessor({ name: "custom", options: {} }), /markdown\.processor "custom"/);
 });
+
+// --- End to end: the plugin the integration registers renders a diagram through the real
+// @fractalbox/merlion-wasm. The hast tree and the vfile stand in for Astro's Markdown
+// pipeline, which is what hands the plugin those two arguments.
+
+const SEQ = [
+  "sequenceDiagram",
+  "  accTitle: Placing an order",
+  "  actor Customer",
+  "  participant API as API gateway",
+  "  Customer->>+API: POST /orders",
+  "  alt in stock",
+  "    API-->>-Customer: 202 Accepted",
+  "  else sold out",
+  "    API--xCustomer: 409 Conflict",
+  "  end",
+].join("\n");
+
+const mermaidTree = (source) => ({
+  type: "root",
+  children: [
+    {
+      type: "element",
+      tagName: "pre",
+      properties: {},
+      children: [
+        {
+          type: "element",
+          tagName: "code",
+          properties: { className: ["language-mermaid"] },
+          children: [{ type: "text", value: `${source}\n` }],
+        },
+      ],
+      position: { start: { line: 3, column: 1 }, end: { line: 14, column: 4 } },
+    },
+  ],
+});
+
+/** The parts of a vfile the plugin reads: a path, a cwd, `data`, and the two message sinks. */
+const vfile = (path, cwd) => ({
+  path,
+  cwd,
+  data: {},
+  messages: [],
+  message(reason, o) {
+    const m = { reason, ...o, toString: () => reason };
+    this.messages.push(m);
+    return m;
+  },
+  fail(reason) {
+    throw new Error(reason);
+  },
+});
+
+const rawSvg = (node) =>
+  node.type === "raw" ? node.value : (node.children ?? []).map(rawSvg).find((v) => v !== undefined);
+
+test("the registered plugin renders a sequence diagram through the real WASM", async () => {
+  const { updates } = setup({ width: 480, fontCss: true });
+  const [plugin, opts] = updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0];
+  const outlines = [];
+  const tree = mermaidTree(SEQ);
+  const file = vfile("/site/src/content/docs/checkout.md", "/site");
+  await plugin({ ...opts, outline: (info) => outlines.push(info) })(tree, file);
+
+  const [figure] = tree.children;
+  assert.equal(figure.tagName, "figure", JSON.stringify(file.messages.map(String)));
+  assert.deepEqual(figure.properties, { id: "diagram-1", className: ["merlion-figure"] });
+  assert.equal(figure.children[0].tagName, "merlion-view");
+  const svg = rawSvg(figure);
+  assert.ok(svg.includes('class="merlion merlion-sequence"'), svg.slice(0, 300));
+  assert.ok(svg.includes('data-merlion-id="Customer"'), "participants carry their ids");
+  assert.ok(svg.includes('class="merlion-cluster merlion-fragment'), "the alt fragment is drawn");
+  assert.ok(/max-width:\d+(\.\d+)?px/.test(svg));
+  assert.deepEqual(file.messages.map(String), []);
+  assert.equal(outlines.length, 1);
+  assert.equal(outlines[0].path, "src/content/docs/checkout.md");
+  assert.ok(outlines[0].outline.startsWith("Sequence diagram. 2 participants, 3 messages."), outlines[0].outline);
+  assert.ok(outlines[0].outline.includes("alt in stock:"), outlines[0].outline);
+});

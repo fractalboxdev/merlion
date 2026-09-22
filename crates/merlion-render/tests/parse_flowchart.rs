@@ -39,7 +39,6 @@ fn headers_and_directions() {
 #[test]
 fn unsupported_headers_name_the_header() {
     for (src, header) in [
-        ("sequenceDiagram\nA->>B: hi", "sequenceDiagram"),
         ("classDiagram", "classDiagram"),
         ("stateDiagram-v2\n[*] --> A", "stateDiagram-v2"),
         ("erDiagram", "erDiagram"),
@@ -225,7 +224,7 @@ fn at_shape_unsupported_shapes_and_keys_warn() {
 #[test]
 fn markdown_strings() {
     let f = chart("flowchart TD\nA[\"`**Bold** and\n  *italic*`\"] --> B(\"`code: `x``\")");
-    assert_eq!(node(&f, "A").label, "**Bold** and<br>*italic*");
+    assert_eq!(node(&f, "A").label, "**Bold** and\n*italic*");
     assert_eq!(node(&f, "B").label, "code: `x`");
 }
 
@@ -253,13 +252,23 @@ fn entity_codes() {
 }
 
 #[test]
-fn line_breaks_normalise_to_br() {
+fn line_breaks_normalise_to_a_newline() {
     for raw in ["a<br>b", "a<br/>b", "a<br />b", "a<BR>b", "a<Br/>b"] {
         let f = chart(&format!("flowchart TD\nA[\"{raw}\"]"));
-        assert_eq!(f.nodes[0].label, "a<br>b", "{raw}");
+        assert_eq!(f.nodes[0].label, "a\nb", "{raw}");
     }
     let f = chart("flowchart TD\nA[\"line one\n   line two\"]");
-    assert_eq!(f.nodes[0].label, "line one<br>line two");
+    assert_eq!(f.nodes[0].label, "line one\nline two");
+}
+
+#[test]
+fn an_escaped_break_stays_text_and_breaks_no_line() {
+    // `#lt;br#gt;` is how a source writes a literal `<br>`; decoding it must not
+    // produce a break the splitter then honours.
+    let f = chart("flowchart TD\nA[\"multiline#lt;br#gt;using\"]");
+    assert_eq!(f.nodes[0].label, "multiline<br>using");
+    let f = chart("flowchart TD\nA[\"one<br/>two#lt;br#gt;still two\"]");
+    assert_eq!(f.nodes[0].label, "one\ntwo<br>still two");
 }
 
 #[test]

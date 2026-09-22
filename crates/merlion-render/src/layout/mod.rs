@@ -12,6 +12,9 @@
 //! | 6. Edge routing | [`route`] |
 //! | 7. Clusters | [`lgraph`], [`coords`], [`pipeline`] |
 //! | Stable layout | [`hint`], [`order`] |
+//!
+//! Sequence diagrams have a fixed geometry and run none of these phases: [`sequence`]
+//! (specs/sequence.md#layout).
 
 mod acyclic;
 mod coords;
@@ -25,6 +28,7 @@ mod order;
 mod pack;
 mod pipeline;
 mod route;
+pub mod sequence;
 
 use crate::diag::Diagnostics;
 use crate::fuel::Fuel;
@@ -33,6 +37,7 @@ use crate::model::Flowchart;
 use crate::options::RenderOptions;
 
 pub use pipeline::{CLUSTER_PAD, MARGIN};
+pub use sequence::layout_sequence;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LayoutError {

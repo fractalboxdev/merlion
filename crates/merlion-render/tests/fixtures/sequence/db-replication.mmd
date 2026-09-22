@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Writer
+    participant Primary@{ "type": "database" }
+    participant Wal@{ "type": "queue" } as Write-ahead log
+    participant Replica@{ "type": "collections" } as Read replicas
+
+    Writer->>+Primary: BEGIN#59; UPDATE accounts SET balance = balance - 25
+    Primary->>Wal: append(lsn=4821)
+    Primary-->>-Writer: COMMIT
+    par stream to replicas
+        Wal-)Replica: lsn=4821
+    and acknowledge the writer
+        Wal--)Primary: flushed(lsn=4821)
+    end
+    Note right of Replica: Replicas serve reads at lsn 4821 once applied
+    Replica-->>Wal: applied(lsn=4821)

@@ -4,18 +4,28 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+pub mod sequence;
+
 use crate::diag::Span;
 use crate::options::Direction;
 
+pub use sequence::Sequence;
+
+/// One variant per diagram type. A diagram is built once per render and moved twice, so
+/// the variants hold their models inline rather than behind a box.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Diagram {
     Flowchart(Flowchart),
+    /// specs/sequence.md
+    Sequence(Sequence),
 }
 
 impl Diagram {
     pub fn type_name(&self) -> &'static str {
         match self {
             Diagram::Flowchart(_) => "flowchart",
+            Diagram::Sequence(_) => "sequence",
         }
     }
 }
@@ -239,7 +249,7 @@ pub struct Node {
     /// Source id, after any `R004` rename.
     pub id: String,
     /// Label text with quotes removed and Mermaid entity codes (`#quot;`, `#35;`) decoded.
-    /// May contain `<br>` and Markdown (`**bold**`, `*italic*`, `` `code` ``); the text stage interprets them.
+    /// May contain a hard line break (`\n`) and Markdown (`**bold**`, `*italic*`, `` `code` ``); the text stage interprets them. A `<br>` in the text came from `#lt;br#gt;` and is drawn as text.
     pub label: String,
     pub shape: Shape,
     /// `class` statements and `:::name` shorthand, in order; names already validated.

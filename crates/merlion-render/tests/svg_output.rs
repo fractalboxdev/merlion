@@ -1007,7 +1007,7 @@ fn outline_matches_the_spec_example() {
 #[test]
 fn outline_singulars_isolated_nodes_and_empty_clusters() {
     let c = Flowchart {
-        nodes: vec![node("solo", "**Alone**<br>here")],
+        nodes: vec![node("solo", "**Alone**\nhere")],
         subgraphs: vec![subgraph("e", "", None, vec![])],
         ..Flowchart::default()
     };

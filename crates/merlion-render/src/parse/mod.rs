@@ -23,6 +23,7 @@ pub mod frontmatter;
 pub mod label;
 pub mod link;
 pub mod repair;
+pub mod sequence;
 pub mod style;
 
 use alloc::string::String;
@@ -129,6 +130,9 @@ pub fn parse(
     let result = match header {
         "flowchart" | "graph" | "flowchart-elk" => {
             flowchart::parse_flowchart(&idx, c.pos, meta, opts, diags).map(Diagram::Flowchart)
+        }
+        "sequenceDiagram" => {
+            sequence::parse_sequence(&idx, c.pos, meta, opts, diags).map(Diagram::Sequence)
         }
         _ => {
             return Err(ParseError::UnsupportedDiagram {

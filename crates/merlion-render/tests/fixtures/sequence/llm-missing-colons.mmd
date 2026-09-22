@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Mobile
+    participant Sync
+    participant Store
+
+    Mobile->>Sync open(session)
+    Sync->>Store read(cursor)
+    Store-->>Sync cursor=8812
+    Sync-->>Mobile: 41 changes since 8812
+    Mobile->>Sync: ack(8853)

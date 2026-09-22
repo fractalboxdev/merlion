@@ -27,6 +27,7 @@ mod link;
 mod outline;
 mod path;
 mod roles;
+pub mod sequence;
 mod shapes;
 mod style;
 pub mod theme;
@@ -54,6 +55,7 @@ use theme::{Role, Table};
 pub use color::is_valid_class_name;
 pub use escape::escape;
 pub use outline::plain_label;
+pub use sequence::{draw_sequence, outline_sequence};
 pub use shapes::ALL_SHAPES;
 pub use theme::EMBED_FONT_FAMILY;
 
@@ -1387,12 +1389,14 @@ pub fn draw_flowchart(
         table: &cx.light.table,
         roles: &role_rules,
         source: &src_rules,
+        sequence: false,
     };
     let dark_layer = match (&dark, &dark_rules) {
         (Some(d), Some((roles, source))) => Some(style::Layer {
             table: &d.table,
             roles,
             source,
+            sequence: false,
         }),
         _ => None,
     };

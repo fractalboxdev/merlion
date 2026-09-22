@@ -222,6 +222,30 @@ pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
                 fuel_used: fuel.used(),
             }
         }
+        Diagram::Sequence(seq) => {
+            let geom = match layout::layout_sequence(seq, opts, &mut fuel, &mut diags) {
+                Ok(g) => g,
+                Err(layout::LayoutError::TooLarge { what }) => {
+                    return RenderResult::failed(
+                        RenderError::TooLarge { what },
+                        diags.items,
+                        fuel.used(),
+                    )
+                }
+            };
+            let id = diagram_id(source, opts, &svg::sequence::layout_hint(seq));
+            let out = svg::draw_sequence(seq, &geom, opts, &id, &mut diags);
+            if diags.has_errors() {
+                return RenderResult::failed(RenderError::Parse, diags.items, fuel.used());
+            }
+            RenderResult {
+                svg: Some(out.svg),
+                outline: Some(out.outline),
+                diagnostics: diags.items,
+                error: None,
+                fuel_used: fuel.used(),
+            }
+        }
     }
 }
 
@@ -248,5 +272,6 @@ pub fn outline(source: &str) -> Result<String, RenderError> {
     let mut diags = Diagnostics::new(false);
     match parse::parse(source, &parse_opts(&opts), &mut diags).map_err(map_parse_error)? {
         Diagram::Flowchart(c) => Ok(svg::outline_flowchart(&c)),
+        Diagram::Sequence(s) => Ok(svg::outline_sequence(&s)),
     }
 }

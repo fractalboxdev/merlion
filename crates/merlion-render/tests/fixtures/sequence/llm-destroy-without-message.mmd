@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Supervisor
+    participant Worker
+    participant Log
+
+    Supervisor->>Worker: start(batch 7)
+    Worker->>Log: 2400 rows written
+    destroy Worker
+    Supervisor->>Log: batch 7 complete

@@ -10,6 +10,14 @@ pub const EXCERPT_CHARS: usize = 64;
 /// Longest message, in characters, after control characters are escaped.
 pub const MESSAGE_CHARS: usize = 512;
 
+/// Most warnings, repairs and infos one render reports. A document that repeats a
+/// malformed statement on every line produces one diagnostic per line, each carrying a
+/// message and a replacement string, so the report grows with the input while the
+/// drawing does not; past this count the rest are counted and dropped, and one `I012`
+/// says so. Errors are never dropped, so the cap cannot turn a failing render into a
+/// succeeding one (specs/parser.md#codes).
+pub const MAX_DIAGNOSTICS: usize = 2_000;
+
 /// Characters a diagnostic never carries raw: C0 and C1 controls (tab and newline
 /// included, since a message is one line), bidi controls and non-characters, the
 /// characters [`crate::svg::escape::is_dropped`] removes from SVG text.
@@ -97,6 +105,8 @@ pub struct Diagnostic {
 pub struct Diagnostics {
     pub items: Vec<Diagnostic>,
     pub strict: bool,
+    /// Diagnostics dropped by [`MAX_DIAGNOSTICS`].
+    suppressed: u64,
 }
 
 impl Diagnostics {
@@ -104,10 +114,27 @@ impl Diagnostics {
         Diagnostics {
             items: Vec::new(),
             strict,
+            suppressed: 0,
         }
     }
 
     pub fn push(&mut self, mut d: Diagnostic) {
+        if d.severity != Severity::Error && self.items.len() >= MAX_DIAGNOSTICS {
+            self.suppressed = self.suppressed.saturating_add(1);
+            if self.suppressed == 1 {
+                let span = d.span;
+                self.items.push(Diagnostic {
+                    severity: Severity::Info,
+                    code: "I012",
+                    span,
+                    message: alloc::format!(
+                        "more than {MAX_DIAGNOSTICS} diagnostics; the rest are suppressed"
+                    ),
+                    fix: None,
+                });
+            }
+            return;
+        }
         if d.message.chars().any(is_unprintable) || d.message.len() > MESSAGE_CHARS {
             d.message = printable(&d.message);
         }
@@ -115,6 +142,11 @@ impl Diagnostics {
             d.severity = Severity::Error;
         }
         self.items.push(d);
+    }
+
+    /// How many diagnostics the cap dropped.
+    pub fn suppressed(&self) -> u64 {
+        self.suppressed
     }
 
     pub fn emit(

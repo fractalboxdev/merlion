@@ -1,16 +1,19 @@
 # Third-party notices: benchmark corpora
 
-## mermaid (`corpus/compat/`, `corpus/edits/`)
+## mermaid (`corpus/compat/`, `corpus/compat-sequence/`, `corpus/edits/`)
 
-`corpus/compat/*.mmd` are diagrams extracted verbatim (dedented) from the
-mermaid repository at tag `mermaid@12.0.0`, commit
-`98a0945418c76238f15df2afaddbba4272656c3b`: the demo pages (`demos/*.html`),
-the flowchart syntax documentation
-(`packages/mermaid/src/docs/syntax/flowchart.md`) and the flowchart end-to-end
-tests (`e2e/rendering/flowchart/*.spec.*`, `e2e/diagrams/flowchart/**/*.mmd`).
-`corpus/compat/manifest.json` records each diagram's source path, the source
+`corpus/compat/*.mmd` and `corpus/compat-sequence/*.mmd` are diagrams extracted
+verbatim (dedented) from the mermaid repository at tag `mermaid@12.0.0`, commit
+`98a0945418c76238f15df2afaddbba4272656c3b`.
+
+| Corpus | Sources |
+|---|---|
+| `compat` | `demos/*.html`, `packages/mermaid/src/docs/syntax/flowchart.md`, `e2e/rendering/flowchart/*.spec.*`, `e2e/diagrams/flowchart/**/*.mmd` except `handdrawn/` |
+| `compat-sequence` | `demos/*.html`, `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, `e2e/rendering/sequence/*.spec.*`, `e2e/diagrams/sequence/*.mmd` |
+
+Each corpus's `manifest.json` records every diagram's source path, the source
 file's git blob, and the diagram's sha256. `corpus/edits/*.json` are derived
-from those diagrams by fixed text edits (`src/corpus/edits.ts`).
+from the `compat` diagrams by fixed text edits (`src/corpus/edits.ts`).
 
 https://github.com/mermaid-js/mermaid
 

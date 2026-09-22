@@ -100,26 +100,33 @@ pub fn quote_label(raw: &str) -> String {
 
 /// Normalises label text for the model:
 /// - a Markdown string (`` "`…`" ``) loses its backticks;
-/// - newlines inside a quoted label become `<br>`, with each line trimmed;
-/// - `<br>`, `<br/>`, `<br />` in any case become `<br>`;
-/// - Mermaid entity codes (`#quot;`, `#35;`, `#x2665;`) are decoded.
+/// - `<br>`, `<br/>`, `<br />` in any case, and a newline inside a quoted label,
+///   become a `\n`, with each line trimmed;
+/// - Mermaid entity codes (`#quot;`, `#35;`, `#x2665;`) are decoded in each line.
+///
+/// The lines are split before the codes are decoded, so `#lt;br#gt;` — the way a
+/// source writes a literal `<br>` — stays text instead of becoming a break. A code
+/// can never decode to a `\n`, because `decode_entity` refuses control characters,
+/// so the separator the text stage splits on is unforgeable
+/// (specs/parser.md#labels-and-entity-codes).
 pub fn clean_label(raw: &str) -> String {
     let mut s = raw.trim();
     if s.len() >= 2 && s.starts_with('`') && s.ends_with('`') {
         s = s.get(1..s.len() - 1).unwrap_or("").trim();
     }
-    let joined;
-    let s = if s.contains('\n') {
-        let parts: Vec<&str> = s.split('\n').map(str::trim).collect();
-        joined = parts.join("<br>");
-        joined.as_str()
-    } else {
-        s
-    };
-    decode_entities(&normalise_br(s))
+    let broken = normalise_br(s);
+    let mut out = String::with_capacity(broken.len());
+    for (i, line) in broken.split('\n').enumerate() {
+        if i > 0 {
+            out.push('\n');
+        }
+        out.push_str(&decode_entities(line.trim()));
+    }
+    out
 }
 
-/// Rewrites every `<br>` variant (`<br/>`, `<br />`, `<BR>`) to `<br>`.
+/// Rewrites every `<br>` variant to a `\n`: any case, and any ASCII whitespace inside
+/// the tag, so `<br/>`, `<br />`, `<BR>` and `<br \t/>` all break the line.
 fn normalise_br(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let bytes = s.as_bytes();
@@ -135,15 +142,18 @@ fn normalise_br(s: &str) -> String {
                 .is_some_and(|b| b.eq_ignore_ascii_case(&b'r'))
         {
             let mut j = i + 3;
-            while bytes.get(j) == Some(&b' ') {
+            while bytes.get(j).is_some_and(u8::is_ascii_whitespace) {
                 j += 1;
             }
             if bytes.get(j) == Some(&b'/') {
                 j += 1;
+                while bytes.get(j).is_some_and(u8::is_ascii_whitespace) {
+                    j += 1;
+                }
             }
             if bytes.get(j) == Some(&b'>') {
                 out.push_str(s.get(last..i).unwrap_or(""));
-                out.push_str("<br>");
+                out.push('\n');
                 i = j + 1;
                 last = i;
                 continue;
@@ -297,8 +307,11 @@ mod tests {
     fn cleaning() {
         assert_eq!(clean_label("  a  "), "a");
         assert_eq!(clean_label("`**x**`"), "**x**");
-        assert_eq!(clean_label("a\n  b\n c"), "a<br>b<br>c");
-        assert_eq!(clean_label("a<br />b<BR/>c<br"), "a<br>b<br>c<br");
+        assert_eq!(clean_label("a\n  b\n c"), "a\nb\nc");
+        assert_eq!(clean_label("a<br />b<BR/>c<br"), "a\nb\nc<br");
+        assert_eq!(clean_label("a<br \t/>b<br\t>c"), "a\nb\nc");
+        // An escaped break is text, and splitting before decoding keeps it one line.
+        assert_eq!(clean_label("a#lt;br#gt;b"), "a<br>b");
         assert_eq!(
             clean_label("#35;#quot;#amp;#x41;#65;#bogus;#"),
             "#\"&AA#bogus;#"

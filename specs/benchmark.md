@@ -37,7 +37,7 @@ Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 | Parser tolerance | Parse rate and repair rate on `llm` | Only Merlion repairs; the other renderers score on parse rate |
 | Style loss | Share of `docs` diagrams with at least one `W010 StyleRejected`, and the rejected properties by frequency | The cost of the style allow-list ([svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle)); a property used in more than 5% of diagrams is a candidate for the allow-list |
 | Speed | p50/p95 render time per diagram type, cold and warm; fuel used per diagram | Native and WASM, measured separately; the fuel-to-time ratio calibrates the `fuel` default ([ADR-0008](adr/0008-deterministic-work-budget.md)) |
-| Determinism | % of `compat` byte-identical between native and WASM | Must be 100% |
+| Determinism | % of `compat` and of the core's sequence fixtures byte-identical between native and WASM, in each font mode | `pnpm bench determinism --corpus compat\|sequence --font link\|embed\|system`; the compat corpus holds no sequence diagram, so sequences are checked over the fixtures. Must be 100% |
 | Weight | Gzip size per published artifact, including `merlion-themes.css`; runtime dependency count; packages in the install tree | |
 | Accessibility / SEO | axe violations on the inlined SVG; share of label text extractable by `curl` + HTML-to-text; `<title>`/`<desc>` present | |
 | Theme switch | Cost of a light→dark switch: re-render vs CSS change | |

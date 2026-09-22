@@ -65,6 +65,45 @@ test("markdown with mermaid fences renders figures and escapes caption and sourc
   assert.equal(m.line, 15);
 });
 
+test("renders a sequence diagram through the real WASM, with its outline", async () => {
+  const doc = [
+    "# Checkout",
+    "",
+    "```mermaid",
+    "sequenceDiagram",
+    "  accTitle: Placing an order",
+    "  actor Customer",
+    "  participant API as API gateway",
+    "  Customer->>+API: POST /orders",
+    "  loop Every minute",
+    "    API-->>-Customer: 202 Accepted",
+    "  end",
+    "```",
+    "",
+  ].join("\n");
+  const outlines = [];
+  const file = await pipeline({ width: 480, outline: (info) => outlines.push(info) }).process(
+    new VFile({ value: doc, path: "/site/docs/seq.md", cwd: "/site" }),
+  );
+  const html = String(file);
+  const id = idPrefix("docs/seq.md", 1);
+  assert.ok(html.includes(`<figure id="diagram-1" class="merlion-figure"><merlion-view><svg`), html.slice(0, 300));
+  assert.ok(html.includes(`class="merlion merlion-sequence"`), "the root names the diagram type");
+  assert.ok(html.includes(`<title id="${id}-title">Placing an order</title>`), "accTitle becomes the SVG title");
+  assert.ok(html.includes('data-merlion-id="Customer"'), "participants carry their ids");
+  assert.ok(html.includes('data-merlion-index="0"'), "messages carry their index");
+  assert.ok(html.includes('class="merlion-activation"'), "the activation bar is drawn");
+  assert.ok(html.includes("<figcaption>Placing an order</figcaption>"), html.slice(-400));
+  // The source stays available below the figure, unrendered.
+  assert.ok(html.includes('<details><summary>Diagram source</summary><pre><code class="language-mermaid">sequenceDiagram'), html.slice(-600));
+  assert.deepEqual(file.messages.filter((m) => /^E\d{3}$/.test(String(m.ruleId))), []);
+  // The outline hook is what a `.md` mirror and llms-full.txt publish (specs/integrations.md).
+  assert.equal(outlines.length, 1);
+  assert.equal(outlines[0].path, "docs/seq.md");
+  assert.ok(outlines[0].outline.startsWith("Sequence diagram. 2 participants, 2 messages."), outlines[0].outline);
+  assert.ok(outlines[0].outline.includes("loop Every minute:"), outlines[0].outline);
+});
+
 test("strict fails the process on a parse error", async () => {
   const { render } = fakeRender();
   await assert.rejects(pipeline({ render, strict: true }).process(md), /1 Mermaid diagram failed/);

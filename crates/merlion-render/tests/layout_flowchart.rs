@@ -598,9 +598,9 @@ fn title_detail_node_is_sized_from_its_line_heights() {
     use merlion_render::layout::measure::PAD_Y;
     let mut b = B::new();
     let v = b.nodes(&["tiered", "flat"]);
-    b.c.nodes[v[0]].label = "**q-observe**<br/>250 push slots<br/>separate invocations".into();
-    b.c.nodes[v[1]].label = "q-observe<br/>250 push slots<br/>separate invocations".into();
-    let e = b.edge_l(v[0], v[1], "**q-observe**<br/>250 push slots");
+    b.c.nodes[v[0]].label = "**q-observe**\n250 push slots\nseparate invocations".into();
+    b.c.nodes[v[1]].label = "q-observe\n250 push slots\nseparate invocations".into();
+    let e = b.edge_l(v[0], v[1], "**q-observe**\n250 push slots");
     let g = run(&b.c);
     check(&b.c, &g);
     let (t, f) = (&g.nodes[v[0]], &g.nodes[v[1]]);

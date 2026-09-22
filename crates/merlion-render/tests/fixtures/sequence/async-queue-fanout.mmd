@@ -1,0 +1,22 @@
+sequenceDiagram
+    box rgb(232, 240, 254) Ingest
+        participant API
+        participant Queue@{ "type": "queue" }
+    end
+    box transparent Workers
+        participant Thumbnailer
+        participant Indexer
+    end
+    participant Bucket@{ "type": "database" } as Object store
+
+    API-)Queue: publish(upload.created)
+    par thumbnail
+        Queue-)Thumbnailer: upload.created
+        Thumbnailer->>Bucket: PUT /thumbs/{id}.webp
+    and index
+        Queue-)Indexer: upload.created
+        Indexer->>Bucket: HEAD /uploads/{id}
+    end
+    Note over Thumbnailer,Indexer: Both consumers ack independently
+    Thumbnailer--)Queue: ack
+    Indexer--)Queue: ack

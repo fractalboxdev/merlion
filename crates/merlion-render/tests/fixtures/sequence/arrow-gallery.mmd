@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant A
+    participant B
+
+    A->B: solid, no head
+    A-->B: dotted, no head
+    A->>B: solid, filled head
+    A-->>B: dotted, filled head
+    A<<->>B: solid, filled both ends
+    A<<-->>B: dotted, filled both ends
+    A-xB: solid, cross
+    A--xB: dotted, cross
+    A-)B: solid, async
+    A--)B: dotted, async
+    A-|\B: solid, half top
+    A-|/B: solid, half bottom
+    A-\\B: solid, stick top
+    A-//B: solid, stick bottom
+    A/|-B: reverse half top
+    A\|-B: reverse half bottom
+    A//-B: reverse stick top
+    A\\-B: reverse stick bottom

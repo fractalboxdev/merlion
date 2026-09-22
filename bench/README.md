@@ -10,19 +10,21 @@ cargo build --release -p merlion-cli # from the repository root, for the merlion
 pnpm bench run [--renderers merlion,mermaid-dagre,mermaid-elk] [--corpus compat] [--limit N] [--out-svgs] [--no-edits]
 pnpm bench report [--input results/<file>.json] [--out <file>.md]
 pnpm bench parity [--limit N] [--require-rsvg]   # stylesheet parity, after the release build
+pnpm bench sequence [--limit N] [--out-svgs]    # compat-sequence against mermaid, writes results/<date>-sequence-baseline.md
 pnpm test && pnpm typecheck
 ```
 
-`run` writes `results/<date>-<commit>.json`; `report` writes the Markdown summary next to the newest results file. `--out-svgs` writes every drawing to `results/svgs/<renderer>/<name>.svg`. Only `results/baseline-*.md`, `results/<date>-baseline.md` and `results/<date>-round<n>.md` are committed.
+`run` writes `results/<date>-<commit>.json`; `report` writes the Markdown summary next to the newest results file. `--out-svgs` writes every drawing to `results/svgs/<renderer>/<name>.svg`. Only `results/baseline-*.md`, `results/<date>-baseline.md`, `results/<date>-round<n>.md`, `results/<date>-sequence-baseline.md` and `results/<date>-sequence-round<n>.md` are committed; the JSON and the SVG dumps are not.
 
 ## Corpora
 
 | Corpus | Source | Count |
 |---|---|---|
 | `compat` | mermaid at tag `mermaid@12.0.0` (commit `98a0945418c7`): `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/flowchart.md`, static template literals in `e2e/rendering/flowchart/*.spec.*`, and `e2e/diagrams/flowchart/**/*.mmd` except `handdrawn/`. Flowchart and graph diagrams only, de-duplicated by content | 390 |
+| `compat-sequence` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, static template literals in `e2e/rendering/sequence/*.spec.*`, and `e2e/diagrams/sequence/*.mmd`. `sequenceDiagram` sources only, de-duplicated by content | 216 |
 | `edits` | The first 30 `compat` diagrams (by name) with at least three simple edge lines, each edited four ways: add an isolated node, add an edge between the farthest-apart unconnected pair, remove the last simple edge (re-declaring endpoints it declared), rename the first `id[Label]` | 106 pairs |
 
-`corpus/compat/manifest.json` pins every diagram by source path, source blob and sha256. The mermaid MIT notice is in [NOTICES.md](NOTICES.md).
+Each corpus's `manifest.json` pins every diagram by source path, source blob and sha256. The mermaid MIT notice is in [NOTICES.md](NOTICES.md).
 
 ## Renderers
 
@@ -50,6 +52,15 @@ All metrics are computed from the SVG alone (`src/svg/extract.ts`, `src/metrics/
 - **Speed.** p50 / p95 render milliseconds over rendered diagrams; mean fuel for Merlion.
 - **Determinism.** Native vs WASM byte identity, run when `packages/merlion-wasm/merlion.wasm` exists (loaded through `packages/merlion-wasm/index.js` `initSync`); otherwise reported as skipped.
 - **Per diagram against mermaid-elk.** For each metric where lower is better, counts of diagrams where a renderer is strictly lower (win), equal within 1e-6 relative (tie) or higher (loss), over diagrams both drew.
+
+## Sequence diagrams
+
+`pnpm bench sequence` measures the `compat-sequence` corpus (`src/sequence-run.ts`, `src/svg/sequence.ts`, `src/metrics/sequence.ts`). A sequence diagram has no routed graph — participants are columns in source order and messages are rows — so crossings, bends, edge length and stress do not apply and are not reported. What is measured:
+
+- **Content compatibility** against the `mermaid-dagre` drawing of the same source: the same participant labels, the same message count, the same non-empty message labels and the same note texts, each compared as a multiset with whitespace removed because the two wrap at different points. Fragment kinds are reported beside the pass, not inside it: `rect` tints rows in mermaid and draws no kind tab, so mermaid's drawing carries no fragment to read.
+- **Extraction.** Merlion: `g.merlion-participant[data-merlion-id]`, `g.merlion-message`, `g.merlion-note`, `g.merlion-fragment[data-merlion-kind]`. mermaid: `text.actor-box` / `text.actor-man` for participants — one `<text>` per drawn line at a shared anchor, and the whole label once at the head and once at the foot, so texts are grouped by anchor and kept once per column, and the hidden `g.actorPopupMenu` a `link` statement adds is skipped; `.messageLine0` / `.messageLine1` for messages with `.messageText` for their labels; `rect.note` with the `.noteText` lines it holds; `.labelText` and `.loopText` for fragments.
+- **Render rate, fit, size and speed**, as for flowcharts.
+- **Label overlaps**: pairs of drawn boxes intersecting by more than 1 px² — participant head boxes and note boxes, plus one box per message label estimated at 0.55 em per character in that renderer's own font size, since mermaid draws no background box behind a message label.
 
 ## Stylesheet parity
 

@@ -7,7 +7,7 @@ A hand-written recursive-descent parser per diagram type, with no parser-generat
 | Type | Header | Milestone |
 |---|---|---|
 | Flowchart | `flowchart`, `graph` + `TB`/`TD`/`BT`/`LR`/`RL` | M1 |
-| Sequence | `sequenceDiagram` | M4 |
+| Sequence | `sequenceDiagram` | M4 ([sequence.md](sequence.md)) |
 | State | `stateDiagram`, `stateDiagram-v2` | M4 |
 | Class | `classDiagram` | M4 |
 | ER | `erDiagram` | M4 |
@@ -58,6 +58,18 @@ A syntax error that no rule repairs stops parsing and returns an `Error` diagnos
 
 Style statements (`classDef`, `style`, `linkStyle`) and `click` statements are parsed into typed values and validated as specified in [svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle); the parser never passes their text through. Edge ids (`a e1@--> b`) are kept in the model: `class e1 <name>` gives the edge a role ([svg-output.md](svg-output.md#roles)), and `e1@{…}` still configures it. An edge id names exactly one edge: on a fan-out (`a & b e1@--> c & d`) it names the edge from the last source to the first target, as mermaid does, and a later link reusing it loses it with `R008`. An element keeps at most 32 classes from `class` and `:::`; further classes are dropped with one `W020` per element. TODO(owner): decide what `class` does with an id that names both a node and an edge. Subgraphs nest at most 64 deep (`E010 NestingTooDeep`); the parser tracks depth explicitly, so deep input fails with a diagnostic instead of exhausting the stack.
 
+## Labels and entity codes
+
+A label reaches the model normalised, in this order:
+
+1. A Markdown string (`` "`…`" ``) loses its backticks.
+2. Every `<br>` variant — `<br>`, `<br/>`, `<br />`, any case, spaces before the `/` or `>` — and every newline inside a quoted label becomes a `\n`, the model's hard line break.
+3. Each line is trimmed, then its Mermaid entity codes (`#quot;`, `#35;`, `#x2665;`, the named codes) are decoded.
+
+The order of 2 and 3 is the contract, not an implementation detail. `#lt;br#gt;` is how a source writes a literal `<br>`: decoding it before the split would produce a `<br>` indistinguishable from the source's own, and the text stage would break the line and swallow the text. Splitting first keeps it. A code can never decode to a `\n` — `decode_entity` refuses control characters — so the separator is unforgeable and a `<br>` left in the model is always text.
+
+The text stage splits a label at `\n` and at nothing else ([text-measurement.md](text-measurement.md)); `<br>` is source syntax, never model text.
+
 ## Diagnostics
 
 ```
@@ -97,6 +109,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `W018` StylesheetDeclarationRejected | Warning | A property outside the token list, a font token, or a value outside the token's grammar |
 | `W019` StylesheetReferenceInvalid | Warning | `var()` naming an undefined token, forming a cycle, or nested deeper than 8 |
 | `W020` ClassesTruncated | Warning | An element given more than 32 classes; the rest are dropped |
+| `W021`–`W023` | Warning | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 | `I010` UnmeasuredGlyph | Info | Code point outside the font table ([text-measurement.md](text-measurement.md)) |
 | `I011` ThemeConfigIgnored | Info | `theme`, `themeVariables` or `look` in front matter or `%%{init}%%` |
 | `I020` LayoutHintDiscarded | Info | Fewer than 50% of nodes survive ([layout.md](layout.md#stable-layout)) |
@@ -107,6 +120,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I032` StylesheetRulesIgnored | Info | Count of stylesheet rules declaring no `--merlion-*` token |
 | `I033` ToneMasked | Info | A source `style` colour, or a `classDef` colour whose token the stylesheet leaves unset, overrides a stylesheet tone on the same element |
 | `R001`–`R008` | Repair | See [Error tolerance](#error-tolerance) |
+| `R009`–`R013` | Repair | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
 

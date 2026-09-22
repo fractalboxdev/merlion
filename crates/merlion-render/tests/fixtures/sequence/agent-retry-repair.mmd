@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Planner
+    participant Executor
+    participant Sandbox@{ "type": "boundary" }
+    participant Model as Judge model
+
+    Planner->>Executor: run(plan 3 steps)
+    loop per step
+        Executor->>+Sandbox: exec(step)
+        alt exit 0
+            Sandbox-->>-Executor: stdout, 40ms
+        else non-zero exit
+            Sandbox--xExecutor: exit 1, stderr
+            Executor->>+Model: repair(step, stderr)
+            Model-->>-Executor: patched step
+        end
+    end
+    Executor-->>Planner: 3 of 3 steps green
+    Note over Planner,Model: A repaired step is rerun once before the plan fails
