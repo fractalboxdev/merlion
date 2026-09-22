@@ -77,6 +77,7 @@ Formulated as the Constrained Incremental Graph Drawing Problem (C-IGDP; Charyti
 - **Surviving nodes.** Nodes present in both the hint and the new source whose layer is unchanged. A node whose layer changed (for example because its dominators changed) is treated as new.
 - **Constraint.** Surviving nodes keep their relative order within each layer, and each moves at most `stability` positions. New nodes are inserted wherever crossings are lowest, subject to that constraint.
 - **Procedure.** Phase 3 runs with the survivors' order fixed and only the new nodes free, then lets survivors move within the `stability` limit if that lowers crossings.
+- **Unchanged source.** When every node survives and the fresh phase 3 already places each at its hinted position, the fresh layout is kept whole. The hint carries real-node order only, so re-ordering under it could still move dummy nodes; keeping the fresh layout makes a render hinted with its own previous SVG byte-identical to that SVG.
 - **Fallback.** When fewer than 50% of the nodes survive, the hint is discarded (per component when components are packed, with `I020`/`I021` reporting the totals once) and the result is a fresh layout plus `I020 LayoutHintDiscarded`. When some but not all nodes survive, the render adds `I021 LayoutHintPartial` with the count of nodes treated as new.
 - **Measure.** The benchmark reports the mean displacement of surviving nodes after a one-line edit ([benchmark.md](benchmark.md)).
 

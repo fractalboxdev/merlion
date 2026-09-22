@@ -1583,6 +1583,19 @@ fn parse_hint(opts: &RenderOptions, fuel: &mut Fuel) -> Option<ParsedHint> {
     Some(hint::parse(text, lim.nodes, lim.layers, lim.input_bytes).ok_or(()))
 }
 
+/// Whether every layer of `g` holds its real nodes exactly at their hint ranks.
+fn reproduces_hint(g: &LGraph, ranks: &[Option<usize>]) -> bool {
+    g.layers.iter().all(|l| {
+        l.iter()
+            .filter_map(|&v| match g.nodes[v].kind {
+                Kind::Real(m) => Some(m),
+                _ => None,
+            })
+            .enumerate()
+            .all(|(i, m)| ranks.get(m).copied().flatten() == Some(i))
+    })
+}
+
 /// Hint survival summed over the components of a packed layout; the diagnostics are
 /// emitted once for the whole diagram.
 #[derive(Default)]
@@ -1775,7 +1788,7 @@ fn run_one(
         (Some((_, d)), true) => *d,
         _ => chart.direction,
     };
-    let base = Base {
+    let mut base = Base {
         chart,
         o,
         cl: Clusters::from_chart(chart),
@@ -1792,7 +1805,26 @@ fn run_one(
     let mut lay = build_layered(&base, &meas, base_dir, &layer).map_err(too_large_build)?;
     let dfs: Vec<f64> = info.dfs_key.iter().map(|&k| k as f64).collect();
     let keys = keys_from(&lay.g, &base.cl, &dfs, DummyKey::Lerp);
-    order_layers(&base, &mut lay, &keys, true, fuel).map_err(too_large_fuel)?;
+    let every_node_survives = base
+        .stable_rank
+        .as_ref()
+        .is_some_and(|r| r.iter().all(Option::is_some));
+    if every_node_survives {
+        // The hint records real-node order only. When the fresh order already
+        // reproduces it, the hint adds nothing and the unhinted layout (dummies and
+        // container fit included) is kept, so re-rendering in place is byte-stable.
+        let ranks = base.stable_rank.take();
+        let mut fresh = lay.clone();
+        order_layers(&base, &mut fresh, &keys, true, fuel).map_err(too_large_fuel)?;
+        if reproduces_hint(&fresh.g, ranks.as_deref().unwrap_or(&[])) {
+            lay = fresh;
+        } else {
+            base.stable_rank = ranks;
+            order_layers(&base, &mut lay, &keys, true, fuel).map_err(too_large_fuel)?;
+        }
+    } else {
+        order_layers(&base, &mut lay, &keys, true, fuel).map_err(too_large_fuel)?;
+    }
     let hint_layers: Vec<Vec<usize>> = lay
         .g
         .layers
