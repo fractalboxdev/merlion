@@ -426,3 +426,32 @@ fn applied_roles_are_charged_to_fuel() {
     let roled = render_plain("flowchart LR\na e1@--> b\nclass a,e1 r1,r2,r3");
     assert_eq!(roled.fuel_used, plain.fuel_used + 6);
 }
+
+#[test]
+fn a_class_def_named_like_a_built_in_role_replaces_the_built_in_role() {
+    // A diagram written for mermaid defines its own `ok` / `failure` classes; the
+    // built-in tints must not leak into them (only classDef properties apply).
+    let svg = svg_of(
+        "flowchart LR\na[A]:::ok --> b[B]:::danger\nb e1@--> c[C]\nclass e1 failure\nclassDef ok fill:#e6ffed,stroke:#22863a\nclassDef failure stroke:#ff00ff",
+    );
+    assert!(!svg.contains("--merlion-ok"), "no built-in `ok` rules");
+    assert!(!svg.contains("merlion-c-failure>.merlion-marker-fill"));
+    for e in engines(&svg, &[]) {
+        let label = node_part(&e, "a", "merlion-label");
+        assert_eq!(rgba8(&computed(&e, label, "fill")), rgba8("#1f2328"));
+        let shape = node_part(&e, "a", "merlion-shape");
+        assert_eq!(computed(&e, shape, "fill"), "#e6ffed");
+        assert_eq!(computed(&e, shape, "stroke"), "#22863a");
+        let path = edge_part(&e, "c", "merlion-edge-path");
+        assert_eq!(computed(&e, path, "stroke"), "#ff00ff");
+        assert_eq!(computed(&e, path, "stroke-dasharray"), "none");
+        assert_eq!(
+            rgba8(&computed(&e, e.marker_path(path).unwrap(), "fill")),
+            rgba8("#919497")
+        );
+        // A built-in role without a same-named classDef keeps its tone.
+        let b = node_part(&e, "b", "merlion-shape");
+        assert_eq!(computed(&e, b, "stroke"), DANGER);
+    }
+    assert!(svg.contains("<text class=\"merlion-label\" fill=\"#1f2328\">"));
+}

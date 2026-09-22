@@ -46,7 +46,7 @@ use crate::options::{FontMode, RenderOptions};
 use crate::stylesheet::{ClassProp, PaletteTable, PaletteTone};
 use color::ClassToken;
 use escape::push_escaped;
-use roles::{Kind, Tone, BUILT_IN, TONE_CLUSTER_FILL, TONE_FILL, TONE_TEXT};
+use roles::{BuiltIn, Kind, Tone, BUILT_IN, TONE_CLUSTER_FILL, TONE_FILL, TONE_TEXT};
 use style::{RoleRule, SourceRule};
 use theme::{Role, Table};
 
@@ -94,13 +94,25 @@ fn stroke_attr(t: &Table) -> String {
 struct Layer<'a> {
     table: Table,
     palette: Option<&'a PaletteTable>,
+    /// The built-in roles in effect: those the source does not define with a `classDef`
+    /// of the same name (specs/svg-output.md#built-in-roles).
+    builtins: Vec<&'static BuiltIn>,
+}
+
+/// The built-in roles a diagram gets: a `classDef` of the same name replaces one.
+fn active_builtins(chart: &Flowchart) -> Vec<&'static BuiltIn> {
+    BUILT_IN
+        .iter()
+        .filter(|b| !chart.class_defs.iter().any(|cd| cd.name == b.name))
+        .collect()
 }
 
 impl<'a> Layer<'a> {
-    fn new(palette: Option<&'a PaletteTable>) -> Self {
+    fn new(palette: Option<&'a PaletteTable>, builtins: Vec<&'static BuiltIn>) -> Self {
         Layer {
             table: palette.map(PaletteTable::theme_table).unwrap_or_default(),
             palette,
+            builtins,
         }
     }
 
@@ -133,7 +145,8 @@ impl<'a> Layer<'a> {
     fn role_paint(&self, kind: Kind, roles: &[String]) -> (Option<String>, Option<String>) {
         let mut tone = None;
         let mut dash = None;
-        for b in BUILT_IN
+        for b in self
+            .builtins
             .iter()
             .filter(|b| b.kind == kind && roles.iter().any(|r| r == b.name))
         {
@@ -918,7 +931,7 @@ fn kind_rules(
 /// (specs/svg-output.md#built-in-roles).
 fn built_in_rules(roles: &Roles, layer: &Layer) -> Vec<RoleRule> {
     let mut out = Vec::new();
-    for b in BUILT_IN.iter().filter(|b| roles.uses(b.kind, b.name)) {
+    for b in layer.builtins.iter().filter(|b| roles.uses(b.kind, b.name)) {
         let tone = b.tone.map(|r| Tone::of_role(&layer.table, r));
         out.extend(kind_rules(
             &layer.table,
@@ -1198,12 +1211,13 @@ pub fn draw_flowchart(
     let outline_text = outline::outline(chart, geom.direction);
 
     // Literal tables: the built-in defaults, or the palette's light and dark tables.
-    let light = Layer::new(opts.palette.as_ref().map(|p| &p.light));
+    let builtins = active_builtins(chart);
+    let light = Layer::new(opts.palette.as_ref().map(|p| &p.light), builtins.clone());
     let dark = opts
         .palette
         .as_ref()
         .and_then(|p| p.dark.as_ref())
-        .map(|d| Layer::new(Some(d)));
+        .map(|d| Layer::new(Some(d), builtins));
     let roles = Roles::new(chart);
     let (src_rules, flags) = source_rules(chart, &roles, &light);
     if flags.fixed_colour {
