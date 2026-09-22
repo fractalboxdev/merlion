@@ -1,5 +1,6 @@
-//! Edge-label chips over the compat corpus (specs/layout.md#6-edge-routing): a chip never
-//! covers the arrowhead of its own edge.
+//! Edge labels and routes over the compat corpus (specs/layout.md#6-edge-routing): a chip
+//! never covers the arrowhead of its own edge, and neither chips nor edges cover a cluster
+//! title.
 
 use merlion_render::diag::Diagnostics;
 use merlion_render::fuel::Fuel;
@@ -113,5 +114,90 @@ fn no_chip_covers_its_own_arrowhead() {
         total,
         bad.len(),
         bad
+    );
+}
+
+type Box4 = (f64, f64, f64, f64);
+
+fn title_boxes(g: &Geometry) -> Vec<Box4> {
+    g.clusters
+        .iter()
+        .filter(|c| c.label.width > 0.0)
+        .map(|c| {
+            let (w, h) = (c.label.width, c.label.height);
+            (
+                c.label_x - w / 2.0,
+                c.label_y - h / 2.0,
+                c.label_x + w / 2.0,
+                c.label_y + h / 2.0,
+            )
+        })
+        .collect()
+}
+
+/// Whether segment a–b passes through the interior of `r` (Liang–Barsky clip).
+fn crosses(a: (f64, f64), b: (f64, f64), r: Box4) -> bool {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let (mut t0, mut t1) = (0.0f64, 1.0f64);
+    for (p, q) in [
+        (-dx, a.0 - r.0),
+        (dx, r.2 - a.0),
+        (-dy, a.1 - r.1),
+        (dy, r.3 - a.1),
+    ] {
+        if p == 0.0 {
+            if q <= 0.0 {
+                return false;
+            }
+        } else {
+            let t = q / p;
+            if p < 0.0 {
+                t0 = t0.max(t);
+            } else {
+                t1 = t1.min(t);
+            }
+        }
+    }
+    t1 - t0 > 1e-6
+}
+
+#[test]
+fn chips_and_edges_keep_off_cluster_titles() {
+    let mut chips = Vec::new();
+    let mut edges = Vec::new();
+    for (name, c) in corpus() {
+        let o = RenderOptions::default();
+        let mut fuel = Fuel::new(o.fuel);
+        let mut d = Diagnostics::new(false);
+        let Ok(g) = layout_flowchart(&c, &o, &mut fuel, &mut d) else {
+            continue;
+        };
+        let titles = title_boxes(&g);
+        for eg in &g.edges {
+            if let Some(l) = &eg.label {
+                let (w, h) = chip_size(&l.label);
+                let chip = (l.x - w / 2.0, l.y - h / 2.0, l.x + w / 2.0, l.y + h / 2.0);
+                if titles
+                    .iter()
+                    .any(|t| chip.0 < t.2 && t.0 < chip.2 && chip.1 < t.3 && t.1 < chip.3)
+                {
+                    chips.push(name.clone());
+                }
+            }
+            let hit = eg.points.windows(2).any(|s| {
+                titles
+                    .iter()
+                    .any(|&t| crosses((s[0].x, s[0].y), (s[1].x, s[1].y), t))
+            });
+            if hit {
+                edges.push(name.clone());
+            }
+        }
+    }
+    assert!(
+        chips.is_empty() && edges.is_empty(),
+        "chips {:?}\nedges {:?}",
+        chips,
+        edges
     );
 }

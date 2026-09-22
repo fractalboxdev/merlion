@@ -791,6 +791,112 @@ fn marker_boxes(pts: &[(f64, f64)], start: Arrow, end: Arrow) -> Vec<BoxF> {
     out
 }
 
+/// Horizontal centre of a cluster title in the box `x..x + w` (screen frame): the
+/// centre, or the nearest position within the box's padding whose text no edge
+/// segment crosses and no placed label covers (specs/layout.md#7-clusters-subgraphs).
+/// `edges` pairs each route with the room its label still needs around it (half the
+/// chip's larger side, 0 once placed), so a chip placed later fits beside the title.
+/// Without such a position, the nearest one clear of the routes themselves; the centre
+/// when none is. Each tried position draws optional fuel.
+fn title_x(
+    x: f64,
+    w: f64,
+    y: f64,
+    label: &LabelLayout,
+    edges: &[(&[(f64, f64)], f64)],
+    placed: &[BoxF],
+    fuel: &mut Fuel,
+) -> f64 {
+    let centre = x + w / 2.0;
+    let (tw, th) = (label.width, label.height);
+    if tw <= 0.0 {
+        return centre;
+    }
+    let span = max(w - 2.0 * CLUSTER_PAD - tw, 0.0) / 2.0;
+    let text = |cx: f64, pad: f64| centred(cx, y, tw, th, LABEL_CLEAR / 2.0 + pad);
+    let wide = |b: BoxF| (x, b.1, x + w, b.3);
+    // (start, end, room for the route's label)
+    type Seg = ((f64, f64), (f64, f64), f64);
+    let segs: Vec<Seg> = edges
+        .iter()
+        .flat_map(|&(pts, pad)| pts.windows(2).map(move |s| (s[0], s[1], pad)))
+        .filter(|&(a, b, pad)| segment_hits(a, b, wide(text(centre, pad))))
+        .collect();
+    let band = wide(text(centre, 0.0));
+    let chips: Vec<BoxF> = placed
+        .iter()
+        .copied()
+        .filter(|&b| boxes_overlap(b, band))
+        .collect();
+    if segs.is_empty() && chips.is_empty() {
+        return centre;
+    }
+    let step = max(2.0, span / MAX_LABEL_SAMPLES as f64);
+    let mut bare: Option<f64> = None;
+    let mut k = 0usize;
+    loop {
+        let off = step * k.div_ceil(2) as f64;
+        if off > span {
+            // No position leaves room for every label: keep the text clear of the routes.
+            return bare.unwrap_or(centre);
+        }
+        let cx = if k % 2 == 1 {
+            centre + off
+        } else {
+            centre - off
+        };
+        k += 1;
+        if fuel
+            .burn_optional((segs.len() + chips.len()) as u64 + 1)
+            .is_err()
+        {
+            return bare.unwrap_or(centre);
+        }
+        if chips.iter().any(|&c| boxes_overlap(c, text(cx, 0.0))) {
+            continue;
+        }
+        if segs
+            .iter()
+            .all(|&(p, q, pad)| !segment_hits(p, q, text(cx, pad)))
+        {
+            return cx;
+        }
+        if bare.is_none()
+            && segs
+                .iter()
+                .all(|&(p, q, _)| !segment_hits(p, q, text(cx, 0.0)))
+        {
+            bare = Some(cx);
+        }
+    }
+}
+
+/// Whether segment `a`–`b` passes through the interior of box `r` (Liang–Barsky).
+fn segment_hits(a: (f64, f64), b: (f64, f64), r: BoxF) -> bool {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let (mut t0, mut t1) = (0.0f64, 1.0f64);
+    for (p, q) in [
+        (-dx, a.0 - r.0),
+        (dx, r.2 - a.0),
+        (-dy, a.1 - r.1),
+        (dy, r.3 - a.1),
+    ] {
+        if p == 0.0 {
+            if q <= 0.0 {
+                return false;
+            }
+        } else {
+            let t = q / p;
+            if p < 0.0 {
+                t0 = max(t0, t);
+            } else {
+                t1 = min(t1, t);
+            }
+        }
+    }
+    t1 - t0 > 1e-9
+}
+
 /// The point where a route (layout frame) first reaches layer-axis coordinate `y`.
 fn at_layer_y(points: &[(f64, f64)], y: f64) -> Option<(f64, f64)> {
     points.windows(2).find_map(|s| {
@@ -1197,26 +1303,21 @@ fn finish(
             });
         }
     }
-    for e in 0..ne {
-        if labels[e].is_some() || edge_pts[e].len() < 2 {
-            continue;
-        }
-        let Some(Some(l)) = m.edge_label.get(e) else {
-            continue;
-        };
-        let (cw, ch) = chip_size(l);
-        let markers = chart.edges.get(e).map_or_else(Vec::new, |edge| {
-            marker_boxes(&edge_pts[e], edge.arrow_start, edge.arrow_end)
-        });
-        if let Some(p) = place_label(&edge_pts[e], cw, ch, &node_boxes, &markers, &placed, fuel) {
-            placed.push(centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0));
-            labels[e] = Some(EdgeLabelGeom {
-                x: p.0,
-                y: p.1,
-                label: l.clone(),
-            });
-        }
-    }
+    // Routes with the room their unplaced labels need, for title placement.
+    let routes: Vec<(&[(f64, f64)], f64)> = edge_pts
+        .iter()
+        .enumerate()
+        .map(|(e, pts)| {
+            let room = match (&labels[e], m.edge_label.get(e)) {
+                (None, Some(Some(l))) => {
+                    let (cw, ch) = chip_size(l);
+                    max(cw, ch) / 2.0 + LABEL_CLEAR
+                }
+                _ => 0.0,
+            };
+            (pts.as_slice(), room)
+        })
+        .collect();
 
     // Clusters: boxes from phase 4, empty clusters from their placeholder (nested empty
     // clusters share the box of their outermost empty ancestor).
@@ -1264,15 +1365,49 @@ fn finish(
         let (x, y) = (min(ax, bx), min(ay, by));
         let (w, h) = (abs(bx - ax), abs(by - ay));
         let label = m.title.get(c).cloned().unwrap_or_default();
+        let label_y = y + TITLE_TOP + label.height / 2.0;
+        let label_x = title_x(x, w, label_y, &label, &routes, &placed, fuel);
         clusters.push(ClusterGeom {
             x,
             y,
             w,
             h,
-            label_x: x + w / 2.0,
-            label_y: y + TITLE_TOP + label.height / 2.0,
+            label_x,
+            label_y,
             label,
         });
+    }
+    // Titles are obstacles for the edge labels placed next, like nodes.
+    let obstacles: Vec<BoxF> = node_boxes
+        .iter()
+        .copied()
+        .chain(
+            clusters
+                .iter()
+                .filter(|c| c.label.width > 0.0)
+                .map(|c| centred(c.label_x, c.label_y, c.label.width, c.label.height, 0.0)),
+        )
+        .collect();
+
+    for e in 0..ne {
+        if labels[e].is_some() || edge_pts[e].len() < 2 {
+            continue;
+        }
+        let Some(Some(l)) = m.edge_label.get(e) else {
+            continue;
+        };
+        let (cw, ch) = chip_size(l);
+        let markers = chart.edges.get(e).map_or_else(Vec::new, |edge| {
+            marker_boxes(&edge_pts[e], edge.arrow_start, edge.arrow_end)
+        });
+        if let Some(p) = place_label(&edge_pts[e], cw, ch, &obstacles, &markers, &placed, fuel) {
+            placed.push(centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0));
+            labels[e] = Some(EdgeLabelGeom {
+                x: p.0,
+                y: p.1,
+                label: l.clone(),
+            });
+        }
     }
 
     // Translate so the drawing starts at the margin.
