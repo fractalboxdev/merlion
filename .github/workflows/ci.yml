@@ -68,5 +68,37 @@ jobs:
         run: shellcheck packages/*/scripts/*.sh
       - name: Build merlion.wasm and record its SHA-256
         run: sh packages/merlion-wasm/scripts/build-wasm.sh
-      - name: Node tests
-        run: node --test packages/merlion-wasm/test/*.test.mjs
+      # Corepack provides the pnpm version pinned in package.json#packageManager.
+      - run: corepack enable
+      - name: Install workspace (no install scripts)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: JS tests against the built merlion.wasm
+        run: pnpm test
+      - name: Bench typecheck
+        run: pnpm --filter merlion-bench typecheck
+
+  determinism:
+    # Native and WASM output are byte-identical (specs/architecture.md#determinism).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: rustup toolchain install
+      - run: corepack enable
+      - name: Build the CLI and merlion.wasm
+        run: |
+          cargo build --locked --release -p merlion-cli
+          sh packages/merlion-wasm/scripts/build-wasm.sh
+      - name: Install the bench harness (no install scripts)
+        working-directory: bench
+        run: pnpm install --ignore-workspace --frozen-lockfile --ignore-scripts
+      - name: Compat corpus, native vs WASM, every font mode
+        working-directory: bench
+        run: |
+          for font in link embed system; do
+            pnpm bench determinism --font "$font"
+          done

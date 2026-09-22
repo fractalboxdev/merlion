@@ -7,9 +7,10 @@
     "node": ">=20.6"
   },
   "scripts": {
-    "test": "pnpm -r --if-present test && node --test demo/serve.test.mjs",
+    "test": "pnpm -r --if-present test && node --test demo/*.test.mjs",
     "gallery": "node demo/build-gallery.mjs",
     "size": "pnpm --filter @fractalboxdev/merlion-view size",
-    "demo": "node demo/serve.mjs"
+    "demo": "node demo/serve.mjs",
+    "determinism": "pnpm --dir bench bench determinism"
   }
 }

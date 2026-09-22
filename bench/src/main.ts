@@ -4,12 +4,14 @@
  *   pnpm bench fetch
  *   pnpm bench run [--renderers merlion,mermaid-dagre,mermaid-elk] [--corpus compat] [--limit N] [--out-svgs] [--no-edits]
  *   pnpm bench report [--input results/<file>.json] [--out <file>.md]
+ *   pnpm bench determinism [--font link|embed|system]
  */
 import { Command, Options } from "@effect/cli";
 import { FetchHttpClient } from "@effect/platform";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Effect, Layer, Schema } from "effect";
 import { fetchCorpus } from "./corpus/fetch.ts";
+import { determinism, FONT_MODES } from "./determinism.ts";
 import { RENDERER_NAMES, type RendererName } from "./renderers/Renderer.ts";
 import { report } from "./report.ts";
 import { run } from "./run.ts";
@@ -44,7 +46,12 @@ const reportCmd = Command.make("report", { input, out }, (o) => report(o.input, 
   Command.withDescription("Summarise a results file as Markdown"),
 );
 
-const bench = Command.make("bench").pipe(Command.withSubcommands([fetchCmd, runCmd, reportCmd]));
+const font = Options.choice("font", FONT_MODES).pipe(Options.withDefault("link" as const));
+const determinismCmd = Command.make("determinism", { font }, (o) => determinism(o.font).pipe(Effect.asVoid)).pipe(
+  Command.withDescription("Check native (CLI --batch) and WASM output are byte-identical over the compat corpus"),
+);
+
+const bench = Command.make("bench").pipe(Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd]));
 
 const cli = Command.run(bench, { name: "merlion-bench", version: "0.0.0" });
 
