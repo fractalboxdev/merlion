@@ -645,12 +645,20 @@ pub fn draw_flowchart(
     } else {
         14.0
     };
+    // The measured size of detail lines, when some node label has them.
+    let detail_size = geom
+        .nodes
+        .iter()
+        .flat_map(|n| n.label.lines.iter())
+        .find(|l| l.detail)
+        .map(|l| l.size);
     out.push_str("<style>");
     // The style text contains no `<` or `&`: ids, class names and colours are validated.
     out.push_str(&style::build(
         &id,
         opts.font,
         font_size,
+        detail_size,
         font_css.as_deref(),
         &src.rules,
     ));

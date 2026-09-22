@@ -592,3 +592,29 @@ fn chain_inside_a_cluster_stays_straight() {
         assert!((x - xs[0]).abs() < 1e-6, "chain zig-zags: {:?}", xs);
     }
 }
+
+#[test]
+fn title_detail_node_is_sized_from_its_line_heights() {
+    use merlion_render::layout::measure::PAD_Y;
+    let mut b = B::new();
+    let v = b.nodes(&["tiered", "flat"]);
+    b.c.nodes[v[0]].label = "**q-observe**<br/>250 push slots<br/>separate invocations".into();
+    b.c.nodes[v[1]].label = "q-observe<br/>250 push slots<br/>separate invocations".into();
+    let e = b.edge_l(v[0], v[1], "**q-observe**<br/>250 push slots");
+    let g = run(&b.c);
+    check(&b.c, &g);
+    let (t, f) = (&g.nodes[v[0]], &g.nodes[v[1]]);
+    let detail: Vec<bool> = t.label.lines.iter().map(|l| l.detail).collect();
+    assert_eq!(detail, [false, true, true]);
+    let sum: f64 = t.label.lines.iter().map(|l| l.height).sum();
+    assert!((t.label.height - sum).abs() < 1e-9);
+    assert!((t.h - (t.label.height + 2.0 * PAD_Y)).abs() < 1e-9);
+    // Two of three lines at 0.8 × the size, plus the 2 px gap: shorter than uniform.
+    let lh = f.label.line_height;
+    assert!((t.label.height - (lh + 2.0 + 2.0 * 0.8 * lh)).abs() < 1e-9);
+    assert!(t.h < f.h);
+    assert!(f.label.lines.iter().all(|l| !l.detail));
+    // Edge labels never split into title and detail.
+    let el = &g.edges[e].label.as_ref().unwrap().label;
+    assert!(el.lines.iter().all(|l| !l.detail && l.size == 14.0));
+}
