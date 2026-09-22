@@ -15,7 +15,7 @@ use alloc::vec::Vec;
 use super::cursor::LineIndex;
 use super::label::{self, QuoteScan};
 use super::{link, style, ParseOptions, Stop};
-use crate::diag::{Diagnostic, Diagnostics, Fix, Severity, Span};
+use crate::diag::{excerpt, Diagnostic, Diagnostics, Fix, Severity, Span};
 use crate::model::{
     Arrow, ClassDef, Edge, Flowchart, Link, Meta, Node, Shape, Stroke, Style, Subgraph,
 };
@@ -520,7 +520,7 @@ impl P<'_, '_> {
                 None => {
                     let msg = alloc::format!(
                         "expected a direction (TB, TD, BT, LR or RL) after the header, found `{}`",
-                        tok
+                        excerpt(tok)
                     );
                     return Err(self.fail(start, self.pos, msg));
                 }
@@ -598,7 +598,7 @@ impl P<'_, '_> {
                 span,
                 alloc::format!(
                     "subgraph `{}` has no matching `end`; closed at end of input",
-                    title
+                    excerpt(&title)
                 ),
                 Fix {
                     span: fix_span,
@@ -822,8 +822,8 @@ impl P<'_, '_> {
             span,
             alloc::format!(
                 "`{}` is a reserved word; node renamed to `{}`",
-                raw,
-                renamed
+                excerpt(&raw),
+                excerpt(&renamed)
             ),
             Fix {
                 span,
@@ -890,7 +890,7 @@ impl P<'_, '_> {
                     p,
                     alloc::format!(
                         "class name `{}` is outside `[A-Za-z_][A-Za-z0-9_-]{{0,63}}`; dropped",
-                        name
+                        excerpt(&name)
                     ),
                 );
             }
@@ -928,7 +928,11 @@ impl P<'_, '_> {
             self.repair(
                 "R004",
                 span,
-                alloc::format!("`{}` is a reserved word; node renamed to `{}`", raw, id),
+                alloc::format!(
+                    "`{}` is a reserved word; node renamed to `{}`",
+                    excerpt(&raw),
+                    excerpt(&id)
+                ),
                 Fix { span, replacement },
             );
             if add_label {
@@ -1182,7 +1186,7 @@ impl P<'_, '_> {
                     abs.1,
                     alloc::format!(
                         "expected `key: value` in `@{{…}}`, found `{}`; ignored",
-                        piece.trim()
+                        excerpt(piece.trim())
                     ),
                 );
                 continue;
@@ -1203,7 +1207,7 @@ impl P<'_, '_> {
                         abs.1,
                         alloc::format!(
                             "shape `{}` is not supported; drawn as a rectangle",
-                            unquoted
+                            excerpt(unquoted)
                         ),
                     ),
                 },
@@ -1215,7 +1219,7 @@ impl P<'_, '_> {
                     "W015",
                     abs.0,
                     abs.1,
-                    alloc::format!("`@{{…}}` key `{}` is not supported; ignored", key),
+                    alloc::format!("`@{{…}}` key `{}` is not supported; ignored", excerpt(key)),
                 ),
             }
         }
@@ -1607,7 +1611,7 @@ impl P<'_, '_> {
         let Some(d) = parse_direction(tok) else {
             let msg = alloc::format!(
                 "expected a direction (TB, TD, BT, LR or RL), found `{}`",
-                tok
+                excerpt(tok)
             );
             return Err(self.fail(start, self.pos, msg));
         };
@@ -1670,7 +1674,7 @@ impl P<'_, '_> {
                     "W011",
                     ns,
                     ne,
-                    alloc::format!("class name `{}` is outside `[A-Za-z_][A-Za-z0-9_-]{{0,63}}`; `classDef` dropped", name),
+                    alloc::format!("class name `{}` is outside `[A-Za-z_][A-Za-z0-9_-]{{0,63}}`; `classDef` dropped", excerpt(name)),
                 );
             }
         }
@@ -1732,7 +1736,7 @@ impl P<'_, '_> {
                     ne,
                     alloc::format!(
                         "class name `{}` is outside `[A-Za-z_][A-Za-z0-9_-]{{0,63}}`; dropped",
-                        name
+                        excerpt(name)
                     ),
                 );
                 continue;
@@ -1895,7 +1899,7 @@ impl P<'_, '_> {
                         ae,
                         alloc::format!(
                             "expected a tooltip or a link target (`_self`, `_blank`), found `{}`",
-                            arg
+                            excerpt(arg)
                         ),
                     ));
                 }
@@ -2096,7 +2100,7 @@ impl P<'_, '_> {
                 span,
                 message: alloc::format!(
                     "node `{}` is never declared; declared with its id as the label",
-                    node.id
+                    excerpt(&node.id)
                 ),
                 fix: Some(Fix {
                     span: fix_span,
@@ -2179,7 +2183,10 @@ impl P<'_, '_> {
                             Severity::Warning,
                             "W010",
                             span,
-                            alloc::format!("style target `{}` is not a node; ignored", id),
+                            alloc::format!(
+                                "style target `{}` is not a node; ignored",
+                                excerpt(&id)
+                            ),
                         ),
                     }
                 }

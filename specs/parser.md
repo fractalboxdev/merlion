@@ -67,6 +67,8 @@ Diagnostic {
 }
 ```
 
+A message is one printable line: every source excerpt it quotes (a token, an id, a style value, the `E003` header) is cut to 64 characters followed by `…`, and C0/C1 controls, tab, newline, bidi controls and non-characters are written as `\u{…}` escapes, so untrusted source never drives a terminal or a CI log. The whole message is capped at 512 characters. The CLI escapes the file name it prints before each message the same way.
+
 The `fix` field lets an editor or an LLM loop apply the repair to the source text. `merlion check --fix` writes every fix back to the file ([integrations.md](integrations.md)). `merlion lsp` converts columns to the position encoding the client negotiates ([integrations.md](integrations.md#language-server-merlion-lsp)).
 
 ### Codes

@@ -12,7 +12,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::cursor::LineIndex;
-use crate::diag::{Diagnostics, Severity};
+use crate::diag::{excerpt, Diagnostics, Severity};
 use crate::model::Meta;
 
 /// A parsed YAML or JSON value. YAML scalars are always strings.
@@ -101,7 +101,7 @@ pub fn apply_config(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: 
                 idx.span(e.start, e.end),
                 alloc::format!(
                     "`{}` is ignored: Merlion themes are CSS custom properties",
-                    e.key
+                    excerpt(&e.key)
                 ),
             ),
             "layout" => match enum_value(&e.value, LAYOUTS) {
@@ -143,7 +143,7 @@ fn bad_value(e: &Entry, idx: &LineIndex, diags: &mut Diagnostics, expected: &str
         Severity::Warning,
         "W016",
         idx.span(e.start, e.end),
-        alloc::format!("`{}` must be {}; ignored", e.key, expected),
+        alloc::format!("`{}` must be {}; ignored", excerpt(&e.key), expected),
     );
 }
 

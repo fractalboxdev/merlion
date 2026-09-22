@@ -14,7 +14,7 @@ use std::time::Instant;
 
 use args::{CheckArgs, Command, RenderArgs};
 use markdown::Block;
-use merlion_render::diag::Fix;
+use merlion_render::diag::{printable, Fix};
 use merlion_render::{
     error_diagnostic, json, Diagnostic, DirectionOption, RenderError, RenderOptions, RenderResult,
     Severity, Span,
@@ -218,9 +218,11 @@ fn map_diagnostic(d: &Diagnostic, block: &Block) -> Diagnostic {
 }
 
 /// `file:line:col: severity code message` (specs/integrations.md#cli). A diagnostic with
-/// no location points at 1:1.
+/// no location points at 1:1. The file name and message are printed with control
+/// characters escaped, so neither can drive the terminal.
 fn print_diagnostics(file: &str, ds: &[Diagnostic]) {
     let mut err = io::stderr().lock();
+    let file = printable(file);
     for d in ds {
         let _ = writeln!(
             err,
@@ -229,7 +231,7 @@ fn print_diagnostics(file: &str, ds: &[Diagnostic]) {
             d.span.column.max(1),
             d.severity.as_str(),
             d.code,
-            d.message
+            printable(&d.message)
         );
     }
 }

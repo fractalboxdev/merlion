@@ -65,7 +65,7 @@ pub fn error_diagnostic(e: &RenderError) -> Diagnostic {
         }
         RenderError::UnsupportedDiagram { header } => (
             "E003",
-            alloc::format!("unsupported diagram type `{}`", header),
+            alloc::format!("unsupported diagram type `{}`", diag::excerpt(header)),
         ),
         RenderError::TooLarge { what } => ("E004", alloc::format!("{} exceeds its limit", what)),
         RenderError::Parse => ("E002", String::from("the diagram failed to parse")),

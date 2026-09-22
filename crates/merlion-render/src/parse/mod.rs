@@ -27,7 +27,7 @@ pub mod style;
 
 use alloc::string::String;
 
-use crate::diag::{Diagnostic, Diagnostics, Fix, Severity};
+use crate::diag::{excerpt, Diagnostic, Diagnostics, Fix, Severity};
 use crate::model::{Diagram, Meta};
 use crate::options::Limits;
 use cursor::{Cursor, LineIndex};
@@ -132,7 +132,7 @@ pub fn parse(
         }
         _ => {
             return Err(ParseError::UnsupportedDiagram {
-                header: String::from(header),
+                header: excerpt(header),
             })
         }
     };
@@ -277,7 +277,7 @@ pub(crate) fn directive(
             Severity::Warning,
             "W016",
             span,
-            alloc::format!("directive `{}` is not supported; ignored", d.kind),
+            alloc::format!("directive `{}` is not supported; ignored", excerpt(&d.kind)),
         ),
         Err(directive::JsonError::TooLarge {
             start,

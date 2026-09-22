@@ -87,3 +87,45 @@ fn successful_renders_gain_no_error() {
     assert!(r.error.is_none() && r.svg.is_some());
     assert!(errors(&r.diagnostics).is_empty());
 }
+
+/// Whether a message is safe to print to a terminal: no C0/C1 controls, no bidi
+/// controls (specs/parser.md#diagnostics).
+fn printable(m: &str) -> bool {
+    !m.chars()
+        .any(|c| c.is_control() || matches!(c, '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'))
+}
+
+#[test]
+fn diagnostics_never_carry_control_characters() {
+    let sources = [
+        "flowchart TD\n  A --> B\n  click A href \"x\" \u{1b}]0;pwned\u{7}\u{1b}[2J\u{1b}[31mRED\n",
+        "flowchart TD\n  A --> B\n  style A fill:red\u{1b}[2Jx\n",
+        "HOME=/home/runner\0GITHUB_TOKEN=ghs_x\0PATH=/usr/bin\0\n",
+        "flowchart \u{1b}[2J\n  A --> B\n",
+        "flowchart TD\n  A --> B\n  class A bad\u{7}name\n",
+    ];
+    for src in sources {
+        let r = render(src, &RenderOptions::default());
+        assert!(!r.diagnostics.is_empty(), "{:?}", src);
+        for d in r.diagnostics.iter().chain(check(src, false).iter()) {
+            assert!(printable(&d.message), "{} {:?}", d.code, d.message);
+        }
+        if let Some(RenderError::UnsupportedDiagram { header }) = &r.error {
+            assert!(printable(header), "{:?}", header);
+        }
+    }
+}
+
+#[test]
+fn quoted_source_excerpts_are_bounded() {
+    let token = "x".repeat(1_000_000);
+    let d = check(&token, false);
+    assert_eq!(errors(&d), vec!["E003"]);
+    assert!(d[0].message.len() < 200, "{} bytes", d[0].message.len());
+    assert!(d[0].message.contains('…'));
+    let r = render(&token, &RenderOptions::default());
+    match &r.error {
+        Some(RenderError::UnsupportedDiagram { header }) => assert!(header.len() < 200),
+        e => panic!("{:?}", e),
+    }
+}

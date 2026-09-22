@@ -20,7 +20,7 @@
 //! source text. Every number is printed by `numfmt`.
 
 mod color;
-mod escape;
+pub(crate) mod escape;
 mod label;
 mod link;
 mod outline;

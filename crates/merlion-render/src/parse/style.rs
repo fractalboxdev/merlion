@@ -7,6 +7,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use crate::diag::excerpt;
 use crate::model::{Color, FontStyle, FontWeight, Style};
 
 /// A declaration that was dropped, as a byte range relative to the parsed text.
@@ -313,7 +314,7 @@ fn apply_decl(decl: &str, out: &mut Parsed) -> Result<(), String> {
     let Some((prop, value)) = decl.split_once(':') else {
         return Err(alloc::format!(
             "style declaration `{}` has no value; dropped",
-            decl.trim()
+            excerpt(decl.trim())
         ));
     };
     let prop = prop.trim().to_ascii_lowercase();
@@ -321,8 +322,8 @@ fn apply_decl(decl: &str, out: &mut Parsed) -> Result<(), String> {
     let bad_value = || {
         alloc::format!(
             "style value `{}` is not accepted for `{}`; dropped",
-            value,
-            prop
+            excerpt(value),
+            excerpt(&prop)
         )
     };
     let s = &mut out.style;
@@ -385,7 +386,7 @@ fn apply_decl(decl: &str, out: &mut Parsed) -> Result<(), String> {
         _ => {
             return Err(alloc::format!(
                 "style property `{}` is not supported; dropped",
-                prop
+                excerpt(&prop)
             ))
         }
     }

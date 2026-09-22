@@ -9,6 +9,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::config::{Entry, Value};
+use crate::diag::excerpt;
 
 /// Why the front matter falls outside the subset, with the offending byte range.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -114,7 +115,7 @@ pub fn parse_yaml(
             return Err(FrontMatterError {
                 start: k_start,
                 end: k_end,
-                message: alloc::format!("duplicate key `{}`", key),
+                message: alloc::format!("duplicate key `{}`", excerpt(&key)),
             });
         }
         let value_text = rest.get(after_key..).unwrap_or("");

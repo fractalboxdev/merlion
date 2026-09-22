@@ -317,6 +317,19 @@ fn refuses_to_read_inputs_through_symbolic_links() {
     }
 }
 
+#[cfg(unix)]
+#[test]
+fn diagnostics_reach_the_terminal_without_control_characters() {
+    let d = tempdir("ansi");
+    fs::create_dir(d.join("in")).unwrap();
+    fs::write(d.join("in/a\u{1b}[2J.mmd"), "pie\u{1b}]0;pwned\u{7}\n").unwrap();
+    let o = merlion(&d, &["render", "--batch", "in"], None);
+    assert_eq!(o.status.code(), Some(1));
+    let e = stderr(&o);
+    assert!(e.contains("E003"), "{}", e);
+    assert!(!e.chars().any(|c| c.is_control() && c != '\n'), "{:?}", e);
+}
+
 #[test]
 fn refuses_targets_outside_the_working_directory() {
     let d = tempdir("outside");

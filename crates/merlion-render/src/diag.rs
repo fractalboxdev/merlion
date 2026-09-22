@@ -2,6 +2,52 @@
 
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::fmt::Write;
+
+/// Longest quoted source excerpt in a message, in characters.
+pub const EXCERPT_CHARS: usize = 64;
+
+/// Longest message, in characters, after control characters are escaped.
+pub const MESSAGE_CHARS: usize = 512;
+
+/// Characters a diagnostic never carries raw: C0 and C1 controls (tab and newline
+/// included, since a message is one line), bidi controls and non-characters, the
+/// characters [`crate::svg::escape::is_dropped`] removes from SVG text.
+fn is_unprintable(c: char) -> bool {
+    c == '\t' || c == '\n' || crate::svg::escape::is_dropped(c)
+}
+
+/// Appends `s` with every unprintable character written as `\u{…}`, stopping after
+/// `max` characters with `…`.
+fn push_printable(out: &mut String, s: &str, max: usize) {
+    for (n, c) in s.chars().enumerate() {
+        if n == max {
+            out.push('…');
+            return;
+        }
+        if is_unprintable(c) {
+            let _ = write!(out, "\\u{{{:x}}}", c as u32);
+        } else {
+            out.push(c);
+        }
+    }
+}
+
+/// A source excerpt for a message: at most [`EXCERPT_CHARS`] characters, then `…`, with
+/// control characters escaped, so untrusted source never reaches a terminal raw.
+pub fn excerpt(s: &str) -> String {
+    let mut out = String::new();
+    push_printable(&mut out, s, EXCERPT_CHARS);
+    out
+}
+
+/// A message safe to print: control characters escaped and at most [`MESSAGE_CHARS`]
+/// characters. Applied to every diagnostic the core returns.
+pub fn printable(message: &str) -> String {
+    let mut out = String::new();
+    push_printable(&mut out, message, MESSAGE_CHARS);
+    out
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Severity {
@@ -62,6 +108,9 @@ impl Diagnostics {
     }
 
     pub fn push(&mut self, mut d: Diagnostic) {
+        if d.message.chars().any(is_unprintable) || d.message.len() > MESSAGE_CHARS {
+            d.message = printable(&d.message);
+        }
         if self.strict && matches!(d.severity, Severity::Warning | Severity::Repair) {
             d.severity = Severity::Error;
         }
