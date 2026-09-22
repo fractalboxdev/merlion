@@ -2159,6 +2159,7 @@ impl P<'_, '_> {
                 link: None,
                 subgraph: b.subgraph,
                 span: b.span,
+                reserve: Default::default(),
             });
         }
         let resolve = |n: usize| -> Option<usize> {

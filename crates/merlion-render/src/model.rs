@@ -265,6 +265,23 @@ pub struct Node {
     /// Innermost subgraph containing this node.
     pub subgraph: Option<usize>,
     pub span: Span,
+    /// Room the layout keeps beside the node on top of its shape.
+    pub reserve: Reserve,
+}
+
+/// Room a node occupies beyond its shape, in px (specs/state.md#notes-2). The layout
+/// adds it to the node's extent, so the space is free of every other node, cluster title
+/// and routed edge, and the shape itself stays its measured size at its own centre.
+/// A state-diagram note takes its box out of it; a flowchart node reserves nothing.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Reserve {
+    /// Order-axis room before the node: left in `TB` / `BT`, above in `LR` / `RL`.
+    pub before: f64,
+    /// Order-axis room after the node: right in `TB` / `BT`, below in `LR` / `RL`.
+    pub after: f64,
+    /// Least layer-axis extent the node occupies, its own height (width in `LR` / `RL`)
+    /// included.
+    pub thick: f64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

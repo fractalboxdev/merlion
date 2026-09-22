@@ -1054,6 +1054,7 @@ mod tests {
                 link: None,
                 subgraph: *s,
                 span: Default::default(),
+                reserve: Default::default(),
             });
         }
         Clusters::from_chart(&c)

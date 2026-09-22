@@ -354,6 +354,13 @@ fn node_extent(base: &Base, m: &Meas, dir: Direction, v: usize) -> Extent {
             e.right += LOOP_LABEL_GAP + lab_o + LABEL_CLEAR;
         }
     }
+    // Room reserved beside the node, beyond its shape and its self-loops: a state
+    // diagram's notes take their boxes out of it (specs/state.md#notes-2).
+    if let Some(r) = base.chart.nodes.get(v).map(|n| n.reserve) {
+        e.left += max(finite_or(r.before, 0.0), 0.0);
+        e.right += max(finite_or(r.after, 0.0), 0.0);
+        e.thick = max(e.thick, max(finite_or(r.thick, 0.0), 0.0));
+    }
     e
 }
 

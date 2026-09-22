@@ -498,6 +498,7 @@ mod tests {
                 link: None,
                 subgraph: *s,
                 span: Default::default(),
+                reserve: Default::default(),
             });
         }
         c
