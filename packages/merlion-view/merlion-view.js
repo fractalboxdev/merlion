@@ -40,6 +40,7 @@ const CSS = `:host{display:grid;align-items:center;justify-items:center;position
 :host([zoomed]){touch-action:none}
 :host([pannable]){cursor:grab}
 :host([controls="always"]) .c{opacity:1}
+:host(:not([controls="never"])){padding-top:38px}
 :host(:focus-visible){outline:2px solid var(--merlion-accent,#0969da);outline-offset:2px}
 .c{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:.4;transition:opacity .15s}
 .c[hidden],:host(:not([data-merlion-hidden])) [data-a=s]{display:none}

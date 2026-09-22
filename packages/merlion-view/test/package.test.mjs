@@ -27,3 +27,8 @@ test("the base element exposes the extension hook", async () => {
   const { MerlionView } = await import("../merlion-view.js");
   assert.equal(typeof MerlionView.extend, "function");
 });
+
+test("the host reserves a strip above the drawing for the controls", async () => {
+  const src = (await import("node:fs")).readFileSync(new URL("../merlion-view.js", import.meta.url), "utf8");
+  assert.match(src, /:host\(:not\(\[controls="never"\]\)\)\{padding-top:38px\}/);
+});

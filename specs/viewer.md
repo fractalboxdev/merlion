@@ -25,7 +25,7 @@ A custom element that adds pan, zoom and fullscreen to any SVG, and click-driven
 - The controls (zoom in, zoom out, reset, fullscreen) are `<button>` elements with `aria-label`s, shown on hover or focus and always shown on touch devices.
 - The element is focusable (`tabindex="0"`) and announces the SVG's `<title>` as its accessible name.
 - With `prefers-reduced-motion`, zoom and reset jump instead of animating.
-- The element fills whatever height its container gives it and centres the SVG inside that box; the controls sit in the element's top-right corner. A container taller than the diagram therefore keeps the controls clear of the drawing.
+- The element fills whatever height its container gives it and centres the SVG inside that box; the controls sit in a 38 px strip the element reserves above the drawing (except with `controls="never"`), so they never cover it.
 - Every diagram gets the controls: drawn at 40% opacity at rest and fully on hover or focus, and always fully on touch devices. `controls="always"` keeps them fully visible; `controls="never"` removes them.
 - Panning is clamped: a drawing smaller than the visible box stays entirely inside it, and a drawing larger than the box (zoomed in) always covers it, so no drag or zoom pushes content out of sight.
 
