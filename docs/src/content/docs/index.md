@@ -19,13 +19,21 @@ hero:
 ```mermaid
 flowchart LR
   accTitle: From Mermaid source to a themed page
-  src["**Mermaid source**<br/>Markdown fence or .mmd"] --> parse["**Parse**<br/>repairs LLM-style mistakes"]
-  parse --> layout["**Layout**<br/>fits the container width"]
+  src["**Mermaid source**<br/>Markdown fence or .mmd"]
+  subgraph core["merlion-render · no_std core"]
+    parse["**Parse**<br/>repairs LLM-style mistakes"] --> layout["**Layout**<br/>fits the container width"]
+    layout --> svg["**SVG**<br/>text labels, CSS tokens"]
+  end
+  src --> parse
   hint[("**Previous SVG**<br/>layout hint")] e1@-.-> layout
-  layout --> svg["**SVG**<br/>text labels, CSS tokens"]
   svg --> page["**Page**<br/>light, dark, custom"]
   css["**Stylesheet**<br/>compiled once"] e2@-.-> page
-  class layout accent
+  class src input
+  class parse,layout accent
+  class hint store
+  class svg,page output
+  class css style
+  class core group
   class e1,e2 async
 ```
 
