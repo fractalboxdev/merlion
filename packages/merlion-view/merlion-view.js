@@ -126,7 +126,8 @@ export class MerlionView extends Base {
 
   // Pick up the SVG child, now or after it is inserted later.
   #adopt() {
-    if (this.#dlg?.open) return;
+    // While the SVG sits in the fullscreen dialog it is still ours.
+    if (this.#dlg && this.#svg?.parentNode === this.#dlg) return;
     const svg = this.querySelector(":scope > svg");
     if (svg === this.#svg) return this.#refresh();
     this.#svg = svg;
@@ -200,7 +201,11 @@ export class MerlionView extends Base {
       e.preventDefault(); // no text selection while dragging
       this.focus({ preventScroll: true });
     }
-    this.setPointerCapture?.(e.pointerId);
+    try {
+      this.setPointerCapture(e.pointerId);
+    } catch {
+      // Synthetic or already-released pointer: panning still works without capture.
+    }
   };
 
   #move = (e) => {
@@ -253,9 +258,12 @@ export class MerlionView extends Base {
       close.textContent = "×";
       close.style.cssText =
         "position:absolute;top:12px;right:12px;width:36px;height:36px;font:24px/1 system-ui,sans-serif;border:1px solid var(--merlion-border,#d0d7de);border-radius:8px;background:var(--merlion-bg,#fff);color:inherit;cursor:pointer";
-      close.addEventListener("click", () => d.close());
+      close.addEventListener("click", () => this.#restore());
       d.append(close);
+      // Esc fires `cancel` synchronously; `close` covers a dialog closed by script.
+      // #restore is idempotent and closes the dialog itself.
       d.addEventListener("close", () => this.#restore());
+      d.addEventListener("cancel", () => this.#restore());
       this.append(d);
     }
     d.setAttribute("aria-label", this.getAttribute("aria-label") || "Diagram");
@@ -271,7 +279,8 @@ export class MerlionView extends Base {
 
   #restore() {
     const svg = this.#svg;
-    if (!svg) return;
+    if (!svg || svg.parentNode !== this.#dlg) return;
+    if (this.#dlg.open) this.#dlg.close();
     this.insertBefore(svg, this.#home?.parentNode === this ? this.#home : this.#dlg);
     if (this.#style === null) svg.removeAttribute("style");
     else svg.setAttribute("style", this.#style);

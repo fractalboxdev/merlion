@@ -1,0 +1,397 @@
+:root {
+  --bg: #f7f7f5;
+  --panel: #ffffff;
+  --fg: #1a1d21;
+  --muted: #5b636c;
+  --border: #e2e4e7;
+  --accent: #0b63ce;
+  --warn-bg: #fff6e0;
+  --warn-fg: #6b4a00;
+  --error: #c62828;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 4px 16px rgb(16 24 40 / 0.04);
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0d1014;
+  --panel: #151a20;
+  --fg: #e7e9ec;
+  --muted: #98a1ab;
+  --border: #262d36;
+  --accent: #5ea2ff;
+  --warn-bg: #2b2310;
+  --warn-fg: #f1d48a;
+  --error: #ff7b72;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+/* Fallback diagram tokens for dark mode when merlion-themes.css is absent;
+   :where() keeps them at zero specificity so the theme stylesheet wins. */
+:where(:root[data-theme="dark"]) {
+  --merlion-bg: #151a20;
+  --merlion-fg: #e7e9ec;
+  --merlion-accent: #5ea2ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 24px 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--accent) 35%, transparent) 0 30%, transparent 31%),
+    linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 45%, #00a67e));
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.tagline {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.theme svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+:root[data-theme="dark"] .i-sun,
+:root:not([data-theme="dark"]) .i-moon {
+  display: none;
+}
+
+button:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.notices {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.notice {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 14px;
+}
+
+.notice code,
+.placeholder code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 8px 24px 40px;
+}
+
+section {
+  margin-top: 32px;
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-bottom: 14px;
+}
+
+.section-head h2 {
+  font-size: 18px;
+  font-weight: 620;
+}
+
+.section-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 70ch;
+}
+
+.panes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.pane,
+.card {
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pane-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.ghost {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12.5px;
+}
+
+.ghost:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, var(--border));
+}
+
+textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 300px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  resize: vertical;
+  background: transparent;
+  color: var(--fg);
+  font: 13.5px/1.6 var(--mono);
+  tab-size: 2;
+}
+
+.diagnostics {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+  font: 12.5px/1.5 var(--mono);
+}
+
+.diagnostics:empty {
+  display: none;
+}
+
+.diagnostics button {
+  display: block;
+  width: 100%;
+  padding: 6px 16px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.diagnostics button:hover {
+  background: color-mix(in oklab, var(--fg) 5%, transparent);
+}
+
+.sev-error {
+  color: var(--error);
+}
+
+.sev-warning,
+.sev-repair {
+  color: var(--warn-fg);
+}
+
+.sev-info {
+  color: var(--muted);
+}
+
+.status {
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+  padding: 16px;
+  display: grid;
+  align-content: center;
+}
+
+.preview.stale merlion-view {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
+.placeholder {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.placeholder:empty {
+  display: none;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.card {
+  padding: 16px 16px 12px;
+}
+
+.card h3 {
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.card merlion-view {
+  border-radius: 8px;
+}
+
+.card .placeholder {
+  padding: 32px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+details {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+details pre {
+  margin: 8px 0 0;
+  padding: 12px;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--fg) 4%, var(--panel));
+  font: 12.5px/1.55 var(--mono);
+}
+
+.foot {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 24px 40px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (min-width: 900px) {
+  .panes {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .card.wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 599px) {
+  .top,
+  .notices,
+  main,
+  .foot {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .theme-label {
+    display: none;
+  }
+}
