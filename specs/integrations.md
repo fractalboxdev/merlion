@@ -56,10 +56,10 @@ interface RenderOptions {
   palette?: Palette;                           // from compileStylesheet; validated against the token grammars
 }
 type Palette = {
-  roles: Record<string, string>;               // token name without `--merlion-` → colour, incl. `c-{name}-fill`
-  dark?: Record<string, string>;
-  tones?: Record<string, { tone?: string; dash?: number[] }>;          // node and edge roles
+  roles: Record<string, string>;               // token name without `--merlion-` → value: `#` hex colours, `stroke` as a number string, `c-{name}-{fill|stroke}` may be `none`
+  tones?: Record<string, { tone?: string; dash?: number[] }>;          // node and edge roles, in cascade order; `dash: []` is `none`
   clusterTones?: Record<string, { tone?: string; dash?: number[] }>;
+  dark?: Record<string, string>;
   darkTones?: Record<string, { tone?: string; dash?: number[] }>;
   darkClusterTones?: Record<string, { tone?: string; dash?: number[] }>;
 };
@@ -78,6 +78,7 @@ interface RenderResult {
 ```
 
 - `packages/merlion-wasm/index.d.ts` is the authoritative JavaScript contract; the rehype plugin, the Astro integration and the demo use its names and shapes. Option names are camelCase. The core's own names (`target_width`, `id_prefix`, `edge_style`) and any other unknown key throw a `TypeError` naming the key (for the core's names, also the camelCase option), so an older module never silently ignores `palette`. A `css` string above 64 KiB returns `E013` without crossing the boundary.
+- `compileStylesheet` throws `RangeError` for a `theme` or `autoDark` the stylesheet does not define. The glue turns `palette` into the canonical string of `Palette::canonical` (shape and separators checked in JavaScript); the core parses it with `Palette::parse`, which checks every value against its token's grammar, so a render from `compileStylesheet`'s palette and a CLI render with the same `--css`/`--theme` are byte-identical.
 - The module returns the JSON of `merlion render --json` (`merlion_render::json`, shared by both surfaces); the glue converts it to the camelCase shape above.
 
 - `render` is synchronous after initialisation. Its worst-case time is bounded by the fuel limit ([ADR-0008](adr/0008-deterministic-work-budget.md)), not by a clock. For source the page doesn't control, run it in a Web Worker so a heavy diagram never blocks the main thread; the package exports a `worker.js` entry that wraps `render` in a message handler.

@@ -2,9 +2,9 @@
 // Hand-written glue over merlion.wasm (specs/integrations.md#fractalboxdevmerlion-wasm).
 //
 // Strings cross the boundary as UTF-8 pointer-and-length pairs through the module's
-// `alloc`/`dealloc` exports; `render`/`check` return a buffer holding a u32
-// little-endian length followed by UTF-8 JSON, released with `result_free`. No
-// wasm-bindgen, no dependencies.
+// `alloc`/`dealloc` exports; `render`/`check`/`compile_stylesheet` return a buffer
+// holding a u32 little-endian length followed by UTF-8 JSON, released with
+// `result_free`. No wasm-bindgen, no dependencies.
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -138,7 +138,7 @@ function put(ex, bytes) {
   return ptr;
 }
 
-/** Calls `render` or `check` and returns the parsed JSON. */
+/** Calls `render`, `check` or `compile_stylesheet` and returns the parsed JSON. */
 function call(ex, fn, source, optionsJson) {
   const src = encoder.encode(source);
   const opts = encoder.encode(optionsJson);
@@ -155,20 +155,84 @@ function call(ex, fn, source, optionsJson) {
   return JSON.parse(text);
 }
 
-const OPTION_KEYS = ["width", "direction", "edgeStyle", "font", "strict", "idPrefix", "hint", "fuel"];
+const OPTION_KEYS = ["width", "direction", "edgeStyle", "font", "strict", "idPrefix", "hint", "fuel", "palette"];
+const STYLESHEET_KEYS = ["theme", "autoDark", "strict"];
 
 /** The core's field names, which a caller would otherwise pass and have silently ignored. */
 const SNAKE_CASE = { target_width: "width", id_prefix: "idPrefix", edge_style: "edgeStyle" };
 
-function optionsJson(options) {
+/** The stylesheet size limit (specs/svg-output.md#stylesheet), checked before crossing. */
+const MAX_STYLESHEET_BYTES = 64 * 1024;
+
+const PALETTE_KEYS = ["roles", "tones", "clusterTones", "dark", "darkTones", "darkClusterTones"];
+/** Keys and values must not carry the separators of the canonical string. */
+const PALETTE_TEXT = /^[^;=:|/]*$/;
+const HEX = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+/**
+ * Converts a `Palette` object (the shape `compileStylesheet` returns) into the canonical
+ * string the core parses (`Palette::parse`). The glue checks the shape and the
+ * separators; the core checks every value against its token's grammar.
+ */
+function paletteString(p) {
+  const bad = (why) => new ArgumentError(`merlion: invalid \`palette\`: ${why}`);
+  const record = (r, name) => {
+    if (r === undefined) return [];
+    if (r === null || typeof r !== "object" || Array.isArray(r)) throw bad(`\`${name}\` must be an object`);
+    return Object.entries(r);
+  };
+  const text = (v, what) => {
+    if (typeof v !== "string" || !PALETTE_TEXT.test(v) || v.length === 0) throw bad(`${what} must be a non-empty string without ; = : | /`);
+    return v;
+  };
+  const table = (roles, tones, clusterTones, names) => {
+    let s = "";
+    for (const [k, v] of record(roles, names[0])) s += `${text(k, "a role name")}=${text(v, `role \`${k}\``)};`;
+    for (const [prefix, r, name] of [["c-", tones, names[1]], ["cc-", clusterTones, names[2]]]) {
+      for (const [role, t] of record(r, name)) {
+        if (t === null || typeof t !== "object" || Array.isArray(t)) throw bad(`tone \`${role}\` must be an object`);
+        for (const k of Object.keys(t)) if (k !== "tone" && k !== "dash") throw bad(`tone \`${role}\` has an unknown key \`${k}\``);
+        let tone = "";
+        if (t.tone !== undefined) {
+          if (typeof t.tone !== "string" || !HEX.test(t.tone)) throw bad(`tone \`${role}\` must be a # hex colour`);
+          tone = t.tone;
+        }
+        let dash = "";
+        if (t.dash !== undefined) {
+          if (!Array.isArray(t.dash) || !t.dash.every((n) => typeof n === "number" && Number.isFinite(n))) {
+            throw bad(`dash of \`${role}\` must be an array of numbers`);
+          }
+          dash = t.dash.length === 0 ? "none" : t.dash.join(" ");
+        }
+        s += `${prefix}${text(role, "a role name")}:${tone}/${dash};`;
+      }
+    }
+    return s;
+  };
+  if (p === null || typeof p !== "object" || Array.isArray(p)) throw bad("must be an object from compileStylesheet");
+  for (const k of Object.keys(p)) if (!PALETTE_KEYS.includes(k)) throw bad(`unknown key \`${k}\``);
+  let s = `palette-v1|${table(p.roles, p.tones, p.clusterTones, ["roles", "tones", "clusterTones"])}`;
+  if (p.dark !== undefined) {
+    s += `|dark|${table(p.dark, p.darkTones, p.darkClusterTones, ["dark", "darkTones", "darkClusterTones"])}`;
+  } else if (p.darkTones !== undefined || p.darkClusterTones !== undefined) {
+    throw bad("`darkTones` and `darkClusterTones` need `dark`");
+  }
+  return s;
+}
+
+function optionsJson(options, keys = OPTION_KEYS) {
   if (options == null) return "{}";
   if (typeof options !== "object") throw new ArgumentError("merlion: options must be an object");
   for (const [k, v] of Object.entries(SNAKE_CASE)) {
     if (k in options) throw new ArgumentError(`merlion: unknown option \`${k}\`; use \`${v}\``);
   }
+  for (const k of Object.keys(options)) {
+    if (!keys.includes(k)) throw new ArgumentError(`merlion: unknown option \`${k}\``);
+  }
   /** @type {Record<string, unknown>} */
   const picked = {};
-  for (const k of OPTION_KEYS) if (options[k] !== undefined) picked[k] = options[k];
+  for (const k of keys) if (options[k] !== undefined) picked[k] = options[k];
+  if (picked.palette != null) picked.palette = paletteString(picked.palette);
   return JSON.stringify(picked);
 }
 
@@ -241,11 +305,49 @@ export function render(source, options) {
  */
 export function check(source, options) {
   checkSource(source);
-  const opts = optionsJson(options && { strict: options.strict });
+  const opts = optionsJson(options, ["strict"]);
   const raw = guarded((ex) => call(ex, "check", source, opts));
   if (raw === null) return [internalError()];
   rejectOptions(raw);
   return raw.diagnostics.map(toDiagnostic);
+}
+
+/**
+ * Compiles a stylesheet (specs/svg-output.md#stylesheet) into page CSS and the palette
+ * of `theme` (`:root` alone by default) with `autoDark` as its dark variant. A name the
+ * stylesheet does not define throws `RangeError`; over 64 KiB returns `E013` without
+ * calling the module.
+ * @param {string} css
+ * @param {{ theme?: string, autoDark?: string, strict?: boolean }} [options]
+ * @returns {import("./index.d.ts").CompiledStylesheet}
+ */
+export function compileStylesheet(css, options) {
+  if (typeof css !== "string") throw new ArgumentError("merlion: css must be a string");
+  const opts = optionsJson(options, STYLESHEET_KEYS);
+  if (encoder.encode(css).length > MAX_STYLESHEET_BYTES) {
+    return {
+      css: null,
+      palette: null,
+      diagnostics: [
+        {
+          severity: "error",
+          code: "E013",
+          line: 1,
+          column: 1,
+          byteStart: 0,
+          byteEnd: 0,
+          message: "stylesheet exceeds its limit on size",
+          fix: null,
+        },
+      ],
+    };
+  }
+  const raw = guarded((ex) => call(ex, "compile_stylesheet", css, opts));
+  if (raw === null) return { css: null, palette: null, diagnostics: [internalError()] };
+  rejectOptions(raw);
+  if (raw.error && raw.error.kind === "unknown_theme") throw new RangeError(`merlion: ${raw.error.message}`);
+  if (raw.error) throw new ArgumentError(`merlion: ${raw.error.message}`);
+  return { css: raw.css, palette: raw.palette, diagnostics: raw.diagnostics.map(toDiagnostic) };
 }
 
 /**

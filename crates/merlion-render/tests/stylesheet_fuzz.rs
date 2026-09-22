@@ -7,7 +7,7 @@
 mod stylesheet_support;
 mod svg_support;
 
-use merlion_render::stylesheet::{compile, StylesheetLimits};
+use merlion_render::stylesheet::{compile, Palette, StylesheetLimits};
 use merlion_render::{render, RenderOptions};
 use stylesheet_support::assert_page_css_safe;
 use svg_support::{assert_safe, assert_well_formed};
@@ -185,6 +185,11 @@ fn check(css: &str, render_it: bool) {
         .take(4)
     {
         let palette = sheet.palette(theme, dark).expect("named themes exist");
+        assert_eq!(
+            Palette::parse(&palette.canonical()).as_ref(),
+            Ok(&palette),
+            "parse(canonical(p)) == p"
+        );
         let r = render(
             DIAGRAM,
             &RenderOptions {
@@ -196,6 +201,41 @@ fn check(css: &str, render_it: bool) {
         let svg = r.svg.expect("renders");
         assert_well_formed(&svg);
         assert_safe(&svg, "m1");
+    }
+}
+
+/// Mutated canonical palettes (the WASM `palette` wire form) never panic, and whatever
+/// parses serialises back to a string that parses to the same palette.
+#[test]
+fn mutated_palettes_never_panic() {
+    let limits = StylesheetLimits::default();
+    let mut st = 0x9e37_79b9_7f4a_7c15;
+    let mut canon = Vec::new();
+    for s in SEEDS {
+        if let (Some(sheet), _) = compile(s, &limits) {
+            let names = sheet.theme_names();
+            if let Some(p) = sheet.palette(names.first().copied(), names.last().copied()) {
+                canon.push(p.canonical());
+            }
+        }
+    }
+    assert!(!canon.is_empty());
+    for _ in 0..3000 {
+        let seed = &canon[(rng(&mut st) as usize) % canon.len()];
+        let m = mutate(seed, &mut st);
+        if let Ok(p) = Palette::parse(&m) {
+            assert_eq!(Palette::parse(&p.canonical()), Ok(p.clone()), "{m}");
+            let r = render(
+                DIAGRAM,
+                &RenderOptions {
+                    id_prefix: Some("m1".into()),
+                    palette: Some(p),
+                    ..RenderOptions::default()
+                },
+            );
+            let svg = r.svg.expect("renders");
+            assert_safe(&svg, "m1");
+        }
     }
 }
 

@@ -7,6 +7,9 @@
 //!   result buffer: a `u32` little-endian byte length, then that many bytes of UTF-8 JSON.
 //!   `render` gives `{svg, outline, diagnostics, fuel_used, error}` (the shape of
 //!   `merlion render --json`); `check` gives `{diagnostics, error}`.
+//! - `compile_stylesheet(css_ptr, css_len, opts_ptr, opts_len) -> ptr` returns
+//!   `{css, palette, diagnostics, error}`: the compiled page CSS, the palette JSON of
+//!   the chosen themes (`index.d.ts` `Palette`) and the compiler's diagnostics.
 //! - `result_free(ptr)` releases a result buffer.
 //!
 //! The exports never free their inputs; the host deallocates them.
@@ -17,6 +20,8 @@ mod opts;
 /// (specs/integrations.md#file-handling).
 const MAX_HINT_BYTES: usize = 1 << 20;
 
+use merlion_render::numfmt::push_num;
+use merlion_render::stylesheet::{self, Palette, PaletteTable, StylesheetLimits};
 use merlion_render::{json, Diagnostic, RenderResult, Severity, Span};
 
 /// `{"kind": kind, "message": message}`, for failures before the core runs.
@@ -86,6 +91,151 @@ pub fn check_json(src: &[u8], opts: &[u8]) -> String {
     };
     let mut out = String::from(r#"{"diagnostics":"#);
     json::push_diagnostics(&mut out, &merlion_render::check(source, strict));
+    out.push_str(r#","error":null}"#);
+    out
+}
+
+/// The `roles`, `tones` and `clusterTones` members of one table; the dark table's are
+/// named `dark`, `darkTones` and `darkClusterTones`.
+fn push_table(out: &mut String, t: &PaletteTable, dark: bool) {
+    let key = |k: &str| {
+        if dark {
+            match k {
+                "roles" => String::from("dark"),
+                "tones" => String::from("darkTones"),
+                _ => String::from("darkClusterTones"),
+            }
+        } else {
+            String::from(k)
+        }
+    };
+    let mut roles: Vec<(String, String)> = Vec::new();
+    for (r, c) in &t.colours {
+        roles.push((r.name().into(), c.to_hex()));
+    }
+    for (n, c) in &t.series {
+        roles.push((format!("series-{n}"), c.to_hex()));
+    }
+    if let Some(s) = t.stroke {
+        let mut v = String::new();
+        push_num(&mut v, s);
+        roles.push(("stroke".into(), v));
+    }
+    for (n, p, c) in &t.classes {
+        roles.push((
+            format!("c-{}-{}", n, p.name()),
+            c.map_or_else(|| "none".into(), |c| c.to_hex()),
+        ));
+    }
+    json::push_str(out, &key("roles"));
+    out.push_str(":{");
+    for (i, (k, v)) in roles.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        json::push_str(out, k);
+        out.push(':');
+        json::push_str(out, v);
+    }
+    out.push('}');
+    for (name, cluster) in [("tones", false), ("clusterTones", true)] {
+        out.push(',');
+        json::push_str(out, &key(name));
+        out.push_str(":{");
+        for (i, tone) in t.tones.iter().filter(|x| x.cluster == cluster).enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            json::push_str(out, &tone.name);
+            out.push_str(":{");
+            let mut first = true;
+            if let Some(c) = tone.tone {
+                out.push_str(r#""tone":"#);
+                json::push_str(out, &c.to_hex());
+                first = false;
+            }
+            if let Some(d) = &tone.dash {
+                if !first {
+                    out.push(',');
+                }
+                out.push_str(r#""dash":["#);
+                for (j, n) in d.iter().enumerate() {
+                    if j > 0 {
+                        out.push(',');
+                    }
+                    push_num(out, *n);
+                }
+                out.push(']');
+            }
+            out.push('}');
+        }
+        out.push('}');
+    }
+}
+
+/// The `Palette` JSON of `index.d.ts`. The glue turns it back into the canonical string
+/// the `palette` render option carries.
+pub fn palette_json(p: &Palette) -> String {
+    let mut out = String::from("{");
+    push_table(&mut out, &p.light, false);
+    if let Some(d) = &p.dark {
+        out.push(',');
+        push_table(&mut out, d, true);
+    }
+    out.push('}');
+    out
+}
+
+/// The JSON of `compile_stylesheet` for already-copied inputs. Options: `theme`,
+/// `autoDark` (theme names), `strict` (`W017`–`W019` become errors).
+pub fn compile_stylesheet_json(css: &[u8], opts: &[u8]) -> String {
+    let fail = |kind: &str, msg: &str| {
+        format!(
+            r#"{{"css":null,"palette":null,"diagnostics":[],"error":{}}}"#,
+            boundary_error(kind, msg)
+        )
+    };
+    let Ok(css) = core::str::from_utf8(css) else {
+        return fail("invalid_input", "stylesheet is not UTF-8");
+    };
+    let (theme, auto_dark, strict) = match opts::stylesheet_options(opts) {
+        Ok(o) => o,
+        Err(msg) => return fail("invalid_options", &msg),
+    };
+    let (sheet, diags) = stylesheet::compile(css, &StylesheetLimits::default());
+    let mut items = diags.items;
+    if strict {
+        for d in &mut items {
+            if matches!(d.code, "W017" | "W018" | "W019") {
+                d.severity = Severity::Error;
+            }
+        }
+    }
+    let sheet = sheet.filter(|_| !items.iter().any(|d| d.severity == Severity::Error));
+    let mut out = String::from(r#"{"css":"#);
+    let mut palette = None;
+    match &sheet {
+        Some(s) => {
+            for t in [&theme, &auto_dark].into_iter().flatten() {
+                if !s.theme_names().contains(&t.as_str()) {
+                    return fail(
+                        "unknown_theme",
+                        &format!("the stylesheet defines no theme `{t}`"),
+                    );
+                }
+            }
+            palette = s.palette(theme.as_deref(), auto_dark.as_deref());
+            json::push_str(&mut out, &s.to_css());
+        }
+        None => out.push_str("null"),
+    }
+    out.push_str(r#","palette":"#);
+    match &palette {
+        Some(p) => out.push_str(&palette_json(p)),
+        None => out.push_str("null"),
+    }
+    out.push_str(r#","diagnostics":"#);
+    json::push_diagnostics(&mut out, &items);
     out.push_str(r#","error":null}"#);
     out
 }
@@ -176,7 +326,24 @@ pub unsafe extern "C" fn check(
     into_result(check_json(src, opts))
 }
 
-/// Frees a result buffer from `render` or `check`. Null is a no-op.
+/// Compiles a stylesheet; returns a result buffer with `{css, palette, diagnostics,
+/// error}`.
+///
+/// # Safety
+/// As for [`render`].
+#[no_mangle]
+pub unsafe extern "C" fn compile_stylesheet(
+    css_ptr: *const u8,
+    css_len: usize,
+    opts_ptr: *const u8,
+    opts_len: usize,
+) -> *mut u8 {
+    // SAFETY: forwarded caller contract.
+    let (css, opts) = unsafe { (host_bytes(css_ptr, css_len), host_bytes(opts_ptr, opts_len)) };
+    into_result(compile_stylesheet_json(css, opts))
+}
+
+/// Frees a result buffer from `render`, `check` or `compile_stylesheet`. Null is a no-op.
 ///
 /// # Safety
 /// `ptr` must be a result buffer not yet freed.
@@ -247,6 +414,79 @@ mod tests {
         let j = check_json(b"not a diagram", br#"{"strict":true}"#);
         assert!(j.starts_with(r#"{"diagnostics":["#), "{j}");
         assert!(j.ends_with(r#","error":null}"#), "{j}");
+    }
+
+    const SHEET: &str =
+        ":root { --merlion-bg: #fafafa; --merlion-stroke: 1.5px; --merlion-c-store-fill: none; }\n\
+        [data-theme=\"dark\"] { --merlion-bg: #101418; }\n\
+        .merlion-c-store { --merlion-tone: #b8408f; --merlion-dash: 4 2; }\n\
+        .merlion-cc-zone { --merlion-tone: #1b98a6; }\n\
+        [data-theme=\"dark\"] .merlion-c-store { --merlion-dash: none; }\n\
+        .viewer { color: red; }\n";
+
+    #[test]
+    fn compile_stylesheet_json_shape() {
+        let j = compile_stylesheet_json(SHEET.as_bytes(), br##"{"autoDark":"dark"}"##);
+        assert!(j.starts_with(r##"{"css":":root {\n"##), "{j}");
+        assert!(
+            j.contains(r##""palette":{"roles":{"bg":"#fafafa","stroke":"1.5","c-store-fill":"none"},"tones":{"store":{"tone":"#b8408f","dash":[4,2]}},"clusterTones":{"zone":{"tone":"#1b98a6"}},"dark":{"bg":"#101418","stroke":"1.5","c-store-fill":"none"},"darkTones":{"store":{"tone":"#b8408f","dash":[]}},"darkClusterTones":{"zone":{"tone":"#1b98a6"}}}"##),
+            "{j}"
+        );
+        assert!(j.contains(r##""code":"I032""##), "{j}");
+        assert!(j.ends_with(r##""error":null}"##), "{j}");
+        let j = compile_stylesheet_json(SHEET.as_bytes(), b"");
+        assert!(j.contains(r##""tones":{"store":{"tone":"#b8408f","dash":[4,2]}},"clusterTones":{"zone":{"tone":"#1b98a6"}}},"diagnostics""##), "{j}");
+    }
+
+    #[test]
+    fn compile_stylesheet_errors() {
+        let j = compile_stylesheet_json(SHEET.as_bytes(), br#"{"theme":"nope"}"#);
+        assert!(
+            j.contains(r#""error":{"kind":"unknown_theme","message":"#),
+            "{j}"
+        );
+        let j = compile_stylesheet_json(SHEET.as_bytes(), br#"{"them":"dark"}"#);
+        assert!(j.contains(r#""kind":"invalid_options""#), "{j}");
+        let j = compile_stylesheet_json(b"\xff", b"");
+        assert!(j.contains(r#""kind":"invalid_input""#), "{j}");
+        let j = compile_stylesheet_json(b":root { --merlion-font: x; }", br#"{"strict":true}"#);
+        assert!(
+            j.starts_with(
+                r#"{"css":null,"palette":null,"diagnostics":[{"severity":"error","code":"W018""#
+            ),
+            "{j}"
+        );
+        let big = format!(":root{{--merlion-bg:#fff}}/*{}*/", "x".repeat(70_000));
+        let j = compile_stylesheet_json(big.as_bytes(), b"");
+        assert!(
+            j.starts_with(
+                r#"{"css":null,"palette":null,"diagnostics":[{"severity":"error","code":"E013""#
+            ),
+            "{j}"
+        );
+    }
+
+    /// The palette JSON of `compileStylesheet`, converted by the glue to its canonical
+    /// string, renders the same bytes as the CLI's in-process palette.
+    #[test]
+    fn palette_option_renders_like_the_cli() {
+        let (sheet, _) = merlion_render::stylesheet::compile(SHEET, &Default::default());
+        let p = sheet.unwrap().palette(Some("dark"), None).unwrap();
+        let src = "flowchart LR\nA-->B\nclass A store\n";
+        let native = merlion_render::render(
+            src,
+            &merlion_render::RenderOptions {
+                palette: Some(p.clone()),
+                ..Default::default()
+            },
+        );
+        let mut opts = String::from(r#"{"palette":"#);
+        json::push_str(&mut opts, &p.canonical());
+        opts.push('}');
+        assert_eq!(
+            render_json(src.as_bytes(), opts.as_bytes()),
+            json::render_result(&native)
+        );
     }
 
     /// Reads a result buffer the way the JS glue does.

@@ -1,10 +1,12 @@
 //! Render options as a flat JSON object, parsed by hand (RFC 8259; zero dependencies).
 //!
 //! Accepted keys: `width`, `direction` (`"auto"` | `"source"`), `edgeStyle`, `font`,
-//! `strict`, `idPrefix`, `hint`, `fuel`. `null` keeps the default; unknown keys are
-//! ignored; a nested object or array is an error. The parser is iterative and never
+//! `strict`, `idPrefix`, `hint`, `fuel`, and `palette`, the canonical palette string
+//! (`merlion_render::stylesheet::Palette::parse`). `null` keeps the default; an unknown
+//! key or a nested object or array is an error. The parser is iterative and never
 //! recurses.
 
+use merlion_render::stylesheet::Palette;
 use merlion_render::{DirectionOption, EdgeStyle, FontMode, RenderOptions};
 
 /// A scalar JSON value.
@@ -265,10 +267,35 @@ pub fn render_options(src: &[u8]) -> Result<RenderOptions, String> {
                 }
                 _ => return Err("`fuel` must be a whole number from 0 to 2^53".into()),
             },
-            _ => {}
+            "palette" => {
+                let p = Palette::parse(string_of(&key, &v)?)
+                    .map_err(|why| format!("invalid `palette`: {why}"))?;
+                o.palette = Some(p);
+            }
+            k => return Err(format!("unknown option `{k}`")),
         }
     }
     Ok(o)
+}
+
+/// `compileStylesheet` options: `(theme, autoDark, strict)`.
+pub fn stylesheet_options(src: &[u8]) -> Result<(Option<String>, Option<String>, bool), String> {
+    let (mut theme, mut auto_dark, mut strict) = (None, None, false);
+    for (key, v) in parse_object(src)? {
+        if v == Value::Null {
+            continue;
+        }
+        match key.as_str() {
+            "theme" => theme = Some(string_of(&key, &v)?.to_string()),
+            "autoDark" => auto_dark = Some(string_of(&key, &v)?.to_string()),
+            "strict" => match v {
+                Value::Bool(b) => strict = b,
+                _ => return Err("`strict` must be a boolean".into()),
+            },
+            k => return Err(format!("unknown option `{k}`")),
+        }
+    }
+    Ok((theme, auto_dark, strict))
 }
 
 #[cfg(test)]
@@ -326,7 +353,7 @@ mod tests {
     fn maps_options() {
         let o = render_options(
             br#"{"width":640,"direction":"auto","edgeStyle":"spline","font":"system",
-                "strict":true,"idPrefix":"d1","hint":"<svg/>","fuel":1000,"other":"x"}"#,
+                "strict":true,"idPrefix":"d1","hint":"<svg/>","fuel":1000}"#,
         )
         .unwrap();
         assert_eq!(o.target_width, 640.0);
@@ -340,10 +367,30 @@ mod tests {
     }
 
     #[test]
-    fn nulls_and_unknown_keys_keep_defaults() {
-        let o = render_options(br#"{"width":null,"zoom":3}"#).unwrap();
+    fn nulls_keep_defaults_and_unknown_keys_are_errors() {
+        let o = render_options(br#"{"width":null,"palette":null}"#).unwrap();
         assert_eq!(o, RenderOptions::default());
         assert_eq!(render_options(b"").unwrap(), RenderOptions::default());
+        let e = render_options(br#"{"zoom":3}"#).unwrap_err();
+        assert!(e.contains("`zoom`"), "{e}");
+    }
+
+    #[test]
+    fn palette_is_the_canonical_string() {
+        let o = render_options(br#"{"palette":"palette-v1|bg=#000000;c-a:#ff0000/4 2;"}"#).unwrap();
+        let p = o.palette.expect("palette");
+        assert_eq!(
+            p.light.colour("bg").map(|c| c.to_hex()).as_deref(),
+            Some("#000000")
+        );
+        for bad in [
+            &br#"{"palette":"palette-v1|bg=red;"}"#[..],
+            br#"{"palette":"bg=#000000;"}"#,
+            br#"{"palette":1}"#,
+        ] {
+            let e = render_options(bad).unwrap_err();
+            assert!(e.contains("palette"), "{e}");
+        }
     }
 
     #[test]

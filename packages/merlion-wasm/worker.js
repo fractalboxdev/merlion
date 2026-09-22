@@ -1,11 +1,12 @@
-// Web Worker entry: runs `render`/`check` off the main thread
+// Web Worker entry: runs `render`/`check`/`compileStylesheet` off the main thread
 // (specs/integrations.md#fractalboxdevmerlion-wasm).
 //
-// Request:  { id, type: "render" | "check", source, options?, wasm? }
+// Request:  { id, type: "render" | "check" | "compileStylesheet", source, options?, wasm? }
+//           `source` is the stylesheet text for "compileStylesheet".
 //           `wasm` (bytes, Module, URL or Response) is used by the first message only;
 //           without it the worker fetches merlion.wasm next to this file.
 // Response: { id, result } or { id, error: string }
-import { init, render, check } from "./index.js";
+import { init, render, check, compileStylesheet } from "./index.js";
 
 /** @type {Promise<void> | null} */
 let ready = null;
@@ -21,7 +22,12 @@ self.addEventListener("message", async (event) => {
       });
     }
     await ready;
-    const result = type === "check" ? check(source, options) : render(source, options);
+    const result =
+      type === "check"
+        ? check(source, options)
+        : type === "compileStylesheet"
+          ? compileStylesheet(source, options)
+          : render(source, options);
     self.postMessage({ id, result });
   } catch (err) {
     self.postMessage({ id, error: err instanceof Error ? err.message : String(err) });

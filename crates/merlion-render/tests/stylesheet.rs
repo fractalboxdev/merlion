@@ -432,3 +432,87 @@ fn hostile_input_never_reaches_the_output() {
     );
     assert_page_css_safe(&out);
 }
+
+// ---------------------------------------------------------------------------------------
+// The canonical palette as a wire form (the WASM `palette` option)
+// ---------------------------------------------------------------------------------------
+
+#[test]
+fn canonical_palettes_parse_back_to_the_same_palette() {
+    for css in [THEMES, THEMES_WITH_ROLES, SAMPLE] {
+        let (s, _) = compile(css, &StylesheetLimits::default());
+        let s = s.unwrap();
+        let names = s.theme_names();
+        for t in core::iter::once(None).chain(names.iter().copied().map(Some)) {
+            for dark in [None, names.first().copied()] {
+                let p = s.palette(t, dark).unwrap();
+                assert_eq!(
+                    Palette::parse(&p.canonical()),
+                    Ok(p.clone()),
+                    "{t:?} {dark:?}"
+                );
+            }
+        }
+    }
+    assert_eq!(Palette::parse("palette-v1|"), Ok(Palette::default()));
+}
+
+#[test]
+fn canonical_palettes_keep_tone_order_and_none() {
+    let src = "palette-v1|bg=#000000;stroke=1.5;c-store-fill=none;c-store-color=#ff0000;\
+               c-b:#00ff00/;c-a:/none;cc-a:#0000ff/4 2;";
+    let p = Palette::parse(src).unwrap();
+    assert_eq!(p.canonical(), src);
+    // Cluster tones follow node tones whatever the input order.
+    let mixed = Palette::parse("palette-v1|cc-a:#0000ff/;c-b:#00ff00/;c-a:/;").unwrap();
+    assert_eq!(
+        mixed.canonical(),
+        "palette-v1|c-b:#00ff00/;c-a:/;cc-a:#0000ff/;"
+    );
+    let (s, _) = compile(
+        ".merlion-cc-z { --merlion-tone: #111111; } .merlion-c-y { --merlion-tone: #222222; }",
+        &StylesheetLimits::default(),
+    );
+    let tones = s.unwrap().palette(None, None).unwrap().light.tones;
+    assert_eq!((tones[0].cluster, tones[1].cluster), (false, true));
+    assert_eq!(p.light.tones[0].name, "b");
+    assert_eq!(p.light.tones[1].dash.as_deref(), Some(&[][..]));
+    assert_eq!(p.light.stroke, Some(1.5));
+    assert_eq!(
+        p.light
+            .class_colour("store", merlion_render::stylesheet::ClassProp::Fill),
+        Some(None)
+    );
+    let dark = Palette::parse("palette-v1|bg=#ffffff;|dark|bg=#000000;").unwrap();
+    assert_eq!(dark.dark.unwrap().colour("bg"), Some(hex("#000000")));
+}
+
+#[test]
+fn canonical_palettes_reject_values_outside_the_token_grammars() {
+    for bad in [
+        "",
+        "palette-v2|",
+        "palette-v1|bg=#000000",
+        "palette-v1|bg=red;",
+        "palette-v1|bg=#00000;",
+        "palette-v1|bg=url(x);",
+        "palette-v1|font=#000000;",
+        "palette-v1|tone=#000000;",
+        "palette-v1|series-9=#000000;",
+        "palette-v1|stroke=21;",
+        "palette-v1|stroke=1px;",
+        "palette-v1|c-1bad-fill=#000000;",
+        "palette-v1|c-a-fill=#00000g;",
+        "palette-v1|c-a-color=none;",
+        "palette-v1|c-a:#000000;",
+        "palette-v1|c-a:red/;",
+        "palette-v1|c-a:/1 2 3 4 5 6 7 8 9;",
+        "palette-v1|c-a:/101;",
+        "palette-v1|c-a:#000000/;c-a:#111111/;",
+        "palette-v1|c-a<b:#000000/;",
+        "palette-v1|bg=#000000;|dark|x;",
+        "palette-v1||dark||dark|",
+    ] {
+        assert!(Palette::parse(bad).is_err(), "{bad}");
+    }
+}

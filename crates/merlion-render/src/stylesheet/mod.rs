@@ -825,7 +825,10 @@ impl Stylesheet {
                 },
             ));
         }
-        tones.sort_by_key(|x| x.0);
+        // Node and edge tones first, then cluster tones, each in cascade order: the two
+        // never meet on one element, and a fixed partition keeps the canonical form (and
+        // the diagram id) equal after a round trip through the WASM palette JSON.
+        tones.sort_by_key(|x| (x.1.cluster, x.0));
         t.tones = tones.into_iter().map(|x| x.1).collect();
         t
     }
@@ -870,7 +873,8 @@ pub struct PaletteTable {
     pub stroke: Option<f64>,
     /// `--merlion-c-{name}-{prop}`; `None` is `none`.
     pub classes: Vec<(String, ClassProp, Option<Rgba8>)>,
-    /// Role tones in cascade order: a later entry wins on an element with both roles.
+    /// Role tones in cascade order, node and edge tones before cluster tones: a later
+    /// entry wins on an element with both roles.
     pub tones: Vec<PaletteTone>,
 }
 
@@ -1000,5 +1004,128 @@ impl Palette {
     /// FNV-1a 64 of [`Palette::canonical`]; joins the default diagram id hash.
     pub fn digest(&self) -> u64 {
         crate::ids::fnv1a64(self.canonical().as_bytes())
+    }
+
+    /// Parses [`Palette::canonical`] output: the wire form of the WASM `palette` option.
+    /// Every entry is checked against its token's grammar: colours are `#` hex, `stroke`
+    /// a number from 0 to 20, class tokens name a `classDef`-grammar class, tone dashes
+    /// `none` or up to 8 numbers from 0 to 100. Input over [`MAX_PALETTE_BYTES`], an
+    /// unknown token or a repeated tone is refused. Linear in the input; never panics.
+    pub fn parse(s: &str) -> Result<Palette, &'static str> {
+        if s.len() > MAX_PALETTE_BYTES {
+            return Err("palette too large");
+        }
+        let body = s
+            .strip_prefix("palette-v1|")
+            .ok_or("not a palette-v1 string")?;
+        let (light, dark) = match body.split_once("|dark|") {
+            Some((l, d)) => (l, Some(d)),
+            None => (body, None),
+        };
+        Ok(Palette {
+            light: PaletteTable::parse(light)?,
+            dark: dark.map(PaletteTable::parse).transpose()?,
+        })
+    }
+}
+
+/// The largest canonical palette [`Palette::parse`] accepts.
+pub const MAX_PALETTE_BYTES: usize = 1 << 20;
+
+impl PaletteTable {
+    /// Entries are collected, then sorted once, so parsing stays `O(n log n)`; a token
+    /// or tone given twice is refused.
+    fn parse(s: &str) -> Result<PaletteTable, &'static str> {
+        let mut t = PaletteTable::default();
+        let Some(entries) = s.strip_suffix(';') else {
+            return if s.is_empty() {
+                Ok(t)
+            } else {
+                Err("entry without `;`")
+            };
+        };
+        let mut seen_tones = alloc::collections::BTreeSet::new();
+        for e in entries.split(';') {
+            match (e.find('='), e.find(':')) {
+                (Some(i), None) => t.parse_token(&e[..i], &e[i + 1..])?,
+                (None, Some(i)) => t.parse_tone(&e[..i], &e[i + 1..], &mut seen_tones)?,
+                _ => return Err("malformed entry"),
+            }
+        }
+        t.tones.sort_by_key(|x| x.cluster);
+        t.colours.sort_by_key(|x| x.0);
+        t.series.sort_by_key(|x| x.0);
+        t.classes.sort_by(|a, b| (&a.0, a.1).cmp(&(&b.0, b.1)));
+        let dup = t.colours.windows(2).any(|w| w[0].0 == w[1].0)
+            || t.series.windows(2).any(|w| w[0].0 == w[1].0)
+            || t.classes
+                .windows(2)
+                .any(|w| w[0].0 == w[1].0 && w[0].1 == w[1].1);
+        if dup {
+            return Err("repeated token");
+        }
+        Ok(t)
+    }
+
+    fn parse_token(&mut self, key: &str, v: &str) -> Result<(), &'static str> {
+        let Name::Theme(tok) = value::classify(&format!("--merlion-{}", key)) else {
+            return Err("unknown token");
+        };
+        let hex = |v: &str| Rgba8::from_hex(v).ok_or("not a hex colour");
+        match (tok, v) {
+            (Token::Colour(r), v) => self.colours.push((r, hex(v)?)),
+            (Token::Series(n), v) => self.series.push((n, hex(v)?)),
+            (Token::Stroke, v) if v.ends_with("px") => return Err("stroke is a bare number"),
+            (Token::Stroke, v) => match value::parse_literal(v, Kind::Stroke) {
+                Ok(Value::Stroke(x)) if self.stroke.is_none() => self.stroke = Some(x),
+                Ok(_) => return Err("repeated token"),
+                Err(_) => return Err("stroke out of range"),
+            },
+            (Token::Class(name, ClassProp::Color), v) => {
+                self.classes.push((name, ClassProp::Color, Some(hex(v)?)))
+            }
+            (Token::Class(name, p), "none") => self.classes.push((name, p, None)),
+            (Token::Class(name, p), v) => self.classes.push((name, p, Some(hex(v)?))),
+        }
+        Ok(())
+    }
+
+    fn parse_tone(
+        &mut self,
+        key: &str,
+        v: &str,
+        seen: &mut alloc::collections::BTreeSet<(bool, String)>,
+    ) -> Result<(), &'static str> {
+        let (cluster, name) = match (key.strip_prefix("cc-"), key.strip_prefix("c-")) {
+            (Some(n), _) => (true, n),
+            (None, Some(n)) => (false, n),
+            _ => return Err("tone key is not c- or cc-"),
+        };
+        if !value::is_class_name(name) {
+            return Err("tone names a class outside the classDef grammar");
+        }
+        if !seen.insert((cluster, String::from(name))) {
+            return Err("repeated tone");
+        }
+        let (tone, dash) = v.split_once('/').ok_or("tone without `/`")?;
+        let tone = match tone {
+            "" => None,
+            h => Some(Rgba8::from_hex(h).ok_or("not a hex colour")?),
+        };
+        let dash = match dash {
+            "" => None,
+            d => match value::parse_literal(d, Kind::Dash) {
+                Ok(Value::Dash(Dash::None)) => Some(Vec::new()),
+                Ok(Value::Dash(Dash::Pattern(p))) => Some(p),
+                _ => return Err("not a dash array"),
+            },
+        };
+        self.tones.push(PaletteTone {
+            name: String::from(name),
+            cluster,
+            tone,
+            dash,
+        });
+        Ok(())
     }
 }

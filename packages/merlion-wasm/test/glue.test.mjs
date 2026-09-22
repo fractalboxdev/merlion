@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { init, initSync, render, check, __trapForTests } from "../index.js";
+import { init, initSync, render, check, compileStylesheet, __trapForTests } from "../index.js";
 
 const script = fileURLToPath(new URL("../scripts/build-wasm.sh", import.meta.url));
 const wasmPath = fileURLToPath(new URL("./merlion-test.wasm", import.meta.url));
@@ -122,8 +122,100 @@ test("invalid arguments throw instead of reaching the module", () => {
   assert.throws(() => render(42), TypeError);
   assert.throws(() => render(VALID, { width: -1 }), TypeError);
   assert.throws(() => render(VALID, { direction: "up" }), TypeError);
-  // Unknown option keys are ignored.
-  assert.doesNotThrow(() => render(VALID, { zoom: 3 }));
+  // Unknown option keys throw, so an older module never silently ignores one.
+  assert.throws(() => render(VALID, { zoom: 3 }), /unknown option `zoom`/);
+  assert.throws(() => check(VALID, { zoom: 3 }), /unknown option `zoom`/);
+});
+
+const SHEET = `
+:root { --merlion-accent: #0f766e; --merlion-fg: #202830; --merlion-stroke: 1.5px; }
+[data-theme="dark"] { --merlion-bg: #101418; --merlion-fg: #e6e6e6; }
+.merlion-c-store { --merlion-tone: #b8408f; --merlion-dash: 4 2; }
+.merlion-cc-zone { --merlion-tone: #1b98a6; }
+.viewer { color: red; }
+`;
+const ROLES = "flowchart LR\nsubgraph z [Zone]\nA-->B\nend\nclass A store\nclass z zone\n";
+
+test("compileStylesheet returns page CSS, the palette and diagnostics", () => {
+  const r = compileStylesheet(SHEET);
+  assert.deepEqual(Object.keys(r).sort(), ["css", "diagnostics", "palette"]);
+  assert.ok(r.css.startsWith(":root {\n  --merlion-fg: #202830;\n"), r.css);
+  assert.ok(r.css.includes(".merlion .merlion-c-store {"), r.css);
+  assert.ok(!r.css.includes("viewer"));
+  assert.deepEqual(r.palette, {
+    roles: { fg: "#202830", accent: "#0f766e", stroke: "1.5" },
+    tones: { store: { tone: "#b8408f", dash: [4, 2] } },
+    clusterTones: { zone: { tone: "#1b98a6" } },
+  });
+  assert.deepEqual(
+    r.diagnostics.map((d) => [d.severity, d.code]),
+    [["info", "I032"]],
+  );
+  // Compiling the output again is a fixed point.
+  assert.equal(compileStylesheet(r.css).css, r.css);
+});
+
+test("compileStylesheet resolves a theme and an automatic dark variant", () => {
+  const { palette } = compileStylesheet(SHEET, { theme: "dark", autoDark: "dark" });
+  assert.equal(palette.roles.bg, "#101418");
+  assert.equal(palette.dark.fg, "#e6e6e6");
+  assert.deepEqual(palette.darkTones, { store: { tone: "#b8408f", dash: [4, 2] } });
+  assert.throws(() => compileStylesheet(SHEET, { theme: "nope" }), RangeError);
+  assert.throws(() => compileStylesheet(SHEET, { them: "dark" }), /unknown option `them`/);
+  assert.throws(() => compileStylesheet(42), TypeError);
+});
+
+test("compileStylesheet strict mode and limits", () => {
+  const bad = ":root { --merlion-bg: #fff; --merlion-font: Comic; }";
+  const lax = compileStylesheet(bad);
+  assert.ok(lax.css !== null && lax.diagnostics.some((d) => d.code === "W018" && d.severity === "warning"));
+  const strict = compileStylesheet(bad, { strict: true });
+  assert.equal(strict.css, null);
+  assert.equal(strict.palette, null);
+  assert.ok(strict.diagnostics.some((d) => d.code === "W018" && d.severity === "error"));
+  // Over 64 KiB of UTF-8: E013 without crossing the boundary.
+  const big = compileStylesheet(`:root{--merlion-bg:#fff}/*${"é".repeat(33 * 1024)}*/`);
+  assert.deepEqual(big.diagnostics.map((d) => d.code), ["E013"]);
+  assert.equal(big.css, null);
+});
+
+test("render bakes a palette from compileStylesheet", () => {
+  const plain = render(ROLES, { idPrefix: "p1" }).svg;
+  const { palette } = compileStylesheet(SHEET, { theme: "dark" });
+  const baked = render(ROLES, { idPrefix: "p1", palette }).svg;
+  assert.ok(baked.includes('stroke="#b8408f"'), "node tone in the attribute");
+  assert.ok(baked.includes("#101418"), "dark background");
+  const layout = (s) => /data-merlion-layout="([^"]*)"/.exec(s)[1];
+  assert.equal(layout(baked), layout(plain));
+  // Without an id prefix the palette joins the id: another palette, another id.
+  const a = render(ROLES, { palette }).svg;
+  const b = render(ROLES, { palette: compileStylesheet(SHEET).palette }).svg;
+  const id = (s) => /^<svg [^>]*id="([^"]+)"/.exec(s)[1];
+  assert.notEqual(id(a), id(b));
+  assert.equal(render(ROLES, { palette }).svg, a);
+  const dark = render(ROLES, { palette: compileStylesheet(SHEET, { autoDark: "dark" }).palette }).svg;
+  assert.ok(dark.includes("@media (prefers-color-scheme: dark)"));
+});
+
+test("render validates the palette in the glue and the core", () => {
+  for (const palette of [
+    "palette-v1|",
+    [],
+    { roles: { bg: 1 } },
+    { roles: { bg: "red" } },
+    { roles: { "bg;fg": "#000" } },
+    { roles: { bg: "#000;fg=#fff" } },
+    { roles: {}, extra: {} },
+    { roles: {}, tones: { a: { tone: "#000", dash: ["4"] } } },
+    { roles: {}, tones: { a: { tone: "#000", dash: [Infinity] } } },
+    { roles: {}, tones: { a: { hue: "#000" } } },
+    { roles: {}, tones: { "a:b": {} } },
+    { roles: {}, darkTones: {} },
+    { roles: { stroke: "30" } },
+  ]) {
+    assert.throws(() => render(VALID, { palette }), TypeError, JSON.stringify(palette));
+  }
+  assert.doesNotThrow(() => render(VALID, { palette: { roles: {} } }));
 });
 
 test("non-ASCII and lone surrogates cross the boundary", () => {
@@ -197,7 +289,9 @@ test("worker.js answers render and check messages", async () => {
   await handler({ data: { id: 1, type: "render", source: INVALID, wasm: bytes } });
   await handler({ data: { id: 2, type: "check", source: INVALID } });
   await handler({ data: { id: 3, type: "render", source: 7 } });
-  assert.equal(posted.length, 3);
+  await handler({ data: { id: 4, type: "compileStylesheet", source: SHEET, options: { theme: "dark" } } });
+  assert.equal(posted.length, 4);
+  assert.equal(posted[3].result.palette.roles.bg, "#101418");
   assert.equal(posted[0].id, 1);
   assert.equal(posted[0].result.svg, null);
   assert.ok(Array.isArray(posted[1].result));
