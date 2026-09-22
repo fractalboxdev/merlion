@@ -1,0 +1,49 @@
+{
+  "name": "@fractalboxdev/merlion-rehype",
+  "version": "0.1.0",
+  "description": "rehype plugin rendering Mermaid code blocks to static, themeable, accessible SVG at build time.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fractalboxdev/merlion.git",
+    "directory": "packages/merlion-rehype"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "types": "./index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "fnv.js",
+    "cache.js",
+    "wasm.js"
+  ],
+  "engines": {
+    "node": ">=20.6"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@fractalboxdev/merlion-wasm": "0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@fractalboxdev/merlion-wasm": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/hast": "3.0.4",
+    "rehype-stringify": "10.0.1",
+    "remark-parse": "11.0.0",
+    "remark-rehype": "11.1.2",
+    "unified": "11.0.5",
+    "vfile": "6.0.3"
+  }
+}

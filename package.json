@@ -1,0 +1,14 @@
+{
+  "name": "merlion-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=20.6"
+  },
+  "scripts": {
+    "test": "pnpm -r --if-present test",
+    "size": "pnpm --filter @fractalboxdev/merlion-view size",
+    "demo": "node demo/serve.mjs"
+  }
+}
