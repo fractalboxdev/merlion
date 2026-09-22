@@ -9,8 +9,8 @@
  *   1. the baked SVG (`render --css --theme`) inlined with no host CSS;
  *   2. the baked SVG with its `<style>` removed (presentation attributes only);
  *   3. the baked SVG rasterised by rsvg-convert, compared by pixels sampled inside each
- *      shape, stroke and marker against a screenshot of the reference (skipped when
- *      rsvg-convert is not on PATH).
+ *      shape, stroke and marker against a screenshot of the reference, and by glyph colour
+ *      inside each text run's box (skipped when rsvg-convert is not on PATH).
  *
  * Chromium's computed fill and stroke are normalised to 8-bit sRGB through a canvas
  * `fillStyle` round trip and compared to ±1 per channel, with dash arrays and the
@@ -26,7 +26,9 @@ import { COMPAT_DIR, MERLION_BIN, REPO_DIR } from "../paths.ts";
 import {
   type Comparison,
   compareElements,
+  compareInk,
   comparePixels,
+  type InkSample,
   type ElementRecord,
   type Mismatch,
   normaliseDash,
@@ -45,6 +47,9 @@ export class ParityFailed extends Schema.TaggedError<ParityFailed>()("ParityFail
 /** Device pixels per CSS pixel for the screenshot and the rsvg-convert raster. */
 const SCALE = 2;
 const TOLERANCE = 1;
+/** Per channel, for glyph pixels: both rasterisers draw fully covered glyph pixels in the
+ * text colour, but antialiasing leaves few of them, so the ink test allows more. */
+const INK_TOLERANCE = 8;
 const CHUNK = 20;
 const HOST = "http://parity.test";
 
@@ -72,11 +77,21 @@ interface ProbeSample {
   readonly y: number;
 }
 
+interface ProbeInk {
+  readonly index: number;
+  /** CSS pixels relative to the diagram's container. */
+  readonly x0: number;
+  readonly y0: number;
+  readonly x1: number;
+  readonly y1: number;
+}
+
 interface ProbeDiagram {
   readonly name: string;
   readonly svgId: string;
   readonly elements: readonly ProbeElement[];
   readonly samples: readonly ProbeSample[];
+  readonly inks: readonly ProbeInk[];
 }
 
 const toRecord = (e: ProbeElement): ElementRecord => ({
@@ -151,7 +166,15 @@ export interface ParityResult {
   readonly baked: TargetTally;
   readonly attributes: TargetTally;
   readonly rsvg:
-    | (TargetTally & { sampledElements: number; unsampledElements: number; rejectedSamples: number; unsampledByKind: Record<string, number> })
+    | (TargetTally & {
+        sampledElements: number;
+        unsampledElements: number;
+        rejectedSamples: number;
+        unsampledByKind: Record<string, number>;
+        /** Text runs compared by ink, and those whose reference shows no full glyph pixel. */
+        textCompared: number;
+        textRejected: number;
+      })
     | null;
   readonly themesCssBaked: readonly string[];
 }
@@ -164,7 +187,7 @@ export const summarise = (r: ParityResult): string => {
     line("baked, <style> removed", r.attributes, "properties"),
     r.rsvg === null
       ? "  rsvg-convert: skipped (not on PATH)"
-      : `${line("rsvg-convert", r.rsvg, "pixel samples")} (${r.rsvg.sampledElements} elements sampled, ${r.rsvg.unsampledElements} shapes/strokes/markers without a clear sample, ${r.rsvg.rejectedSamples} samples rejected as occluded or antialiased)`,
+      : `${line("rsvg-convert", r.rsvg, "pixel samples and text runs")} (${r.rsvg.sampledElements} elements sampled, ${r.rsvg.unsampledElements} shapes/strokes/markers without a clear sample, ${r.rsvg.rejectedSamples} samples rejected as occluded or antialiased; ${r.rsvg.textCompared} text runs compared by glyph colour, ${r.rsvg.textRejected} without a full glyph pixel in the reference)`,
     `  merlion-themes.css: ${r.themesCssBaked.length} named themes bake with no warning (${r.themesCssBaked.join(", ")})`,
   ].join("\n");
 };
@@ -254,7 +277,9 @@ export const parity = (opts: { readonly limit: Option.Option<number>; readonly r
       notRendered: [],
       baked: tally(),
       attributes: tally(),
-      rsvg: rsvgAvailable ? { ...tally(), sampledElements: 0, unsampledElements: 0, rejectedSamples: 0, unsampledByKind: {} } : null,
+      rsvg: rsvgAvailable
+        ? { ...tally(), sampledElements: 0, unsampledElements: 0, rejectedSamples: 0, unsampledByKind: {}, textCompared: 0, textRejected: 0 }
+        : null,
       themesCssBaked,
     };
     const mutable = result as { -readonly [K in keyof ParityResult]: ParityResult[K] };
@@ -364,6 +389,17 @@ export const parity = (opts: { readonly limit: Option.Option<number>; readonly r
               samples.push({ label: `${e.label} ${s.paint}`, x, y });
             }
             add(result.rsvg, comparePixels(shot, raster, samples, TOLERANCE), d.name, key);
+            // Text: the glyph colour must appear inside each run's box in both rasters.
+            const inks: InkSample[] = [];
+            for (const k of ref.inks) {
+              const e = ref.elements[k.index];
+              if (e === undefined || e.fill === null || e.fill[3] !== 255 || e.opacity !== 1) continue;
+              inks.push({ label: `${e.label} text`, expected: e.fill, x0: k.x0 * SCALE, y0: k.y0 * SCALE, x1: k.x1 * SCALE, y1: k.y1 * SCALE });
+            }
+            const ink = compareInk(shot, raster, inks, INK_TOLERANCE);
+            add(result.rsvg, ink, d.name, key);
+            result.rsvg.textCompared += ink.compared;
+            result.rsvg.textRejected += ink.rejected;
             result.rsvg.sampledElements += sampled.size;
             const candidates = ref.elements.filter((e) => e.tag !== "text" && e.tag !== "tspan" && (e.fill !== null || e.stroke !== null));
             const missed = candidates.filter((e) => !sampled.has(e.index));

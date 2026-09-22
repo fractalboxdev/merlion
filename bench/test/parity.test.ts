@@ -2,8 +2,10 @@ import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import {
   compareElements,
+  compareInk,
   comparePixels,
   type ElementRecord,
+  type InkSample,
   normaliseDash,
   over,
   type PixelSample,
@@ -187,5 +189,48 @@ describe("pixels", () => {
     const r = comparePixels(img, other, samples, 1);
     expect(r.compared).toBe(2);
     expect(r.mismatches.map((m) => m.label)).toEqual(["b"]);
+  });
+});
+
+describe("text ink", () => {
+  const WHITE = [255, 255, 255, 255];
+  /** A 10 x 6 white raster with the given pixels painted. */
+  const raster = (paint: readonly [number, number, readonly number[]][]) => {
+    const img = { width: 10, height: 6, rgba: new Uint8Array(10 * 6 * 4) };
+    for (let i = 0; i < 60; i++) img.rgba.set(WHITE, i * 4);
+    for (const [x, y, c] of paint) img.rgba.set(c, (y * 10 + x) * 4);
+    return img;
+  };
+  const RED = [161, 45, 48, 255] as const;
+  const GREY = [31, 35, 40, 255] as const;
+  const box: InkSample = { label: "edge label", expected: RED, x0: 1, y0: 1, x1: 8, y1: 4 };
+
+  it("finds the glyph colour anywhere in the box, whatever the glyph outline", () => {
+    const reference = raster([[2, 2, RED], [3, 2, [200, 150, 150, 255]]]);
+    const shifted = raster([[6, 3, [162, 45, 48, 255]], [5, 3, [220, 180, 180, 255]]]);
+    const r = compareInk(reference, shifted, [box], 8);
+    expect(r.compared).toBe(1);
+    expect(r.mismatches).toEqual([]);
+    expect(r.rejected).toBe(0);
+  });
+
+  it("reports text drawn in another colour", () => {
+    const reference = raster([[2, 2, RED]]);
+    const grey = raster([[2, 2, GREY], [3, 2, [120, 122, 125, 255]]]);
+    const r = compareInk(reference, grey, [box], 8);
+    expect(r.compared).toBe(1);
+    expect(r.mismatches).toHaveLength(1);
+    expect(r.mismatches[0]?.property).toBe("text ink");
+  });
+
+  it("skips a box whose reference never shows the expected colour", () => {
+    const r = compareInk(raster([[2, 2, GREY]]), raster([[2, 2, RED]]), [box], 8);
+    expect(r.compared).toBe(0);
+    expect(r.rejected).toBe(1);
+  });
+
+  it("ignores pixels outside the box", () => {
+    const r = compareInk(raster([[2, 2, RED]]), raster([[9, 5, RED]]), [box], 8);
+    expect(r.mismatches).toHaveLength(1);
   });
 });

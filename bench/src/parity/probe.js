@@ -2,7 +2,8 @@
 // as a classic script; plain JavaScript so nothing a TypeScript transform adds reaches the
 // page. `window.parityProbe(withSamples)` returns, for every `.parity-d` container, the
 // computed paint of each compared element and, on the reference page, sample points inside
-// the shapes for the pixel comparison.
+// the shapes and marker interiors for the pixel comparison and a box per text run for the
+// ink comparison.
 (() => {
   const canvas = document.createElement("canvas");
   canvas.width = 1;
@@ -284,7 +285,29 @@
           }
         });
       }
-      return { name: d.dataset.name, svgId: svg.id, elements, samples };
+      const inks = [];
+      if (withSamples) {
+        // Text is compared by ink presence (gate.ts, compareInk): one box per text element
+        // whose tspans share its fill, else one box per tspan.
+        const box = (el) => {
+          const r = el.getBoundingClientRect();
+          return { x0: r.left - origin.left - 1, y0: r.top - origin.top - 1, x1: r.right - origin.left + 1, y1: r.bottom - origin.top + 1 };
+        };
+        els.forEach((el, i) => {
+          if (el.tagName !== "text") return;
+          const fill = getComputedStyle(el).fill;
+          const spans = [...el.querySelectorAll("tspan")];
+          if (spans.every((t) => getComputedStyle(t).fill === fill)) {
+            inks.push({ index: i, ...box(el) });
+          } else {
+            for (const t of spans) {
+              const k = index.get(t);
+              if (k !== undefined) inks.push({ index: k, ...box(t) });
+            }
+          }
+        });
+      }
+      return { name: d.dataset.name, svgId: svg.id, elements, samples, inks };
     }
   };
 })();

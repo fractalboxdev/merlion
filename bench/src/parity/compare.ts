@@ -156,3 +156,61 @@ export const comparePixels = (
   }
   return { compared: samples.length, structure: true, mismatches };
 };
+
+/**
+ * A text element's box in device pixels and the colour its glyphs must show. Glyph
+ * outlines differ between Chromium's and librsvg's font stacks, so text is compared by
+ * ink presence, not by position: somewhere in the box, a pixel must show the colour.
+ */
+export interface InkSample {
+  readonly label: string;
+  readonly expected: Rgba;
+  readonly x0: number;
+  readonly y0: number;
+  readonly x1: number;
+  readonly y1: number;
+}
+
+/** The pixel in the box closest to `colour` (channel-wise maximum difference, over white). */
+const nearestInk = (img: Raster, s: InkSample, colour: Rgba): { distance: number; pixel: Rgba | null } => {
+  let best: { distance: number; pixel: Rgba | null } = { distance: Number.POSITIVE_INFINITY, pixel: null };
+  for (let y = Math.max(0, Math.floor(s.y0)); y <= Math.min(img.height - 1, Math.ceil(s.y1)); y++) {
+    for (let x = Math.max(0, Math.floor(s.x0)); x <= Math.min(img.width - 1, Math.ceil(s.x1)); x++) {
+      const p = pixel(img, x, y);
+      if (p === null) continue;
+      const c = over(p, WHITE);
+      const d = Math.max(Math.abs(c[0] - colour[0]), Math.abs(c[1] - colour[1]), Math.abs(c[2] - colour[2]));
+      if (d < best.distance) best = { distance: d, pixel: c };
+      if (d === 0) return best;
+    }
+  }
+  return best;
+};
+
+/**
+ * Compares text colour between the reference raster and another: a box counts only when
+ * the reference shows the expected colour in it (fully covered glyph pixels exist), and
+ * then the other raster must show it too, within `tolerance` per channel.
+ */
+export const compareInk = (
+  reference: Raster,
+  other: Raster,
+  samples: readonly InkSample[],
+  tolerance: number,
+): Comparison & { readonly rejected: number } => {
+  const mismatches: Mismatch[] = [];
+  let compared = 0;
+  let rejected = 0;
+  for (const s of samples) {
+    if (nearestInk(reference, s, s.expected).distance > tolerance) {
+      rejected++;
+      continue;
+    }
+    compared++;
+    const got = nearestInk(other, s, s.expected);
+    if (got.distance > tolerance) {
+      mismatches.push({ label: s.label, property: "text ink", reference: show(s.expected), target: `nearest ${show(got.pixel)}` });
+    }
+  }
+  return { compared, structure: true, mismatches, rejected };
+};
