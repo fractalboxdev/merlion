@@ -6,7 +6,8 @@
 use alloc::string::String;
 
 use crate::layout::measure::{
-    wave_y, BAND, BOW, BRACE, CYLINDER_RY, NOTCH, SLOPE, STACK, SUBROUTINE_INSET, TAG, WAVE, WAVE_K,
+    cylinder_ry, wave_y, BAND, BOW, BRACE, CYLINDER_RY, NOTCH, SLOPE, STACK, SUBROUTINE_INSET, TAG,
+    WAVE, WAVE_K,
 };
 use crate::model::Shape;
 use crate::numfmt::push_num;
@@ -161,7 +162,7 @@ pub fn shape_d(shape: Shape, cx: f64, cy: f64, w: f64, h: f64) -> String {
         Shape::Cylinder => {
             // The top and bottom caps are half-ellipses of height 2·ry.
             let rx = w / 2.0;
-            let ry = min(h / 4.0, 4.0 + w * 0.05);
+            let ry = cylinder_ry(w, h);
             d.cmd('M', &[l, t + ry])
                 .arc(rx, ry, r, t + ry)
                 .cmd('V', &[b - ry])
@@ -294,7 +295,7 @@ pub fn shape_d(shape: Shape, cx: f64, cy: f64, w: f64, h: f64) -> String {
         }
         Shape::LinedCylinder => {
             let rx = w / 2.0;
-            let ry = min(CYLINDER_RY, h / 4.0);
+            let ry = cylinder_ry(w, h);
             d.cmd('M', &[l, t + ry])
                 .arc(rx, ry, r, t + ry)
                 .cmd('V', &[b - ry])
@@ -514,6 +515,31 @@ mod tests {
         // nonzero fill rule does not punch the lower half of the top cap out.
         let d = shape_d(Shape::Cylinder, 60.0, 30.0, 80.0, 40.0);
         assert!(d.ends_with("ZM100 18A40 8 0 0 1 20 18"), "{}", d);
+    }
+
+    #[test]
+    fn cylinder_rim_clears_the_label() {
+        use crate::layout::measure::node_size;
+        for s in [Shape::Cylinder, Shape::LinedCylinder] {
+            for lw in [0.0, 40.0, 200.0, 400.0] {
+                let lh = 17.0;
+                let (w, h) = node_size(s, lw, lh);
+                let d = shape_d(s, 0.0, 0.0, w, h);
+                // The last arc is the lowest rim; its vertical radius is the cap's.
+                let (_, last) = d.rsplit_once('A').unwrap();
+                let nums: Vec<f64> = last.split(' ').map(|t| t.parse().unwrap()).collect();
+                let (ry, rim_y) = (nums[1], nums[6]);
+                let top = crate::layout::measure::label_offset(s, w, h, lh) - lh / 2.0;
+                assert!(
+                    rim_y + ry <= top + 1e-9,
+                    "{:?} {}: rim reaches {} below the label top {}",
+                    s,
+                    lw,
+                    rim_y + ry,
+                    top
+                );
+            }
+        }
     }
 
     #[test]

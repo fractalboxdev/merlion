@@ -10,7 +10,7 @@
 //! |---|---|
 //! | `Rect`, `Round`, `Subroutine` | The `w × h` rectangle (corner rounding and the subroutine's inner bars lie inside it) |
 //! | `Stadium` | Rectangle with semicircular ends of radius `b` |
-//! | `Cylinder` | Rectangle whose top and bottom are elliptical arcs with radius `a` × [`CYLINDER_RY`]: the top cap's upper half and the bottom cap's lower half |
+//! | `Cylinder` | Rectangle whose top and bottom are elliptical arcs with radius `a` × [`cylinder_ry`]: the top cap's upper half and the bottom cap's lower half |
 //! | `Circle`, `DoubleCircle` | Circle of diameter `w = h` (the outer ring for `DoubleCircle`, [`DOUBLE_CIRCLE_GAP`] outside the inner one) |
 //! | `Rhombus` | Diamond with vertices at `(±a, 0)`, `(0, ±b)` |
 //! | `Hexagon` | Points at `(±a, 0)`, flat top and bottom between `±(a − h/4)` |
@@ -46,8 +46,15 @@ pub const PAD_X: f64 = 16.0;
 pub const PAD_Y: f64 = 10.0;
 /// Padding kept around the label inside round and pointed shapes, per side.
 pub const PAD_INNER: f64 = 8.0;
-/// Vertical radius of a cylinder's elliptical caps.
+/// Radius of a horizontal cylinder's elliptical ends.
 pub const CYLINDER_RY: f64 = 6.0;
+
+/// Vertical radius of the elliptical caps of a `w × h` cylinder: flatter for narrow
+/// nodes, at most 10 px, and at most `h/4`. The drawing, the outline and the node size
+/// all use it, so the front rim of the top cap (2·ry below the top) clears the label.
+pub fn cylinder_ry(w: f64, h: f64) -> f64 {
+    min(min(4.0 + 0.05 * max(w, 0.0), 10.0), max(h, 0.0) / 4.0)
+}
 /// Gap between the inner and outer ring of a double circle.
 pub const DOUBLE_CIRCLE_GAP: f64 = 5.0;
 /// Horizontal slant of parallelograms and trapezoids as a fraction of the height.
@@ -137,12 +144,15 @@ pub fn wave_top(x: f64, x0: f64, x1: f64, y0: f64, amplitude: f64) -> f64 {
 }
 
 /// Vertical offset of the label centre from the node centre: triangles hold their label
-/// in the wide half.
-pub fn label_offset(shape: Shape, h: f64, lh: f64) -> f64 {
+/// in the wide half, and cylinders below the top cap's front rim, which reaches 2·ry
+/// down where the bottom cap rises only ry.
+pub fn label_offset(shape: Shape, w: f64, h: f64, lh: f64) -> f64 {
     let d = max(h / 2.0 - lh / 2.0 - PAD_INNER, 0.0);
     match shape {
         Shape::Triangle => d,
         Shape::FlippedTriangle => -d,
+        Shape::Cylinder => cylinder_ry(w, h) / 2.0,
+        Shape::LinedCylinder => (cylinder_ry(w, h) + min(STACK, max(h, 0.0) / 4.0)) / 2.0,
         _ => 0.0,
     }
 }
@@ -176,7 +186,9 @@ pub fn node_size(shape: Shape, lw: f64, lh: f64) -> (f64, f64) {
         Shape::Stadium => (lw + 2.0 * PAD_INNER + th, th),
         // The top cap occupies 2·ry below the top and the bottom arc ry above the
         // bottom; 2·ry on each side keeps the label centred and clear of both.
-        Shape::Cylinder => (tw, th + 4.0 * CYLINDER_RY),
+        // 2·ry above the label (the front rim) and ry below it; the label sits ry/2
+        // below the centre ([`label_offset`]).
+        Shape::Cylinder => (tw, th + 3.0 * cylinder_ry(tw, f64::MAX)),
         // Label box inscribed in the circle: diameter = diagonal of the padded box.
         Shape::Circle => {
             let d = hypot(lw + 2.0 * PAD_INNER, lh + 2.0 * PAD_INNER);
@@ -215,7 +227,7 @@ pub fn node_size(shape: Shape, lw: f64, lh: f64) -> (f64, f64) {
         Shape::Delay | Shape::CurvedTrapezoid => (lw + 2.0 * PAD_INNER + th, th),
         // The inner rim reaches 2·ry in from the right end.
         Shape::HorizontalCylinder => (tw + 4.0 * CYLINDER_RY, th),
-        Shape::LinedCylinder => (tw, th + 4.0 * CYLINDER_RY + 2.0 * STACK),
+        Shape::LinedCylinder => (tw, th + 3.0 * cylinder_ry(tw, f64::MAX) + STACK),
         Shape::DividedRect => (tw, th + 2.0 * BAND),
         Shape::WindowPane => (tw + 2.0 * BAND, th + 2.0 * BAND),
         Shape::SlopedRect => (tw, th + SLOPE),
@@ -371,7 +383,7 @@ pub fn inside(shape: Shape, w: f64, h: f64, x: f64, y: f64) -> bool {
             dx <= 0.0 || dx * dx + y * y <= r * r + EPS
         }
         Shape::Cylinder => {
-            let ry = min(CYLINDER_RY, b);
+            let ry = cylinder_ry(w, h);
             if a <= 0.0 {
                 return false;
             }
@@ -573,7 +585,7 @@ mod tests {
             for (lw, lh) in [(0.0, 17.0), (40.0, 17.0), (180.0, 51.0), (8.0, 34.0)] {
                 let (w, h) = node_size(shape, lw, lh);
                 assert!(w > 0.0 && h > 0.0, "{:?}", shape);
-                let dy = label_offset(shape, h, lh);
+                let dy = label_offset(shape, w, h, lh);
                 for (sx, sy) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
                     assert!(
                         inside(shape, w, h, sx * lw / 2.0, dy + sy * lh / 2.0),

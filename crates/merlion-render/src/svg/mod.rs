@@ -331,7 +331,7 @@ fn push_node(out: &mut String, cx: &Ctx, i: usize, diags: &mut Diagnostics) {
         out,
         &g.label,
         g.x,
-        g.y + crate::layout::measure::label_offset(node.shape, g.h, g.label.height),
+        g.y + crate::layout::measure::label_offset(node.shape, g.w, g.h, g.label.height),
         "merlion-label",
         Role::NodeText.default_value(),
     );
