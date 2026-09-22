@@ -727,3 +727,148 @@ fn no_auto_tone_matches_the_core_option_byte_for_byte() {
     let o = merlion(&d, &["render", "--no-auto-tone=yes"], Some(src));
     assert_eq!(o.status.code(), Some(2));
 }
+
+// ---------------------------------------------------------------------------------------
+// Sequence diagrams (specs/sequence.md). Every command is diagram-agnostic: the same output
+// paths, exit codes and diagnostic formatting carry a sequence.
+
+const SEQ: &str = "sequenceDiagram\n    actor Alice\n    participant Bob\n    Alice->>+Bob: Hello\n    Bob-->>-Alice: Hi\n";
+
+#[test]
+fn sequence_renders_through_every_output_path() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("seq-render");
+    let o = merlion(&d, &["render"], Some(SEQ));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert!(
+        stdout(&o).contains(r#"class="merlion merlion-sequence""#),
+        "{}",
+        stdout(&o)
+    );
+
+    fs::write(d.join("in.mmd"), SEQ).unwrap();
+    let o = merlion(
+        &d,
+        &["render", "in.mmd", "-o", "out.svg", "--outline", "out.txt"],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let outline = fs::read_to_string(d.join("out.txt")).unwrap();
+    assert!(
+        outline.starts_with("Sequence diagram. 2 participants, 2 messages."),
+        "{outline}"
+    );
+    assert!(outline.contains("1. Alice → Bob: Hello"), "{outline}");
+    assert_eq!(names(&d), vec!["in.mmd", "out.svg", "out.txt"]);
+
+    // A sequence's geometry is the source's, so a re-render hinted with its own output repeats it.
+    let before = fs::read(d.join("out.svg")).unwrap();
+    let o = merlion(&d, &["render", "in.mmd", "-o", "out.svg"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert_eq!(fs::read(d.join("out.svg")).unwrap(), before);
+}
+
+#[test]
+fn sequence_renders_in_markdown_and_in_batch() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("seq-md");
+    fs::create_dir(d.join("out")).unwrap();
+    let md = format!("# Doc\n\n```mermaid\n{SEQ}```\n\ntext\n\n```mermaid\n{VALID}```\n");
+    fs::write(d.join("doc.md"), md).unwrap();
+    let o = merlion(&d, &["render", "doc.md", "-o", "out"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert!(fs::read_to_string(d.join("out/doc-1.svg"))
+        .unwrap()
+        .contains("merlion-sequence"));
+    assert!(!fs::read_to_string(d.join("out/doc-2.svg"))
+        .unwrap()
+        .contains("merlion-sequence"));
+
+    let d = tempdir("seq-batch");
+    fs::create_dir(d.join("corpus")).unwrap();
+    fs::create_dir(d.join("out")).unwrap();
+    fs::write(d.join("corpus/seq.mmd"), SEQ).unwrap();
+    fs::write(d.join("corpus/flow.mmd"), VALID).unwrap();
+    let o = merlion(
+        &d,
+        &["render", "--batch", "corpus", "-o", "out", "--json-summary"],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let out = stdout(&o);
+    assert_eq!(out.lines().count(), 2, "{out}");
+    assert!(out.lines().all(|l| l.contains(r#""ok":true"#)), "{out}");
+    assert!(fs::read_to_string(d.join("out/seq.svg"))
+        .unwrap()
+        .contains("merlion-sequence"));
+}
+
+#[test]
+fn sequence_json_carries_the_svg_and_the_outline() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("seq-json");
+    let o = merlion(&d, &["render", "--json"], Some(SEQ));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.starts_with(r#"{"svg":"<svg"#), "{out}");
+    assert!(
+        out.contains(r#""outline":"Sequence diagram. 2 participants, 2 messages."#),
+        "{out}"
+    );
+    assert!(out.contains(r#""error":null}"#), "{out}");
+}
+
+#[test]
+fn sequence_outline_prints_the_text_alternative() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("seq-outline");
+    let o = merlion(&d, &["outline"], Some(SEQ));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let out = stdout(&o);
+    assert!(
+        out.starts_with("Sequence diagram. 2 participants, 2 messages."),
+        "{out}"
+    );
+    assert!(out.contains("Participants: Alice, Bob."), "{out}");
+    assert!(out.contains("2. Bob --> Alice: Hi"), "{out}");
+}
+
+#[test]
+fn sequence_check_locates_diagnostics_and_fix_applies_the_repair() {
+    let d = tempdir("seq-check");
+    // A message line with no colon before its text is R013 MessageTextUnmarked (specs/sequence.md#diagnostics).
+    let src = "sequenceDiagram\n    participant Alice\n    Alice->>Bob Hello\n";
+    let o = merlion(&d, &["check"], Some(src));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let err = stderr(&o);
+    assert!(err.contains("<stdin>:3:"), "{err}");
+    assert!(err.contains("R013"), "{err}");
+
+    fs::write(d.join("in.mmd"), src).unwrap();
+    let o = merlion(&d, &["check", "in.mmd", "--fix"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let after = fs::read_to_string(d.join("in.mmd")).unwrap();
+    assert_eq!(
+        after,
+        "sequenceDiagram\n    participant Alice\n    Alice->>Bob: Hello\n"
+    );
+    assert!(merlion_render::check(&after, false)
+        .iter()
+        .all(|x| x.fix.is_none()));
+    assert_eq!(names(&d), vec!["in.mmd"]);
+
+    // An error in a sequence exits 1 and prints in the shared format.
+    fs::write(d.join("bad.mmd"), "sequenceDiagram\n    participant\n").unwrap();
+    let o = merlion(&d, &["check", "bad.mmd"], None);
+    let err = stderr(&o);
+    assert!(err.starts_with("bad.mmd:2:"), "{err}");
+    assert_eq!(o.status.code(), Some(1), "{err}");
+}
