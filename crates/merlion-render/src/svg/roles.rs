@@ -41,56 +41,67 @@ pub enum Kind {
     Cluster,
 }
 
+/// Where a built-in role's tone comes from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ToneOf {
+    /// A colour role: `--merlion-{role}`.
+    Role(Role),
+    /// `--merlion-series-{n}`, `n` in 1..=8.
+    Series(u8),
+}
+
 /// One built-in role.
 pub struct BuiltIn {
     pub name: &'static str,
     pub kind: Kind,
-    pub tone: Option<Role>,
+    pub tone: Option<ToneOf>,
     pub dash: Option<&'static str>,
 }
 
+const fn node_role(name: &'static str, role: Role) -> BuiltIn {
+    BuiltIn {
+        name,
+        kind: Kind::Node,
+        tone: Some(ToneOf::Role(role)),
+        dash: None,
+    }
+}
+
+const fn series_role(name: &'static str, n: u8) -> BuiltIn {
+    BuiltIn {
+        name,
+        kind: Kind::Cluster,
+        tone: Some(ToneOf::Series(n)),
+        dash: None,
+    }
+}
+
 /// The built-in roles, in the order their rules are emitted.
-pub const BUILT_IN: [BuiltIn; 8] = [
-    BuiltIn {
-        name: "accent",
-        kind: Kind::Node,
-        tone: Some(Role::Accent),
-        dash: None,
-    },
-    BuiltIn {
-        name: "ok",
-        kind: Kind::Node,
-        tone: Some(Role::Ok),
-        dash: None,
-    },
-    BuiltIn {
-        name: "warn",
-        kind: Kind::Node,
-        tone: Some(Role::Warn),
-        dash: None,
-    },
-    BuiltIn {
-        name: "danger",
-        kind: Kind::Node,
-        tone: Some(Role::Danger),
-        dash: None,
-    },
-    BuiltIn {
-        name: "muted",
-        kind: Kind::Node,
-        tone: Some(Role::Muted),
-        dash: None,
-    },
+pub const BUILT_IN: [BuiltIn; 17] = [
+    node_role("accent", Role::Accent),
+    node_role("ok", Role::Ok),
+    node_role("warn", Role::Warn),
+    node_role("danger", Role::Danger),
+    node_role("muted", Role::Muted),
+    node_role("store", Role::Store),
     BuiltIn {
         name: "group",
         kind: Kind::Cluster,
         tone: None,
         dash: Some(ROLE_DASH),
     },
+    series_role("series-1", 1),
+    series_role("series-2", 2),
+    series_role("series-3", 3),
+    series_role("series-4", 4),
+    series_role("series-5", 5),
+    series_role("series-6", 6),
+    series_role("series-7", 7),
+    series_role("series-8", 8),
     BuiltIn {
         name: "failure",
         kind: Kind::Edge,
-        tone: Some(Role::Danger),
+        tone: Some(ToneOf::Role(Role::Danger)),
         dash: Some(ROLE_DASH),
     },
     BuiltIn {
@@ -100,6 +111,14 @@ pub const BUILT_IN: [BuiltIn; 8] = [
         dash: Some(ROLE_DASH),
     },
 ];
+
+/// The built-in cluster role of series `n` (1..=8).
+pub fn series_name(n: u8) -> &'static str {
+    BUILT_IN
+        .iter()
+        .find(|b| b.tone == Some(ToneOf::Series(n)))
+        .map_or("series-1", |b| b.name)
+}
 
 /// A tone as CSS and as a literal.
 pub struct Tone {
@@ -118,6 +137,29 @@ impl Tone {
             plain: format!("var(--merlion-tone, {})", t.var(role, false)),
             mixed: format!("var(--merlion-tone, {})", t.var(role, true)),
             lit: t.lit(role),
+        }
+    }
+
+    /// The tone of a built-in role, from a colour role or a series token.
+    pub fn of(t: &Table, tone: ToneOf) -> Tone {
+        match tone {
+            ToneOf::Role(r) => Tone::of_role(t, r),
+            ToneOf::Series(n) => {
+                let plain = format!("var(--merlion-tone, {})", t.series_var(n));
+                Tone {
+                    mixed: plain.clone(),
+                    plain,
+                    lit: t.series_lit(n),
+                }
+            }
+        }
+    }
+
+    /// The literal of a built-in role's tone.
+    pub fn lit_of(t: &Table, tone: ToneOf) -> String {
+        match tone {
+            ToneOf::Role(r) => t.lit(r),
+            ToneOf::Series(n) => t.series_lit(n),
         }
     }
 

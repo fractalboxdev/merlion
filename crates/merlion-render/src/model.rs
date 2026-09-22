@@ -30,6 +30,9 @@ pub struct Meta {
     pub curve: Option<String>,
     /// `config.layout`: `dagre`, `elk` or `merlion`; all use Merlion's engine.
     pub layout: Option<String>,
+    /// `config.merlion.autoTone`: `Some(false)` turns the automatic tones off
+    /// (specs/svg-output.md#automatic-tones).
+    pub auto_tone: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

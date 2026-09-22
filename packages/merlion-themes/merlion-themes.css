@@ -5,10 +5,12 @@
  * (specs/svg-output.md#theming). The mixed roles (--merlion-muted, -line, -surface,
  * -border, -node-*, -edge-*, -cluster-*) derive from --merlion-bg and --merlion-fg
  * inside each SVG, so a theme sets the two foundations, the tones of the built-in
- * roles (accent, ok, warn, danger; muted derives from bg and fg) and the series
+ * roles (accent, ok, warn, danger, store; muted derives from bg and fg) and the series
  * palette; any role can still be overridden on its own. Nodes with class accent, ok,
- * warn, danger or muted, and edges with class failure, take these tones with no
- * other stylesheet (specs/svg-output.md#built-in-roles).
+ * warn, danger, store or muted, clusters with class series-1 ... series-8, and edges
+ * with class failure take these tones with no other stylesheet
+ * (specs/svg-output.md#built-in-roles). Decisions, stores, terminals and top-level
+ * clusters take them automatically (specs/svg-output.md#automatic-tones).
  *
  * Selection: light by default; dark under prefers-color-scheme unless the page sets
  * data-theme; data-theme="light" | "dark" | "harbour" | "lantern" on :root or any
@@ -24,6 +26,7 @@
   --merlion-ok: #1a7f37;
   --merlion-warn: #9a6700;
   --merlion-danger: #cf222e;
+  --merlion-store: #127a84;
   --merlion-series-1: #0969da;
   --merlion-series-2: #d4762c;
   --merlion-series-3: #2e8b57;
@@ -39,12 +42,10 @@
     --merlion-bg: #16191d;
     --merlion-fg: #e3e6ea;
     --merlion-accent: #5aa2f0;
-  --merlion-ok: #4ac26b;
-  --merlion-warn: #d29922;
-  --merlion-danger: #f47067;
     --merlion-ok: #4ac26b;
     --merlion-warn: #d29922;
     --merlion-danger: #f47067;
+    --merlion-store: #3fb8c2;
     --merlion-series-1: #5aa2f0;
     --merlion-series-2: #f0a060;
     --merlion-series-3: #5fc48a;
@@ -63,6 +64,7 @@
   --merlion-ok: #4ac26b;
   --merlion-warn: #d29922;
   --merlion-danger: #f47067;
+  --merlion-store: #3fb8c2;
   --merlion-series-1: #5aa2f0;
   --merlion-series-2: #f0a060;
   --merlion-series-3: #5fc48a;
@@ -81,6 +83,7 @@
   --merlion-ok: #3a7d44;
   --merlion-warn: #a86b0c;
   --merlion-danger: #a4262c;
+  --merlion-store: #2b7a78;
   --merlion-series-1: #1d6f8c;
   --merlion-series-2: #c8553d;
   --merlion-series-3: #4f8a5b;
@@ -99,6 +102,7 @@
   --merlion-ok: #7fcf9a;
   --merlion-warn: #f2cc60;
   --merlion-danger: #ff7b7b;
+  --merlion-store: #6cc9c4;
   --merlion-series-1: #f4a259;
   --merlion-series-2: #7fb8a4;
   --merlion-series-3: #e76f6f;

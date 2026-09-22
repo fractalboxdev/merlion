@@ -129,13 +129,15 @@ fn map_parse_error(e: parse::ParseError) -> RenderError {
 /// drawn layout's hint string, not the input hint: re-rendering in place with the
 /// previous SVG as the hint then reproduces the same bytes, because the same layout gives
 /// the same id. With no palette nothing is hashed for it, so ids stay as they were.
+/// `auto_tone: false` appends `|auto_tone=false` to the options key; the default adds
+/// nothing.
 pub fn diagram_id(source: &str, opts: &RenderOptions, layout: &str) -> String {
     if let Some(p) = &opts.id_prefix {
         if ids::is_valid_id_prefix(p) {
             return p.clone();
         }
     }
-    let opt_key = alloc::format!(
+    let mut opt_key = alloc::format!(
         "{}|{}|{:?}|{:?}|{}|{}|{}|{}|{:?}|{}|{}|{}",
         opts.target_width,
         opts.max_aspect,
@@ -150,6 +152,9 @@ pub fn diagram_id(source: &str, opts: &RenderOptions, layout: &str) -> String {
         opts.wrap_width,
         opts.background
     );
+    if !opts.auto_tone {
+        opt_key.push_str("|auto_tone=false");
+    }
     let digest = opts
         .palette
         .as_ref()

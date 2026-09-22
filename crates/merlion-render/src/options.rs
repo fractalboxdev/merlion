@@ -94,6 +94,10 @@ pub struct RenderOptions {
     /// Literals resolved from a stylesheet for one theme (specs/svg-output.md#palette).
     /// `None` draws the built-in defaults. It never affects measurement or layout.
     pub palette: Option<crate::stylesheet::Palette>,
+    /// Automatic tones for decisions, stores, terminals and top-level clusters
+    /// (specs/svg-output.md#automatic-tones). Presentation only: it never affects
+    /// measurement or layout.
+    pub auto_tone: bool,
 }
 
 impl Default for RenderOptions {
@@ -116,6 +120,7 @@ impl Default for RenderOptions {
             background: false,
             limits: Limits::default(),
             palette: None,
+            auto_tone: true,
         }
     }
 }

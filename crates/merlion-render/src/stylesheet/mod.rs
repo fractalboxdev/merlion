@@ -966,7 +966,7 @@ impl PaletteTable {
 
     /// The literal table of the renderer.
     pub fn theme_table(&self) -> Table {
-        Table::new(self.colours.clone(), self.stroke)
+        Table::new(self.colours.clone(), self.stroke).with_series(self.series.clone())
     }
 
     /// The tone of role `name` on clusters (`cluster`) or on nodes and edges.

@@ -29,10 +29,11 @@ Subgraph ids follow mermaid's resolution, which happens after the whole source i
 
 ## Front matter and directives
 
-- YAML front matter (`---` … `---`) accepts `title`, `config.flowchart.curve`, `config.layout`, `accTitle`, `accDescr`.
+- YAML front matter (`---` … `---`) accepts `title`, `config.flowchart.curve`, `config.layout`, `config.merlion.autoTone`, `accTitle`, `accDescr`.
 - The front matter parser accepts a YAML subset: block mappings, plain and quoted scalars, and flow sequences. Anchors, aliases, tags, multi-document streams and duplicate keys are rejected with an `Error` (`E011 FrontMatterUnsupported`), which rules out alias-expansion attacks.
 - `%%{init: …}%%` accepts the same keys as JSON. The JSON parser rejects nesting deeper than 64 and strings longer than 4,096 bytes (`E012 DirectiveTooLarge`).
 - Every accepted key takes an enumerated or numeric value (`curve` is one of Mermaid's curve names, `layout` is `dagre`, `elk` or `merlion`, all laid out by Merlion's engine); a value outside its set is ignored with `W016`.
+- `merlion` holds Merlion's own keys. `merlion.autoTone` is `true` or `false` (a JSON boolean, or the YAML scalar `true` / `false`); `false` turns the automatic tones off for the diagram ([svg-output.md](svg-output.md#automatic-tones)), and `true` leaves the render option in charge. Any other `merlion.*` key, a non-boolean `autoTone` or a `merlion` value that is not a mapping gives `W016`.
 - `theme`, `themeVariables` and `look` are accepted and ignored with `I011`, because themes are CSS ([svg-output.md](svg-output.md)).
 - Unknown keys and values outside a key's set produce `W016` and are otherwise ignored.
 - Neither front matter nor `%%{init}%%` names a stylesheet; only the caller passes one ([integrations.md](integrations.md#cli)).

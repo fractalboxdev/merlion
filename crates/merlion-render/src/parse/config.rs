@@ -7,6 +7,8 @@
 //! |---|---|---|
 //! | `W016` | Warning | Unknown key, or a value outside the key's set, ignored |
 //! | `I011` | Info | `theme`, `themeVariables` or `look` ignored: themes are CSS |
+//!
+//! Merlion's own keys live under `merlion`: `merlion.autoTone` (`true` | `false`).
 
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -125,8 +127,33 @@ pub fn apply_config(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: 
                 }
                 _ => bad_value(e, idx, diags, "a mapping"),
             },
+            "merlion" => match &e.value {
+                Value::Map(m) => {
+                    for inner in m {
+                        if inner.key == "autoTone" {
+                            match bool_value(&inner.value) {
+                                Some(v) => meta.auto_tone = Some(v),
+                                None => bad_value(inner, idx, diags, "`true` or `false`"),
+                            }
+                        } else {
+                            unknown_key(inner, "merlion.", idx, diags);
+                        }
+                    }
+                }
+                _ => bad_value(e, idx, diags, "a mapping"),
+            },
             _ => unknown_key(e, "", idx, diags),
         }
+    }
+}
+
+/// A boolean: JSON `true` / `false`, or the YAML scalars `true` / `false`.
+fn bool_value(v: &Value) -> Option<bool> {
+    match v {
+        Value::Bool(b) => Some(*b),
+        Value::Str(s) if s == "true" => Some(true),
+        Value::Str(s) if s == "false" => Some(false),
+        _ => None,
     }
 }
 
@@ -204,6 +231,43 @@ mod tests {
         assert_eq!(meta.acc_descr.as_deref(), Some("AD"));
         assert_eq!(meta.layout.as_deref(), Some("elk"));
         assert_eq!(meta.curve.as_deref(), Some("stepAfter"));
+    }
+
+    #[test]
+    fn merlion_auto_tone_key() {
+        let idx = LineIndex::new("x");
+        for (v, want) in [
+            (Value::Bool(false), Some(false)),
+            (s("false"), Some(false)),
+            (Value::Bool(true), Some(true)),
+            (s("true"), Some(true)),
+        ] {
+            let mut meta = Meta::default();
+            let mut d = Diagnostics::new(false);
+            let cfg = alloc::vec![entry(
+                "merlion",
+                Value::Map(alloc::vec![entry("autoTone", v)])
+            )];
+            apply_config(&cfg, &idx, &mut meta, &mut d);
+            assert!(d.items.is_empty(), "{:?}", d.items);
+            assert_eq!(meta.auto_tone, want);
+        }
+        let mut meta = Meta::default();
+        let mut d = Diagnostics::new(false);
+        let cfg = alloc::vec![
+            entry(
+                "merlion",
+                Value::Map(alloc::vec![
+                    entry("autoTone", s("no")),
+                    entry("palette", s("x")),
+                ])
+            ),
+            entry("merlion", Value::Bool(false)),
+        ];
+        apply_config(&cfg, &idx, &mut meta, &mut d);
+        assert_eq!(codes(&d), alloc::vec![("W016", Severity::Warning); 3]);
+        assert!(d.items[1].message.contains("`merlion.palette`"));
+        assert_eq!(meta, Meta::default());
     }
 
     #[test]

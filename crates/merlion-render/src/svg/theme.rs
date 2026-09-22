@@ -24,6 +24,14 @@ pub const ACCENT: &str = "#0969da";
 pub const OK: &str = "#1a7f37";
 pub const WARN: &str = "#9a6700";
 pub const DANGER: &str = "#cf222e";
+/// Tone of the built-in role `store`, which cylinders take automatically
+/// (specs/svg-output.md#automatic-tones).
+pub const STORE: &str = "#127a84";
+/// `--merlion-series-1` … `-8` defaults: the categorical palette, and the tones of the
+/// built-in cluster roles `series-1` … `series-8`.
+pub const SERIES: [&str; 8] = [
+    "#0969da", "#d4762c", "#2e8b57", "#b8408f", "#6f5bd6", "#1b98a6", "#b59a16", "#c4453d",
+];
 /// `color-mix(in oklab, fg 55%, bg)` of the defaults.
 pub const MUTED: &str = "#7b7d81";
 /// `color-mix(in oklab, fg 45%, bg)` of the defaults.
@@ -81,6 +89,7 @@ pub enum Role {
     Ok,
     Warn,
     Danger,
+    Store,
     NodeBg,
     NodeBorder,
     NodeText,
@@ -94,7 +103,7 @@ pub enum Role {
 
 impl Role {
     /// Every role, in token-table order.
-    pub const ALL: [Role; 18] = [
+    pub const ALL: [Role; 19] = [
         Role::Bg,
         Role::Fg,
         Role::Muted,
@@ -105,6 +114,7 @@ impl Role {
         Role::Ok,
         Role::Warn,
         Role::Danger,
+        Role::Store,
         Role::NodeBg,
         Role::NodeBorder,
         Role::NodeText,
@@ -132,6 +142,7 @@ impl Role {
             Role::Ok => "ok",
             Role::Warn => "warn",
             Role::Danger => "danger",
+            Role::Store => "store",
             Role::NodeBg => "node-bg",
             Role::NodeBorder => "node-border",
             Role::NodeText => "node-text",
@@ -151,6 +162,7 @@ impl Role {
             Role::Ok => Def::Literal(OK),
             Role::Warn => Def::Literal(WARN),
             Role::Danger => Def::Literal(DANGER),
+            Role::Store => Def::Literal(STORE),
             Role::Muted => Def::Mix(55, MUTED),
             Role::Line => Def::Mix(45, LINE),
             Role::Surface => Def::Mix(4, SURFACE),
@@ -199,6 +211,8 @@ impl Role {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Table {
     set: Vec<(Role, Rgba8)>,
+    /// `--merlion-series-{n}` values the palette sets, by `n`.
+    series: Vec<(u8, Rgba8)>,
     /// `--merlion-stroke` in px, when the palette sets it.
     pub stroke: Option<f64>,
 }
@@ -208,6 +222,7 @@ impl Table {
     pub const fn builtin() -> Self {
         Table {
             set: Vec::new(),
+            series: Vec::new(),
             stroke: None,
         }
     }
@@ -217,7 +232,31 @@ impl Table {
         let stroke = stroke
             .filter(|s| s.is_finite())
             .map(|s| crate::math::clamp(s, 0.0, 20.0));
-        Table { set, stroke }
+        Table {
+            set,
+            series: Vec::new(),
+            stroke,
+        }
+    }
+
+    /// The table with `series` entries (`n`, colour) replacing the series defaults.
+    pub fn with_series(mut self, series: Vec<(u8, Rgba8)>) -> Self {
+        self.series = series;
+        self
+    }
+
+    /// The literal of `--merlion-series-{n}`, `n` in 1..=8.
+    pub fn series_lit(&self, n: u8) -> String {
+        if let Some((_, c)) = self.series.iter().rev().find(|(k, _)| *k == n) {
+            return c.to_hex();
+        }
+        let i = usize::from(n.clamp(1, 8) - 1);
+        String::from(SERIES.get(i).copied().unwrap_or(ACCENT))
+    }
+
+    /// `var(--merlion-series-{n}, <literal>)`.
+    pub fn series_var(&self, n: u8) -> String {
+        format!("var(--merlion-series-{}, {})", n, self.series_lit(n))
     }
 
     fn explicit(&self, r: Role) -> Option<Rgba8> {

@@ -44,12 +44,12 @@ Two foundation tokens drive the rest. The other roles default to mixes of those 
 | `--merlion-surface` | `color-mix(in oklab, var(--merlion-fg) 4%, var(--merlion-bg))` |
 | `--merlion-border` | `color-mix(in oklab, var(--merlion-fg) 22%, var(--merlion-bg))` |
 | `--merlion-accent` | `#0969da` |
-| `--merlion-ok` / `-warn` / `-danger` | `#1a7f37` / `#9a6700` / `#cf222e` (tones of the built-in roles; see [Roles](#roles)) |
+| `--merlion-ok` / `-warn` / `-danger` / `-store` | `#1a7f37` / `#9a6700` / `#cf222e` / `#127a84` (tones of the built-in roles; see [Roles](#roles)) |
 | `--merlion-node-bg` / `-node-border` / `-node-text` | surface / border / fg |
 | `--merlion-node-detail` | muted (detail lines of title + detail node labels; see [Text](#text)) |
 | `--merlion-edge` / `-edge-label-bg` | line / bg |
 | `--merlion-cluster-bg` / `-cluster-border` | `color-mix(in oklab, var(--merlion-fg) 2%, var(--merlion-bg))` / border |
-| `--merlion-series-1` … `--merlion-series-8` | Categorical palette for charts, pie and gantt sections |
+| `--merlion-series-1` … `--merlion-series-8` | `#0969da`, `#d4762c`, `#2e8b57`, `#b8408f`, `#6f5bd6`, `#1b98a6`, `#b59a16`, `#c4453d`: the categorical palette for charts, pie and gantt sections, and the tones of the cluster roles `series-1` … `series-8` ([Automatic tones](#automatic-tones)) |
 | `--merlion-font` | `Inter, ui-sans-serif, system-ui, sans-serif` |
 | `--merlion-font-size` | `14px` (must match the measured size; see [text-measurement.md](text-measurement.md)) |
 | `--merlion-stroke` | `1.25px` |
@@ -57,7 +57,7 @@ Two foundation tokens drive the rest. The other roles default to mixes of those 
 | `--merlion-dash` | Unset. Per-element dash pattern, same grammar as `stroke-dasharray` |
 | `--merlion-c-{name}-fill` / `-stroke` / `-color` | Unset. Replaces the literal of `classDef {name}` for that property ([Source styles](#source-styles-classdef-style-linkstyle)) |
 
-`@fractalboxdev/merlion-themes` ships `merlion-themes.css`: light and dark defaults plus named themes, each defining the foundations, the accent, the three role tones (`--merlion-ok`, `--merlion-warn`, `--merlion-danger`) and the series palette. Every named theme is an original palette or one whose licence is recorded in [licensing.md](licensing.md).
+`@fractalboxdev/merlion-themes` ships `merlion-themes.css`: light and dark defaults plus named themes, each defining the foundations, the accent, the four role tones (`--merlion-ok`, `--merlion-warn`, `--merlion-danger`, `--merlion-store`) and the series palette. The store tone is `#127a84` in light, `#3fb8c2` in dark, `#2b7a78` in `harbour` and `#6cc9c4` in `lantern`. Every named theme is an original palette or one whose licence is recorded in [licensing.md](licensing.md).
 
 ### Source styles: `classDef`, `style`, `linkStyle`
 
@@ -108,7 +108,7 @@ Each edge role in use gets its own marker in `<defs>` (`{id}-arrow-c-{name}`, li
 
 #### Built-in roles
 
-Eight roles are styled with no stylesheet ([ADR-0009](adr/0009-stylesheet.md)). Their rules are emitted only for roles the diagram uses, before `classDef` rules:
+Seventeen roles are styled with no stylesheet ([ADR-0009](adr/0009-stylesheet.md)). Their rules are emitted only for roles the diagram uses, written or [automatic](#automatic-tones), before `classDef` rules:
 
 | Role | Applies to | Tone | Dash |
 |---|---|---|---|
@@ -117,11 +117,33 @@ Eight roles are styled with no stylesheet ([ADR-0009](adr/0009-stylesheet.md)). 
 | `warn` | Nodes | `--merlion-warn` | — |
 | `danger` | Nodes | `--merlion-danger` | — |
 | `muted` | Nodes | `--merlion-muted` | — |
+| `store` | Nodes | `--merlion-store` | — |
 | `group` | Clusters (`merlion-cc-group`) | — | `6 4` on the box |
+| `series-1` … `series-8` | Clusters (`merlion-cc-series-{k}`) | `--merlion-series-{k}` | — |
 | `failure` | Edges | `--merlion-danger` | `6 4` |
 | `async` | Edges | — | `6 4` |
 
 A built-in role's use-site rules put the role's tone token in place of the unset tone, `var(--merlion-tone, var(--merlion-danger, #cf222e))`, and its dash in place of the default, `var(--merlion-dash, 6 4)`. The presentation attributes and the fallbacks outside `@supports` carry the mixed literals of the default tone, so the role shows in every renderer, and a page theme that sets `--merlion-danger` retunes every `danger` and `failure` element. A stylesheet or page rule on the role (`.merlion-c-danger { --merlion-tone: … }`) wins over the reset and replaces the built-in tone. A role used on an element kind the table does not list for it, or a name the table does not list, has no built-in style. A `classDef` of the same name replaces the built-in role for the whole diagram: `classDef ok fill:#e6ffed` gives `ok` nodes exactly the `classDef` properties, with no built-in tint on the label, stroke, dash or marker, so a diagram written for mermaid draws as it did before built-in roles existed.
+
+#### Automatic tones
+
+With `RenderOptions.auto_tone` (default `true`), elements that carry no role of their own take a built-in role:
+
+| Element | Role | Class |
+|---|---|---|
+| Decision: `Rhombus` (`{…}`), `Hexagon` (`{{…}}`) | `warn` | `merlion-c-warn merlion-auto` |
+| Store: `Cylinder` (`[(…)]`) | `store` | `merlion-c-store merlion-auto` |
+| Terminal: `Stadium` (`([…])`), `Circle` (`((…))`), `DoubleCircle` (`(((…)))`) | `ok` | `merlion-c-ok merlion-auto` |
+| Top-level cluster number `n` (0-based, declaration order) | `series-{n mod 8 + 1}` | `merlion-cc-series-{k} merlion-auto` |
+
+- An automatic tone is the built-in role class itself plus the marker class `merlion-auto`. The element draws exactly as if the source wrote the role, so every path that restyles a written role restyles it too: a theme's `--merlion-warn`, `--merlion-store` or `--merlion-series-{k}`, a stylesheet role rule (`.merlion-c-warn { --merlion-tone: … }`), a baked palette and a host page rule. The marker lets a host page single out automatic tones (`.merlion-c-warn.merlion-auto`) and lets tools tell them from authored roles; it carries no rule of its own. A separate class family (`merlion-auto-warn`) would need its own rules, stylesheet selectors and palette entries to reach the same restyling paths.
+- Explicit styling replaces the automatic tone for the whole element: a node or cluster with any `class` or `:::` role (built-in, custom or `classDef`, with or without a stylesheet tone) or a non-empty `style` takes no automatic role, so the properties its styling leaves unset draw the neutral defaults.
+- A `classDef` named after a built-in role replaces that role for the whole diagram ([Built-in roles](#built-in-roles)), so the automatic tone for that role is off: `classDef warn …` leaves decisions untoned.
+- A top-level cluster's series number counts every top-level cluster, styled or not, so styling one cluster never recolours the others; the ninth top-level cluster takes `series-1` again. Nested clusters take no automatic tone, and the token reset keeps the parent's tone off them and off every member node, whose own automatic tone applies as usual.
+- Edges take no automatic tone.
+- Cluster tints use the cluster role mix (8%) and node tints the node role mix (14%), in every theme.
+- Opt-out: `auto_tone: false`; the CLI's `--no-auto-tone`; the WASM `autoTone: false`; in the source, `%%{init: {"merlion": {"autoTone": false}}}%%` or front matter `config: merlion: autoTone: false` ([parser.md](parser.md#front-matter-and-directives)). A source value turns the tones off only; `autoTone: true` in the source keeps the option's value. Each path draws the same bytes as `auto_tone: false` with the same id.
+- Automatic tones are presentation only: measurement, layout, the layout hint and the outline are the same with and without them.
 
 #### Precedence
 
@@ -130,7 +152,7 @@ Per property and per element, highest first:
 1. Node `style` and edge `linkStyle` literals.
 2. `classDef` colours, through their `--merlion-c-{name}-*` tokens; other `classDef` properties as literals.
 3. Stylesheet role rules, by specificity, then source order.
-4. Built-in roles.
+4. Built-in roles, written or automatic. An automatic role applies only to an element with no class and no style.
 5. The theme, then the built-in default.
 
 A source literal that masks a stylesheet tone on the same element (a `style` colour, or a `classDef` colour whose token the stylesheet leaves unset) emits `I033 ToneMasked`. Built-in roles never emit `I033`.
@@ -216,7 +238,7 @@ Hooks for maths, extended label formatting and icons ([ADR-0002](adr/0002-zero-r
 
 ## Ids and data attributes
 
-- `{id}` is the `id_prefix` render option when given; it must match `[a-z][a-z0-9-]{0,31}`. Otherwise it is `m` + the first 8 hex characters of FNV-1a 64 over (source, options, palette digest when a palette is given, hint). The palette digest hashes its canonical serialisation, so a formatting-only change to the stylesheet leaves the id unchanged. The hash alone cannot separate two renders of identical input, and FNV is not collision-resistant, so any host placing more than one diagram on a page passes `id_prefix`; the rehype plugin does ([integrations.md](integrations.md#fractalboxdevmerlion-rehype)).
+- `{id}` is the `id_prefix` render option when given; it must match `[a-z][a-z0-9-]{0,31}`. Otherwise it is `m` + the first 8 hex characters of FNV-1a 64 over (source, options, palette digest when a palette is given, hint). The options key ends in `|auto_tone=false` when automatic tones are off and carries nothing for them otherwise. The palette digest hashes its canonical serialisation, so a formatting-only change to the stylesheet leaves the id unchanged. The hash alone cannot separate two renders of identical input, and FNV is not collision-resistant, so any host placing more than one diagram on a page passes `id_prefix`; the rehype plugin does ([integrations.md](integrations.md#fractalboxdevmerlion-rehype)).
 - Every internal id (markers, clip paths, gradients) is `{id}-…`.
 - Node groups: `<g class="merlion-node" data-merlion-id="{source id}" data-merlion-rank="{0..15}">`. The rank is dominator depth for flowcharts and degree order otherwise, clamped to 15; it drives semantic zoom ([viewer.md](viewer.md)).
 - Clusters: `<g class="merlion-cluster" data-merlion-id="…">` with members nested inside.

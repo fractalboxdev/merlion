@@ -89,6 +89,7 @@ fn value_ok(token: &str, v: &str, role: bool) -> bool {
                 "ok",
                 "warn",
                 "danger",
+                "store",
                 "node-bg",
                 "node-border",
                 "node-text",

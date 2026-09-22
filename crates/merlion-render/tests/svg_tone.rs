@@ -22,9 +22,11 @@ const SOURCE: &str = "flowchart LR
   c --o f[F]
 ";
 
+/// Automatic tones are off: this file checks untoned output and tones set by hand.
 fn svg_of(src: &str) -> String {
     let opts = RenderOptions {
         id_prefix: Some("m1".into()),
+        auto_tone: false,
         ..RenderOptions::default()
     };
     render(src, &opts).svg.expect("renders")

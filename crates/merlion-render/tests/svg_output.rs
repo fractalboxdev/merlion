@@ -384,12 +384,27 @@ fn presentation_attributes_carry_the_defaults() {
     assert!(svg.contains("class=\"merlion-edge-path\""));
     assert!(svg.contains("fill=\"none\" stroke=\"#919497\" stroke-width=\"1.25\""));
     assert!(svg.contains("<text class=\"merlion-label\" fill=\"#1f2328\">"));
-    assert!(
-        svg.contains("fill=\"#fafafa\" stroke=\"#c8c9cb\""),
-        "cluster box defaults"
-    );
     assert!(svg
         .contains("font-family=\"Inter, ui-sans-serif, system-ui, sans-serif\" font-size=\"14\""));
+    // The top-level cluster takes the automatic series-1 tone (#0969da mixed 8% into
+    // the cluster background); with automatic tones off it draws the defaults.
+    assert!(
+        svg.contains("fill=\"#e8eff9\" stroke=\"#0969da\""),
+        "automatic cluster tone"
+    );
+    let untoned = draw_with(
+        &sample(),
+        &RenderOptions {
+            auto_tone: false,
+            ..opts()
+        },
+    )
+    .0
+    .svg;
+    assert!(
+        untoned.contains("fill=\"#fafafa\" stroke=\"#c8c9cb\""),
+        "cluster box defaults"
+    );
 }
 
 #[test]
@@ -865,7 +880,7 @@ fn edge_label_sits_on_a_chip() {
 fn cluster_nests_its_members() {
     let svg = draw(&sample()).svg;
     let open = svg
-        .find("<g class=\"merlion-cluster\" data-merlion-id=\"build\">")
+        .find("<g class=\"merlion-cluster merlion-cc-series-1 merlion-auto\" data-merlion-id=\"build\">")
         .unwrap();
     let rect = svg.find("<rect class=\"merlion-cluster-box\"").unwrap();
     let title = svg.find("<text class=\"merlion-cluster-title\"").unwrap();

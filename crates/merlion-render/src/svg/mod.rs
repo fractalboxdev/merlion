@@ -19,6 +19,7 @@
 //! id-scoped rules keyed by a class; the output has no `style` attribute built from
 //! source text. Every number is printed by `numfmt`.
 
+mod auto;
 mod color;
 pub(crate) mod escape;
 mod label;
@@ -161,7 +162,7 @@ impl<'a> Layer<'a> {
             .filter(|b| b.kind == kind && roles.iter().any(|r| r == b.name))
         {
             if let Some(t) = b.tone {
-                tone = Some(self.lit(t));
+                tone = Some(Tone::lit_of(&self.table, t));
             }
             if let Some(d) = b.dash {
                 dash = Some(String::from(d));
@@ -390,17 +391,37 @@ fn valid_classes(classes: &[String]) -> Vec<String> {
 }
 
 /// The valid roles of every element, computed once per draw, and the (kind, role) pairs
-/// some drawn element carries.
+/// some drawn element carries. A node or cluster with an automatic tone carries its
+/// automatic role here, as if written (specs/svg-output.md#automatic-tones).
 struct Roles {
     node: Vec<Vec<String>>,
     edge: Vec<Vec<String>>,
     cluster: Vec<Vec<String>>,
+    /// Per node and per cluster: whether its role is automatic.
+    node_auto: Vec<bool>,
+    cluster_auto: Vec<bool>,
     used: BTreeSet<(Kind, String)>,
 }
 
+/// Appends each element's automatic role to its (empty) role list; returns the flags.
+fn add_auto(roles: &mut [Vec<String>], auto: &[Option<&'static str>]) -> Vec<bool> {
+    roles
+        .iter_mut()
+        .zip(auto.iter())
+        .map(|(r, a)| match a {
+            Some(name) => {
+                r.push(String::from(*name));
+                true
+            }
+            None => false,
+        })
+        .collect()
+}
+
 impl Roles {
-    fn new(chart: &Flowchart) -> Self {
-        let node: Vec<Vec<String>> = chart
+    /// `builtins` is `Some` when automatic tones are on: the built-in roles in effect.
+    fn new(chart: &Flowchart, auto_tone: Option<&[&'static BuiltIn]>) -> Self {
+        let mut node: Vec<Vec<String>> = chart
             .nodes
             .iter()
             .map(|n| valid_classes(&n.classes))
@@ -410,11 +431,21 @@ impl Roles {
             .iter()
             .map(|e| valid_classes(&e.classes))
             .collect();
-        let cluster: Vec<Vec<String>> = chart
+        let mut cluster: Vec<Vec<String>> = chart
             .subgraphs
             .iter()
             .map(|s| valid_classes(&s.classes))
             .collect();
+        let (node_auto, cluster_auto) = match auto_tone {
+            Some(b) => (
+                add_auto(&mut node, &auto::node_roles(chart, b)),
+                add_auto(
+                    &mut cluster,
+                    &auto::cluster_roles(chart, &tree::effective_parents(chart), b),
+                ),
+            ),
+            None => (Vec::new(), Vec::new()),
+        };
         let mut used = BTreeSet::new();
         for r in node.iter().flatten() {
             used.insert((Kind::Node, r.clone()));
@@ -433,6 +464,8 @@ impl Roles {
             node,
             edge,
             cluster,
+            node_auto,
+            cluster_auto,
             used,
         }
     }
@@ -447,6 +480,14 @@ impl Roles {
 
     fn cluster(&self, i: usize) -> &[String] {
         self.cluster.get(i).map_or(&[], Vec::as_slice)
+    }
+
+    fn node_is_auto(&self, i: usize) -> bool {
+        self.node_auto.get(i).copied().unwrap_or(false)
+    }
+
+    fn cluster_is_auto(&self, i: usize) -> bool {
+        self.cluster_auto.get(i).copied().unwrap_or(false)
     }
 
     /// Whether some drawn element of `kind` carries role `name`.
@@ -775,6 +816,10 @@ fn push_role_classes(c: &mut String, prefix: &str, roles: &[String]) {
 fn node_classes(i: usize, cx: &Ctx) -> String {
     let mut c = String::from("merlion-node");
     push_role_classes(&mut c, "merlion-c-", cx.roles.node(i));
+    if cx.roles.node_is_auto(i) {
+        c.push(' ');
+        c.push_str(auto::MARKER);
+    }
     if cx.node_class.get(i).copied().unwrap_or(false) {
         c.push(' ');
         c.push_str(&node_style_class(i));
@@ -884,6 +929,10 @@ fn push_cluster_open(out: &mut String, cx: &Ctx, si: usize) {
     };
     let mut class = String::from("merlion-cluster");
     push_role_classes(&mut class, "merlion-cc-", cx.roles.cluster(si));
+    if cx.roles.cluster_is_auto(si) {
+        class.push(' ');
+        class.push_str(auto::MARKER);
+    }
     if cx.cluster_class.get(si).copied().unwrap_or(false) {
         class.push(' ');
         class.push_str(&cluster_style_class(si));
@@ -940,7 +989,7 @@ fn kind_rules(
 fn built_in_rules(roles: &Roles, layer: &Layer) -> Vec<RoleRule> {
     let mut out = Vec::new();
     for b in layer.builtins.iter().filter(|b| roles.uses(b.kind, b.name)) {
-        let tone = b.tone.map(|r| Tone::of_role(&layer.table, r));
+        let tone = b.tone.map(|r| Tone::of(&layer.table, r));
         out.extend(kind_rules(
             &layer.table,
             b.kind,
@@ -1233,7 +1282,10 @@ pub fn draw_flowchart(
         .as_ref()
         .and_then(|p| p.dark.as_ref())
         .map(|d| Layer::new(Some(d), builtins));
-    let roles = Roles::new(chart);
+    let roles = Roles::new(
+        chart,
+        auto::enabled(chart, opts.auto_tone).then_some(light.builtins.as_slice()),
+    );
     let (src_rules, flags) = source_rules(chart, &roles, &light);
     if flags.fixed_colour {
         diags.emit_once(

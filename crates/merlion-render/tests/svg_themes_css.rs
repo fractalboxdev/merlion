@@ -39,6 +39,7 @@ fn every_theme_sets_the_foundations_and_palette() {
             "--merlion-ok:",
             "--merlion-warn:",
             "--merlion-danger:",
+            "--merlion-store:",
         ] {
             assert!(body.contains(token), "{} lacks {}", sel, token);
         }
@@ -62,11 +63,15 @@ fn light_defaults_match_the_core() {
     assert!(CSS.contains(&format!("--merlion-ok: {};", theme::OK)));
     assert!(CSS.contains(&format!("--merlion-warn: {};", theme::WARN)));
     assert!(CSS.contains(&format!("--merlion-danger: {};", theme::DANGER)));
+    assert!(CSS.contains(&format!("--merlion-store: {};", theme::STORE)));
+    for (i, c) in theme::SERIES.iter().enumerate() {
+        assert!(CSS.contains(&format!("--merlion-series-{}: {};", i + 1, c)));
+    }
 }
 
 #[test]
 fn only_known_tokens_are_set() {
-    let known = ["bg", "fg", "accent", "ok", "warn", "danger"];
+    let known = ["bg", "fg", "accent", "ok", "warn", "danger", "store"];
     for decl in CSS.split("--merlion-").skip(1) {
         let name: String = decl
             .chars()
