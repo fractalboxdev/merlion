@@ -47,12 +47,14 @@ pub fn wrap_split(
     })
 }
 
-/// Model nodes of layer `l` that move to a new pseudo-layer below it when the layer is
-/// split into two rows: the real nodes from order position `k` on. `k` lies in the
-/// middle half of the real nodes and separates the fewest edges: an edge counts when
-/// its other end (in the layer above or below, order-axis coordinate `x`) lies strictly
-/// on the far side of the cut. Ties go to the middle.
-pub fn layer_split(g: &LGraph, l: usize, x: &[f64]) -> Option<Vec<usize>> {
+/// Splits layer `l` into `rows` sub-rows (specs/layout.md#5-container-fit, step 3) and
+/// returns the model nodes of rows 1.. (row 0 stays). Rows hold consecutive real nodes
+/// in order, balanced by width. Each cut lies within a quarter of a row of its
+/// balanced position and separates the fewest edges there: an edge counts when its
+/// other end (order-axis coordinate `x`) lies strictly on the far side of the cut.
+/// Ties go to the balanced position. `None` when the layer has fewer than two real
+/// nodes.
+pub fn layer_rows(g: &LGraph, l: usize, x: &[f64], rows: usize) -> Option<Vec<Vec<usize>>> {
     let layer = g.layers.get(l)?;
     let real: Vec<(usize, usize)> = layer
         .iter()
@@ -62,40 +64,77 @@ pub fn layer_split(g: &LGraph, l: usize, x: &[f64]) -> Option<Vec<usize>> {
         })
         .collect();
     let r = real.len();
-    if r < 2 || x.len() < g.nodes.len() {
+    if r < 2 || rows < 2 || x.len() < g.nodes.len() {
         return None;
     }
-    let (lo, hi) = (r / 4, (3 * r).div_ceil(4));
-    let mut best: Option<(usize, usize, usize)> = None;
-    for k in lo.max(1)..=hi.min(r - 1) {
+    let rows = rows.min(r);
+    // Cumulative width before each node.
+    let widths: Vec<f64> = real
+        .iter()
+        .map(|&(v, _)| g.nodes[v].left + g.nodes[v].right)
+        .collect();
+    let total: f64 = widths.iter().sum();
+    let mut before = Vec::with_capacity(r + 1);
+    let mut acc = 0.0;
+    for w in &widths {
+        before.push(acc);
+        acc += w;
+    }
+    let separated = |k: usize| -> usize {
         let cut = (x[real[k - 1].0] + x[real[k].0]) / 2.0;
         let mut cost = 0usize;
         for (i, &(v, _)) in real.iter().enumerate() {
             let left = i < k;
             for &w in g.up[v].iter().chain(&g.down[v]) {
-                if (left && x[w] > cut) || (!left && x[w] < cut) {
+                let xw = x.get(w).copied().unwrap_or(cut);
+                if (left && xw > cut) || (!left && xw < cut) {
                     cost += 1;
                 }
             }
         }
-        let dist = (2 * k).abs_diff(r);
-        if best.is_none_or(|(c, d, _)| (cost, dist) < (c, d)) {
-            best = Some((cost, dist, k));
-        }
+        cost
+    };
+    // Two rows follow the spec's rule (fewest separated edges near the middle). With
+    // more rows the cuts stay balanced: a node's edges to a parent row above separate
+    // at every cut on one side of the parent, which would skew every cut away from it.
+    let slack = if rows == 2 { r / rows / 4 } else { 0 };
+    let mut cuts: Vec<usize> = Vec::with_capacity(rows - 1);
+    let mut prev = 0usize;
+    for j in 1..rows {
+        // Balanced position: the first node starting at or past j/rows of the width.
+        let target = total * j as f64 / rows as f64;
+        let ideal = (1..r).find(|&k| before[k] >= target).unwrap_or(r - 1);
+        // Leave at least one node for every remaining row.
+        let (first, last) = (prev + 1, r - (rows - j));
+        let ideal = ideal.clamp(first, last);
+        let lo = first.max(ideal.saturating_sub(slack));
+        let hi = last.min(ideal + slack);
+        let k = (lo..=hi)
+            .min_by_key(|&k| (separated(k), k.abs_diff(ideal)))
+            .unwrap_or(lo);
+        cuts.push(k);
+        prev = k;
     }
-    let (_, _, k) = best?;
-    Some(real[k..].iter().map(|&(_, m)| m).collect())
+    cuts.push(r);
+    let mut out = Vec::with_capacity(rows - 1);
+    for w in cuts.windows(2) {
+        out.push(real[w[0]..w[1]].iter().map(|&(_, m)| m).collect());
+    }
+    Some(out)
 }
 
-/// New layers after splitting: every split layer inserts one pseudo-layer right below
-/// it holding its moved nodes, and every later layer shifts down by the number of
-/// pseudo-layers above it. `splits` holds `(layer, moved model nodes)`.
-pub fn apply_splits(layer: &[usize], splits: &[(usize, Vec<usize>)]) -> Vec<usize> {
-    let mut moved = alloc::vec![false; layer.len()];
-    for (_, nodes) in splits {
-        for &m in nodes {
-            if let Some(f) = moved.get_mut(m) {
-                *f = true;
+/// New layers after splitting: a layer split into `k + 1` rows keeps row 0 in place,
+/// puts row `i` in the `i`-th pseudo-layer right below it, and every later layer
+/// shifts down by the number of pseudo-layers inserted above it. `splits` holds
+/// `(layer, rows 1..)` of model nodes.
+pub fn apply_splits(layer: &[usize], splits: &[(usize, Vec<Vec<usize>>)]) -> Vec<usize> {
+    let mut row = alloc::vec![0usize; layer.len()];
+    for (_, rows) in splits {
+        for (i, nodes) in rows.iter().enumerate() {
+            for &m in nodes {
+                if let Some(f) = row.get_mut(m) {
+                    *f = i + 1;
+                }
             }
         }
     }
@@ -103,8 +142,12 @@ pub fn apply_splits(layer: &[usize], splits: &[(usize, Vec<usize>)]) -> Vec<usiz
         .iter()
         .enumerate()
         .map(|(m, &l)| {
-            let above = splits.iter().filter(|(s, _)| *s < l).count();
-            l + above + usize::from(moved[m])
+            let above: usize = splits
+                .iter()
+                .filter(|(s, _)| *s < l)
+                .map(|(_, rows)| rows.len())
+                .sum();
+            l + above + row[m]
         })
         .collect()
 }
@@ -135,12 +178,14 @@ mod tests {
         assert_eq!(wrap_split(2, 3, &start, &end, &crossing, &none), None);
     }
 
-    #[test]
-    fn layer_split_moves_the_right_half() {
+    fn fan(k: usize, width: f64) -> (LGraph, Vec<usize>) {
         let cl = Clusters::default();
-        let real: Vec<Extent> = (0..7).map(|_| Extent { left: 10.0, right: 10.0, thick: 10.0 }).collect();
-        let layers = [0, 1, 1, 1, 1, 1, 1];
-        let edges: Vec<EdgeIn> = (1..7)
+        let real: Vec<Extent> = (0..=k)
+            .map(|_| Extent { left: width / 2.0, right: width / 2.0, thick: 10.0 })
+            .collect();
+        let mut layers = vec![1; k + 1];
+        layers[0] = 0;
+        let edges: Vec<EdgeIn> = (1..=k)
             .map(|i| EdgeIn { edge: i, upper: 0, lower: i, reversed: false, label: None })
             .collect();
         let g = build(&BuildIn {
@@ -154,17 +199,45 @@ mod tests {
             max_layers: 100,
         })
         .unwrap();
+        (g, layers)
+    }
+
+    #[test]
+    fn two_rows_split_at_the_middle() {
+        let (g, layers) = fan(6, 20.0);
         // Children 30 px apart, the root centred above them.
         let mut x = vec![0.0; g.nodes.len()];
         for (i, &v) in g.layers[1].iter().enumerate() {
             x[v] = 30.0 * i as f64;
         }
         x[g.real[0]] = 75.0;
-        let moved = layer_split(&g, 1, &x).unwrap();
-        assert_eq!(moved, vec![4, 5, 6]);
-        assert_eq!(layer_split(&g, 0, &x), None);
-        let new = apply_splits(&layers, &[(1, moved)]);
+        let rows = layer_rows(&g, 1, &x, 2).unwrap();
+        assert_eq!(rows, vec![vec![4, 5, 6]]);
+        assert_eq!(layer_rows(&g, 0, &x, 2), None);
+        let new = apply_splits(&layers, &[(1, rows)]);
         assert_eq!(new, vec![0, 1, 1, 1, 2, 2, 2]);
-        assert_eq!(apply_splits(&[0, 1, 2], &[(0, vec![0])]), vec![1, 2, 3]);
+        assert_eq!(apply_splits(&[0, 1, 2], &[(0, vec![vec![0]])]), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn many_rows_are_balanced_and_shift_later_layers() {
+        let (g, _) = fan(10, 20.0);
+        let mut x = vec![0.0; g.nodes.len()];
+        for (i, &v) in g.layers[1].iter().enumerate() {
+            x[v] = 30.0 * i as f64;
+        }
+        x[g.real[0]] = 135.0;
+        let rows = layer_rows(&g, 1, &x, 3).unwrap();
+        assert_eq!(rows.len(), 2);
+        let sizes: Vec<usize> = rows.iter().map(Vec::len).collect();
+        assert!(sizes.iter().all(|&s| (3..=4).contains(&s)), "{:?}", sizes);
+        // Order is kept: rows hold consecutive nodes.
+        let flat: Vec<usize> = rows.concat();
+        assert!(flat.windows(2).all(|w| w[0] < w[1]));
+        // Never more rows than nodes.
+        assert_eq!(layer_rows(&g, 1, &x, 50).unwrap().len(), 9);
+        // Three rows of layer 0 push layer 1 down by two.
+        let new = apply_splits(&[0, 0, 0, 1], &[(0, vec![vec![1], vec![2]])]);
+        assert_eq!(new, vec![0, 1, 2, 3]);
     }
 }

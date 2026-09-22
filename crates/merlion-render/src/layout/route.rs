@@ -121,12 +121,22 @@ impl NodeShape {
     }
 }
 
-/// Channels used by edges that cross a container-fit wrap.
+/// Channels used by edges that cross a container-fit wrap (specs/layout.md#5-container-fit).
+///
+/// A wrapped layout places consecutive layer ranges ("parts") one after another along
+/// the order axis, each starting again at the beginning of the layer axis. A chain
+/// segment between layer `s − 1` (end of part `p`) and layer `s` (start of part `p + 1`)
+/// leaves along the layer axis past every part (`chan_y`), runs along the order axis to
+/// the gap between the two parts (`gap_x[p]`), back along the layer axis to just before
+/// part `p + 1` (`entry_y[p + 1]`), and along the order axis to its target. Each wrap
+/// crossing gets its own offset of [`WRAP_STEP`], so parallel detours never overlap.
 pub struct WrapFrame {
-    /// Layer-axis coordinate beyond every part, where wrap edges run along the order axis.
+    /// Layer-axis coordinate beyond every part.
     pub chan_y: f64,
-    /// Order-axis coordinate of the channel before each part (index = part).
+    /// Order-axis coordinate of the first channel between part `p` and `p + 1`.
     pub gap_x: Vec<f64>,
+    /// Layer-axis coordinate of the first entry channel before part `p`.
+    pub entry_y: Vec<f64>,
 }
 
 pub struct RouteIn<'a> {
@@ -149,7 +159,7 @@ pub struct RouteIn<'a> {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Routed {
     pub points: Vec<(f64, f64)>,
-    /// Centre of the label dummy, when the chain has one and the route passes it.
+    /// Centre of the label dummy, when the chain has one.
     pub label: Option<(f64, f64)>,
     pub wrap: bool,
 }
@@ -177,44 +187,47 @@ pub fn simplify(points: &mut Vec<(f64, f64)>) {
     }
 }
 
+fn cmp_f(a: f64, b: f64) -> core::cmp::Ordering {
+    a.partial_cmp(&b).unwrap_or(core::cmp::Ordering::Equal)
+}
+
 /// Routes every chain of `inp.g`.
 pub fn route(inp: &RouteIn) -> Vec<Routed> {
     let g = inp.g;
     let dir = inp.dir;
     let layer = |v: usize| g.nodes.get(v).map_or(0, |n| n.layer);
     let part = |l: usize| inp.part.get(l).copied().unwrap_or(0);
-    let is_wrap: Vec<bool> = g
-        .chains
-        .iter()
-        .map(|c| match (c.nodes.first(), c.nodes.last()) {
-            (Some(&a), Some(&z)) => inp.wrap.is_some() && part(layer(a)) != part(layer(z)),
-            _ => false,
-        })
-        .collect();
+    let at = |v: usize| inp.pos.get(v).copied().unwrap_or((0.0, 0.0));
+    let shape_of = |v: usize| model(g, v).and_then(|m| inp.shapes.get(m));
+    // Chain step `i` (from node i − 1 to node i) wraps when its layers lie in
+    // different parts.
+    let wraps_at =
+        |c: &[usize], i: usize| inp.wrap.is_some() && part(layer(c[i - 1])) != part(layer(c[i]));
+    let downward = |c: &[usize]| c.len() >= 2 && layer(c[c.len() - 1]) > layer(c[0]);
 
-    // Port offsets per (chain, end): end 0 on the upper node's Down side, end 1 on the
-    // lower node's Up side, ordered by where the edge heads.
+    // Port offsets per (chain, end): end `true` on the upper node's Down side, `false`
+    // on the lower node's Up side, ordered by where the edge heads next (wrapping
+    // steps go last on the Down side and first on the Up side).
     let mut ends: BTreeMap<(usize, bool), Vec<(f64, usize)>> = BTreeMap::new();
     for (ci, c) in g.chains.iter().enumerate() {
-        if c.nodes.len() < 2 {
+        let c = &c.nodes;
+        if !downward(c) {
             continue;
         }
-        let (a, z) = (c.nodes[0], c.nodes[c.nodes.len() - 1]);
-        if layer(z) <= layer(a) {
-            continue;
-        }
-        let (k_up, k_down) = if is_wrap[ci] {
-            (f64::MAX, f64::MIN)
+        let n = c.len();
+        let k_up = if wraps_at(c, 1) { f64::MAX } else { at(c[1]).0 };
+        let k_down = if wraps_at(c, n - 1) {
+            f64::MIN
         } else {
-            (inp.pos[c.nodes[1]].0, inp.pos[c.nodes[c.nodes.len() - 2]].0)
+            at(c[n - 2]).0
         };
-        ends.entry((a, true)).or_default().push((k_up, ci));
-        ends.entry((z, false)).or_default().push((k_down, ci));
+        ends.entry((c[0], true)).or_default().push((k_up, ci));
+        ends.entry((c[n - 1], false)).or_default().push((k_down, ci));
     }
     let mut port: BTreeMap<(usize, bool), f64> = BTreeMap::new();
     for ((v, down), list) in ends.iter_mut() {
-        list.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(core::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
-        let Some(shape) = model(g, *v).and_then(|m| inp.shapes.get(m)) else {
+        list.sort_by(|a, b| cmp_f(a.0, b.0).then(a.1.cmp(&b.1)));
+        let Some(shape) = shape_of(*v) else {
             continue;
         };
         let side = if *down { LSide::Down } else { LSide::Up };
@@ -230,12 +243,10 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
         }
     }
     let endpoint = |ci: usize, v: usize, down: bool| -> (f64, f64) {
-        let (cx, cy) = inp.pos[v];
+        let (cx, cy) = at(v);
         let t = port.get(&(ci, down)).copied().unwrap_or(0.0);
         let side = if down { LSide::Down } else { LSide::Up };
-        let off = model(g, v)
-            .and_then(|m| inp.shapes.get(m))
-            .map_or(0.0, |s| s.offset(dir, side, t));
+        let off = shape_of(v).map_or(0.0, |s| s.offset(dir, side, t));
         if down {
             (cx + t, cy + off)
         } else {
@@ -243,26 +254,59 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
         }
     };
 
-    // Orthogonal jogs: collect per gap, then give each a distinct height.
+    // Wrap detour offsets: a global index for the outer channel and a per-boundary
+    // index for the gap and entry channels.
+    let mut wrap_slot: BTreeMap<(usize, usize), (usize, usize)> = BTreeMap::new();
+    let mut per_boundary: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut global = 0usize;
+    for (ci, c) in g.chains.iter().enumerate() {
+        let c = &c.nodes;
+        if !downward(c) {
+            continue;
+        }
+        for i in 1..c.len() {
+            if wraps_at(c, i) {
+                let local = per_boundary.entry(part(layer(c[i - 1]))).or_insert(0);
+                wrap_slot.insert((ci, i), (global, *local));
+                *local += 1;
+                global += 1;
+            }
+        }
+    }
+    let detour = |ci: usize, c: &[usize], i: usize, from_x: f64, to_x: f64| -> [(f64, f64); 4] {
+        let (k, local) = wrap_slot.get(&(ci, i)).copied().unwrap_or((0, 0));
+        let w = inp.wrap;
+        let pa = part(layer(c[i - 1]));
+        let pb = part(layer(c[i]));
+        let chan = w.map_or(0.0, |w| w.chan_y) + WRAP_STEP * k as f64;
+        let gx = w.and_then(|w| w.gap_x.get(pa).copied()).unwrap_or(0.0)
+            + WRAP_STEP * local as f64;
+        let entry = w.and_then(|w| w.entry_y.get(pb).copied()).unwrap_or(0.0)
+            - WRAP_STEP * local as f64;
+        [(from_x, chan), (gx, chan), (gx, entry), (to_x, entry)]
+    };
+
+    // Orthogonal jogs: collected per gap, then each given a distinct height spread
+    // evenly across the gap so parallel jogs never overlap.
     let orthogonal = inp.style == EdgeStyle::Orthogonal;
     let mut jogs: BTreeMap<usize, Vec<(f64, f64, usize, usize)>> = BTreeMap::new();
-    let mut plans: Vec<Vec<(usize, f64)>> = vec![Vec::new(); g.chains.len()];
     if orthogonal {
         for (ci, c) in g.chains.iter().enumerate() {
-            let n = c.nodes.len();
-            if n < 2 || is_wrap[ci] || layer(c.nodes[n - 1]) <= layer(c.nodes[0]) {
+            let c = &c.nodes;
+            if !downward(c) {
                 continue;
             }
-            let start = endpoint(ci, c.nodes[0], true);
-            let end = endpoint(ci, c.nodes[n - 1], false);
+            let n = c.len();
+            let start = endpoint(ci, c[0], true);
+            let end = endpoint(ci, c[n - 1], false);
             let mut cur = start.0;
             for i in 1..n {
-                let tx = if i == n - 1 { end.0 } else { inp.pos[c.nodes[i]].0 };
-                plans[ci].push((layer(c.nodes[i - 1]), tx));
-                if abs(tx - cur) > 1e-9 {
-                    let gap = layer(c.nodes[i - 1]);
+                let tx = if i == n - 1 { end.0 } else { at(c[i]).0 };
+                if !wraps_at(c, i) && abs(tx - cur) > 1e-9 {
                     let (lo, hi) = if cur < tx { (cur, tx) } else { (tx, cur) };
-                    jogs.entry(gap).or_default().push((lo, hi, ci, i));
+                    jogs.entry(layer(c[i - 1]))
+                        .or_default()
+                        .push((lo, hi, ci, i));
                 }
                 cur = tx;
             }
@@ -270,99 +314,95 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
     }
     let mut jog_y: BTreeMap<(usize, usize), f64> = BTreeMap::new();
     for (gap, list) in jogs.iter_mut() {
-        list.sort_by(|a, b| {
-            a.0.partial_cmp(&b.0)
-                .unwrap_or(core::cmp::Ordering::Equal)
-                .then(a.1.partial_cmp(&b.1).unwrap_or(core::cmp::Ordering::Equal))
-                .then(a.2.cmp(&b.2))
-        });
+        list.sort_by(|a, b| cmp_f(a.0, b.0).then(cmp_f(a.1, b.1)).then(a.2.cmp(&b.2)));
         let top = inp.layer_bot.get(*gap).copied().unwrap_or(0.0);
         let bot = inp.layer_top.get(gap + 1).copied().unwrap_or(top);
         let k = list.len();
         for (s, &(_, _, ci, i)) in list.iter().enumerate() {
-            jog_y.insert((ci, i), top + (bot - top) * (s as f64 + 1.0) / (k as f64 + 1.0));
+            jog_y.insert(
+                (ci, i),
+                top + (bot - top) * (s as f64 + 1.0) / (k as f64 + 1.0),
+            );
         }
     }
 
-    let mut wrap_index = 0usize;
     g.chains
         .iter()
         .enumerate()
-        .map(|(ci, c)| {
-            let n = c.nodes.len();
+        .map(|(ci, chain)| {
+            let c = &chain.nodes;
+            let n = c.len();
             if n < 2 {
                 return Routed::default();
             }
-            let (a, z) = (c.nodes[0], c.nodes[n - 1]);
-            let label = c.label.map(|d| inp.pos[d]);
-            if layer(z) <= layer(a) {
+            let (a, z) = (c[0], c[n - 1]);
+            let label = chain.label.map(at);
+            if !downward(c) {
                 // Same layer (never produced by phase 2): a straight line between outlines.
-                let (pa, pz) = (inp.pos[a], inp.pos[z]);
-                let sa = model(g, a).and_then(|m| inp.shapes.get(m));
-                let sz = model(g, z).and_then(|m| inp.shapes.get(m));
-                let ba = sa.map_or((0.0, 0.0), |s| s.toward(dir, pz.0 - pa.0, pz.1 - pa.1));
-                let bz = sz.map_or((0.0, 0.0), |s| s.toward(dir, pa.0 - pz.0, pa.1 - pz.1));
+                let (pa, pz) = (at(a), at(z));
+                let ba = shape_of(a).map_or((0.0, 0.0), |s| {
+                    s.toward(dir, pz.0 - pa.0, pz.1 - pa.1)
+                });
+                let bz = shape_of(z).map_or((0.0, 0.0), |s| {
+                    s.toward(dir, pa.0 - pz.0, pa.1 - pz.1)
+                });
                 return Routed {
                     points: vec![(pa.0 + ba.0, pa.1 + ba.1), (pz.0 + bz.0, pz.1 + bz.1)],
                     label: None,
                     wrap: false,
                 };
             }
-            if is_wrap[ci] {
-                let w = inp.wrap.map_or(0.0, |w| w.chan_y);
-                let i = wrap_index as f64;
-                wrap_index += 1;
-                let start = endpoint(ci, a, true);
-                let end = endpoint(ci, z, false);
-                let lz = layer(z);
-                let target_part = part(lz);
-                let gap_x = inp
-                    .wrap
-                    .and_then(|w| w.gap_x.get(target_part).copied())
-                    .unwrap_or(0.0)
-                    + i * WRAP_STEP;
-                let top = inp.layer_top.get(lz).copied().unwrap_or(end.1);
-                let above = if lz > 0 && part(lz - 1) == target_part {
-                    inp.layer_bot.get(lz - 1).copied().unwrap_or(top - 16.0)
-                } else {
-                    top - 24.0
-                };
-                let y_t = (top + above) / 2.0;
-                let y_c = w + i * WRAP_STEP;
-                let mut points = vec![start, (start.0, y_c), (gap_x, y_c), (gap_x, y_t), (end.0, y_t), end];
-                simplify(&mut points);
-                return Routed { points, label: None, wrap: true };
-            }
+            let wrap = (1..n).any(|i| wraps_at(c, i));
+            let mut points: Vec<(f64, f64)>;
             if orthogonal {
                 let start = endpoint(ci, a, true);
                 let end = endpoint(ci, z, false);
-                let mut points = vec![start];
+                points = vec![start];
                 let mut cur = start.0;
-                for (i, &(_, tx)) in plans[ci].iter().enumerate() {
-                    if abs(tx - cur) > 1e-9 {
-                        let y = jog_y.get(&(ci, i + 1)).copied().unwrap_or(start.1);
+                for i in 1..n {
+                    let tx = if i == n - 1 { end.0 } else { at(c[i]).0 };
+                    if wraps_at(c, i) {
+                        points.extend(detour(ci, c, i, cur, tx));
+                    } else if abs(tx - cur) > 1e-9 {
+                        let y = jog_y.get(&(ci, i)).copied().unwrap_or(start.1);
                         points.push((cur, y));
                         points.push((tx, y));
                     }
                     cur = tx;
                 }
                 points.push(end);
-                simplify(&mut points);
-                return Routed { points, label, wrap: false };
+            } else {
+                // Polyline (and the spline fallback): straight segments through the
+                // dummy centres, axis-aligned detours at wraps, and ends on the
+                // outlines towards the neighbouring route point.
+                let mut via: Vec<(f64, f64)> = Vec::new();
+                for i in 1..n {
+                    if wraps_at(c, i) {
+                        via.extend(detour(ci, c, i, at(c[i - 1]).0, at(c[i]).0));
+                    }
+                    if i < n - 1 {
+                        via.push(at(c[i]));
+                    }
+                }
+                let (pa, pz) = (at(a), at(z));
+                let first = via.first().copied().unwrap_or(pz);
+                let last = via.last().copied().unwrap_or(pa);
+                let ba = shape_of(a).map_or((0.0, 0.0), |s| {
+                    s.toward(dir, first.0 - pa.0, first.1 - pa.1)
+                });
+                let bz = shape_of(z).map_or((0.0, 0.0), |s| {
+                    s.toward(dir, last.0 - pz.0, last.1 - pz.1)
+                });
+                points = vec![(pa.0 + ba.0, pa.1 + ba.1)];
+                points.extend(via);
+                points.push((pz.0 + bz.0, pz.1 + bz.1));
             }
-            // Polyline (and the spline fallback).
-            let interior: Vec<(f64, f64)> = c.nodes[1..n - 1].iter().map(|&d| inp.pos[d]).collect();
-            let (pa, pz) = (inp.pos[a], inp.pos[z]);
-            let first = interior.first().copied().unwrap_or(pz);
-            let last = interior.last().copied().unwrap_or(pa);
-            let sa = model(g, a).and_then(|m| inp.shapes.get(m));
-            let sz = model(g, z).and_then(|m| inp.shapes.get(m));
-            let ba = sa.map_or((0.0, 0.0), |s| s.toward(dir, first.0 - pa.0, first.1 - pa.1));
-            let bz = sz.map_or((0.0, 0.0), |s| s.toward(dir, last.0 - pz.0, last.1 - pz.1));
-            let mut points = vec![(pa.0 + ba.0, pa.1 + ba.1)];
-            points.extend(interior);
-            points.push((pz.0 + bz.0, pz.1 + bz.1));
-            Routed { points, label, wrap: false }
+            simplify(&mut points);
+            Routed {
+                points,
+                label,
+                wrap,
+            }
         })
         .collect()
 }
@@ -433,6 +473,56 @@ mod tests {
         assert_eq!(out, 146.0);
         let (p1, out1) = self_loop(Direction::TB, &s, 100.0, 50.0, 1);
         assert!(out1 > out && p1[1].0 == out1);
+    }
+
+    fn chain_graph(n: usize) -> LGraph {
+        use super::super::lgraph::{build, BuildIn, Clusters, EdgeIn, Extent};
+        let real: Vec<Extent> = (0..n).map(|_| Extent { left: 20.0, right: 20.0, thick: 20.0 }).collect();
+        let layers: Vec<usize> = (0..n).collect();
+        let edges: Vec<EdgeIn> = (1..n)
+            .map(|i| EdgeIn { edge: i - 1, upper: i - 1, lower: i, reversed: false, label: None })
+            .collect();
+        build(&BuildIn {
+            real: &real,
+            layer: &layers,
+            edges: &edges,
+            clusters: &Clusters::default(),
+            titles: &[],
+            empty_size: &[],
+            max_nodes: 100,
+            max_layers: 100,
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn wrapped_chain_detours_around_the_outside() {
+        // Four layers in two parts: layers 0-1 at order 0..40, layers 2-3 moved below
+        // (order 80..120) and back to the start of the layer axis.
+        let g = chain_graph(4);
+        let pos = [(20.0, 10.0), (20.0, 60.0), (100.0, 10.0), (100.0, 60.0)];
+        let top = [0.0, 50.0, 0.0, 50.0];
+        let bot = [20.0, 70.0, 20.0, 70.0];
+        let shapes = [NodeShape { shape: Shape::Rect, w: 40.0, h: 20.0 }; 4];
+        let wrap = WrapFrame { chan_y: 90.0, gap_x: vec![60.0], entry_y: vec![0.0, -20.0] };
+        for style in [EdgeStyle::Orthogonal, EdgeStyle::Polyline] {
+            let r = route(&RouteIn {
+                dir: Direction::TB,
+                style,
+                g: &g,
+                pos: &pos,
+                layer_top: &top,
+                layer_bot: &bot,
+                part: &[0, 0, 1, 1],
+                shapes: &shapes,
+                wrap: Some(&wrap),
+            });
+            assert_eq!(r.iter().map(|x| x.wrap).collect::<Vec<_>>(), vec![false, true, false]);
+            let w = &r[1].points;
+            assert_eq!(w.first(), Some(&(20.0, 70.0)));
+            assert_eq!(w.last(), Some(&(100.0, 0.0)));
+            assert_eq!(&w[1..w.len() - 1], &[(20.0, 90.0), (60.0, 90.0), (60.0, -20.0), (100.0, -20.0)]);
+        }
     }
 
     #[test]

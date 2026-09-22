@@ -227,8 +227,7 @@ pub fn assign_x(g: &LGraph, spacing: f64, fuel: &mut Fuel) -> Result<Vec<f64>, O
     if n == 0 {
         return Ok(Vec::new());
     }
-    let ext: Vec<(f64, f64)> = runs.iter().map(|(xs, _)| extent(xs)).collect();
-    let narrowest = (0..4)
+    let ext: Vec<(f64, f64)> = runs.iter().map(|(xs, _)| extent(xs)).collect();    let narrowest = (0..4)
         .min_by(|&a, &b| {
             (ext[a].1 - ext[a].0)
                 .partial_cmp(&(ext[b].1 - ext[b].0))
@@ -398,8 +397,9 @@ fn deepest_first(cl: &Clusters) -> Vec<usize> {
 
 /// Layer-axis centre and thickness of every layer. Neighbouring layers are `gap` apart,
 /// more where nested cluster boxes start or end between them (their padding and titles
-/// stack up, plus [`CLUSTER_LAYER_GAP`]).
-pub fn layer_y(g: &LGraph, cl: &Clusters, pads: &[Pad], gap: f64) -> (Vec<f64>, Vec<f64>) {
+/// stack up, plus [`CLUSTER_LAYER_GAP`]), and at least `min_gap[l]` between layer `l`
+/// and `l + 1` (room for edge labels in that gap).
+pub fn layer_y(g: &LGraph, cl: &Clusters, pads: &[Pad], gap: f64, min_gap: &[f64]) -> (Vec<f64>, Vec<f64>) {
     let nl = g.layers.len();
     let mut thick = vec![0.0f64; nl];
     for node in &g.nodes {
@@ -446,7 +446,8 @@ pub fn layer_y(g: &LGraph, cl: &Clusters, pads: &[Pad], gap: f64) -> (Vec<f64>, 
             } else {
                 0.0
             };
-            cur += thick[l - 1] / 2.0 + max(gap, clusters_need) + thick[l] / 2.0;
+            let label_need = min_gap.get(l - 1).copied().unwrap_or(0.0);
+            cur += thick[l - 1] / 2.0 + max(max(gap, label_need), clusters_need) + thick[l] / 2.0;
         }
         y[l] = cur;
     }
@@ -675,7 +676,7 @@ mod tests {
             let mut x = assign_x(&g, 24.0, &mut fuel()).unwrap();
             fit_clusters(&g, &cl, &p, 24.0, &mut x, &mut fuel()).unwrap();
             assert_separated(&g, &x, 24.0);
-            let (y, thick) = layer_y(&g, &cl, &p, 48.0);
+            let (y, thick) = layer_y(&g, &cl, &p, 48.0, &[]);
             let boxes = cluster_boxes(&g, &cl, &p, &x, &y);
             for (c, bx) in boxes.iter().enumerate() {
                 let Some(bx) = bx else { continue };
@@ -708,14 +709,17 @@ mod tests {
         let cl = clusters(&[None], &[None, Some(0)]);
         let g = graph(&[40.0, 40.0], &[0, 1], &[(0, 1)], &cl, 0.0);
         let p = vec![Pad { order_before: 12.0, order_after: 12.0, layer_before: 80.0, layer_after: 12.0 }];
-        let (y, thick) = layer_y(&g, &cl, &p, 48.0);
+        let (y, thick) = layer_y(&g, &cl, &p, 48.0, &[]);
         assert_eq!(thick, vec![20.0, 20.0]);
         // The cluster starting at layer 1 needs 80 px above its members plus a gap.
         assert!(y[1] - y[0] - 20.0 >= 80.0);
         let cl0 = Clusters::default();
         let g0 = graph(&[40.0, 40.0], &[0, 1], &[(0, 1)], &cl0, 0.0);
-        let (y0, _) = layer_y(&g0, &cl0, &[], 48.0);
+        let (y0, _) = layer_y(&g0, &cl0, &[], 48.0, &[]);
         assert_eq!(y0[1] - y0[0], 48.0 + 20.0);
+        // A wider minimum for one gap (an edge label) widens only that gap.
+        let (y1, _) = layer_y(&g0, &cl0, &[], 48.0, &[70.0]);
+        assert_eq!(y1[1] - y1[0], 70.0 + 20.0);
     }
 
     #[test]
