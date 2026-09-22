@@ -9,6 +9,7 @@ pnpm bench fetch                     # compat + edits corpora (committed)
 cargo build --release -p merlion-cli # from the repository root, for the merlion adapter
 pnpm bench run [--renderers merlion,mermaid-dagre,mermaid-elk] [--corpus compat] [--limit N] [--out-svgs] [--no-edits]
 pnpm bench report [--input results/<file>.json] [--out <file>.md]
+pnpm bench parity [--limit N] [--require-rsvg]   # stylesheet parity, after the release build
 pnpm test && pnpm typecheck
 ```
 
@@ -49,3 +50,18 @@ All metrics are computed from the SVG alone (`src/svg/extract.ts`, `src/metrics/
 - **Speed.** p50 / p95 render milliseconds over rendered diagrams; mean fuel for Merlion.
 - **Determinism.** Native vs WASM byte identity, run when `packages/merlion-wasm/merlion.wasm` exists (loaded through `packages/merlion-wasm/index.js` `initSync`); otherwise reported as skipped.
 - **Per diagram against mermaid-elk.** For each metric where lower is better, counts of diagrams where a renderer is strictly lower (win), equal within 1e-6 relative (tie) or higher (loss), over diagrams both drew.
+
+## Stylesheet parity
+
+`pnpm bench parity` implements the stylesheet parity row of [specs/benchmark.md](../specs/benchmark.md) (`src/parity/`). Inputs: every `compat` diagram plus `fixtures/roles/*.mmd` (every built-in role on nodes, clusters and edges; stylesheet roles; re-themed `classDef`s next to `style`/`linkStyle` literals), and `fixtures/parity.css`, which must compile under `merlion css --strict`. Each theme of the compiled CSS (`:root` and `dark`) is checked against three targets:
+
+| Target | How |
+|---|---|
+| Reference | Plain SVG (`render --no-hint`) inlined in Chromium with the compiled CSS linked and `data-theme` on `<html>` |
+| Baked, no host CSS | `render --css fixtures/parity.css [--theme t]` inlined with no page CSS |
+| Baked, `<style>` removed | The same SVG without its `<style>`: presentation attributes only |
+| rsvg-convert | The baked SVG at `-z 2`, sampled at points chosen on the reference |
+
+Compared per element (every path, rect, circle, ellipse, line, polygon, text and tspan outside `<defs>`, plus marker contents): computed `fill` and `stroke` through a canvas `fillStyle` round trip to 8-bit sRGB (±1 per channel, paint opacity folded into alpha), `stroke-dasharray`, and the product of `opacity` up the tree. Pixel samples: up to three interior fill points per shape that are the topmost element there and clear of every label's box (widened for font differences), up to three points on each stroke kept 1 px inside a dash, and one interior point per marker instance. A sample counts only where the reference screenshot shows the element's own opaque paint, so occluded and antialiased points are dropped and reported as a count. Text is not pixel-sampled: glyph outlines differ between Chromium's and librsvg's font stacks; its colour is covered by the two Chromium targets. The run also bakes every named theme of `merlion-themes.css` and fails on a stylesheet warning.
+
+Output: a summary on stdout and every mismatch in `target/parity/report.json`. Without rsvg-convert on `PATH` the pixel target is reported as skipped; CI passes `--require-rsvg`.

@@ -102,3 +102,34 @@ jobs:
           for font in link embed system; do
             pnpm bench determinism --font "$font"
           done
+
+  parity:
+    # Stylesheet parity (specs/benchmark.md): the plain SVG with the compiled page CSS in
+    # Chromium is the reference; the baked SVG with no host CSS, without its <style>, and
+    # through rsvg-convert must match it over the compat corpus and the role fixtures.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: rustup toolchain install
+      - run: corepack enable
+      - name: Install rsvg-convert
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librsvg2-bin
+          rsvg-convert --version
+      - name: Build the CLI
+        run: cargo build --locked --release -p merlion-cli
+      - name: Install the bench harness (no install scripts)
+        working-directory: bench
+        run: pnpm install --ignore-workspace --frozen-lockfile --ignore-scripts
+      - name: Install Chromium for Playwright
+        working-directory: bench
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Stylesheet parity, compat corpus and role fixtures
+        working-directory: bench
+        run: pnpm bench parity --require-rsvg

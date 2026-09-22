@@ -5,6 +5,7 @@
  *   pnpm bench run [--renderers merlion,mermaid-dagre,mermaid-elk] [--corpus compat] [--limit N] [--out-svgs] [--no-edits]
  *   pnpm bench report [--input results/<file>.json] [--out <file>.md]
  *   pnpm bench determinism [--font link|embed|system]
+ *   pnpm bench parity [--limit N] [--require-rsvg]
  */
 import { Command, Options } from "@effect/cli";
 import { FetchHttpClient } from "@effect/platform";
@@ -12,6 +13,7 @@ import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Effect, Layer, Schema } from "effect";
 import { fetchCorpus } from "./corpus/fetch.ts";
 import { determinism, FONT_MODES } from "./determinism.ts";
+import { parity } from "./parity/gate.ts";
 import { RENDERER_NAMES, type RendererName } from "./renderers/Renderer.ts";
 import { report } from "./report.ts";
 import { run } from "./run.ts";
@@ -51,7 +53,15 @@ const determinismCmd = Command.make("determinism", { font }, (o) => determinism(
   Command.withDescription("Check native (CLI --batch) and WASM output are byte-identical over the compat corpus"),
 );
 
-const bench = Command.make("bench").pipe(Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd]));
+const parityLimit = Options.integer("limit").pipe(Options.optional, Options.withDescription("Check only the first N diagrams"));
+const requireRsvg = Options.boolean("require-rsvg").pipe(Options.withDescription("Fail instead of skipping when rsvg-convert is not on PATH"));
+const parityCmd = Command.make("parity", { limit: parityLimit, requireRsvg }, (o) =>
+  parity({ limit: o.limit, requireRsvg: o.requireRsvg }).pipe(Effect.asVoid),
+).pipe(
+  Command.withDescription("Stylesheet parity: page CSS in Chromium vs baked SVG with no host CSS, without <style>, and through rsvg-convert"),
+);
+
+const bench = Command.make("bench").pipe(Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd]));
 
 const cli = Command.run(bench, { name: "merlion-bench", version: "0.0.0" });
 

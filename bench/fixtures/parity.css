@@ -1,0 +1,82 @@
+/*
+ * Stylesheet of the parity gate (specs/benchmark.md, stylesheet parity). It compiles with
+ * `merlion css --strict` and exercises every kind of declaration a stylesheet may make:
+ * foundation and mixed-role tokens, private tokens resolved through var(), the stroke
+ * width, a re-themed classDef, tones and dashes on node, cluster and edge roles (custom
+ * and built-in), and a named dark theme that overrides some of each. A reference
+ * resolves in the theme of its rule, so the dark block repeats the declarations that read
+ * the private tokens it redefines.
+ */
+
+:root {
+  --ink: #102a43;
+  --paper: #fbfaf7;
+  --teal: #0f766e;
+  --plum: #7a4fb5;
+  --merlion-bg: var(--paper);
+  --merlion-fg: var(--ink);
+  --merlion-accent: #b42318;
+  --merlion-ok: oklch(0.55 0.13 150);
+  --merlion-warn: #b54708;
+  --merlion-danger: rgb(200 30 80);
+  --merlion-edge: #52606d;
+  --merlion-node-border: var(--teal);
+  --merlion-cluster-bg: #f1efe8;
+  --merlion-stroke: 1.5px;
+  --merlion-c-someclass-fill: #fde68a;
+  --merlion-c-someclass-stroke: #92400e;
+  --merlion-c-someclass-color: #451a03;
+  --merlion-c-hot-fill: #ffe4e6;
+}
+
+[data-theme="dark"] {
+  --ink: #e6edf3;
+  --paper: #0d1117;
+  --teal: #5eead4;
+  --plum: #c4a7f5;
+  --merlion-bg: var(--paper);
+  --merlion-fg: var(--ink);
+  --merlion-node-border: var(--teal);
+  --merlion-accent: #ff8a7a;
+  --merlion-ok: #56d364;
+  --merlion-warn: hsl(38 90% 60%);
+  --merlion-danger: #ff7b9c;
+  --merlion-edge: #8b949e;
+  --merlion-cluster-bg: #161b22;
+  --merlion-c-someclass-fill: #3b2f0b;
+  --merlion-c-someclass-color: #fde68a;
+  --merlion-c-hot-fill: #4c0519;
+  --merlion-c-hot-color: #fecdd3;
+}
+
+.merlion-c-store,
+.merlion-c-queue {
+  --merlion-tone: var(--teal);
+}
+
+[data-theme="dark"] .merlion-c-store {
+  --merlion-tone: var(--teal);
+  --merlion-dash: 3 2;
+}
+
+.merlion-cc-zone {
+  --merlion-tone: var(--plum);
+  --merlion-dash: 8 3;
+}
+
+[data-theme="dark"] .merlion-cc-zone {
+  --merlion-tone: var(--plum);
+}
+
+.merlion-c-late {
+  --merlion-tone: #b45309;
+  --merlion-dash: 2 2;
+}
+
+.merlion-c-danger {
+  --merlion-tone: #9f1239;
+}
+
+.merlion-c-async {
+  --merlion-dash: 1 3;
+}
