@@ -4,6 +4,7 @@ mod acyclic;
 mod layering;
 mod lgraph;
 mod measure;
+mod order;
 
 use crate::diag::Diagnostics;
 use crate::fuel::Fuel;
