@@ -17,6 +17,10 @@ use alloc::string::String;
 pub const BG: &str = "#ffffff";
 pub const FG: &str = "#1f2328";
 pub const ACCENT: &str = "#0969da";
+/// Tones of the built-in roles `ok`, `warn` and `danger` / `failure` (specs/svg-output.md#built-in-roles).
+pub const OK: &str = "#1a7f37";
+pub const WARN: &str = "#9a6700";
+pub const DANGER: &str = "#cf222e";
 /// `color-mix(in oklab, fg 55%, bg)` of the defaults.
 pub const MUTED: &str = "#7b7d81";
 /// `color-mix(in oklab, fg 45%, bg)` of the defaults.
@@ -71,6 +75,9 @@ pub enum Role {
     Surface,
     Border,
     Accent,
+    Ok,
+    Warn,
+    Danger,
     NodeBg,
     NodeBorder,
     NodeText,
@@ -92,6 +99,9 @@ impl Role {
             Role::Surface => "surface",
             Role::Border => "border",
             Role::Accent => "accent",
+            Role::Ok => "ok",
+            Role::Warn => "warn",
+            Role::Danger => "danger",
             Role::NodeBg => "node-bg",
             Role::NodeBorder => "node-border",
             Role::NodeText => "node-text",
@@ -108,6 +118,9 @@ impl Role {
             Role::Bg => Def::Literal(BG),
             Role::Fg => Def::Literal(FG),
             Role::Accent => Def::Literal(ACCENT),
+            Role::Ok => Def::Literal(OK),
+            Role::Warn => Def::Literal(WARN),
+            Role::Danger => Def::Literal(DANGER),
             Role::Muted => Def::Mix(55, MUTED),
             Role::Line => Def::Mix(45, LINE),
             Role::Surface => Def::Mix(4, SURFACE),

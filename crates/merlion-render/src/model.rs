@@ -285,6 +285,10 @@ pub struct Edge {
     /// `linkStyle <index> …`, merged over `linkStyle default`.
     pub style: Style,
     pub span: Span,
+    /// The edge id (`a e1@--> b`), when the source gives one.
+    pub id: Option<String>,
+    /// Roles given through the edge id (`class e1 failure`), in order; names already validated.
+    pub classes: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

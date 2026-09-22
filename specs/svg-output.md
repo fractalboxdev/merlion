@@ -104,7 +104,7 @@ Every node, edge and cluster group resets both tokens at zero specificity:
 
 A tone set on an ancestor, on `:root` or on a cluster therefore never reaches member elements, nor the arrow markers, which inherit from `<defs>`; a role rule on the group itself (specificity 0,1,0 or more) wins over the reset and reaches the group's shape and text by inheritance. These two tokens are the only custom properties the embedded style declares.
 
-Each edge role in use gets its own arrow marker in `<defs>` (`{id}-arrow-c-{name}`) carrying the role class, because a marker inherits from `<defs>`, not from the edge that references it.
+Each edge role in use gets its own marker in `<defs>` (`{id}-arrow-c-{name}`, likewise `-circle-` and `-cross-`) carrying the role class, because a marker inherits from `<defs>`, not from the edge that references it. An edge with several roles uses one marker per distinct role set, `{id}-arrow-r{k}` with `k` the set's first-use index, carrying every class of the set. `classDef` and `linkStyle` colours reach the edge path and label, not the marker.
 
 #### Built-in roles
 

@@ -82,6 +82,8 @@ fn edge(from: usize, to: usize) -> Edge {
         min_len: 1,
         style: Style::default(),
         span: Span::default(),
+        id: None,
+        classes: vec![],
     }
 }
 
@@ -690,9 +692,12 @@ fn class_def_becomes_scoped_rules() {
     let out = draw(&styled_chart());
     let css = style_text(&out.svg);
     assert!(css.contains(
-        "#m1 .merlion-c-hot>.merlion-shape{fill:#ff0000;stroke:hsla(120, 50%, 25%, 0.5);stroke-width:3px;}"
+        "#m1 .merlion-c-hot>.merlion-shape{fill:var(--merlion-c-hot-fill, #ff0000);\
+         stroke:var(--merlion-c-hot-stroke, hsla(120, 50%, 25%, 0.5));stroke-width:3px;}"
     ));
-    assert!(css.contains("#m1 .merlion-c-hot text{fill:white;font-weight:600;}"));
+    assert!(css.contains(
+        "#m1 .merlion-c-hot text{fill:var(--merlion-c-hot-color, white);font-weight:600;}"
+    ));
     assert!(!css.contains("bad name"));
     assert!(out
         .svg
@@ -1114,9 +1119,12 @@ fn subgraph_style_and_class_reach_only_the_box_and_title() {
     assert!(css.contains("#m1 .merlion-ss-0>.merlion-cluster-box{fill:red;}"));
     assert!(css.contains("#m1 .merlion-ss-0>.merlion-cluster-title{fill:blue;}"));
     assert!(css.contains(
-        "#m1 .merlion-cc-hot>.merlion-cluster-box{fill:#ff0000;stroke:hsla(120, 50%, 25%, 0.5);stroke-width:3px;}"
+        "#m1 .merlion-cc-hot>.merlion-cluster-box{fill:var(--merlion-c-hot-fill, #ff0000);\
+         stroke:var(--merlion-c-hot-stroke, hsla(120, 50%, 25%, 0.5));stroke-width:3px;}"
     ));
-    assert!(css.contains("#m1 .merlion-cc-hot>.merlion-cluster-title{fill:white;font-weight:600;}"));
+    assert!(css.contains(
+        "#m1 .merlion-cc-hot>.merlion-cluster-title{fill:var(--merlion-c-hot-color, white);font-weight:600;}"
+    ));
     // Child combinators only: member nodes keep their own colours.
     assert!(!css.contains(".merlion-ss-0 text") && !css.contains(".merlion-cc-hot text"));
     assert_safe(&out.svg, "m1");

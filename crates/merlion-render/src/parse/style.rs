@@ -10,6 +10,9 @@ use alloc::vec::Vec;
 use crate::diag::excerpt;
 use crate::model::{Color, FontStyle, FontWeight, Style};
 
+/// The message of `I030 FixedColour` (specs/parser.md#codes).
+pub const FIXED_COLOUR_MESSAGE: &str = "the source sets a colour: a `classDef` colour stays fixed unless a stylesheet or page sets its `--merlion-c-{name}-*` token; a `style` or `linkStyle` colour stays fixed";
+
 /// A declaration that was dropped, as a byte range relative to the parsed text.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Rejected {

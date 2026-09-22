@@ -242,6 +242,8 @@ struct Compound {
     root: bool,
     /// `:not(:is([data-theme="light"] *))`
     not_light: bool,
+    /// `:where(<compound>)`: matched on the same element, zero specificity.
+    wheres: Vec<Compound>,
 }
 
 fn parse_compound(s: &str) -> Compound {
@@ -280,7 +282,11 @@ fn parse_compound(s: &str) -> Compound {
                 rest = &body[n + 1..];
             }
             ":" => {
-                if let Some(r) = body.strip_prefix("not(:is([data-theme=\"light\"] *))") {
+                if let Some(r) = body.strip_prefix("where(") {
+                    let close = r.find(')').expect("where end");
+                    c.wheres.push(parse_compound(&r[..close]));
+                    rest = &r[close + 1..];
+                } else if let Some(r) = body.strip_prefix("not(:is([data-theme=\"light\"] *))") {
                     c.not_light = true;
                     rest = r;
                 } else if let Some(r) = body.strip_prefix("root") {
@@ -443,6 +449,9 @@ impl Engine {
                 (Some(x), Some(v)) if x != v => return false,
                 _ => {}
             }
+        }
+        if !c.wheres.iter().all(|w| self.matches_compound(e, w)) {
+            return false;
         }
         if c.not_light {
             let mut p = el.parent;

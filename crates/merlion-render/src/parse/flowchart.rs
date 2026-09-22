@@ -212,6 +212,7 @@ struct EdgeB {
     arrow_end: Arrow,
     min_len: u32,
     span: Span,
+    id: Option<String>,
 }
 
 struct SubB {
@@ -725,7 +726,7 @@ impl P<'_, '_> {
                 self.pos = save;
                 break;
             }
-            self.skip_edge_id();
+            let edge_id = self.edge_id();
             let Some(tok) = self.link()? else {
                 return Err(self.fail_here("expected a link, `&`, `;` or a newline"));
             };
@@ -746,6 +747,7 @@ impl P<'_, '_> {
                         arrow_end: tok.end,
                         min_len: tok.min_len,
                         span,
+                        id: edge_id.clone(),
                     });
                 }
             }
@@ -785,14 +787,17 @@ impl P<'_, '_> {
         })
     }
 
-    /// Skips an edge id (`e1@-->`); Merlion accepts edge ids and ignores them.
-    fn skip_edge_id(&mut self) {
+    /// Reads an edge id (`e1@-->`): `class e1 <name>` gives the edge a role and
+    /// `e1@{…}` configures it (specs/parser.md#error-tolerance).
+    fn edge_id(&mut self) -> Option<String> {
         let end = self.scan_id(self.pos);
         if end > self.pos && self.byte(end) == Some(b'@') && self.is_link_start(end + 1) {
             let id = self.src.get(self.pos..end).unwrap_or("").to_string();
-            self.edge_ids.insert(id);
+            self.edge_ids.insert(id.clone());
             self.pos = end + 1;
+            return Some(id);
         }
+        None
     }
 
     /// The renamed id for a reserved word (`R004`): `end_`, `end__`, … whichever is
@@ -1642,12 +1647,8 @@ impl P<'_, '_> {
         }
         if parsed.fixed_colour {
             let span = self.span(start, end);
-            self.diags.emit_once(
-                Severity::Info,
-                "I030",
-                span,
-                "the source sets a fixed colour, which stays the same in every theme",
-            );
+            self.diags
+                .emit_once(Severity::Info, "I030", span, style::FIXED_COLOUR_MESSAGE);
         }
         parsed.style
     }
@@ -2147,6 +2148,8 @@ impl P<'_, '_> {
                     min_len: e.min_len,
                     style: Style::default(),
                     span: e.span,
+                    id: e.id.clone(),
+                    classes: Vec::new(),
                 });
             }
         }
@@ -2170,6 +2173,13 @@ impl P<'_, '_> {
                         let classes = &mut sub_look.entry(id).or_default().0;
                         if !classes.contains(&class) {
                             classes.push(class);
+                        }
+                    } else {
+                        // An edge id: every edge declared with it takes the role.
+                        for e in edges.iter_mut() {
+                            if e.id.as_deref() == Some(id.as_str()) && !e.classes.contains(&class) {
+                                e.classes.push(class.clone());
+                            }
                         }
                     }
                 }

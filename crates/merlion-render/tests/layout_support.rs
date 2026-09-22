@@ -72,6 +72,8 @@ impl B {
             min_len,
             style: Style::default(),
             span: Default::default(),
+            id: None,
+            classes: Vec::new(),
         });
         self.c.edges.len() - 1
     }

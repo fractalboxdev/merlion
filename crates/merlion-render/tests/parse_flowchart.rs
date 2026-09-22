@@ -1441,3 +1441,46 @@ fn expanded_shapes_have_their_own_outline() {
         assert!(d.iter().all(|x| x.code != "W015"), "{name}: {d:#?}");
     }
 }
+
+// ---------------------------------------------------------------- edge roles
+
+#[test]
+fn edge_ids_are_kept_and_take_classes() {
+    let (f, d) = parse_ok(
+        "flowchart LR\nA[a] e1@--> B[b]\nB e2@-.-> C[c]\nA --> C\nclass e1 failure\nclass e2,e1 async\nclass e2 1bad",
+    );
+    assert_eq!(f.edges.len(), 3);
+    assert_eq!(f.edges[0].id.as_deref(), Some("e1"));
+    assert_eq!(f.edges[0].classes, ["failure", "async"]);
+    assert_eq!(f.edges[1].id.as_deref(), Some("e2"));
+    assert_eq!(f.edges[1].classes, ["async"]);
+    assert_eq!(f.edges[2].id, None);
+    assert!(f.edges[2].classes.is_empty());
+    assert_eq!(codes(&d), ["W011"]);
+    // No node was created for an edge id.
+    assert!(f.nodes.iter().all(|n| n.id != "e1" && n.id != "e2"));
+}
+
+#[test]
+fn an_edge_id_on_a_chain_applies_to_every_edge_of_that_link() {
+    let (f, _) = parse_ok("flowchart LR\nA & B e1@--> C\nclass e1 hot");
+    assert_eq!(f.edges.len(), 2);
+    assert!(f.edges.iter().all(|e| e.classes == ["hot"]));
+    assert!(f.edges.iter().all(|e| e.id.as_deref() == Some("e1")));
+}
+
+#[test]
+fn a_node_id_takes_the_class_before_an_edge_id_of_the_same_name() {
+    let (f, _) = parse_ok("flowchart LR\nx[x] x@--> y[y]\nclass x hot");
+    let x = f.nodes.iter().find(|n| n.id == "x").unwrap();
+    assert_eq!(x.classes, ["hot"]);
+    assert!(f.edges[0].classes.is_empty());
+}
+
+#[test]
+fn edge_config_block_still_parses_after_class() {
+    let (f, d) = parse_ok("flowchart LR\nA e1@--> B\nclass e1 failure\ne1@{ animate: true }");
+    assert_eq!(f.edges.len(), 1);
+    assert_eq!(f.edges[0].classes, ["failure"]);
+    assert!(d.iter().all(|x| x.severity != Severity::Error));
+}

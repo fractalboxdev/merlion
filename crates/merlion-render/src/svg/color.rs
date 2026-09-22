@@ -85,35 +85,52 @@ fn decl_num(out: &mut String, prop: &str, v: f64, lo: f64, hi: f64, unit: &str) 
     }
 }
 
+/// A colour value: the literal, or with `class` (a validated `classDef` name) the
+/// per-class token with the literal as fallback, `var(--merlion-c-{class}-{prop}, lit)`
+/// (specs/svg-output.md#source-styles-classdef-style-linkstyle).
+fn colour_value(c: &Color, class: Option<&str>, prop: &str) -> Option<String> {
+    let lit = color_css(c)?;
+    Some(match class {
+        Some(name) if is_valid_class_name(name) => {
+            let mut s = String::from("var(--merlion-c-");
+            s.push_str(name);
+            s.push('-');
+            s.push_str(prop);
+            s.push_str(", ");
+            s.push_str(&lit);
+            s.push(')');
+            s
+        }
+        _ => lit,
+    })
+}
+
 /// Declarations for a shape (node shape or edge path): `fill`, `stroke`, stroke width,
 /// dash array and the opacities. `with_fill` is false for edge paths, which stay unfilled.
-pub fn shape_decls(style: &Style, with_fill: bool) -> String {
+/// `class` names the `classDef` whose colours read their overridable tokens.
+pub fn shape_decls(style: &Style, with_fill: bool, class: Option<&str>) -> String {
     let mut out = String::new();
     if with_fill {
-        if let Some(v) = style.fill.as_ref().and_then(color_css) {
+        if let Some(v) = style
+            .fill
+            .as_ref()
+            .and_then(|c| colour_value(c, class, "fill"))
+        {
             decl(&mut out, "fill", &v);
         }
     }
-    if let Some(v) = style.stroke.as_ref().and_then(color_css) {
+    if let Some(v) = style
+        .stroke
+        .as_ref()
+        .and_then(|c| colour_value(c, class, "stroke"))
+    {
         decl(&mut out, "stroke", &v);
     }
     if let Some(w) = style.stroke_width {
         decl_num(&mut out, "stroke-width", w, 0.0, 20.0, "px");
     }
-    if let Some(d) = &style.stroke_dasharray {
-        let mut v = String::new();
-        for n in d.iter().take(8) {
-            let Some(n) = clamp(*n, 0.0, 100.0) else {
-                continue;
-            };
-            if !v.is_empty() {
-                v.push(' ');
-            }
-            push_num(&mut v, n);
-        }
-        if !v.is_empty() {
-            decl(&mut out, "stroke-dasharray", &v);
-        }
+    if let Some(v) = style.stroke_dasharray.as_deref().and_then(dash_css) {
+        decl(&mut out, "stroke-dasharray", &v);
     }
     if with_fill {
         if let Some(o) = style.fill_opacity {
@@ -126,14 +143,30 @@ pub fn shape_decls(style: &Style, with_fill: bool) -> String {
     out
 }
 
-/// Declarations for the `text` inside a styled element: `color` becomes the text fill.
-pub fn text_decls(style: &Style) -> String {
+/// A dash array: up to 8 numbers clamped to 0..=100, space-separated; `None` when empty.
+pub fn dash_css(d: &[f64]) -> Option<String> {
+    let mut v = String::new();
+    for n in d.iter().take(8) {
+        let Some(n) = clamp(*n, 0.0, 100.0) else {
+            continue;
+        };
+        if !v.is_empty() {
+            v.push(' ');
+        }
+        push_num(&mut v, n);
+    }
+    (!v.is_empty()).then_some(v)
+}
+
+/// Declarations for the `text` inside a styled element: `color` becomes the text fill,
+/// through `--merlion-c-{class}-color` for a `classDef`.
+pub fn text_decls(style: &Style, class: Option<&str>) -> String {
     let mut out = String::new();
     if let Some(v) = style
         .color
         .as_ref()
         .filter(|c| **c != Color::None)
-        .and_then(color_css)
+        .and_then(|c| colour_value(c, class, "color"))
     {
         decl(&mut out, "fill", &v);
     }
@@ -248,11 +281,11 @@ mod tests {
             ..Style::default()
         };
         assert_eq!(
-            shape_decls(&s, true),
+            shape_decls(&s, true, None),
             "fill:red;stroke-width:20px;stroke-dasharray:5 100 1.5;fill-opacity:1;"
         );
         assert_eq!(
-            shape_decls(&s, false),
+            shape_decls(&s, false, None),
             "stroke-width:20px;stroke-dasharray:5 100 1.5;"
         );
     }
@@ -263,7 +296,10 @@ mod tests {
             stroke_dasharray: Some(vec![1.0; 12]),
             ..Style::default()
         };
-        assert_eq!(shape_decls(&s, false), "stroke-dasharray:1 1 1 1 1 1 1 1;");
+        assert_eq!(
+            shape_decls(&s, false, None),
+            "stroke-dasharray:1 1 1 1 1 1 1 1;"
+        );
     }
 
     #[test]
@@ -280,7 +316,7 @@ mod tests {
             ..Style::default()
         };
         assert_eq!(
-            text_decls(&s),
+            text_decls(&s, None),
             "fill:#000000;font-weight:600;font-style:italic;"
         );
     }
@@ -302,5 +338,34 @@ mod tests {
         assert!(is_fixed(&Some(Color::Transparent)));
         assert!(!is_fixed(&Some(Color::None)));
         assert!(!is_fixed(&None));
+    }
+
+    #[test]
+    fn class_colours_read_their_token() {
+        let s = Style {
+            fill: Some(Color::Named("red")),
+            stroke: Some(Color::None),
+            color: Some(Color::Rgba {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            }),
+            stroke_width: Some(2.0),
+            ..Style::default()
+        };
+        assert_eq!(
+            shape_decls(&s, true, Some("hot")),
+            "fill:var(--merlion-c-hot-fill, red);stroke:var(--merlion-c-hot-stroke, none);stroke-width:2px;"
+        );
+        assert_eq!(
+            text_decls(&s, Some("hot")),
+            "fill:var(--merlion-c-hot-color, #000000);"
+        );
+        // An invalid class name never reaches a token name.
+        assert_eq!(
+            shape_decls(&s, false, Some("a;b")),
+            "stroke:none;stroke-width:2px;"
+        );
     }
 }

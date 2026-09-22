@@ -11,8 +11,10 @@
 //! 4. `@supports (color: color-mix(in oklab, #000, #fff))` repeating the declarations
 //!    whose fallback chain contains a mixed role, now falling back to `color-mix`, and the
 //!    fills and text that mix the tone into their role;
-//! 5. source styles (`classDef`, then node `style`, then `linkStyle`), last so that at
-//!    equal specificity they win over 3 and 4.
+//! 5. built-in and palette role rules for the roles the diagram uses, then their own
+//!    `@supports` block;
+//! 6. source styles (`classDef`, then node `style`, then `linkStyle`), last so that at
+//!    equal specificity they win over 3 to 5.
 
 use alloc::format;
 use alloc::string::String;
@@ -21,6 +23,7 @@ use alloc::vec::Vec;
 use crate::numfmt::push_num;
 use crate::options::FontMode;
 
+use super::roles::{TONE_CLUSTER_FILL, TONE_FILL, TONE_TEXT};
 use super::theme::{Role, FONT_MONO, STROKE};
 
 /// One base declaration's value.
@@ -68,11 +71,6 @@ impl Value {
         }
     }
 }
-
-/// Mix ratios of the per-element tone (specs/svg-output.md#roles).
-const TONE_FILL: u8 = 14;
-const TONE_CLUSTER_FILL: u8 = 8;
-const TONE_TEXT: u8 = 75;
 
 /// The zero-specificity reset of the per-element tokens (specs/svg-output.md#roles): a
 /// tone or dash set on an ancestor, on `:root` or on a cluster never reaches a member
@@ -218,6 +216,14 @@ pub struct SourceRule {
     pub body: String,
 }
 
+/// A role rule (specs/svg-output.md#built-in-roles): the body outside `@supports` and
+/// the declarations that replace it inside, both already serialised.
+pub struct RoleRule {
+    pub selector: String,
+    pub plain: String,
+    pub mixed: String,
+}
+
 /// The `merlion-detail` rule for detail lines drawn at `size` px: the fill reads
 /// `--merlion-node-detail`; the size stays literal because it is the measured one.
 fn detail_rule(size: f64) -> Rule {
@@ -242,6 +248,7 @@ pub fn build(
     font_size: f64,
     detail_size: Option<f64>,
     font_css: Option<&str>,
+    roles: &[RoleRule],
     source: &[SourceRule],
 ) -> String {
     let mut out = String::new();
@@ -280,6 +287,16 @@ pub fn build(
         }
     }
     out.push('}');
+    for r in roles.iter().filter(|r| !r.plain.is_empty()) {
+        push_rule(&mut out, id, &r.selector, &r.plain);
+    }
+    if roles.iter().any(|r| !r.mixed.is_empty()) {
+        out.push_str("@supports (color: color-mix(in oklab, #000, #fff)){");
+        for r in roles.iter().filter(|r| !r.mixed.is_empty()) {
+            push_rule(&mut out, id, &r.selector, &r.mixed);
+        }
+        out.push('}');
+    }
     for r in source {
         push_rule(&mut out, id, &r.selector, &r.body);
     }
@@ -292,7 +309,7 @@ mod tests {
 
     #[test]
     fn reset_rule_matches_the_spec() {
-        let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[], &[]);
         assert!(s.starts_with(
             "#m1 text { font-family: var(--merlion-font, Inter, ui-sans-serif, system-ui, sans-serif); \
              font-size: var(--merlion-font-size, 14px); font-weight: 400; font-style: normal; \
@@ -304,7 +321,7 @@ mod tests {
 
     #[test]
     fn node_rule_reads_tokens_with_literal_fallbacks() {
-        let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[], &[]);
         assert!(s.contains(
             "#m1 .merlion-node>.merlion-shape{fill:var(--merlion-node-bg, var(--merlion-surface, #f5f5f5));\
              stroke:var(--merlion-tone, var(--merlion-node-border, var(--merlion-border, #c8c9cb)));\
@@ -314,7 +331,7 @@ mod tests {
 
     #[test]
     fn color_mix_appears_only_inside_supports() {
-        let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[], &[]);
         let at = s.find("@supports").unwrap();
         assert!(!s[..at].contains("color-mix"));
         let bg = "var(--merlion-node-bg, var(--merlion-surface, \
@@ -326,7 +343,7 @@ mod tests {
 
     #[test]
     fn only_the_per_element_tokens_are_declared() {
-        let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[], &[]);
         assert_eq!(s.matches("{--").count() + s.matches(";--").count(), 2);
         assert!(s.contains(
             ":where(#m1 .merlion-node, #m1 .merlion-edge, #m1 .merlion-cluster, #m1 marker)\
@@ -336,9 +353,9 @@ mod tests {
 
     #[test]
     fn detail_rule_only_when_detail_lines_exist() {
-        let none = build("m1", FontMode::Link, 14.0, None, None, &[]);
+        let none = build("m1", FontMode::Link, 14.0, None, None, &[], &[]);
         assert!(!none.contains("merlion-detail"));
-        let s = build("m1", FontMode::Link, 14.0, Some(11.2), None, &[]);
+        let s = build("m1", FontMode::Link, 14.0, Some(11.2), None, &[], &[]);
         assert!(
             s.contains(
                 "#m1 .merlion-detail{fill:var(--merlion-node-detail, var(--merlion-muted, \
@@ -357,7 +374,7 @@ mod tests {
 
     #[test]
     fn system_font_mode_uses_the_system_stack() {
-        let s = build("m1", FontMode::System, 13.5, None, None, &[]);
+        let s = build("m1", FontMode::System, 13.5, None, None, &[], &[]);
         assert!(s.contains("var(--merlion-font, system-ui, sans-serif)"));
         assert!(s.contains("var(--merlion-font-size, 13.5px)"));
     }
@@ -368,7 +385,7 @@ mod tests {
             selector: String::from(".merlion-c-hot>.merlion-shape"),
             body: String::from("fill:red;"),
         }];
-        let s = build("m1", FontMode::Link, 14.0, None, None, &src);
+        let s = build("m1", FontMode::Link, 14.0, None, None, &[], &src);
         assert!(
             s.ends_with("}#m1 .merlion-c-hot>.merlion-shape{fill:red;}"),
             "{}",
