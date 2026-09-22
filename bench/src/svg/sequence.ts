@@ -226,16 +226,26 @@ const mermaidDrawing = (root: XmlElement): SequenceDrawing => {
   }
   participants.sort((a, b) => a.x - b.x);
 
-  // One message per drawn line; the labels are a separate, possibly shorter list.
-  const lines = findAll(root, (e) => hasClass(e, "messageLine0") || hasClass(e, "messageLine1"));
-  const texts = findAll(root, (e) => hasClass(e, "messageText"));
-  const messages: SequenceMessage[] = lines.map((_, k) => {
-    const t = texts[k];
-    const text = t === undefined ? "" : label(t);
+  // One message per drawn line, and one `messageText` per wrapped line of its label,
+  // drawn above the line it labels. Both are read in y order and each text goes to the
+  // first line at or below it, so a wrapped label stays one message.
+  const lines = findAll(root, (e) => hasClass(e, "messageLine0") || hasClass(e, "messageLine1"))
+    .map((e) => ({ y: subtreeBox(e)?.y ?? Number.POSITIVE_INFINITY, texts: [] as XmlElement[] }))
+    .sort((a, b) => a.y - b.y);
+  const texts = findAll(root, (e) => hasClass(e, "messageText"))
+    .map((e) => ({ y: num(e.attrs["y"]) ?? 0, el: e }))
+    .sort((a, b) => a.y - b.y);
+  let k = 0;
+  for (const t of texts) {
+    while (k < lines.length - 1 && lines[k]!.y < t.y) k++;
+    lines[k]?.texts.push(t.el);
+  }
+  const messages: SequenceMessage[] = lines.map(({ texts: ts }) => {
+    const first = ts[0];
     return {
-      label: text,
-      lines: text === "" ? [] : [text],
-      anchor: t === undefined ? null : { x: num(t.attrs["x"]) ?? 0, y: num(t.attrs["y"]) ?? 0 },
+      label: labelText(ts),
+      lines: ts.map((t) => label(t)).filter((l) => l.length > 0),
+      anchor: first === undefined ? null : { x: num(first.attrs["x"]) ?? 0, y: num(first.attrs["y"]) ?? 0 },
       centred: true,
       labelBox: null,
     };

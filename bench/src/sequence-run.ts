@@ -231,16 +231,13 @@ const report = (
     lines.push("");
   }
 
-  const escapedBreak = failures.filter(([name]) => /#lt;\s*br/i.test(sources.get(name) ?? "")).length;
-  if (escapedBreak > 0) {
+  const math = failures.filter(([name]) => (sources.get(name) ?? "").includes("$$")).length;
+  if (math > 0) {
     lines.push("## Known differences");
     lines.push("");
     lines.push(
-      `An escaped line break — \`#lt;br#gt;\`, the source's way of writing a literal \`<br>\` — decodes to \`<br>\` ` +
-        "and is then read as a line break, so the literal text is dropped where mermaid draws it. " +
-        `${escapedBreak} of the ${failures.length} differing diagrams carry one. Entity decoding is shared with ` +
-        "flowcharts, whose output the `compat` digests pin, so the order of decoding and `<br>` splitting is one " +
-        "change for both.",
+      `mermaid typesets \`$$…$$\` with KaTeX and Merlion draws it as the text it is, so the two never agree on ` +
+        `a diagram that carries one. ${math} of the ${failures.length} differing diagrams do.`,
     );
     lines.push("");
   }
