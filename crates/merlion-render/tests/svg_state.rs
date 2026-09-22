@@ -101,6 +101,7 @@ fn node(id: &str, shape: Shape, text: &str) -> Node {
         link: None,
         subgraph: None,
         span: Span::default(),
+        reserve: Default::default(),
     }
 }
 
