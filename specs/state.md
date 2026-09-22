@@ -97,6 +97,8 @@ state Active {
 
 `--` inside a composite state splits its body into regions. `k` dividers make `k + 1` regions; an empty one is dropped, and a composite left with fewer than two regions has none and keeps its members directly. Each region has its own start and end states, resolved in the region's own scope. `--` outside a composite state is `R016` and is dropped.
 
+A composite carrying regions lowers to a cluster holding one cluster per region, so it costs two cluster levels rather than one. The layout follows twice the parser's nesting depth for that reason ([architecture.md](architecture.md#boundaries)), and a machine nested to the parser's limit of 64 draws every composite inside the one above it.
+
 ### Notes
 
 ```

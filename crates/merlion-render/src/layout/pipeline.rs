@@ -2021,10 +2021,27 @@ fn run_one(
         (Some((_, d)), true) => *d,
         _ => chart.direction,
     };
+    let cl = Clusters::from_chart(chart);
+    // A cluster nested past the layout's own depth is drawn at the top level, outside
+    // the cluster it named. Say so rather than draw a truncated hierarchy as a correct
+    // one (specs/architecture.md#boundaries).
+    if let Some(&i) = cl.too_deep.first() {
+        let n = cl.too_deep.len();
+        let span = chart.subgraphs.get(i).map(|s| s.span).unwrap_or_default();
+        diags.emit(
+            Severity::Error,
+            "E010",
+            span,
+            alloc::format!(
+                "{n} cluster(s) nest deeper than {}; they are drawn at the top level",
+                lgraph::MAX_CLUSTER_DEPTH
+            ),
+        );
+    }
     let mut base = Base {
         chart,
         o,
-        cl: Clusters::from_chart(chart),
+        cl,
         reversed,
         normal,
         loops,

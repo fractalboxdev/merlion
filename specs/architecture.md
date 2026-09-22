@@ -81,6 +81,7 @@ Byte-identical output on x86-64, arm64 and wasm32 rests on these rules:
 | Layered graph: nodes plus dummy nodes, after layer assignment | 20,000 | `TooLarge` |
 | Layer count | 500 | `TooLarge` |
 | Nesting depth: subgraphs / front matter / `%%{init}%%` | 64 | `Error` `E010` / `E011` / `E012` ([parser.md](parser.md#codes)) |
+| Cluster depth the layout follows | 128 | `Error` `E010`; the cluster is drawn at the top level |
 | Stylesheet size / rules / declarations per rule / compiled output | 64 KiB / 512 / 32 / 64 KiB | `Error` `E013` |
 | Stylesheet theme names / role selectors / block depth | 16 / 256 / 2 | `Error` `E013` |
 | Stylesheet `var()` resolution depth | 8 | `Warning` `W019` |
@@ -92,4 +93,5 @@ Byte-identical output on x86-64, arm64 and wasm32 rests on these rules:
 | Fuel per diagram | See [ADR-0008](adr/0008-deterministic-work-budget.md); role work is charged before layout, one unit per class on an element and per palette tone | Optional passes stop; exhaustion in a mandatory phase returns `TooLarge` |
 
 - Every limit is configurable by the caller. The dummy-node limit exists because an edge spanning L layers adds L − 1 dummy nodes: 2,000 nodes and 2,000 long edges would otherwise reach 4 million.
+- The layout follows twice the parser's nesting depth because one model element may lower to more than one cluster: a composite state splitting into concurrency regions becomes a cluster of clusters, so a state machine nested to 64 reaches 128 cluster levels ([state.md](state.md#concurrency)). At the parser's limit the layout's cut therefore never fires, and a source meets `E010` at 64 and nowhere else.
 - The core has no panics on any input, and no unbounded recursion: every recursive parser carries a depth counter. A fuzz target covers each parser separately and the whole pipeline ([security.md](security.md#fuzzing)).

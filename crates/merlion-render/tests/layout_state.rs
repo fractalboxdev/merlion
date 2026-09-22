@@ -974,6 +974,43 @@ fn concurrency_regions_hold_their_own_members_and_stay_apart() {
     assert!(outer.contains(&box0, 0.01) && outer.contains(&box1, 0.01));
 }
 
+/// A composite that splits into regions costs two cluster levels, not one, so a source
+/// at the parser's nesting limit reaches twice that depth in the layout. Every composite
+/// box stays inside the one above it right up to that limit
+/// (specs/state.md#concurrency, specs/architecture.md#boundaries).
+#[test]
+fn composites_holding_regions_nest_to_the_parser_limit_without_escaping() {
+    let depth = Limits::default().nesting;
+    let mut b = Build::new();
+    let mut composites = Vec::new();
+    let mut parent = None;
+    let mut region = None;
+    for i in 0..depth {
+        let c = b.member(&format!("C{i}"), StateKind::Composite, parent, region);
+        composites.push(c);
+        let r0 = b.region(c);
+        let r1 = b.region(c);
+        b.member(&format!("a{i}"), StateKind::Simple, Some(c), Some(r0));
+        b.member(&format!("b{i}"), StateKind::Simple, Some(c), Some(r1));
+        parent = Some(c);
+        region = Some(r0);
+    }
+    let sm = b.done();
+
+    let g = laid_out(&sm);
+    let geo = &g.geometry.graph;
+    let box_of = |s: usize| Box2::of_cluster(&geo.clusters[g.lowering.cluster_for[s].unwrap()]);
+    for w in composites.windows(2) {
+        let (outer, inner) = (box_of(w[0]), box_of(w[1]));
+        assert!(
+            outer.contains(&inner, 0.01),
+            "C{} {outer:?} does not hold C{} {inner:?}",
+            w[0],
+            w[1]
+        );
+    }
+}
+
 #[test]
 fn a_transition_across_a_composite_boundary_is_drawn() {
     // mermaid refuses this; Merlion routes it through the cluster boundary

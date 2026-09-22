@@ -203,6 +203,43 @@ fn deeply_nested_clusters_do_not_panic() {
     check(&b.c, &g);
 }
 
+/// A cluster nested past the layout's own depth is drawn at the top level rather than
+/// inside the cluster it named, so the render says so with `E010` instead of presenting
+/// the truncated hierarchy as the source's (specs/architecture.md#boundaries).
+#[test]
+fn clusters_nested_past_the_layout_depth_are_reported() {
+    let mut b = B::new();
+    let v = b.nodes(&["a", "b"]);
+    b.edge(v[0], v[1]);
+    let mut parent = None;
+    for i in 0..200 {
+        parent = Some(b.sub(&format!("s{i}"), "t", parent, &[]));
+    }
+    b.c.nodes[1].subgraph = parent;
+    let (g, d) = run_with(&b.c, &RenderOptions::default());
+    assert!(g.is_ok(), "{g:?}");
+    let e010: Vec<&str> = d
+        .items
+        .iter()
+        .filter(|x| x.code == "E010")
+        .map(|x| x.message.as_str())
+        .collect();
+    assert_eq!(e010.len(), 1, "{:?}", d.items);
+    assert!(e010[0].contains("nest deeper than"), "{:?}", e010[0]);
+
+    // A hierarchy inside the depth is drawn whole and says nothing.
+    let mut b = B::new();
+    let v = b.nodes(&["a", "b"]);
+    b.edge(v[0], v[1]);
+    let mut parent = None;
+    for i in 0..64 {
+        parent = Some(b.sub(&format!("s{i}"), "t", parent, &[]));
+    }
+    b.c.nodes[1].subgraph = parent;
+    let (_, d) = run_with(&b.c, &RenderOptions::default());
+    assert!(!d.items.iter().any(|x| x.code == "E010"), "{:?}", d.items);
+}
+
 #[test]
 fn dense_cycles_and_multi_edges() {
     let mut b = B::new();
