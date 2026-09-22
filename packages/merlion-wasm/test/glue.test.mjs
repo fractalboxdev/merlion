@@ -212,10 +212,14 @@ test("render validates the palette in the glue and the core", () => {
     { roles: {}, tones: { "a:b": {} } },
     { roles: {}, darkTones: {} },
     { roles: { stroke: "30" } },
+    // More tones than a compiled stylesheet can produce (256 per table).
+    { roles: {}, tones: Object.fromEntries(Array.from({ length: 257 }, (_, i) => [`r${i}`, { tone: "#123456" }])) },
   ]) {
-    assert.throws(() => render(VALID, { palette }), TypeError, JSON.stringify(palette));
+    assert.throws(() => render(VALID, { palette }), TypeError, JSON.stringify(palette).slice(0, 80));
   }
   assert.doesNotThrow(() => render(VALID, { palette: { roles: {} } }));
+  const full = Object.fromEntries(Array.from({ length: 256 }, (_, i) => [`r${i}`, { tone: "#123456" }]));
+  assert.doesNotThrow(() => render(VALID, { palette: { roles: {}, tones: full } }));
 });
 
 test("non-ASCII and lone surrogates cross the boundary", () => {

@@ -313,3 +313,36 @@ fn palette_roles_are_embedded_only_when_used_and_capped() {
         d.iter().map(|x| x.code).collect::<Vec<_>>()
     );
 }
+
+#[test]
+fn a_full_palette_on_a_role_heavy_diagram_emits_used_tones_and_charges_fuel() {
+    use merlion_render::stylesheet::Palette;
+    let entries: String = (0..256).map(|i| format!("c-r{}:#123456/;", i)).collect();
+    let palette = Palette::parse(&format!("palette-v1|{}", entries)).unwrap();
+    let mut src = String::from("flowchart LR\n");
+    for n in 0..200 {
+        src.push_str(&format!("n{}\n", n));
+    }
+    for n in 0..200 {
+        for k in 0..20 {
+            src.push_str(&format!("class n{} r{}\n", n, (n * 20 + k) % 400));
+        }
+    }
+    let plain = render(&src, &RenderOptions::default());
+    let t = std::time::Instant::now();
+    let r = render(
+        &src,
+        &RenderOptions {
+            palette: Some(palette),
+            ..RenderOptions::default()
+        },
+    );
+    let elapsed = t.elapsed();
+    let svg = r.svg.unwrap();
+    assert_eq!(r.fuel_used, plain.fuel_used + 256);
+    // Tones r0..r255 are used, within the 16 KiB budget; r256..r399 carry no tone.
+    assert!(svg.contains(".merlion-c-r0>.merlion-shape{"));
+    assert!(!svg.contains(".merlion-c-r256>"));
+    assert!(r.diagnostics.iter().any(|d| d.code == "W017"));
+    assert!(elapsed.as_secs() < 5, "{:?}", elapsed);
+}

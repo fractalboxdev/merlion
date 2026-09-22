@@ -97,6 +97,8 @@ struct Layer<'a> {
     /// The built-in roles in effect: those the source does not define with a `classDef`
     /// of the same name (specs/svg-output.md#built-in-roles).
     builtins: Vec<&'static BuiltIn>,
+    /// Each palette tone's index in cascade order, by (cluster, role name).
+    tone_at: BTreeMap<(bool, &'a str), usize>,
 }
 
 /// The built-in roles a diagram gets: a `classDef` of the same name replaces one.
@@ -109,11 +111,32 @@ fn active_builtins(chart: &Flowchart) -> Vec<&'static BuiltIn> {
 
 impl<'a> Layer<'a> {
     fn new(palette: Option<&'a PaletteTable>, builtins: Vec<&'static BuiltIn>) -> Self {
+        let mut tone_at = BTreeMap::new();
+        for (i, t) in palette.map_or(&[][..], |p| &p.tones[..]).iter().enumerate() {
+            if color::is_valid_class_name(&t.name) {
+                tone_at.insert((t.cluster, t.name.as_str()), i);
+            }
+        }
         Layer {
             table: palette.map(PaletteTable::theme_table).unwrap_or_default(),
             palette,
             builtins,
+            tone_at,
         }
+    }
+
+    /// The palette tone of role `name` on elements of `kind`.
+    fn tone(&self, kind: Kind, name: &str) -> Option<(usize, &'a PaletteTone)> {
+        let i = *self.tone_at.get(&(kind == Kind::Cluster, name))?;
+        Some((i, self.palette?.tones.get(i)?))
+    }
+
+    /// The palette tones of `roles` on `kind`, in cascade order.
+    fn tones_of(&self, kind: Kind, roles: &[String]) -> Vec<&'a PaletteTone> {
+        let mut found: Vec<(usize, &PaletteTone)> =
+            roles.iter().filter_map(|r| self.tone(kind, r)).collect();
+        found.sort_by_key(|x| x.0);
+        found.into_iter().map(|x| x.1).collect()
     }
 
     fn lit(&self, r: Role) -> String {
@@ -125,19 +148,6 @@ impl<'a> Layer<'a> {
         self.palette?
             .class_colour(name, prop)
             .map(|c| c.map_or_else(|| String::from("none"), |c| c.to_hex()))
-    }
-
-    /// The palette's role tones that apply to `kind`, in cascade order.
-    fn tones(&self, kind: Kind) -> Vec<&'a PaletteTone> {
-        let cluster = kind == Kind::Cluster;
-        self.palette
-            .map(|p| {
-                p.tones
-                    .iter()
-                    .filter(|t| t.cluster == cluster && color::is_valid_class_name(&t.name))
-                    .collect()
-            })
-            .unwrap_or_default()
     }
 
     /// The literal tone and dash an element with `roles` draws with: built-in roles in
@@ -157,14 +167,12 @@ impl<'a> Layer<'a> {
                 dash = Some(String::from(d));
             }
         }
-        for t in self.tones(kind) {
-            if roles.contains(&t.name) {
-                if let Some(c) = t.tone {
-                    tone = Some(c.to_hex());
-                }
-                if let Some(d) = &t.dash {
-                    dash = Some(palette_dash(d));
-                }
+        for t in self.tones_of(kind, roles) {
+            if let Some(c) = t.tone {
+                tone = Some(c.to_hex());
+            }
+            if let Some(d) = &t.dash {
+                dash = Some(palette_dash(d));
             }
         }
         (tone, dash)
@@ -973,18 +981,26 @@ fn palette_rules(
     dark: Option<&Layer>,
     diags: &mut Diagnostics,
 ) -> (Vec<RoleRule>, Vec<RoleRule>) {
-    let mut keys: Vec<(Kind, String)> = Vec::new();
+    // The (kind, role) pairs that some drawn element uses and some table tones, in the
+    // light palette's cascade order, then the dark palette's.
+    let mut keys: Vec<(Kind, &str)> = Vec::new();
+    let mut seen: BTreeSet<(Kind, &str)> = BTreeSet::new();
     for layer in core::iter::once(light).chain(dark) {
         for kind in [Kind::Node, Kind::Edge, Kind::Cluster] {
-            for t in layer.tones(kind) {
-                if roles.uses(kind, &t.name) && !keys.contains(&(kind, t.name.clone())) {
-                    keys.push((kind, t.name.clone()));
+            let cluster = kind == Kind::Cluster;
+            for t in layer.palette.map_or(&[][..], |p| &p.tones[..]) {
+                if t.cluster == cluster
+                    && layer.tone(kind, &t.name).is_some()
+                    && roles.uses(kind, &t.name)
+                    && seen.insert((kind, t.name.as_str()))
+                {
+                    keys.push((kind, t.name.as_str()));
                 }
             }
         }
     }
     let rules_for = |layer: &Layer, kind: Kind, name: &str| -> Vec<RoleRule> {
-        let Some(t) = layer.tones(kind).into_iter().rev().find(|t| t.name == name) else {
+        let Some((_, t)) = layer.tone(kind, name) else {
             return Vec::new();
         };
         let tone = t.tone.map(|c| Tone::literal(c.to_hex()));
@@ -996,8 +1012,8 @@ fn palette_rules(
     let (mut lo, mut dk) = (Vec::new(), Vec::new());
     // Emit in the light palette's cascade order so a later tone wins, as in the page CSS.
     for (kind, name) in keys {
-        let l = rules_for(light, kind, &name);
-        let d = dark.map(|d| rules_for(d, kind, &name)).unwrap_or_default();
+        let l = rules_for(light, kind, name);
+        let d = dark.map(|d| rules_for(d, kind, name)).unwrap_or_default();
         let bytes = rules_bytes(light_prefix, &l) + rules_bytes(dark_prefix, &d);
         if used + bytes > PALETTE_STYLE_BUDGET {
             diags.emit(
@@ -1006,7 +1022,7 @@ fn palette_rules(
                 Span::default(),
                 alloc::format!(
                     "role `{}` left out of the embedded style: the palette's rules exceed 16 KiB",
-                    crate::diag::excerpt(&name)
+                    crate::diag::excerpt(name)
                 ),
             );
             continue;
@@ -1023,10 +1039,9 @@ fn palette_rules(
 /// token the palette leaves unset.
 fn tone_masked(chart: &Flowchart, roles: &Roles, layer: &Layer) -> bool {
     let toned = |kind: Kind, roles: &[String]| {
-        layer
-            .tones(kind)
+        roles
             .iter()
-            .any(|t| t.tone.is_some() && roles.contains(&t.name))
+            .any(|r| layer.tone(kind, r).is_some_and(|(_, t)| t.tone.is_some()))
     };
     fn colours(st: &Style) -> [(ClassProp, &Option<crate::model::Color>); 3] {
         [

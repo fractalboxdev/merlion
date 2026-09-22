@@ -83,6 +83,7 @@ Byte-identical output on x86-64, arm64 and wasm32 rests on these rules:
 | Stylesheet size / rules / declarations per rule / compiled output | 64 KiB / 512 / 32 / 64 KiB | `Error` `E013` |
 | Stylesheet theme names / role selectors / block depth | 16 / 256 / 2 | `Error` `E013` |
 | Stylesheet `var()` resolution depth | 8 | `Warning` `W019` |
+| Palette given to `render` (canonical form) / tones per table | 128 KiB / 256 | Refused by `Palette::parse`; the WASM `render` throws |
 | Embedded style added by a palette, per diagram | 16 KiB | Unused roles never embedded; roles over the cap dropped with `W017` |
 | Classes per node, edge or cluster | 32 | Dropped with `W020 ClassesTruncated` |
 | Label length | 4,096 bytes | Truncated at a character boundary with `W012 LabelTruncated` |

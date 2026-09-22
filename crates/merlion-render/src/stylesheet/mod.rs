@@ -871,7 +871,8 @@ pub struct PaletteTable {
     pub series: Vec<(u8, Rgba8)>,
     /// `--merlion-stroke` in px.
     pub stroke: Option<f64>,
-    /// `--merlion-c-{name}-{prop}`; `None` is `none`.
+    /// `--merlion-c-{name}-{prop}`; `None` is `none`. Sorted by (name, property), each
+    /// pair once.
     pub classes: Vec<(String, ClassProp, Option<Rgba8>)>,
     /// Role tones in cascade order, node and edge tones before cluster tones: a later
     /// entry wins on an element with both roles.
@@ -934,9 +935,11 @@ impl PaletteTable {
 
     /// A `classDef` token value: `Some(None)` is `none`.
     pub fn class_colour(&self, name: &str, prop: ClassProp) -> Option<Option<Rgba8>> {
+        // `classes` is sorted by (name, property) and holds each pair once.
         self.classes
-            .iter()
-            .find(|x| x.0 == name && x.1 == prop)
+            .binary_search_by(|x| (x.0.as_str(), x.1).cmp(&(name, prop)))
+            .ok()
+            .and_then(|i| self.classes.get(i))
             .map(|x| x.2)
     }
 
@@ -1029,8 +1032,14 @@ impl Palette {
     }
 }
 
-/// The largest canonical palette [`Palette::parse`] accepts.
-pub const MAX_PALETTE_BYTES: usize = 1 << 20;
+/// The largest canonical palette [`Palette::parse`] accepts. A compiled stylesheet is
+/// at most 64 KiB, and each palette entry is shorter than the page-CSS line it comes
+/// from, so one table stays under 64 KiB and a light and a dark table under 128 KiB.
+pub const MAX_PALETTE_BYTES: usize = 128 * 1024;
+
+/// The most tones one palette table holds: a compiled stylesheet has at most this many
+/// role selectors ([`StylesheetLimits::role_selectors`]).
+pub const MAX_PALETTE_TONES: usize = 256;
 
 impl PaletteTable {
     /// Entries are collected, then sorted once, so parsing stays `O(n log n)`; a token
@@ -1051,6 +1060,9 @@ impl PaletteTable {
                 (None, Some(i)) => t.parse_tone(&e[..i], &e[i + 1..], &mut seen_tones)?,
                 _ => return Err("malformed entry"),
             }
+        }
+        if t.tones.len() > MAX_PALETTE_TONES {
+            return Err("more than 256 tones in one table");
         }
         t.tones.sort_by_key(|x| x.cluster);
         t.colours.sort_by_key(|x| x.0);

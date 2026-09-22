@@ -524,3 +524,56 @@ fn canonical_palettes_reject_values_outside_the_token_grammars() {
         assert!(Palette::parse(bad).is_err(), "{bad}");
     }
 }
+
+fn tone_entries(n: usize) -> String {
+    (0..n).map(|i| format!("c-r{}:#123456/;", i)).collect()
+}
+
+#[test]
+fn palette_parse_is_bounded_by_what_a_compiled_stylesheet_produces() {
+    use merlion_render::stylesheet::{MAX_PALETTE_BYTES, MAX_PALETTE_TONES};
+    assert_eq!(
+        MAX_PALETTE_TONES,
+        StylesheetLimits::default().role_selectors
+    );
+    assert_eq!(MAX_PALETTE_BYTES, 128 * 1024);
+    let at = |n| format!("palette-v1|{}", tone_entries(n));
+    assert!(Palette::parse(&at(256)).is_ok());
+    assert!(Palette::parse(&at(257)).is_err());
+    // The cap is per table.
+    let both = format!("{}|dark|{}", at(256), tone_entries(256));
+    assert!(Palette::parse(&both).is_ok());
+    assert!(Palette::parse(&format!("{}|dark|{}", at(1), tone_entries(257))).is_err());
+    // Size: class tokens past 128 KiB are refused before any entry is read.
+    let mut big = String::from("palette-v1|");
+    let mut i = 0;
+    while big.len() <= MAX_PALETTE_BYTES {
+        big.push_str(&format!("c-a{}-fill=#123456;", i));
+        i += 1;
+    }
+    assert_eq!(Palette::parse(&big), Err("palette too large"));
+}
+
+#[test]
+fn every_compiled_palette_parses_under_the_caps() {
+    // Near the 64 KiB compiled limit: root class tokens shared by the light and dark
+    // tables, plus role rules; the canonical palette is larger than 64 KiB.
+    let mut css = String::new();
+    for block in 0..54 {
+        css.push_str(":root{");
+        for k in 0..32 {
+            css.push_str(&format!("--merlion-c-a{}-fill:#123;", block * 32 + k));
+        }
+        css.push_str("}\n");
+    }
+    css.push_str("[data-theme=\"dark\"]{--merlion-bg:#000}\n");
+    for i in 0..40 {
+        css.push_str(&format!(".merlion-c-r{}{{--merlion-tone:#456}}\n", i));
+    }
+    let (s, d) = compile(&css, &StylesheetLimits::default());
+    let s = s.unwrap_or_else(|| panic!("{:?}", d.items));
+    let p = s.palette(Some("dark"), Some("dark")).unwrap();
+    let canonical = p.canonical();
+    assert!(canonical.len() > 64 * 1024, "{}", canonical.len());
+    assert_eq!(Palette::parse(&canonical), Ok(p));
+}
