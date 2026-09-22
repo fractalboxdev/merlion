@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { VFile } from "vfile";
+import { loadWasmRender } from "../wasm.js";
 import rehypeMerlion, { diagramTitle } from "../index.js";
 import { idPrefix } from "../fnv.js";
 import { el, text, root, mermaidBlock, fakeRender } from "./helpers.mjs";
@@ -36,7 +37,7 @@ test("replaces pre>code.language-mermaid with the figure structure", async () =>
   assert.deepEqual(code.children, [text(SRC)]);
 });
 
-test("passes width, strict and a per-file id_prefix to the renderer", async () => {
+test("passes width, strict and a per-file idPrefix to the renderer", async () => {
   const { render, calls } = fakeRender();
   await run(root(mermaidBlock(SRC), el("p", {}, [text("x")]), mermaidBlock(SRC)), {
     render,
@@ -44,8 +45,8 @@ test("passes width, strict and a per-file id_prefix to the renderer", async () =
     strict: true,
   });
   assert.equal(calls.length, 2);
-  assert.deepEqual(calls[0].options, { target_width: 600, strict: true, id_prefix: idPrefix("docs/page.md", 1) });
-  assert.equal(calls[1].options.id_prefix, idPrefix("docs/page.md", 2));
+  assert.deepEqual(calls[0].options, { width: 600, strict: true, idPrefix: idPrefix("docs/page.md", 1) });
+  assert.equal(calls[1].options.idPrefix, idPrefix("docs/page.md", 2));
 });
 
 test("numbers figures per file and leaves other code blocks alone", async () => {
@@ -168,9 +169,9 @@ test("the outline hook receives each diagram's plain-text outline", async () => 
 test("paths are relative to the root option, with / separators; a file without a path uses ''", async () => {
   const { render, calls } = fakeRender();
   await run(root(mermaidBlock(SRC)), { render, root: "/site/docs" });
-  assert.equal(calls[0].options.id_prefix, idPrefix("page.md", 1));
+  assert.equal(calls[0].options.idPrefix, idPrefix("page.md", 1));
   await run(root(mermaidBlock(SRC)), { render }, new VFile());
-  assert.equal(calls[1].options.id_prefix, idPrefix("", 1));
+  assert.equal(calls[1].options.idPrefix, idPrefix("", 1));
 });
 
 test("deep trees are walked without recursion", async () => {
@@ -181,9 +182,8 @@ test("deep trees are walked without recursion", async () => {
   assert.equal(calls.length, 1);
 });
 
-test("without `render`, a missing @fractalboxdev/merlion-wasm fails with an install hint", async () => {
-  const transform = rehypeMerlion({ fontCss: true });
-  await assert.rejects(transform(root(mermaidBlock(SRC)), new VFile()), /merlion-wasm is not installed/);
+test("without `render`, a missing WASM package fails with an install hint", async () => {
+  await assert.rejects(loadWasmRender("@fractalboxdev/merlion-wasm-absent"), /merlion-wasm-absent is not installed/);
 });
 
 test("rejects invalid options", () => {

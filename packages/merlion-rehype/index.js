@@ -93,12 +93,12 @@ const normalise = (options) => {
   return o;
 };
 
-// Map a core diagnostic to a vfile message. The fence is on `pre`'s first line,
-// so line k of the source is file line fence + k.
+// Map a diagnostic (the @fractalboxdev/merlion-wasm `Diagnostic` shape) to a vfile
+// message. The fence is on `pre`'s first line, so line k of the source is file line
+// fence + k; a diagnostic without a location (line 0) points at the whole block.
 const report = (file, d, pre, strict) => {
   const start = pre.position?.start;
-  const place =
-    start && d.span?.line > 0 ? { line: start.line + d.span.line, column: d.span.column || 1 } : pre.position;
+  const place = start && d.line > 0 ? { line: start.line + d.line, column: d.column || 1 } : pre.position;
   const m = file.message(`${d.code ?? "E001"} ${d.message ?? "render failed"}`, {
     place,
     ruleId: d.code ?? "E001",
@@ -107,6 +107,18 @@ const report = (file, d, pre, strict) => {
   if (d.severity === "error" && strict) m.fatal = true;
   return m;
 };
+
+// E001 for a renderer that throws, in the same shape the WASM glue returns after a trap.
+const internalError = (err) => ({
+  severity: "error",
+  code: "E001",
+  line: 0,
+  column: 0,
+  byteStart: 0,
+  byteEnd: 0,
+  message: String(err?.message ?? err),
+  fix: null,
+});
 
 const reported = (d) => d && (d.severity === "error" || d.severity === "warning" || d.severity === "repair");
 
@@ -151,13 +163,13 @@ export default function rehypeMerlion(options = {}) {
         // Unchanged source and options: reuse without rendering.
         ({ svg, outline } = prev);
       } else {
-        const ropts = { target_width: o.width, strict: o.strict, id_prefix: idPrefix(relPath, n) };
+        const ropts = { width: o.width, strict: o.strict, idPrefix: idPrefix(relPath, n) };
         if (prev) ropts.hint = prev.svg;
         let res;
         try {
           res = await render(source, ropts);
         } catch (err) {
-          res = { svg: null, diagnostics: [{ severity: "error", code: "E001", message: String(err?.message ?? err) }] };
+          res = { svg: null, outline: null, diagnostics: [internalError(err)] };
         }
         for (const d of Array.isArray(res?.diagnostics) ? res.diagnostics : []) {
           if (reported(d)) report(file, d, pre, o.strict);

@@ -1,31 +1,29 @@
 import type { Root } from "hast";
 import type { VFile } from "vfile";
 
-/** A core diagnostic as returned by @fractalboxdev/merlion-wasm (specs/parser.md#diagnostics). */
-export interface Diagnostic {
-  severity: "error" | "warning" | "repair" | "info";
-  code: string;
-  span?: { line: number; column: number; byte_start?: number; byte_end?: number } | null;
-  message: string;
-  fix?: { span: unknown; replacement: string } | null;
-}
+import type {
+  Diagnostic,
+  RenderOptions,
+  RenderResult,
+} from "@fractalboxdev/merlion-wasm";
 
-export interface RenderResult {
-  svg: string | null;
-  outline: string | null;
-  diagnostics: Diagnostic[];
-}
+/** The renderer contract is @fractalboxdev/merlion-wasm's; its index.d.ts is authoritative. */
+export type { Diagnostic, RenderOptions, RenderResult };
 
-/** Options the plugin passes to `render` (names follow the core's `RenderOptions`). */
-export interface PluginRenderOptions {
-  target_width: number;
-  strict: boolean;
-  id_prefix: string;
-  /** The previous SVG for this block, as the layout hint. */
-  hint?: string;
-}
+/** The options the plugin passes to `render`: a subset of the WASM `RenderOptions`. */
+export type PluginRenderOptions = Required<Pick<RenderOptions, "width" | "strict" | "idPrefix">> &
+  Pick<RenderOptions, "hint">;
 
-export type Render = (source: string, options: PluginRenderOptions) => RenderResult | Promise<RenderResult>;
+/**
+ * A renderer with the signature of @fractalboxdev/merlion-wasm's `render`. Only `svg`,
+ * `outline` and `diagnostics` of the result are read.
+ */
+export type Render = (
+  source: string,
+  options: PluginRenderOptions,
+) =>
+  | Pick<RenderResult, "svg" | "outline" | "diagnostics">
+  | Promise<Pick<RenderResult, "svg" | "outline" | "diagnostics">>;
 
 export interface OutlineInfo {
   /** File path relative to the project root, `/`-separated. */
@@ -37,7 +35,7 @@ export interface OutlineInfo {
 }
 
 export interface Options {
-  /** Container width in px (`RenderOptions.target_width`). Default 720. */
+  /** Container width in px (the WASM `RenderOptions.width`). Default 720. */
   width?: number;
   /** Promote warnings to errors and fail the file on any diagram error. Default false. */
   strict?: boolean;

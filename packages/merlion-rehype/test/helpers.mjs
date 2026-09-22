@@ -19,7 +19,7 @@ export const root = (...children) => ({ type: "root", children });
 
 /**
  * A fake `render(source, options)` following the @fractalboxdev/merlion-wasm
- * contract. A source containing `BROKEN` fails to parse with E001 on line 2;
+ * contract (its index.d.ts). A source containing `BROKEN` fails to parse with E002 on line 2;
  * `WARN` succeeds with a W010 warning.
  */
 export const fakeRender = () => {
@@ -34,16 +34,30 @@ export const fakeRender = () => {
           {
             severity: "error",
             code: "E002",
-            span: { line: 2, column: 5, byte_start: 0, byte_end: 1 },
+            line: 2,
+            column: 5,
+            byteStart: 0,
+            byteEnd: 1,
             message: "unexpected token",
             fix: null,
           },
         ],
       };
     }
-    const id = options.id_prefix ?? "m00000000";
+    const id = options.idPrefix ?? "m00000000";
     const diagnostics = source.includes("WARN")
-      ? [{ severity: "warning", code: "W010", span: { line: 1, column: 1 }, message: "style rejected", fix: null }]
+      ? [
+          {
+            severity: "warning",
+            code: "W010",
+            line: 1,
+            column: 1,
+            byteStart: 0,
+            byteEnd: 0,
+            message: "style rejected",
+            fix: null,
+          },
+        ]
       : [];
     return {
       svg: `<svg xmlns="http://www.w3.org/2000/svg" id="${id}" viewBox="0 0 10 10"><title id="${id}-title">Flowchart diagram</title></svg>`,

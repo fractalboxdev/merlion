@@ -6,15 +6,18 @@ import { fileURLToPath } from "node:url";
 
 const PKG = "@fractalboxdev/merlion-wasm";
 
-/** Import the WASM package, run `initSync`, and return its `render`. */
-export const loadWasmRender = async () => {
+/**
+ * Import the WASM package, run `initSync`, and return its `render`. `pkg` names the
+ * package to load; only tests pass another name.
+ */
+export const loadWasmRender = async (pkg = PKG) => {
   let mod;
   let entry;
   try {
-    mod = await import(PKG);
-    entry = fileURLToPath(import.meta.resolve(PKG));
+    mod = await import(pkg);
+    entry = fileURLToPath(import.meta.resolve(pkg));
   } catch (cause) {
-    throw new Error(`${PKG} is not installed; install it or pass the \`render\` option`, { cause });
+    throw new Error(`${pkg} is not installed; install it or pass the \`render\` option`, { cause });
   }
   const dir = dirname(entry);
   const wasm =
@@ -23,7 +26,7 @@ export const loadWasmRender = async () => {
       .filter((n) => n.endsWith(".wasm"))
       .sort()
       .map((n) => join(dir, n))[0];
-  if (!wasm) throw new Error(`${PKG}: no .wasm file next to ${entry}`);
+  if (!wasm) throw new Error(`${pkg}: no .wasm file next to ${entry}`);
   mod.initSync(readFileSync(wasm));
   return (source, options) => mod.render(source, options);
 };

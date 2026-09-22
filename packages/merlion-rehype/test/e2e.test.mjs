@@ -1,4 +1,5 @@
-// Markdown → HTML through unified, with the fake renderer standing in for the WASM core.
+// Markdown → HTML through unified: first with a fake renderer, then over the real
+// @fractalboxdev/merlion-wasm module (the plugin's default renderer).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -73,4 +74,41 @@ test("published package has no runtime dependencies (specs/supply-chain.md)", ()
   const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
   assert.deepEqual(pkg.dependencies, {});
   for (const f of pkg.files) assert.doesNotThrow(() => readFileSync(new URL(`../${f}`, import.meta.url)), f);
+});
+
+test("renders a markdown document through the real WASM module", async () => {
+  const doc = [
+    "# Pipeline",
+    "",
+    "```mermaid",
+    "flowchart LR",
+    "  accTitle: Build pipeline",
+    "  src[Source] --> build[Build] --> ship[Ship]",
+    "```",
+    "",
+    "```mermaid",
+    "flowchart LR",
+    "  a -->",
+    "```",
+    "",
+  ].join("\n");
+  const file = await pipeline({ width: 480 }).process(
+    new VFile({ value: doc, path: "/site/docs/real.md", cwd: "/site" }),
+  );
+  const html = String(file);
+  const id = idPrefix("docs/real.md", 1);
+  assert.ok(
+    html.includes(`<figure id="diagram-1" class="merlion-figure"><merlion-view><svg xmlns="http://www.w3.org/2000/svg" id="${id}"`),
+    html.slice(0, 400),
+  );
+  assert.ok(html.includes(`<title id="${id}-title">Build pipeline</title>`), "accTitle becomes the SVG title");
+  assert.ok(html.includes('data-merlion-id="build"'), "nodes carry their ids");
+  assert.ok(/max-width:\d+(\.\d+)?px/.test(html));
+  assert.ok(html.includes("<figcaption>Build pipeline</figcaption>"));
+  // The second block fails to parse: it stays a code block and E002 points into the file.
+  assert.ok(html.includes('<pre><code class="language-mermaid">flowchart LR\n  a -->\n</code></pre>'), html);
+  const errors = file.messages.filter((m) => /^E\d{3}$/.test(String(m.ruleId)));
+  assert.equal(errors.length, 1, file.messages.map(String).join("\n"));
+  assert.equal(errors[0].ruleId, "E002");
+  assert.equal(errors[0].line, 11);
 });
