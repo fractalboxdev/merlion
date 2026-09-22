@@ -10,3 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 merlion-render = { path = "../merlion-render" }
+
+[features]
+# Adds a `trap` export that executes `unreachable`, for the JS glue's recovery tests.
+test-trap = []
