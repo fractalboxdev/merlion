@@ -1,0 +1,12 @@
+flowchart TB
+  trigger[pull_request] --> setup[Checkout and cache]
+  subgraph matrix [Test matrix]
+    direction LR
+    linux[ubuntu-latest]
+    mac[macos-latest]
+    win[windows-latest]
+  end
+  setup --> linux & mac & win
+  linux & mac & win --> report[Upload coverage]
+  report --> status{{Required checks}}
+  status ==> merge([Merge])

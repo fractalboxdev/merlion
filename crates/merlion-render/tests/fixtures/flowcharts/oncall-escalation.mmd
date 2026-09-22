@@ -1,0 +1,12 @@
+flowchart TD
+  alert[/PagerDuty alert/] --> ack{Acked in 5 min?}
+  ack -->|yes| triage[Triage]
+  ack -->|no| secondary[Page secondary]
+  secondary --> ack2{Acked in 10 min?}
+  ack2 -->|no| manager[Page manager]
+  ack2 -->|yes| triage
+  triage --> sev{Severity}
+  sev -->|SEV1| war[Open war room]
+  sev -->|SEV2| ticket[File ticket]
+  sev -->|SEV3| backlog[Backlog]
+  war --> postmortem[[Postmortem]]

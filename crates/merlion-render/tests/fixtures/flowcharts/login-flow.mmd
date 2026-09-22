@@ -1,0 +1,14 @@
+flowchart TD
+  accTitle: Login flow
+  accDescr: How a user signs in with a password or a magic link.
+  open[Open app] --> signed{Session valid?}
+  signed -->|yes| home[Home]
+  signed -->|no| choose{Method}
+  choose -->|password| pw[Enter password]
+  choose -->|magic link| email[Enter email]
+  email --> inbox[Check inbox] --> link[Click link]
+  pw --> verify{Correct?}
+  verify -->|no| pw
+  verify -->|yes| home
+  link --> home
+  click home href "https://example.com/home" _blank

@@ -1,0 +1,8 @@
+flowchart LR
+  main[main] --> feat[feature/login]
+  main --> fix[hotfix/crash]
+  feat --> pr1{{PR review}}
+  fix --> pr2{{PR review}}
+  pr1 -->|squash| main
+  pr2 -->|merge| main
+  main --> tag>v1.2.0]

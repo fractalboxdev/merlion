@@ -63,13 +63,19 @@ impl<'a> LineIndex<'a> {
         let line = self.line_of(byte);
         let line_start = self.starts.get(line).copied().unwrap_or(0);
         let (m_byte, m_line, m_col) = self.memo.get();
-        let (from, base) = if m_line == line && m_byte <= byte && m_byte >= line_start {
-            (m_byte, m_col)
+        let chars =
+            |a: usize, b: usize| to_u32(self.src.get(a..b).map_or(0, |s| s.chars().count()));
+        // Count from the memo in either direction when it is on the same line, so a
+        // lookup costs the distance to the previous one, not to the line start.
+        let col = if m_line == line && m_byte >= line_start {
+            if byte >= m_byte {
+                m_col.saturating_add(chars(m_byte, byte))
+            } else {
+                m_col.saturating_sub(chars(byte, m_byte)).max(1)
+            }
         } else {
-            (line_start, 1)
+            1u32.saturating_add(chars(line_start, byte))
         };
-        let count = self.src.get(from..byte).map_or(0, |s| s.chars().count());
-        let col = base.saturating_add(to_u32(count));
         self.memo.set((byte, line, col));
         (to_u32(line + 1), col)
     }
@@ -191,14 +197,24 @@ impl<'a> Cursor<'a> {
     }
 
     /// True when only horizontal whitespace precedes `pos` on its line.
+    /// Walks back over horizontal whitespace only, so the cost is the indentation.
     pub fn at_line_start(&self) -> bool {
-        let before = self.src.get(..self.pos).unwrap_or("");
-        let line = match before.rfind('\n') {
-            Some(i) => before.get(i + 1..).unwrap_or(""),
-            None => before,
-        };
-        line.chars().all(|c| matches!(c, ' ' | '\t' | '\r'))
+        at_line_start(self.src, self.pos)
     }
+}
+
+/// True when only spaces, tabs or carriage returns precede `pos` on its line.
+pub fn at_line_start(src: &str, pos: usize) -> bool {
+    let bytes = src.as_bytes();
+    let mut i = pos.min(bytes.len());
+    while i > 0 {
+        match bytes.get(i - 1) {
+            Some(b' ' | b'\t' | b'\r') => i -= 1,
+            Some(b'\n') => return true,
+            _ => return false,
+        }
+    }
+    true
 }
 
 #[cfg(test)]

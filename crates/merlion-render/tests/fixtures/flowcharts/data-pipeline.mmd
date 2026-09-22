@@ -1,0 +1,15 @@
+flowchart LR
+  subgraph ingest [Ingest]
+    src1[Web events] --> q[[Queue]]
+    src2[Mobile events] --> q
+  end
+  subgraph process [Process]
+    q --> parse[Parse] --> enrich[Enrich] --> dedupe[Deduplicate]
+  end
+  subgraph store [Store]
+    lake[(Data lake)]
+    wh[(Warehouse)]
+  end
+  dedupe --> lake
+  lake --> etl[Nightly ETL] --> wh
+  wh --> bi[/BI dashboards/]

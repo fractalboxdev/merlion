@@ -1,0 +1,10 @@
+```mermaid
+flowchart TD
+    A[“User Request”] --> B{Valid input: yes?}
+    B -->|Yes| C[Process (async)]
+    B -->|No| D[Return error]
+    C --> end
+    subgraph Workers
+        C --> E[(Queue)]
+        E --> F
+```

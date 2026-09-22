@@ -1,0 +1,5 @@
+flowchart TD
+    start[“Begin”] --> check{“Ready?”}
+    check -->|“Yes”| go[‘Go’]
+    check -->|“No”| wait[Wait]
+    wait --> check

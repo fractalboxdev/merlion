@@ -1,0 +1,12 @@
+graph TD
+  A[Service is down] --> B{Can you ping the host?}
+  B -- No --> C[Check network]
+  B -- Yes --> D{Is the process running?}
+  D -- No --> E[Restart service]
+  D -- Yes --> F{Errors in logs?}
+  F -- Yes --> G[Open incident]
+  F -- No --> H[Check load balancer]
+  C --> I[Escalate to infra]
+  E --> J{Recovered?}
+  J -- Yes --> K([Close ticket])
+  J -- No --> G

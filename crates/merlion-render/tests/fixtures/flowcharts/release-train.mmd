@@ -1,0 +1,14 @@
+---
+title: Release train
+config:
+  flowchart:
+    curve: stepAfter
+---
+flowchart LR
+  freeze[Code freeze] --> rc1[RC 1]
+  rc1 --> qa{QA pass?}
+  qa -->|no| fix[Fix blockers] --> rc1
+  qa -->|yes| tag[Tag release]
+  tag --> notes[/Release notes/]
+  tag --> publish[[Publish packages]]
+  publish --> announce>Announce]
