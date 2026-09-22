@@ -96,11 +96,13 @@ jobs:
       - name: Install the bench harness (no install scripts)
         working-directory: bench
         run: pnpm install --ignore-workspace --frozen-lockfile --ignore-scripts
-      - name: Compat corpus, native vs WASM, every font mode
+      - name: Every corpus, native vs WASM, every font mode
         working-directory: bench
         run: |
-          for font in link embed system; do
-            pnpm bench determinism --font "$font"
+          for corpus in compat sequence; do
+            for font in link embed system; do
+              pnpm bench determinism --corpus "$corpus" --font "$font"
+            done
           done
 
   parity:

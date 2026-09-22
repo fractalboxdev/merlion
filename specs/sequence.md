@@ -319,4 +319,4 @@ TODO(owner): decide whether a click on a fragment collapses its rows, as a clust
 - Parser: one fixture per statement form, each asserting the model, plus a repair fixture per `R009`–`R013` whose fix, applied to the source, re-parses without that diagnostic.
 - Layout: column and row geometry over the `compat` sequence diagrams, asserting that no label overlaps another element and that every message stays inside its fragment box.
 - SVG: `assert_safe` and `assert_well_formed` over every sequence fixture, the same checks flowcharts pass, extended with the sequence class names and the draw order above.
-- Determinism: the `compat` sequence diagrams render byte-identically native and under wasmtime and Node, and flowchart output stays byte-identical to its recorded digests.
+- Determinism: the sequence fixtures render byte-identically native and through the WASM module in Node, in each font mode — `pnpm bench determinism --corpus sequence` ([benchmark.md](benchmark.md)), since the `compat` corpus holds no sequence diagram — and flowchart output stays byte-identical to its recorded digests.
