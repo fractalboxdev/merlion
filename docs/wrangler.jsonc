@@ -1,12 +1,21 @@
 // Cloudflare Worker serving the built site from static assets (no Worker script).
-// Deploy: `pnpm --filter docs run deploy` (astro build + wrangler deploy). The account comes
-// from CLOUDFLARE_ACCOUNT_ID or `wrangler login`; none is committed here.
+// Cloudflare Workers Builds deploys it on every push: it runs `sh scripts/cf-build.sh`
+// from the repository root and then `pnpm --filter docs exec wrangler deploy`, and uploads a
+// preview version for other branches. `pnpm --filter docs run deploy` does the same by hand.
+// The account comes from the build connection, CLOUDFLARE_ACCOUNT_ID or `wrangler login`;
+// none is committed here.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "merlion-docs",
   "compatibility_date": "2026-09-01",
+  // The site answers on its custom domain only; branch builds still get a preview URL.
+  "workers_dev": false,
+  "preview_urls": true,
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page"
-  }
+  },
+  // The site answers on its own hostname; wrangler creates the DNS record and the custom
+  // domain on deploy. The zone lives in the same account as the Worker.
+  "routes": [{ "pattern": "merlion.fractalbox.dev", "custom_domain": true }]
 }
