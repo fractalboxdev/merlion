@@ -2,3 +2,4 @@ node_modules/
 .tmp*
 /results/*
 !/results/baseline-*.md
+!/results/*-baseline.md

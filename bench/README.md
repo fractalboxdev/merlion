@@ -12,7 +12,7 @@ pnpm bench report [--input results/<file>.json] [--out <file>.md]
 pnpm test && pnpm typecheck
 ```
 
-`run` writes `results/<date>-<commit>.json`; `report` writes the Markdown summary next to the newest results file. `--out-svgs` writes every drawing to `results/svgs/<renderer>/<name>.svg`. Only `results/baseline-*.md` is committed.
+`run` writes `results/<date>-<commit>.json`; `report` writes the Markdown summary next to the newest results file. `--out-svgs` writes every drawing to `results/svgs/<renderer>/<name>.svg`. Only `results/baseline-*.md` and `results/<date>-baseline.md` are committed.
 
 ## Corpora
 
