@@ -4,7 +4,8 @@
 //!
 //! - `Orthogonal`: vertical runs through the dummy nodes' positions and horizontal jogs
 //!   in the gaps between layers. Jogs in one gap get distinct heights, spread evenly
-//!   across the gap, so parallel jogs never overlap. Ports are spread evenly along the
+//!   across the gap, so parallel jogs never overlap, in the order that makes the fewest
+//!   legs cross another jog ([`order_jogs`]). Ports are spread evenly along the
 //!   node side, ordered by the position of the edge's other end. The draw stage rounds
 //!   interior corners with a 6 px radius; the points here are the sharp corners.
 //! - `Polyline`: straight segments through the dummy nodes' centres, meeting each node
@@ -193,6 +194,91 @@ fn cmp_f(a: f64, b: f64) -> core::cmp::Ordering {
     a.partial_cmp(&b).unwrap_or(core::cmp::Ordering::Equal)
 }
 
+/// One horizontal jog in the gap between two layers: the edge arrives from above at
+/// `from` and leaves downwards at `to`.
+#[derive(Clone, Copy, Debug)]
+struct Jog {
+    from: f64,
+    to: f64,
+    chain: usize,
+    step: usize,
+}
+
+impl Jog {
+    fn lo(&self) -> f64 {
+        if self.from < self.to {
+            self.from
+        } else {
+            self.to
+        }
+    }
+
+    /// Whether `x` lies strictly inside the jog's horizontal span.
+    fn spans(&self, x: f64) -> bool {
+        let hi = if self.from < self.to {
+            self.to
+        } else {
+            self.from
+        };
+        x > self.lo() + 1e-9 && x < hi - 1e-9
+    }
+}
+
+/// Crossings between jogs `a` and `b` when `a` runs above `b`: `a`'s downward leg
+/// crosses `b`'s jog when it starts inside `b`'s span, and `b`'s upper leg crosses
+/// `a`'s jog when it ends inside `a`'s span.
+fn above_cost(a: &Jog, b: &Jog) -> i64 {
+    i64::from(b.spans(a.to)) + i64::from(a.spans(b.from))
+}
+
+/// Jogs larger than this in one gap keep the left-to-right order: ordering them costs
+/// quadratic time.
+const MAX_ORDERED_JOGS: usize = 512;
+
+/// Top-to-bottom order of the jogs in one gap. Jog `a` must run above `b` when `a`'s
+/// upper leg lies inside `b`'s span, and below it when `a`'s lower leg does; only a
+/// cycle of these constraints forces a crossing. The order is greedy on that
+/// preference graph: repeatedly take the jog that saves the most crossings by going
+/// next, ties to the leftmost jog.
+fn order_jogs(list: &[Jog]) -> Vec<Jog> {
+    let mut by_x: Vec<Jog> = list.to_vec();
+    by_x.sort_by(|a, b| {
+        cmp_f(a.lo(), b.lo())
+            .then(cmp_f(a.from + a.to, b.from + b.to))
+            .then(a.chain.cmp(&b.chain))
+            .then(a.step.cmp(&b.step))
+    });
+    let k = by_x.len();
+    if !(2..=MAX_ORDERED_JOGS).contains(&k) {
+        return by_x;
+    }
+    // score[v]: crossings added by putting v above every remaining jog, minus those
+    // saved; the lowest score goes next.
+    let mut score: Vec<i64> = (0..k)
+        .map(|v| {
+            (0..k)
+                .filter(|&u| u != v)
+                .map(|u| above_cost(&by_x[v], &by_x[u]) - above_cost(&by_x[u], &by_x[v]))
+                .sum()
+        })
+        .collect();
+    let mut left = vec![true; k];
+    let mut out = Vec::with_capacity(k);
+    for _ in 0..k {
+        let Some(w) = (0..k).filter(|&v| left[v]).min_by_key(|&v| (score[v], v)) else {
+            break;
+        };
+        left[w] = false;
+        out.push(by_x[w]);
+        for v in 0..k {
+            if left[v] {
+                score[v] -= above_cost(&by_x[v], &by_x[w]) - above_cost(&by_x[w], &by_x[v]);
+            }
+        }
+    }
+    out
+}
+
 /// Routes every chain of `inp.g`.
 pub fn route(inp: &RouteIn) -> Vec<Routed> {
     let g = inp.g;
@@ -292,7 +378,7 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
     // Orthogonal jogs: collected per gap, then each given a distinct height spread
     // evenly across the gap so parallel jogs never overlap.
     let orthogonal = inp.style == EdgeStyle::Orthogonal;
-    let mut jogs: BTreeMap<usize, Vec<(f64, f64, usize, usize)>> = BTreeMap::new();
+    let mut jogs: BTreeMap<usize, Vec<Jog>> = BTreeMap::new();
     if orthogonal {
         for (ci, c) in g.chains.iter().enumerate() {
             let c = &c.nodes;
@@ -306,24 +392,25 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
             for i in 1..n {
                 let tx = if i == n - 1 { end.0 } else { at(c[i]).0 };
                 if !wraps_at(c, i) && abs(tx - cur) > 1e-9 {
-                    let (lo, hi) = if cur < tx { (cur, tx) } else { (tx, cur) };
-                    jogs.entry(layer(c[i - 1]))
-                        .or_default()
-                        .push((lo, hi, ci, i));
+                    jogs.entry(layer(c[i - 1])).or_default().push(Jog {
+                        from: cur,
+                        to: tx,
+                        chain: ci,
+                        step: i,
+                    });
                 }
                 cur = tx;
             }
         }
     }
     let mut jog_y: BTreeMap<(usize, usize), f64> = BTreeMap::new();
-    for (gap, list) in jogs.iter_mut() {
-        list.sort_by(|a, b| cmp_f(a.0, b.0).then(cmp_f(a.1, b.1)).then(a.2.cmp(&b.2)));
+    for (gap, list) in jogs.iter() {
         let top = inp.layer_bot.get(*gap).copied().unwrap_or(0.0);
         let bot = inp.layer_top.get(gap + 1).copied().unwrap_or(top);
         let k = list.len();
-        for (s, &(_, _, ci, i)) in list.iter().enumerate() {
+        for (s, j) in order_jogs(list).into_iter().enumerate() {
             jog_y.insert(
-                (ci, i),
+                (j.chain, j.step),
                 top + (bot - top) * (s as f64 + 1.0) / (k as f64 + 1.0),
             );
         }
@@ -523,6 +610,105 @@ mod tests {
             max_layers: 100,
         })
         .unwrap()
+    }
+
+    fn graph(layers: &[usize], pairs: &[(usize, usize)]) -> LGraph {
+        use super::super::lgraph::{build, BuildIn, Clusters, EdgeIn, Extent};
+        let real: Vec<Extent> = layers
+            .iter()
+            .map(|_| Extent {
+                left: 20.0,
+                right: 20.0,
+                thick: 20.0,
+            })
+            .collect();
+        let edges: Vec<EdgeIn> = pairs
+            .iter()
+            .enumerate()
+            .map(|(e, &(u, v))| EdgeIn {
+                edge: e,
+                upper: u,
+                lower: v,
+                reversed: false,
+                label: None,
+            })
+            .collect();
+        build(&BuildIn {
+            real: &real,
+            layer: layers,
+            edges: &edges,
+            clusters: &Clusters::default(),
+            titles: &[],
+            empty_size: &[],
+            max_nodes: 100,
+            max_layers: 100,
+        })
+        .unwrap()
+    }
+
+    fn proper_cross(a: (f64, f64), b: (f64, f64), c: (f64, f64), d: (f64, f64)) -> bool {
+        let o = |p: (f64, f64), q: (f64, f64), r: (f64, f64)| {
+            (q.0 - p.0) * (r.1 - p.1) - (q.1 - p.1) * (r.0 - p.0)
+        };
+        let (d1, d2, d3, d4) = (o(c, d, a), o(c, d, b), o(a, b, c), o(a, b, d));
+        d1 * d2 < -1e-9 && d3 * d4 < -1e-9
+    }
+
+    fn crossings(r: &[Routed]) -> usize {
+        let mut n = 0;
+        for (i, a) in r.iter().enumerate() {
+            for b in &r[i + 1..] {
+                for sa in a.points.windows(2) {
+                    for sb in b.points.windows(2) {
+                        if proper_cross(sa[0], sa[1], sb[0], sb[1]) {
+                            n += 1;
+                        }
+                    }
+                }
+            }
+        }
+        n
+    }
+
+    fn two_layers(g: &LGraph, pos: &[(f64, f64)]) -> Vec<Routed> {
+        let shapes = vec![
+            NodeShape {
+                shape: Shape::Rect,
+                w: 40.0,
+                h: 20.0,
+            };
+            g.real.len()
+        ];
+        let part = vec![0; g.layers.len()];
+        route(&RouteIn {
+            dir: Direction::TB,
+            style: EdgeStyle::Orthogonal,
+            g,
+            pos,
+            layer_top: &[-10.0, 90.0],
+            layer_bot: &[10.0, 110.0],
+            part: &part,
+            shapes: &shapes,
+            wrap: None,
+        })
+    }
+
+    #[test]
+    fn parallel_jogs_in_one_gap_do_not_cross() {
+        // A → C and B → D both jog right (a staircase), then both jog left.
+        let g = graph(&[0, 0, 1, 1], &[(0, 2), (1, 3)]);
+        let right = [(0.0, 0.0), (50.0, 0.0), (100.0, 100.0), (150.0, 100.0)];
+        assert_eq!(crossings(&two_layers(&g, &right)), 0);
+        let left = [(100.0, 0.0), (150.0, 0.0), (0.0, 100.0), (50.0, 100.0)];
+        assert_eq!(crossings(&two_layers(&g, &left)), 0);
+    }
+
+    #[test]
+    fn a_fan_and_parallel_multi_edges_nest() {
+        // Three parallel A → B edges offset to the right, and A → C to the left.
+        let g = graph(&[0, 1, 1], &[(0, 1), (0, 1), (0, 1), (0, 2)]);
+        let pos = [(60.0, 0.0), (140.0, 100.0), (0.0, 100.0)];
+        assert_eq!(crossings(&two_layers(&g, &pos)), 0);
     }
 
     #[test]
