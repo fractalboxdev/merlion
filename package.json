@@ -11,7 +11,7 @@
     "docs": "pnpm --filter docs dev",
     "docs:build": "pnpm --filter docs build",
     "docs:deploy": "pnpm --filter docs run deploy",
-    "size": "pnpm --filter @fractalboxdev/merlion-view size",
+    "size": "pnpm --filter @fractalbox/merlion-view size",
     "determinism": "pnpm --dir bench bench determinism"
   }
 }

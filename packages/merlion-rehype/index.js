@@ -1,5 +1,5 @@
 // rehype plugin: renders ```mermaid code blocks to inline SVG at build time
-// (specs/integrations.md#fractalboxdevmerlion-rehype).
+// (specs/integrations.md#fractalboxmerlion-rehype).
 //
 // The tree is walked by hand, iteratively, so the plugin has no
 // unist-util-visit dependency and no recursion depth limit. Rendering itself lives in

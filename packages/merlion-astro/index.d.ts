@@ -1,16 +1,16 @@
 import type { AstroIntegration } from "astro";
-import type { Options as RehypeOptions } from "@fractalboxdev/merlion-rehype";
+import type { Options as RehypeOptions } from "@fractalbox/merlion-rehype";
 
 export interface Options extends Omit<RehypeOptions, "fontCss"> {
   /**
    * Stylesheet imported on every page that loads Inter for font mode "link", or false
    * to skip it (the rehype plugin then warns). Default
-   * "@fractalboxdev/merlion-themes/merlion-font.css"; true means the default.
+   * "@fractalbox/merlion-themes/merlion-font.css"; true means the default.
    */
   fontCss?: string | boolean;
   /**
    * Stylesheet imported on every page for the theme variables and semantic-zoom rules,
-   * or false to skip it. Default "@fractalboxdev/merlion-themes/merlion-themes.css".
+   * or false to skip it. Default "@fractalbox/merlion-themes/merlion-themes.css".
    */
   themesCss?: string | false;
   /**
@@ -23,7 +23,7 @@ export interface Options extends Omit<RehypeOptions, "fontCss"> {
 }
 
 /**
- * Registers @fractalboxdev/merlion-rehype with the Markdown processor (first in
+ * Registers @fractalbox/merlion-rehype with the Markdown processor (first in
  * Sätteri's `hastPlugins` or unified's `rehypePlugins`; `markdown.rehypePlugins` on
  * Astro 5 and 6), excludes
  * mermaid from syntax highlighting, imports the theme and font stylesheets and the

@@ -1,19 +1,19 @@
-// Astro integration for Merlion (specs/integrations.md#fractalboxdevmerlion-astro).
-// Registers @fractalboxdev/merlion-rehype and adds the theme and font stylesheets,
+// Astro integration for Merlion (specs/integrations.md#fractalboxmerlion-astro).
+// Registers @fractalbox/merlion-rehype and adds the theme and font stylesheets,
 // the compiled `stylesheet` and the <merlion-view> script.
 import { closeSync, fsyncSync, mkdirSync, openSync, renameSync, unlinkSync, writeSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import rehypeMerlion, { compileStylesheetFile } from "@fractalboxdev/merlion-rehype";
-import merlionSatteri from "@fractalboxdev/merlion-rehype/satteri";
+import rehypeMerlion, { compileStylesheetFile } from "@fractalbox/merlion-rehype";
+import merlionSatteri from "@fractalbox/merlion-rehype/satteri";
 
-const NAME = "@fractalboxdev/merlion-astro";
-const THEMES = "@fractalboxdev/merlion-themes/merlion-themes.css";
-const FONT = "@fractalboxdev/merlion-themes/merlion-font.css";
+const NAME = "@fractalbox/merlion-astro";
+const THEMES = "@fractalbox/merlion-themes/merlion-themes.css";
+const FONT = "@fractalbox/merlion-themes/merlion-font.css";
 
 // The viewer module loads only on pages that contain a diagram: this loader is
 // a few bytes on every page, and the bundler splits the element into its own chunk.
-const VIEWER_LOADER = 'if (document.querySelector("merlion-view")) import("@fractalboxdev/merlion-view");';
+const VIEWER_LOADER = 'if (document.querySelector("merlion-view")) import("@fractalbox/merlion-view");';
 
 // Astro highlights code blocks before user rehype plugins run, which removes the
 // `language-mermaid` class; exclude mermaid from highlighting (Astro ≥ 5.5).

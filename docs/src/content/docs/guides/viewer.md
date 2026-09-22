@@ -3,10 +3,10 @@ title: The viewer
 description: "<merlion-view> adds pan, zoom, fullscreen and semantic zoom to any inline SVG. Optional, dependency-free, at most 6 KB gzipped."
 ---
 
-`<merlion-view>` is a custom element from `@fractalboxdev/merlion-view` that adds pan, zoom and fullscreen to the SVG inside it. It is optional: without JavaScript, or before the element upgrades, the SVG renders as a normal static diagram. It is independent of the renderer and wraps any inline SVG, mermaid's included.
+`<merlion-view>` is a custom element from `@fractalbox/merlion-view` that adds pan, zoom and fullscreen to the SVG inside it. It is optional: without JavaScript, or before the element upgrades, the SVG renders as a normal static diagram. It is independent of the renderer and wraps any inline SVG, mermaid's included.
 
 ```html
-<script type="module">import "@fractalboxdev/merlion-view";</script>
+<script type="module">import "@fractalbox/merlion-view";</script>
 
 <merlion-view>
   <svg class="merlion merlion-flowchart" viewBox="0 0 …">…</svg>
@@ -56,7 +56,7 @@ When the reader zooms out past the fit view and labels would draw below 9 px on 
 
 | Budget | Limit |
 |---|---|
-| `@fractalboxdev/merlion-view`, minified and gzipped | ≤ 6 KB, checked in CI (`pnpm size`) |
+| `@fractalbox/merlion-view`, minified and gzipped | ≤ 6 KB, checked in CI (`pnpm size`) |
 | `merlion-themes.css` with the 120 semantic-zoom selectors, gzipped | ≤ 8 KB |
 | Runtime dependencies | 0 |
 

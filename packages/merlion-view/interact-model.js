@@ -1,4 +1,4 @@
-// Interaction logic for @fractalboxdev/merlion-view/interact (specs/interaction.md).
+// Interaction logic for @fractalbox/merlion-view/interact (specs/interaction.md).
 // Pure functions, no DOM: the element layer reads the SVG's data-merlion-* attributes
 // and text into plain arrays and applies the sets these functions return as classes.
 //

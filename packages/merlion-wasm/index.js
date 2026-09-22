@@ -1,5 +1,5 @@
 // @ts-check
-// Hand-written glue over merlion.wasm (specs/integrations.md#fractalboxdevmerlion-wasm).
+// Hand-written glue over merlion.wasm (specs/integrations.md#fractalboxmerlion-wasm).
 //
 // Strings cross the boundary as UTF-8 pointer-and-length pairs through the module's
 // `alloc`/`dealloc` exports; `render`/`check`/`compile_stylesheet` return a buffer

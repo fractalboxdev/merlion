@@ -50,7 +50,7 @@ What a primary pointer-down is over decides what its drag does. **Text** is any 
 
 ## Interaction
 
-`<merlion-view>` loads `@fractalboxdev/merlion-view/interact` with a dynamic `import()` the first time it adopts an SVG with class `merlion`, so every Merlion diagram is interactive by default: in the demo, in the documentation site and in any page that uses the element, with no integration change. `interactive="off"` on an element runs no extension on it and, if it is the only one, loads nothing. Pages whose diagrams are all non-Merlion SVGs never fetch the module. The behaviour is specified in [interaction.md](interaction.md).
+`<merlion-view>` loads `@fractalbox/merlion-view/interact` with a dynamic `import()` the first time it adopts an SVG with class `merlion`, so every Merlion diagram is interactive by default: in the demo, in the documentation site and in any page that uses the element, with no integration change. `interactive="off"` on an element runs no extension on it and, if it is the only one, loads nothing. Pages whose diagrams are all non-Merlion SVGs never fetch the module. The behaviour is specified in [interaction.md](interaction.md).
 
 ### Extension hook
 

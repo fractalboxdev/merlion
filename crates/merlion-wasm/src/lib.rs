@@ -1,4 +1,4 @@
-//! Raw `extern "C"` exports over the core (specs/integrations.md#fractalboxdevmerlion-wasm).
+//! Raw `extern "C"` exports over the core (specs/integrations.md#fractalboxmerlion-wasm).
 //!
 //! No `wasm-bindgen`: strings cross the boundary as UTF-8 pointer-and-length pairs.
 //!

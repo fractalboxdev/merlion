@@ -1,5 +1,5 @@
 {
-  "name": "@fractalboxdev/merlion-view",
+  "name": "@fractalbox/merlion-view",
   "version": "0.1.0",
   "description": "<merlion-view>: pan, zoom and fullscreen for any inline SVG diagram, plus click-to-highlight for Merlion flowcharts. No dependencies.",
   "license": "MIT",

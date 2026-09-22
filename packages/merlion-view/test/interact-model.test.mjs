@@ -1,4 +1,4 @@
-// Pure interaction logic behind @fractalboxdev/merlion-view/interact (specs/interaction.md), no DOM.
+// Pure interaction logic behind @fractalbox/merlion-view/interact (specs/interaction.md), no DOM.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
