@@ -144,6 +144,31 @@ fn edge_labels_sit_on_their_edge_and_clear_of_nodes() {
 }
 
 #[test]
+fn edge_label_chips_clear_nodes_and_each_other() {
+    // Two labelled edges between the same pair of nodes, in every direction.
+    for dir in [Direction::TB, Direction::BT, Direction::LR, Direction::RL] {
+        let mut b = B::new().dir(dir);
+        let v = b.nodes(&["a1", "a2"]);
+        b.edge_l(v[0], v[1], "l1");
+        b.edge_l(v[0], v[1], "l2");
+        let g = run(&b.c);
+        check(&b.c, &g);
+        assert_eq!(metrics::label_overlaps(&g), 0, "{:?}", dir);
+    }
+    // Labelled edges into and out of a wide rhombus.
+    let mut b = B::new().dir(Direction::LR);
+    let a = b.shape("a", "The cat in the hat", Shape::Rhombus);
+    let v = b.nodes(&["b", "c", "g", "h"]);
+    b.edge_l(a, v[0], "1o");
+    b.edge_l(a, v[1], "2o");
+    b.edge_l(v[2], a, "2i");
+    b.edge_l(v[3], a, "3i");
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert_eq!(metrics::label_overlaps(&g), 0);
+}
+
+#[test]
 fn orthogonal_routes_are_axis_aligned() {
     let c = random(5, 14, 22, 0);
     let g = run(&c);

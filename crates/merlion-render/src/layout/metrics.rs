@@ -82,12 +82,8 @@ fn node_box(g: &Geometry, i: usize) -> (f64, f64, f64, f64) {
 
 fn label_boxes(g: &Geometry) -> impl Iterator<Item = (f64, f64, f64, f64)> + '_ {
     g.edges.iter().filter_map(|e| e.label.as_ref()).map(|l| {
-        (
-            l.x - l.label.width / 2.0,
-            l.y - l.label.height / 2.0,
-            l.x + l.label.width / 2.0,
-            l.y + l.label.height / 2.0,
-        )
+        let (w, h) = crate::geometry::chip_size(&l.label);
+        (l.x - w / 2.0, l.y - h / 2.0, l.x + w / 2.0, l.y + h / 2.0)
     })
 }
 
@@ -104,7 +100,7 @@ pub fn node_overlaps(g: &Geometry) -> usize {
     count
 }
 
-/// Edge-label boxes that overlap a node box or another edge-label box.
+/// Edge-label chips that overlap a node box or another edge-label chip.
 pub fn label_overlaps(g: &Geometry) -> usize {
     let labels: alloc::vec::Vec<_> = label_boxes(g).collect();
     let mut count = 0;

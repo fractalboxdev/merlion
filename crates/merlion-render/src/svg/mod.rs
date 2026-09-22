@@ -56,8 +56,6 @@ pub struct DrawOutput {
     pub outline: String,
 }
 
-/// Padding of an edge label chip around its text, in px (horizontal, vertical).
-const CHIP_PAD: (f64, f64) = (4.0, 2.0);
 /// Corner radius of the edge label chip and the cluster box, in px.
 const CHIP_RADIUS: f64 = 3.0;
 const CLUSTER_RADIUS: f64 = 4.0;
@@ -387,10 +385,7 @@ fn push_edge_label(out: &mut String, g: &EdgeGeom) {
     if l.label.lines.is_empty() {
         return;
     }
-    let (w, h) = (
-        l.label.width + 2.0 * CHIP_PAD.0,
-        l.label.height + 2.0 * CHIP_PAD.1,
-    );
+    let (w, h) = crate::geometry::chip_size(&l.label);
     out.push_str("<g class=\"merlion-edge-label\"><rect class=\"merlion-edge-label-bg\"");
     attr_num(out, "x", l.x - w / 2.0);
     attr_num(out, "y", l.y - h / 2.0);

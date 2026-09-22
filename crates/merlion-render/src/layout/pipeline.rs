@@ -21,7 +21,7 @@ use super::route::{self, NodeShape, RouteIn, WrapFrame};
 use super::{acyclic, layering, LayoutError};
 use crate::diag::{Diagnostics, Severity, Span};
 use crate::fuel::{Fuel, OutOfFuel};
-use crate::geometry::{ClusterGeom, EdgeGeom, EdgeLabelGeom, Geometry, NodeGeom, Point};
+use crate::geometry::{chip_size, ClusterGeom, EdgeGeom, EdgeLabelGeom, Geometry, NodeGeom, Point};
 use crate::math::{abs, clamp, hypot, max, min};
 use crate::model::Flowchart;
 use crate::options::{Direction, DirectionOption, EdgeStyle, RenderOptions};
@@ -253,7 +253,8 @@ fn node_extent(base: &Base, m: &Meas, dir: Direction, v: usize) -> Extent {
         let mut lab_o: f64 = 0.0;
         for &le in loops {
             if let Some(Some(l)) = m.edge_label.get(le) {
-                let (lo, lt) = axes(dir, l.width, l.height);
+                let (cw, ch) = chip_size(l);
+                let (lo, lt) = axes(dir, cw, ch);
                 lab_o = max(lab_o, lo);
                 e.thick = max(e.thick, lt + 2.0 * LABEL_CLEAR);
             }
@@ -267,7 +268,8 @@ fn node_extent(base: &Base, m: &Meas, dir: Direction, v: usize) -> Extent {
 
 fn label_extent(m: &Meas, dir: Direction, e: usize) -> Option<Extent> {
     let l = m.edge_label.get(e)?.as_ref()?;
-    let (o, t) = axes(dir, l.width, l.height);
+    let (cw, ch) = chip_size(l);
+    let (o, t) = axes(dir, cw, ch);
     Some(Extent {
         left: o / 2.0 + LABEL_CLEAR / 2.0,
         right: o / 2.0 + LABEL_CLEAR / 2.0,
@@ -543,7 +545,8 @@ fn coordinates(
     let mut x = coords::assign_x(g, o.node_spacing, fuel)?;
     coords::fit_clusters(g, &base.cl, &p, o.node_spacing, &mut x, fuel)?;
     // A labelled edge between neighbouring layers has no label dummy; its label goes in
-    // the gap, which must be wide enough for it.
+    // the gap, which must be wide enough for it. Labels whose edges run side by side
+    // are stacked across the gap ([`gap_label_groups`]), so it holds all of them.
     let mut min_gap = vec![0.0f64; g.layers.len()];
     for ch in &g.chains {
         if ch.nodes.len() != 2 {
@@ -552,15 +555,99 @@ fn coordinates(
         let Some(Some(l)) = m.edge_label.get(ch.edge) else {
             continue;
         };
-        let (_, t) = axes(dir, l.width, l.height);
+        let (cw, chh) = chip_size(l);
+        let (_, t) = axes(dir, cw, chh);
         let gap = g.nodes.get(ch.nodes[0]).map_or(0, |v| v.layer);
         if let Some(mg) = min_gap.get_mut(gap) {
             *mg = max(*mg, t + 2.0 * LABEL_CLEAR);
         }
     }
+    for (gap, group) in gap_label_groups(g, m, dir, &x) {
+        let need: f64 = group.iter().map(|&(_, t)| t + 2.0 * LABEL_CLEAR).sum();
+        if let Some(mg) = min_gap.get_mut(gap) {
+            *mg = max(*mg, need);
+        }
+    }
     let (y, thick) = coords::layer_y(g, &base.cl, &p, o.rank_spacing, &min_gap);
     let boxes = coords::cluster_boxes(g, &base.cl, &p, &x, &y);
     Ok(Coords { x, y, thick, boxes })
+}
+
+/// Chains of one gap whose labels share it: `(chain, chip thickness)` each.
+type LabelGroup = Vec<(usize, f64)>;
+
+/// Labels of edges between neighbouring layers whose chips could collide: per gap,
+/// groups of two or more chains whose chips, centred between the chain's ends on the
+/// order axis, would overlap, each with its chip's layer-axis thickness. Groups keep the
+/// chains in order of their range's start.
+fn gap_label_groups(g: &LGraph, m: &Meas, dir: Direction, x: &[f64]) -> Vec<(usize, LabelGroup)> {
+    // (gap, lo, hi, chain, thickness)
+    let mut items: Vec<(usize, f64, f64, usize, f64)> = Vec::new();
+    for (ci, ch) in g.chains.iter().enumerate() {
+        let &[a, b] = ch.nodes.as_slice() else {
+            continue;
+        };
+        let Some(Some(l)) = m.edge_label.get(ch.edge) else {
+            continue;
+        };
+        let (cw, chh) = chip_size(l);
+        let (o, t) = axes(dir, cw, chh);
+        let (xa, xb) = (
+            x.get(a).copied().unwrap_or(0.0),
+            x.get(b).copied().unwrap_or(0.0),
+        );
+        let gap = g.nodes.get(a).map_or(0, |v| v.layer);
+        let mid = (xa + xb) / 2.0;
+        items.push((
+            gap,
+            mid - o / 2.0 - LABEL_CLEAR,
+            mid + o / 2.0 + LABEL_CLEAR,
+            ci,
+            t,
+        ));
+    }
+    items.sort_by(|p, q| p.0.cmp(&q.0).then(cmp_f(p.1, q.1)).then(p.3.cmp(&q.3)));
+    let mut out: Vec<(usize, LabelGroup)> = Vec::new();
+    let mut cur: Option<(usize, f64, LabelGroup)> = None;
+    for (gap, lo, hi, ci, t) in items {
+        match cur.as_mut() {
+            Some((cg, reach, list)) if *cg == gap && lo < *reach => {
+                *reach = max(*reach, hi);
+                list.push((ci, t));
+            }
+            _ => {
+                if let Some((cg, _, list)) = cur.take() {
+                    if list.len() >= 2 {
+                        out.push((cg, list));
+                    }
+                }
+                cur = Some((gap, hi, vec![(ci, t)]));
+            }
+        }
+    }
+    if let Some((cg, _, list)) = cur {
+        if list.len() >= 2 {
+            out.push((cg, list));
+        }
+    }
+    out
+}
+
+/// The point where a route (layout frame) first reaches layer-axis coordinate `y`.
+fn at_layer_y(points: &[(f64, f64)], y: f64) -> Option<(f64, f64)> {
+    points.windows(2).find_map(|s| {
+        let (a, b) = (s[0], s[1]);
+        let (lo, hi) = (min(a.1, b.1), max(a.1, b.1));
+        if y < lo || y > hi {
+            return None;
+        }
+        let t = if hi - lo > 1e-9 {
+            (y - a.1) / (b.1 - a.1)
+        } else {
+            0.0
+        };
+        Some((a.0 + (b.0 - a.0) * t, y))
+    })
 }
 
 type BoxF = (f64, f64, f64, f64);
@@ -831,12 +918,30 @@ fn finish(
         wrap: frame.as_ref(),
     });
 
+    // Stacked labels: each group of side-by-side labelled edges between neighbouring
+    // layers splits the gap into equal slots, one chip per slot, on its edge.
+    let mut stacked: Vec<Option<(f64, f64)>> = vec![None; g.chains.len()];
+    for (gap, group) in gap_label_groups(g, m, dir, &co.x) {
+        if part(gap) != part(gap + 1) {
+            continue;
+        }
+        let lo = bot.get(gap).copied().unwrap_or(0.0) + sh(gap).1;
+        let hi = top.get(gap + 1).copied().unwrap_or(lo) + sh(gap).1;
+        let k = group.len() as f64;
+        for (i, &(ci, _)) in group.iter().enumerate() {
+            let yi = lo + (hi - lo) * (i as f64 + 0.5) / k;
+            if let (Some(slot), Some(r)) = (stacked.get_mut(ci), routed.get(ci)) {
+                *slot = at_layer_y(&r.points, yi);
+            }
+        }
+    }
+
     let fin = |p: (f64, f64)| route::to_final(dir, p.0, p.1);
     let ne = chart.edges.len();
     let mut edge_pts: Vec<Vec<(f64, f64)>> = vec![Vec::new(); ne];
     let mut wrap_flag = vec![false; ne];
     let mut label_at: Vec<Option<(f64, f64)>> = vec![None; ne];
-    for (ch, r) in g.chains.iter().zip(routed) {
+    for ((ch, r), fixed) in g.chains.iter().zip(routed).zip(stacked) {
         let Some(slot) = edge_pts.get_mut(ch.edge) else {
             continue;
         };
@@ -846,7 +951,7 @@ fn finish(
         }
         *slot = pts;
         wrap_flag[ch.edge] = r.wrap;
-        label_at[ch.edge] = r.label.map(fin);
+        label_at[ch.edge] = r.label.or(fixed).map(fin);
     }
     // Self-loops, with their labels beyond the outermost loop.
     for (v, loops) in base.loops.iter().enumerate() {
@@ -864,7 +969,8 @@ fn finish(
         }
         for &e in loops {
             if let Some(Some(l)) = m.edge_label.get(e) {
-                let (lo, _) = axes(dir, l.width, l.height);
+                let (cw, ch) = chip_size(l);
+                let (lo, _) = axes(dir, cw, ch);
                 label_at[e] = Some(fin((outer + LOOP_LABEL_GAP + lo / 2.0, cy)));
             }
         }
@@ -895,7 +1001,8 @@ fn finish(
     let mut labels: Vec<Option<EdgeLabelGeom>> = vec![None; ne];
     for e in 0..ne {
         if let (Some(p), Some(Some(l))) = (label_at[e], m.edge_label.get(e)) {
-            placed.push(centred(p.0, p.1, l.width, l.height, LABEL_CLEAR / 2.0));
+            let (cw, ch) = chip_size(l);
+            placed.push(centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0));
             labels[e] = Some(EdgeLabelGeom {
                 x: p.0,
                 y: p.1,
@@ -910,8 +1017,9 @@ fn finish(
         let Some(Some(l)) = m.edge_label.get(e) else {
             continue;
         };
-        if let Some(p) = place_label(&edge_pts[e], l.width, l.height, &node_boxes, &placed, fuel) {
-            placed.push(centred(p.0, p.1, l.width, l.height, LABEL_CLEAR / 2.0));
+        let (cw, ch) = chip_size(l);
+        if let Some(p) = place_label(&edge_pts[e], cw, ch, &node_boxes, &placed, fuel) {
+            placed.push(centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0));
             labels[e] = Some(EdgeLabelGeom {
                 x: p.0,
                 y: p.1,
@@ -992,7 +1100,8 @@ fn finish(
         }
     }
     for l in labels.iter().flatten() {
-        grow(centred(l.x, l.y, l.label.width, l.label.height, 0.0));
+        let (cw, ch) = chip_size(&l.label);
+        grow(centred(l.x, l.y, cw, ch, 0.0));
     }
     for c in &clusters {
         grow((c.x, c.y, c.x + c.w, c.y + c.h));
