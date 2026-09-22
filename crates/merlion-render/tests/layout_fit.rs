@@ -247,3 +247,22 @@ fn labels_on_wrap_detours_clear_nodes_and_each_other() {
     );
     assert_eq!(merlion_render::layout::metrics::label_overlaps(&g), 0);
 }
+
+#[test]
+fn tb_split_measures_a_layer_with_its_cluster_boxes() {
+    // Nested clusters make the layer 786 px wide although its nodes span less than
+    // 720 px; the layer is split all the same.
+    let mut b = B::new();
+    let v = b.nodes(&["a", "da", "ga", "abc", "abcd"]);
+    let bsub = b.sub("bsub", "bsub", None, &[]);
+    let csub = b.sub("csub", "csub", Some(bsub), &[]);
+    b.sub("dsub", "dsub", Some(csub), &[v[1]]);
+    let esub = b.sub("esub", "esub", Some(bsub), &[]);
+    let fsub = b.sub("fsub", "fsub", Some(esub), &[]);
+    b.sub("gsub", "gsub", Some(fsub), &[v[2], v[3], v[4]]);
+    b.edge(v[1], v[0]);
+    b.edge(v[1], v[0]);
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert!(g.width <= 720.0, "width {}", g.width);
+}

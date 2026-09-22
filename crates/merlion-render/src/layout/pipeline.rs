@@ -1303,14 +1303,18 @@ fn split_layers(base: &Base, m: &Meas, c: Cand, budget: &mut Budget, fuel: &mut 
         .iter()
         .enumerate()
         .filter_map(|(l, layer)| {
-            let lo = layer
-                .iter()
-                .map(|&v| c.co.x[v] - g.nodes[v].left)
-                .fold(f64::MAX, min);
-            let hi = layer
-                .iter()
-                .map(|&v| c.co.x[v] + g.nodes[v].right)
-                .fold(f64::MIN, max);
+            // A layer's width includes the boxes of the clusters around its nodes.
+            let (mut lo, mut hi) = (f64::MAX, f64::MIN);
+            for &v in layer {
+                lo = min(lo, c.co.x[v] - g.nodes[v].left);
+                hi = max(hi, c.co.x[v] + g.nodes[v].right);
+                for cc in base.cl.chain(g.nodes[v].cluster) {
+                    if let Some(Some(b)) = c.co.boxes.get(cc) {
+                        lo = min(lo, b.x0);
+                        hi = max(hi, b.x1);
+                    }
+                }
+            }
             (hi - lo > inner).then_some((l, hi - lo))
         })
         .collect();
