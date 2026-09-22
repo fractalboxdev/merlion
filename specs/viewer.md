@@ -70,6 +70,7 @@ When the user zooms out past the fit view and labels would render below 9 px on 
 
 ## Constraints
 
-- No dependencies. The base element ≤ 6 KB minified and gzipped (4,938 B) and the interaction module ≤ 3 KB (3,023 B), each bundled on its own and enforced by `scripts/size.mjs`. The semantic-zoom selectors live in `merlion-themes.css`, which has its own CI budget of ≤ 8 KB gzipped.
+- No dependencies. The base element ≤ 6 KB minified and gzipped (4,953 B), the interaction module ≤ 3.25 KB (3,132 B) and its sequence module ≤ 1 KB (535 B), each bundled on its own and enforced by `scripts/size.mjs`. The semantic-zoom selectors live in `merlion-themes.css`, which has its own CI budget of ≤ 8 KB gzipped.
+- Three modules, each fetched only where it does something. The base loads `interact.js` for an SVG with class `merlion`; `interact.js` loads `interact-seq.js` for one that also carries `merlion-sequence`. Sequence support is therefore free on a page of flowcharts, and the interaction module carries the extension point — the keyboard's walk, a target's outline line and the element list a lit node lights — rather than the sequence rules themselves ([interaction.md](interaction.md#loading)).
 - Works in every browser that supports custom elements, pointer events and `<dialog>`.
 - Independent of the renderer: it wraps any inline SVG, including mermaid's.

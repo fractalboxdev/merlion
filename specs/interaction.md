@@ -112,6 +112,7 @@ Rules cost about 125 raw bytes and 17 gzip bytes per element, linear in V + E; r
 ### Loading
 
 - `<merlion-view>` imports `./interact.js` the first time it adopts an SVG with class `merlion`, so every Merlion diagram on a page is interactive with no extra script. `<merlion-view interactive="off">` runs no extension and loads nothing. Pages that wrap other renderers' SVGs never fetch the module. `import "@fractalboxdev/merlion-view/interact"` loads it eagerly.
+- `interact.js` imports `./interact-seq.js` for an SVG that also carries `merlion-sequence`, and repaints when it arrives. That module fills in the model `interact` has already read — the activation bars each participant lights, each message's outline line, and the messages at the end of the keyboard's walk ([sequence.md](sequence.md#interaction)) — so the interaction module holds the extension point and no sequence rule, and a page of flowcharts fetches neither the rules nor their bytes.
 - The module registers through the base element's extension hook, `MerlionView.extend(fn)`: `fn(host, svg)` runs whenever a host adopts an SVG and returns a cleanup function, called when the SVG changes, the host disconnects or `interactive` becomes `"off"`. A `view` method on the returned function runs after every view change.
 - The base element provides the viewer chrome that extensions share ([viewer.md](viewer.md#extension-hook)): `tip(el, build)` (the popover), `say(text)` (the live region), `tap(e)` (click qualification) and `MerlionView.style(css)` (rules for the slotted SVG).
 - The extension activates only for an SVG with class `merlion` whose `.merlion-edge` groups all carry `data-merlion-from` and `data-merlion-to`.
@@ -221,17 +222,18 @@ The popover never overlaps `E`. Every view change (zoom, pan, fullscreen, resize
 
 | Key, host focused | Action |
 |---|---|
-| `ArrowDown`, `ArrowRight` | Next visible node in outline order; from no node, the first. Wraps around |
-| `ArrowUp`, `ArrowLeft` | Previous visible node |
-| `Enter` | Pin or unpin the current node |
+| `ArrowDown`, `ArrowRight` | Next visible target in outline order; from none, the first. Wraps around |
+| `ArrowUp`, `ArrowLeft` | Previous visible target |
+| `Enter` | Pin or unpin the current target |
 | `Esc` | Clear the pin and the current node; with neither, the base viewer's action |
 | `Shift` + arrow keys | Pan by 10% (plain arrow keys pan only when the extension is not loaded) |
 | `+`, `-`, `0`, `Tab` | Unchanged: zoom, reset, leave the diagram |
 
+- A **target** is a node or an edge. A flowchart's walk holds its nodes; a sequence appends its messages, so the walk reads the diagram the way the outline does — the participants, then each message in the order it numbers them ([sequence.md](sequence.md#interaction)).
 - **Outline order** is the order of the nodes' lines in the SVG's `<desc>` outline ([svg-output.md](svg-output.md#text-alternative)): a line matches a node when it equals the node's prefix (`{cluster path}: {name}`) or continues it with a space and an edge glyph. Nodes without a line follow in document order. Document order differs from outline order in 10 of the 43 gallery flowcharts, so the viewer does not use it alone.
-- The current node gets `merlion-active` and the focus ring. With nothing pinned, its lit set and popover show as a preview.
+- The current target gets `merlion-active` and the focus ring. With nothing pinned, its lit set and popover show as a preview.
 - The extension handles `keydown` on the host in the capture phase and calls `preventDefault` on the keys it consumes; the base viewer skips an event whose default is prevented, so a consumed arrow does not also pan and an `Esc` that clears a pin does not also close fullscreen.
-- **Announcements.** The base element's visually hidden `<div role="status" aria-live="polite">` receives, on every keyboard move and every pin of a node, that node's outline line: the matching `<desc>` line, or its prefix when the outline has none. Hover never announces.
+- **Announcements.** The base element's visually hidden `<div role="status" aria-live="polite">` receives, on every keyboard move and every pin, the target's outline line: a node's matching `<desc>` line, or its prefix when the outline has none, and a message's numbered line. A target with no line announces nothing. Hover never announces.
 - Descendant ids are not referenced from the host. Children of `role="img"` are presentational in WAI-ARIA, so `aria-activedescendant` into the SVG is not dependable, and ids do not resolve across the shadow boundary for `aria-describedby`.
 
 ## Theming
@@ -262,13 +264,14 @@ The popover never overlaps `E`. Every view change (zoom, pan, fullscreen, resize
 
 | Item | Budget |
 |---|---|
-| `@fractalboxdev/merlion-view/interact`, minified + gzip | ≤ 3 KB (3,023 B), enforced by `scripts/size.mjs` |
-| Base `<merlion-view>` with the hook and the shared chrome | ≤ 6 KB (4,938 B), enforced by the same script |
+| `@fractalboxdev/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,132 B), enforced by `scripts/size.mjs` |
+| Its sequence module, loaded only for a sequence diagram | ≤ 1 KB (535 B), enforced by the same script |
+| Base `<merlion-view>` with the hook and the shared chrome | ≤ 6 KB (4,953 B), enforced by the same script |
 | Model and text | Built once per adopted SVG, O(V + E); popover text is rebuilt per pin from the target only |
 | Per pin | Class removal on the old lit set, class addition on the new one, one layout read to place the popover |
 | Path mode | One breadth-first search per direction, O(V + E), bounded by the core's 2,000-node, 4,000-edge limits |
 
-The size script bundles each entry on its own: the base with `./interact.js` external (it loads on demand), and the interaction module with the base external. The pure logic (adjacency, reachability, focus sets, collapse sets, tap outcome, text reconstruction, outline order) lives in `interact-model.js`; the gesture rules and popover placement live in `zoom.js`. Both run without a DOM and are tested with `node --test`.
+The size script bundles each entry on its own, every on-demand import external: the base without `./interact.js`, the interaction module without the base or `./interact-seq.js`, and the sequence module alone. The pure logic (adjacency, reachability, focus sets, collapse sets, tap outcome, text reconstruction, outline order) lives in `interact-model.js`; the gesture rules and popover placement live in `zoom.js`. Both run without a DOM and are tested with `node --test`.
 
 ## Determinism
 
@@ -309,7 +312,7 @@ TODO(owner): extend acceptance to every `compat` flowchart, the CSS layer's pari
 
 ## Out of scope
 
-- Hover for diagram types other than flowcharts; each type adds its own lit-set rule when it lands (sequence: a message and its two lifelines; class and ER: a relation and its two entities).
+- Hover for diagram types beyond flowcharts and sequences; class and ER add their own lit-set rule when they land (a relation and its two entities).
 - Mermaid-rendered SVGs in `<merlion-view>`: they carry no `data-merlion-from`/`-to`, and their class conventions change between releases.
 - Graph-walking keys (move to a neighbour along an edge). TODO(owner): decide the key binding once the arrow-key traversal has user feedback.
 - A `merlion-select` event on pin changes. TODO(owner): decide whether pages need it; it costs about 100 bytes of the interaction module's budget.

@@ -307,15 +307,20 @@ Note over Customer,Bank: One order, one transaction
 
 The highlight sets of [interaction.md](interaction.md#highlight-set) carry over with no new rule: a participant's incident "edges" are the messages naming it, and a message's endpoints are its two participants. Clicking a participant therefore lights its lifeline (inside its group), its head and foot boxes and every message it sends or receives; clicking a message lights the message and both participants.
 
-- The viewer's `interact` module activates on `.merlion-edge` groups carrying `data-merlion-from` and `data-merlion-to`, which every message carries, so `@fractalboxdev/merlion-view/interact` needs no sequence-specific code.
-- Path mode follows messages in source direction, which for a sequence walks the call graph the diagram describes.
-- The CSS hover layer emits the same rules over participant and message ids, and `N = 128` counts participants plus messages.
-- Notes, fragments and boxes are never dimmed and are not targets, matching the cluster rule.
+An activation bar sits outside its participant's group, so the viewer joins it to that participant: a bar lights and dims with the participant named by its `data-merlion-id`, and a bar naming none joins nothing. Clicking Gateway in `api-retry-backoff` lights 3 participants, 7 messages and both bars and dims nothing, because Gateway touches every one; clicking message 3 lights 2 participants, 1 message and the 2 bars of those participants, and dims the remaining 1 participant and 6 messages (measured, headless Chromium 153).
 
-TODO(owner): decide whether a click on a fragment collapses its rows, as a cluster title collapses a cluster, once the viewer's collapse path is exercised on sequences.
+The keyboard walks the participants in declaration order and then the messages in the order the outline numbers them, and the live region reads the walked target's outline line: `Gateway`, then `3. Upstream --> Gateway: 12 KiB of JSON`. That line is also the popover's heading for a message, and its only line, since it already carries the number, the arrow as the outline draws it and the text.
+
+- Sequence support lives in `interact-seq.js`, which `interact` imports for an SVG carrying `merlion-sequence` ([interaction.md](interaction.md#loading)). It fills in the model `interact` has read; the highlight set, the gestures and the popover are the flowchart's.
+- Path mode follows messages in source direction, which for a sequence walks the call graph the diagram describes.
+- The CSS hover layer emits the same rules over participant and message ids, and `N = 128` counts participants plus messages. Activation bars carry no id and take no rule, so with JavaScript off a hovered participant's bars stay at full opacity along with the rest of the dimmed drawing.
+- Notes, fragments and boxes are never dimmed and are not targets, matching the cluster rule. A fragment and a box name no id, so neither collapses and their titles take the default cursor.
+
+TODO(owner): decide whether a fragment gains a `data-merlion-id` so that clicking its title collapses its rows, as a cluster title collapses a cluster.
 
 ## Testing
 
+- Viewer (`node --test`, no DOM): the outline's numbered lines in source order, including under an autonumber with decimals; an outline whose numbered count differs from the message count yields no lines, so `accDescr` announces nothing rather than the wrong message; the messages join the keyboard's walk by `data-merlion-index`, not by draw order; an activation bar joins its participant's element list and a bar naming no participant joins nothing.
 - Parser: one fixture per statement form, each asserting the model, plus a repair fixture per `R009`–`R013` whose fix, applied to the source, re-parses without that diagnostic.
 - Layout: column and row geometry over the `compat` sequence diagrams, asserting that no label overlaps another element and that every message stays inside its fragment box.
 - SVG: `assert_safe` and `assert_well_formed` over every sequence fixture, the same checks flowcharts pass, extended with the sequence class names and the draw order above.
