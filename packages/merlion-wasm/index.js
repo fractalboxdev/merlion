@@ -157,9 +157,15 @@ function call(ex, fn, source, optionsJson) {
 
 const OPTION_KEYS = ["width", "direction", "edgeStyle", "font", "strict", "idPrefix", "hint", "fuel"];
 
+/** The core's field names, which a caller would otherwise pass and have silently ignored. */
+const SNAKE_CASE = { target_width: "width", id_prefix: "idPrefix", edge_style: "edgeStyle" };
+
 function optionsJson(options) {
   if (options == null) return "{}";
   if (typeof options !== "object") throw new ArgumentError("merlion: options must be an object");
+  for (const [k, v] of Object.entries(SNAKE_CASE)) {
+    if (k in options) throw new ArgumentError(`merlion: unknown option \`${k}\`; use \`${v}\``);
+  }
   /** @type {Record<string, unknown>} */
   const picked = {};
   for (const k of OPTION_KEYS) if (options[k] !== undefined) picked[k] = options[k];

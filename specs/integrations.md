@@ -34,8 +34,32 @@ export function initSync(wasm: BufferSource): void;                         // N
 export function render(source: string, options?: RenderOptions): RenderResult;
 export function check(source: string, options?: { strict?: boolean }): Diagnostic[];
 
-interface RenderResult { svg: string | null; outline: string | null; diagnostics: Diagnostic[] }
+interface RenderOptions {
+  width?: number;                              // container width in px; default 720
+  direction?: "auto" | "source";
+  edgeStyle?: "orthogonal" | "polyline" | "spline";
+  font?: "link" | "embed" | "system";
+  strict?: boolean;
+  idPrefix?: string;                           // [a-z][a-z0-9-]{0,31}
+  hint?: string;                               // the previous SVG, for stable layout
+  fuel?: number;
+}
+interface Diagnostic {
+  severity: "error" | "warning" | "repair" | "info";
+  code: string;
+  line: number; column: number;                // 1-based; 0 without a location
+  byteStart: number; byteEnd: number;
+  message: string;
+  fix: { byteStart: number; byteEnd: number; replacement: string } | null;
+}
+interface RenderResult {
+  svg: string | null; outline: string | null; diagnostics: Diagnostic[];
+  error: RenderError | null; fuelUsed: number;
+}
 ```
+
+- `packages/merlion-wasm/index.d.ts` is the authoritative JavaScript contract; the rehype plugin, the Astro integration and the demo use its names and shapes. Option names are camelCase. The core's own names (`target_width`, `id_prefix`, `edge_style`) throw a `TypeError` naming the camelCase option; other unknown keys are ignored.
+- The module returns the JSON of `merlion render --json` (`merlion_render::json`, shared by both surfaces); the glue converts it to the camelCase shape above.
 
 - `render` is synchronous after initialisation. Its worst-case time is bounded by the fuel limit ([ADR-0008](adr/0008-deterministic-work-budget.md)), not by a clock. For source the page doesn't control, run it in a Web Worker so a heavy diagram never blocks the main thread; the package exports a `worker.js` entry that wraps `render` in a message handler.
 - The glue is hand-written: strings cross the boundary as UTF-8 pointer-and-length pairs through exported `alloc`/`dealloc` functions. No `wasm-bindgen` is involved. The glue:
@@ -50,7 +74,7 @@ interface RenderResult { svg: string | null; outline: string | null; diagnostics
 ```ts
 import rehypeMerlion from "@fractalboxdev/merlion-rehype";
 unified().use(remarkParse).use(remarkRehype).use(rehypeMerlion, {
-  width: 720,          // RenderOptions.target_width
+  width: 720,          // RenderOptions.width
   strict: false,
   source: "details",   // "details" | "none": keep the Mermaid source in a collapsed <details>
   cacheDir: ".merlion", // previous renders, used as layout hints
@@ -70,7 +94,7 @@ unified().use(remarkParse).use(remarkRehype).use(rehypeMerlion, {
   ```
 
 - It walks the tree by hand, so it has no `unist-util-visit` dependency; `@types/hast` is a development dependency only.
-- It passes `id_prefix` = `m` + the first 8 hex characters of FNV-1a 64 over the file's path relative to the project root + `-` + `n`, so diagrams from several files on one page keep unique ids ([svg-output.md](svg-output.md#ids-and-data-attributes)).
+- It passes `idPrefix` = `m` + the first 8 hex characters of FNV-1a 64 over the file's path relative to the project root + `-` + `n`, so diagrams from several files on one page keep unique ids ([svg-output.md](svg-output.md#ids-and-data-attributes)).
 - The SVG enters the tree as a `raw` node containing only the core's output. `figcaption` and the `<details>` source are hast text nodes, so the serialiser escapes them.
 - A parse error leaves the code block in place and reports the diagnostic through the unified `vfile` (`file.message`), which fails the build when `strict` is set.
 - `cacheDir` holds one entry per (file path, block index). The entry's filename is the FNV-1a 64 hash of that pair (with the path relative to the project root) in hex, so no source path can name a location outside `cacheDir`. It stores the last SVG and the content hash of the source that produced it. On the next build, an unchanged hash reuses the SVG without rendering; a changed hash renders with the stored SVG as the layout hint. When a diagram is inserted above others the indices shift and a hint lands on a different diagram; the core then discards it as having too few surviving nodes.

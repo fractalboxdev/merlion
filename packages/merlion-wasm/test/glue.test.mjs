@@ -89,16 +89,27 @@ test("initSync then render returns the documented shape", () => {
   assert.equal(typeof r.fuelUsed, "number");
 });
 
-test("a valid diagram renders once the pipeline does", () => {
-  const r = render(VALID, { width: 640, idPrefix: "t1" });
-  if (r.svg === null) {
-    console.log("note: the core does not render yet; success assertions skipped");
-    assert.notEqual(r.error, null);
-    return;
-  }
-  assert.ok(r.svg.startsWith("<svg"));
+test("a valid diagram renders with the camelCase options", () => {
+  const r = render(VALID, { width: 640, idPrefix: "t1", font: "embed", edgeStyle: "polyline" });
+  assert.ok(r.svg?.startsWith('<svg xmlns="http://www.w3.org/2000/svg" id="t1"'), JSON.stringify(r.diagnostics));
+  assert.ok(r.svg.includes("@font-face"), "font: embed reaches the core");
   assert.equal(r.error, null);
   assert.equal(typeof r.outline, "string");
+  assert.deepEqual(Object.keys(r).sort(), ["diagnostics", "error", "fuelUsed", "outline", "svg"]);
+});
+
+test("snake_case option names are rejected with the camelCase name", () => {
+  assert.throws(() => render(VALID, { target_width: 600 }), /`target_width`.*`width`/);
+  assert.throws(() => render(VALID, { id_prefix: "x" }), /`id_prefix`.*`idPrefix`/);
+  assert.throws(() => render(VALID, { edge_style: "spline" }), /`edge_style`.*`edgeStyle`/);
+});
+
+test("diagnostics have the flat documented shape", () => {
+  const r = render("flowchart LR\nA -->\n");
+  const d = r.diagnostics.find((x) => x.code === "E002");
+  assert.ok(d, JSON.stringify(r.diagnostics));
+  assert.deepEqual(Object.keys(d).sort(), ["byteEnd", "byteStart", "code", "column", "fix", "line", "message", "severity"]);
+  assert.equal(d.line, 2);
 });
 
 test("check returns diagnostics", () => {
