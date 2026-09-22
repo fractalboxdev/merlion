@@ -710,6 +710,18 @@ fn edges_to_subgraph_ids_map_to_the_first_member() {
 }
 
 #[test]
+fn subgraph_endpoints_never_get_r005() {
+    // Referenced before the subgraph is declared: still maps to its first member.
+    let (f, d) = parse_ok("flowchart TD\nx[X] --> S\nsubgraph S\n  b\nend");
+    assert!(!has(&d, "R005"), "{d:?}");
+    assert_eq!(edge_ids(&f), vec![("x".into(), "b".into())]);
+    // An empty subgraph has no member to stand in for it; the endpoint stays a node.
+    let (f, d) = parse_ok("flowchart TD\nsubgraph E\nend\nx[X] --> E");
+    assert!(!has(&d, "R005"), "{d:?}");
+    assert_eq!(edge_ids(&f), vec![("x".into(), "E".into())]);
+}
+
+#[test]
 fn top_level_direction_statement() {
     let f = chart("flowchart TB\ndirection RL\nA-->B");
     assert_eq!(f.direction, Direction::RL);

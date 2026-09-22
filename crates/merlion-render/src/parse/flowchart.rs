@@ -1963,7 +1963,9 @@ impl P<'_, '_> {
             if redirect.get(n).copied().flatten().is_some() {
                 continue;
             }
-            new_index[n] = Some(nodes.len());
+            if let Some(slot) = new_index.get_mut(n) {
+                *slot = Some(nodes.len());
+            }
             nodes.push(Node {
                 id: b.id,
                 label: b.label,
