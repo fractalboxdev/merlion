@@ -5,6 +5,9 @@
 
 use alloc::string::String;
 
+use crate::layout::measure::{
+    wave_y, BAND, BOW, BRACE, CYLINDER_RY, NOTCH, SLOPE, STACK, SUBROUTINE_INSET, TAG, WAVE, WAVE_K,
+};
 use crate::model::Shape;
 use crate::numfmt::push_num;
 
@@ -29,6 +32,10 @@ impl D {
     /// Elliptical arc to (x, y) with the given radii, small arc, clockwise.
     fn arc(&mut self, rx: f64, ry: f64, x: f64, y: f64) -> &mut Self {
         self.cmd('A', &[rx, ry, 0.0, 0.0, 1.0, x, y])
+    }
+    /// Elliptical arc to (x, y) with the given radii, small arc, counter-clockwise.
+    fn arc_ccw(&mut self, rx: f64, ry: f64, x: f64, y: f64) -> &mut Self {
+        self.cmd('A', &[rx, ry, 0.0, 0.0, 0.0, x, y])
     }
     fn z(&mut self) -> &mut Self {
         self.0.push('Z');
@@ -81,6 +88,47 @@ fn ellipse(d: &mut D, cx: f64, cy: f64, rx: f64, ry: f64) {
     d.cmd('M', &[cx - rx, cy])
         .arc(rx, ry, cx + rx, cy)
         .arc(rx, ry, cx - rx, cy)
+        .z();
+}
+
+/// Rectangle whose bottom edge is the wave of [`wave_y`] around `yb`, drawn clockwise.
+fn document(d: &mut D, l: f64, t: f64, r: f64, yb: f64) {
+    let xm = (l + r) / 2.0;
+    let k = WAVE_K * WAVE;
+    d.cmd('M', &[l, t])
+        .cmd('H', &[r])
+        .cmd('V', &[yb])
+        .cmd('C', &[xm, yb - k, xm, yb + k, l, yb])
+        .z();
+}
+
+/// The visible top and right edges of a layer stacked `o` up and right of the front
+/// box `[l, fr] × [ft, fb]`, as an open subpath.
+fn stacked_layer(d: &mut D, l: f64, ft: f64, fr: f64, fb: f64, o: f64) {
+    d.cmd('M', &[l + o, ft - o + STACK])
+        .cmd('V', &[ft - o])
+        .cmd('H', &[fr + o])
+        .cmd('V', &[fb - o])
+        .cmd('H', &[fr + o - STACK]);
+}
+
+/// A curly brace of width `bw` with its tip at `(tip, cy)`, opening towards `sgn`
+/// (+1 right, −1 left), traced there and back so it encloses no area to fill.
+fn brace(d: &mut D, tip: f64, sgn: f64, t: f64, b: f64, cy: f64, bw: f64) {
+    let (inner, mid, q) = (tip + sgn * bw, tip + sgn * bw / 2.0, bw / 2.0);
+    d.cmd('M', &[inner, t])
+        .cmd('Q', &[mid, t, mid, t + q])
+        .cmd('V', &[cy - q])
+        .cmd('Q', &[mid, cy, tip, cy])
+        .cmd('Q', &[mid, cy, mid, cy + q])
+        .cmd('V', &[b - q])
+        .cmd('Q', &[mid, b, inner, b])
+        .cmd('Q', &[mid, b, mid, b - q])
+        .cmd('V', &[cy + q])
+        .cmd('Q', &[mid, cy, tip, cy])
+        .cmd('Q', &[mid, cy, mid, cy - q])
+        .cmd('V', &[t + q])
+        .cmd('Q', &[mid, t, inner, t])
         .z();
 }
 
@@ -196,38 +244,164 @@ pub fn shape_d(shape: Shape, cx: f64, cy: f64, w: f64, h: f64) -> String {
                 (cx, cy - 0.1 * h),
             ],
         ),
+        Shape::Document => document(&mut d, l, t, r, b - WAVE),
+        Shape::LinedDocument => {
+            document(&mut d, l, t, r, b - WAVE);
+            let x = l + min(SUBROUTINE_INSET, w / 4.0);
+            d.cmd('M', &[x, t])
+                .cmd('V', &[wave_y(x, l, r, b - WAVE, WAVE)]);
+        }
+        Shape::TaggedDocument => {
+            document(&mut d, l, t, r, b - WAVE);
+            let g = min(TAG, min(w, h) / 2.0);
+            let yb = b - WAVE;
+            polygon(
+                &mut d,
+                &[(r - g, wave_y(r - g, l, r, yb, WAVE)), (r, yb - g), (r, yb)],
+            );
+        }
+        Shape::StackedDocument => {
+            let (ft, fr) = (t + 2.0 * STACK, r - 2.0 * STACK);
+            let yb = b - WAVE;
+            stacked_layer(&mut d, l, ft, fr, yb, 2.0 * STACK);
+            stacked_layer(&mut d, l, ft, fr, yb, STACK);
+            document(&mut d, l, ft, fr, yb);
+        }
+        Shape::StackedRect => {
+            let (ft, fr) = (t + 2.0 * STACK, r - 2.0 * STACK);
+            stacked_layer(&mut d, l, ft, fr, b, 2.0 * STACK);
+            stacked_layer(&mut d, l, ft, fr, b, STACK);
+            polygon(&mut d, &[(l, ft), (fr, ft), (fr, b), (l, b)]);
+        }
+        Shape::Delay => {
+            let rr = min(h / 2.0, w / 2.0);
+            d.cmd('M', &[l, t])
+                .cmd('H', &[r - rr])
+                .arc(rr, h / 2.0, r - rr, b)
+                .cmd('H', &[l])
+                .z();
+        }
+        Shape::HorizontalCylinder => {
+            let rx = min(CYLINDER_RY, w / 2.0);
+            d.cmd('M', &[l + rx, t])
+                .cmd('H', &[r - rx])
+                .arc(rx, h / 2.0, r - rx, b)
+                .cmd('H', &[l + rx])
+                .arc(rx, h / 2.0, l + rx, t)
+                .z();
+            // Rim of the right end, drawn clockwise like the body.
+            d.cmd('M', &[r - rx, b]).arc(rx, h / 2.0, r - rx, t);
+        }
+        Shape::LinedCylinder => {
+            let rx = w / 2.0;
+            let ry = min(CYLINDER_RY, h / 4.0);
+            d.cmd('M', &[l, t + ry])
+                .arc(rx, ry, r, t + ry)
+                .cmd('V', &[b - ry])
+                .arc(rx, ry, l, b - ry)
+                .z();
+            d.cmd('M', &[r, t + ry]).arc(rx, ry, l, t + ry);
+            let g = min(STACK, h / 4.0);
+            d.cmd('M', &[r, t + ry + g]).arc(rx, ry, l, t + ry + g);
+        }
+        Shape::CurvedTrapezoid => {
+            let s = h / 4.0;
+            let rr = min(h / 2.0, w / 2.0);
+            d.cmd('M', &[l + s, t])
+                .cmd('H', &[r - rr])
+                .arc(rr, h / 2.0, r - rr, b)
+                .cmd('H', &[l + s])
+                .cmd('L', &[l, cy])
+                .z();
+        }
+        Shape::DividedRect => {
+            round_rect(&mut d, l, t, w, h, 0.0);
+            d.cmd('M', &[l, t + min(BAND, h / 2.0)]).cmd('H', &[r]);
+        }
+        Shape::Triangle => polygon(&mut d, &[(cx, t), (r, b), (l, b)]),
+        Shape::FlippedTriangle => polygon(&mut d, &[(l, t), (r, t), (cx, b)]),
+        Shape::WindowPane => {
+            round_rect(&mut d, l, t, w, h, 0.0);
+            let p = min(BAND, min(w, h) / 2.0);
+            d.cmd('M', &[l, t + p]).cmd('H', &[r]);
+            d.cmd('M', &[l + p, t]).cmd('V', &[b]);
+        }
+        Shape::NotchedPentagon => {
+            let c = min(h / 4.0, w / 4.0);
+            polygon(
+                &mut d,
+                &[
+                    (l + c, t),
+                    (r - c, t),
+                    (r, t + c),
+                    (r, b),
+                    (l, b),
+                    (l, t + c),
+                ],
+            );
+        }
+        Shape::SlopedRect => {
+            polygon(&mut d, &[(l, t + min(SLOPE, h)), (r, t), (r, b), (l, b)]);
+        }
+        Shape::BowTieRect => {
+            let rx = min(BOW, w / 4.0);
+            d.cmd('M', &[l + rx, t])
+                .cmd('H', &[r])
+                .arc_ccw(rx, h / 2.0, r, b)
+                .cmd('H', &[l + rx])
+                .arc(rx, h / 2.0, l + rx, t)
+                .z();
+        }
+        Shape::TaggedRect => {
+            round_rect(&mut d, l, t, w, h, 0.0);
+            let g = min(TAG, min(w, h) / 2.0);
+            polygon(&mut d, &[(r - g, b), (r, b - g), (r, b)]);
+        }
+        Shape::Flag => {
+            let (yt, yb) = (t + WAVE, b - WAVE);
+            let k = WAVE_K * WAVE;
+            d.cmd('M', &[l, yt])
+                .cmd('C', &[cx, yt + k, cx, yt - k, r, yt])
+                .cmd('V', &[yb])
+                .cmd('C', &[cx, yb - k, cx, yb + k, l, yb])
+                .z();
+        }
+        Shape::LinedRect => {
+            round_rect(&mut d, l, t, w, h, 0.0);
+            d.cmd('M', &[l + min(SUBROUTINE_INSET, w / 4.0), t])
+                .cmd('V', &[b]);
+        }
+        Shape::NotchedRect => {
+            let n = min(NOTCH, min(w, h) / 2.0);
+            polygon(&mut d, &[(l + n, t), (r, t), (r, b), (l, b), (l, t + n)]);
+        }
+        // The label alone: an empty subpath keeps one `<path>` per node.
+        Shape::TextBlock => {
+            d.cmd('M', &[l, t]);
+        }
+        Shape::BraceLeft => brace(&mut d, l, 1.0, t, b, cy, min(BRACE, min(w, h) / 2.0)),
+        Shape::BraceRight => brace(&mut d, r, -1.0, t, b, cy, min(BRACE, min(w, h) / 2.0)),
+        Shape::Braces => {
+            let bw = min(BRACE, min(w / 4.0, h / 2.0));
+            brace(&mut d, l, 1.0, t, b, cy, bw);
+            brace(&mut d, r, -1.0, t, b, cy, bw);
+        }
+        // Lines above and below the label; open subpaths enclose nothing to fill.
+        Shape::DataStore => {
+            d.cmd('M', &[l, t]).cmd('H', &[r]);
+            d.cmd('M', &[r, b]).cmd('H', &[l]);
+        }
     }
     d.0
 }
 
 /// Every shape, for exhaustive tests.
-pub const ALL_SHAPES: [Shape; 21] = [
-    Shape::Rect,
-    Shape::Round,
-    Shape::Stadium,
-    Shape::Subroutine,
-    Shape::Cylinder,
-    Shape::Circle,
-    Shape::DoubleCircle,
-    Shape::Asymmetric,
-    Shape::Rhombus,
-    Shape::Hexagon,
-    Shape::Parallelogram,
-    Shape::ParallelogramAlt,
-    Shape::Trapezoid,
-    Shape::TrapezoidAlt,
-    Shape::SmallCircle,
-    Shape::FilledCircle,
-    Shape::FramedCircle,
-    Shape::CrossedCircle,
-    Shape::Fork,
-    Shape::Hourglass,
-    Shape::Bolt,
-];
+pub const ALL_SHAPES: [Shape; 46] = Shape::ALL;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
 
     #[test]
     fn rect_is_the_box() {
@@ -257,19 +431,66 @@ mod tests {
         assert!(d.starts_with("M5 0H5A5 5"), "{}", d);
     }
 
+    /// End points of every command of a path (control points and arc radii skipped).
+    fn end_points(d: &str) -> Vec<(char, Vec<f64>)> {
+        let mut out = Vec::new();
+        let mut cur: Option<(char, String)> = None;
+        for ch in d.chars().chain(core::iter::once('Z')) {
+            if ch.is_ascii_alphabetic() {
+                if let Some((c, body)) = cur.take() {
+                    let nums: Vec<f64> = body
+                        .split(' ')
+                        .filter(|t| !t.is_empty())
+                        .map(|t| t.parse().unwrap())
+                        .collect();
+                    let keep = match c {
+                        'C' => 4,
+                        'Q' => 2,
+                        'A' => 5,
+                        _ => 0,
+                    };
+                    out.push((c, nums.get(keep..).unwrap_or(&[]).to_vec()));
+                }
+                cur = Some((ch, String::new()));
+            } else if let Some((_, body)) = cur.as_mut() {
+                body.push(ch);
+            }
+        }
+        out
+    }
+
     #[test]
     fn every_shape_stays_inside_its_box() {
         for s in ALL_SHAPES {
             let d = shape_d(s, 60.0, 30.0, 80.0, 40.0);
             assert!(d.starts_with('M') && !d.is_empty(), "{:?}", s);
-            // Endpoints of every command lie in [20, 100] × [10, 50]; arcs flags are 0/1.
-            for tok in d
-                .split(|c: char| c.is_ascii_alphabetic() || c == ' ')
-                .filter(|t| !t.is_empty())
-            {
-                let v: f64 = tok.parse().unwrap();
-                assert!((0.0..=100.0).contains(&v), "{:?}: {}", s, d);
+            // End points of every command lie in [20, 100] × [10, 50].
+            for (c, nums) in end_points(&d) {
+                let ok = match c {
+                    'H' => nums.iter().all(|&x| (20.0..=100.0).contains(&x)),
+                    'V' => nums.iter().all(|&y| (10.0..=50.0).contains(&y)),
+                    _ => nums.chunks(2).all(|p| {
+                        (20.0..=100.0).contains(&p[0])
+                            && p.get(1).is_none_or(|y| (10.0..=50.0).contains(y))
+                    }),
+                };
+                assert!(ok, "{:?}: {}", s, d);
             }
+        }
+    }
+
+    #[test]
+    fn waves_stay_inside_the_box() {
+        // The cubic wave deviates at most WAVE from its base line.
+        for i in 0..=80 {
+            let x = 20.0 + i as f64;
+            let y = wave_y(x, 20.0, 100.0, 50.0 - WAVE, WAVE);
+            assert!(
+                (50.0 - 2.0 * WAVE - 1e-9..=50.0 + 1e-9).contains(&y),
+                "{} {}",
+                x,
+                y
+            );
         }
     }
 

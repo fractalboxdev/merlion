@@ -111,9 +111,109 @@ pub enum Shape {
     Hourglass,
     /// `@{ shape: bolt }` (`com-link`, `lightning-bolt`); drawn without its label.
     Bolt,
+    /// `@{ shape: doc }` (`document`): wavy bottom edge.
+    Document,
+    /// `@{ shape: lin-doc }` (`lined-document`): a document with a bar inside its left side.
+    LinedDocument,
+    /// `@{ shape: tag-doc }` (`tagged-document`): a document with a folded corner.
+    TaggedDocument,
+    /// `@{ shape: docs }` (`documents`, `st-doc`, `stacked-document`).
+    StackedDocument,
+    /// `@{ shape: delay }` (`half-rounded-rectangle`): the right side is a half ellipse.
+    Delay,
+    /// `@{ shape: h-cyl }` (`das`, `horizontal-cylinder`).
+    HorizontalCylinder,
+    /// `@{ shape: lin-cyl }` (`disk`, `lined-cylinder`): a cylinder with a second rim.
+    LinedCylinder,
+    /// `@{ shape: curv-trap }` (`curved-trapezoid`, `display`).
+    CurvedTrapezoid,
+    /// `@{ shape: div-rect }` (`div-proc`, `divided-rectangle`, `divided-process`).
+    DividedRect,
+    /// `@{ shape: tri }` (`extract`, `triangle`): apex up, label near the base.
+    Triangle,
+    /// `@{ shape: flip-tri }` (`manual-file`, `flipped-triangle`): apex down.
+    FlippedTriangle,
+    /// `@{ shape: win-pane }` (`internal-storage`, `window-pane`).
+    WindowPane,
+    /// `@{ shape: notch-pent }` (`loop-limit`, `notched-pentagon`): top corners cut.
+    NotchedPentagon,
+    /// `@{ shape: sl-rect }` (`manual-input`, `sloped-rectangle`): top edge rises to the right.
+    SlopedRect,
+    /// `@{ shape: st-rect }` (`procs`, `processes`, `stacked-rectangle`).
+    StackedRect,
+    /// `@{ shape: bow-rect }` (`stored-data`, `bow-tie-rectangle`).
+    BowTieRect,
+    /// `@{ shape: tag-rect }` (`tag-proc`, `tagged-rectangle`, `tagged-process`).
+    TaggedRect,
+    /// `@{ shape: flag }` (`paper-tape`): wavy top and bottom edges.
+    Flag,
+    /// `@{ shape: lin-rect }` (`lin-proc`, `lined-rectangle`, `lined-process`, `shaded-process`).
+    LinedRect,
+    /// `@{ shape: notch-rect }` (`card`, `notched-rectangle`): top-left corner cut.
+    NotchedRect,
+    /// `@{ shape: text }`: the label alone, without an outline.
+    TextBlock,
+    /// `@{ shape: brace }` (`brace-l`, `comment`): a curly brace left of the label.
+    BraceLeft,
+    /// `@{ shape: brace-r }`: a curly brace right of the label.
+    BraceRight,
+    /// `@{ shape: braces }`: curly braces on both sides.
+    Braces,
+    /// `@{ shape: datastore }` (`data-store`): lines above and below the label.
+    DataStore,
 }
 
 impl Shape {
+    /// Every shape, for exhaustive tests.
+    pub const ALL: [Shape; 46] = [
+        Shape::Rect,
+        Shape::Round,
+        Shape::Stadium,
+        Shape::Subroutine,
+        Shape::Cylinder,
+        Shape::Circle,
+        Shape::DoubleCircle,
+        Shape::Asymmetric,
+        Shape::Rhombus,
+        Shape::Hexagon,
+        Shape::Parallelogram,
+        Shape::ParallelogramAlt,
+        Shape::Trapezoid,
+        Shape::TrapezoidAlt,
+        Shape::SmallCircle,
+        Shape::FilledCircle,
+        Shape::FramedCircle,
+        Shape::CrossedCircle,
+        Shape::Fork,
+        Shape::Hourglass,
+        Shape::Bolt,
+        Shape::Document,
+        Shape::LinedDocument,
+        Shape::TaggedDocument,
+        Shape::StackedDocument,
+        Shape::Delay,
+        Shape::HorizontalCylinder,
+        Shape::LinedCylinder,
+        Shape::CurvedTrapezoid,
+        Shape::DividedRect,
+        Shape::Triangle,
+        Shape::FlippedTriangle,
+        Shape::WindowPane,
+        Shape::NotchedPentagon,
+        Shape::SlopedRect,
+        Shape::StackedRect,
+        Shape::BowTieRect,
+        Shape::TaggedRect,
+        Shape::Flag,
+        Shape::LinedRect,
+        Shape::NotchedRect,
+        Shape::TextBlock,
+        Shape::BraceLeft,
+        Shape::BraceRight,
+        Shape::Braces,
+        Shape::DataStore,
+    ];
+
     /// Whether the shape shows its label. mermaid 12 draws its small symbol shapes
     /// (start, stop, junction, summary, fork, collate, communication link) without one;
     /// the label stays in the model for the text alternative.

@@ -267,29 +267,7 @@ fn ports_spread_along_the_node_side() {
 
 #[test]
 fn every_shape_gets_boundary_ports() {
-    let shapes = [
-        Shape::Rect,
-        Shape::Round,
-        Shape::Stadium,
-        Shape::Subroutine,
-        Shape::Cylinder,
-        Shape::Circle,
-        Shape::DoubleCircle,
-        Shape::Asymmetric,
-        Shape::Rhombus,
-        Shape::Hexagon,
-        Shape::Parallelogram,
-        Shape::ParallelogramAlt,
-        Shape::Trapezoid,
-        Shape::TrapezoidAlt,
-        Shape::SmallCircle,
-        Shape::FilledCircle,
-        Shape::FramedCircle,
-        Shape::CrossedCircle,
-        Shape::Fork,
-        Shape::Hourglass,
-        Shape::Bolt,
-    ];
+    let shapes = Shape::ALL;
     for dir in [Direction::TB, Direction::BT, Direction::LR, Direction::RL] {
         let mut b = B::new().dir(dir);
         let hub = b.shape("hub", "decide", Shape::Rhombus);

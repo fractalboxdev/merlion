@@ -1358,3 +1358,86 @@ fn style_and_class_apply_to_subgraphs() {
     assert!(node(&f, "A").style.is_empty() && node(&f, "A").classes.is_empty());
     assert!(d.iter().all(|x| x.code == "I030"), "{d:#?}");
 }
+
+#[test]
+fn expanded_shapes_have_their_own_outline() {
+    // mermaid 12 expanded node shapes beyond the bracket forms, with their aliases.
+    let cases = [
+        ("doc", Shape::Document),
+        ("document", Shape::Document),
+        ("lin-doc", Shape::LinedDocument),
+        ("lined-document", Shape::LinedDocument),
+        ("tag-doc", Shape::TaggedDocument),
+        ("tagged-document", Shape::TaggedDocument),
+        ("docs", Shape::StackedDocument),
+        ("documents", Shape::StackedDocument),
+        ("st-doc", Shape::StackedDocument),
+        ("stacked-document", Shape::StackedDocument),
+        ("delay", Shape::Delay),
+        ("half-rounded-rectangle", Shape::Delay),
+        ("h-cyl", Shape::HorizontalCylinder),
+        ("das", Shape::HorizontalCylinder),
+        ("horizontal-cylinder", Shape::HorizontalCylinder),
+        ("lin-cyl", Shape::LinedCylinder),
+        ("disk", Shape::LinedCylinder),
+        ("lined-cylinder", Shape::LinedCylinder),
+        ("curv-trap", Shape::CurvedTrapezoid),
+        ("curved-trapezoid", Shape::CurvedTrapezoid),
+        ("display", Shape::CurvedTrapezoid),
+        ("div-rect", Shape::DividedRect),
+        ("div-proc", Shape::DividedRect),
+        ("divided-rectangle", Shape::DividedRect),
+        ("divided-process", Shape::DividedRect),
+        ("tri", Shape::Triangle),
+        ("extract", Shape::Triangle),
+        ("triangle", Shape::Triangle),
+        ("flip-tri", Shape::FlippedTriangle),
+        ("manual-file", Shape::FlippedTriangle),
+        ("flipped-triangle", Shape::FlippedTriangle),
+        ("win-pane", Shape::WindowPane),
+        ("internal-storage", Shape::WindowPane),
+        ("window-pane", Shape::WindowPane),
+        ("notch-pent", Shape::NotchedPentagon),
+        ("loop-limit", Shape::NotchedPentagon),
+        ("notched-pentagon", Shape::NotchedPentagon),
+        ("sl-rect", Shape::SlopedRect),
+        ("manual-input", Shape::SlopedRect),
+        ("sloped-rectangle", Shape::SlopedRect),
+        ("st-rect", Shape::StackedRect),
+        ("procs", Shape::StackedRect),
+        ("processes", Shape::StackedRect),
+        ("stacked-rectangle", Shape::StackedRect),
+        ("bow-rect", Shape::BowTieRect),
+        ("stored-data", Shape::BowTieRect),
+        ("bow-tie-rectangle", Shape::BowTieRect),
+        ("tag-rect", Shape::TaggedRect),
+        ("tagged-rectangle", Shape::TaggedRect),
+        ("tag-proc", Shape::TaggedRect),
+        ("tagged-process", Shape::TaggedRect),
+        ("flag", Shape::Flag),
+        ("paper-tape", Shape::Flag),
+        ("lin-rect", Shape::LinedRect),
+        ("lined-rectangle", Shape::LinedRect),
+        ("lined-process", Shape::LinedRect),
+        ("lin-proc", Shape::LinedRect),
+        ("shaded-process", Shape::LinedRect),
+        ("notch-rect", Shape::NotchedRect),
+        ("card", Shape::NotchedRect),
+        ("notched-rectangle", Shape::NotchedRect),
+        ("text", Shape::TextBlock),
+        ("brace", Shape::BraceLeft),
+        ("brace-l", Shape::BraceLeft),
+        ("comment", Shape::BraceLeft),
+        ("brace-r", Shape::BraceRight),
+        ("braces", Shape::Braces),
+        ("datastore", Shape::DataStore),
+        ("data-store", Shape::DataStore),
+    ];
+    for (name, shape) in cases {
+        let (f, d) = parse_ok(&format!(
+            "flowchart TD\nA@{{ shape: {name}, label: \"Label {name}\" }}"
+        ));
+        assert_eq!(f.nodes[0].shape, shape, "{name}");
+        assert!(d.iter().all(|x| x.code != "W015"), "{name}: {d:#?}");
+    }
+}

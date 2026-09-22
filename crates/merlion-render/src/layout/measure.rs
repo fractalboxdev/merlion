@@ -21,6 +21,20 @@
 //! | `Asymmetric` (`>t]`) | Rectangle whose left side has a notch reaching `h/4` inwards at mid-height |
 //! | `SmallCircle`, `FilledCircle`, `FramedCircle`, `CrossedCircle` | Circle of diameter `w = h` ([`fixed_size`]) |
 //! | `Fork`, `Hourglass`, `Bolt` | The `w × h` rectangle ([`fixed_size`]); the hourglass and bolt are drawn inside it |
+//! | `Document`, `LinedDocument`, `TaggedDocument` | Rectangle whose bottom is the wave [`wave_bottom`] around `b − WAVE` |
+//! | `StackedDocument` | Union of a document in `[−a, a − 2S] × [−b + 2S, b]` and two rectangles offset by `S = ` [`STACK`] up and right |
+//! | `Delay` | Rectangle whose right end is a half ellipse of radii `min(a, b)` × `b` |
+//! | `HorizontalCylinder` | Rectangle whose left and right ends are half ellipses of radii [`CYLINDER_RY`] × `b` |
+//! | `LinedCylinder` | As `Cylinder` |
+//! | `CurvedTrapezoid` | Left side pointed at `(−a, 0)`, `b/2` deep; right end a half ellipse of radii `b` × `b` |
+//! | `Triangle` / `FlippedTriangle` | Apex at `(0, −b)` / `(0, b)`, base `[−a, a]` on the opposite side |
+//! | `NotchedPentagon` | Rectangle with its top corners cut `h/4` deep |
+//! | `SlopedRect` | Rectangle whose top edge rises [`SLOPE`] from left to right |
+//! | `StackedRect` | Union of `[−a, a − 2S] × [−b + 2S, b]` and the same box moved `S` and `2S` up and right |
+//! | `BowTieRect` | Left end a convex, right end a concave half ellipse of radii [`BOW`] × `b` |
+//! | `Flag` | Rectangle whose top ([`wave_top`]) and bottom ([`wave_bottom`]) are waves around `−b + WAVE` and `b − WAVE` |
+//! | `NotchedRect` | Rectangle with its top-left corner cut [`NOTCH`] deep |
+//! | `DividedRect`, `WindowPane`, `TaggedRect`, `LinedRect`, `TextBlock`, `BraceLeft`, `BraceRight`, `Braces`, `DataStore` | The `w × h` rectangle (bars, folds and braces lie inside it; `TextBlock` and `DataStore` draw no outline around it) |
 
 use crate::math::{abs, hypot, max, min, sqrt};
 use crate::model::{Flowchart, FontStyle, FontWeight, Node, Shape, Style};
@@ -42,6 +56,96 @@ pub const SLANT: f64 = 1.0 / 3.0;
 pub const SUBROUTINE_INSET: f64 = 8.0;
 /// Smallest node width and height.
 pub const MIN_SIZE: f64 = 20.0;
+/// Amplitude of the wavy edges of documents and flags.
+pub const WAVE: f64 = 5.0;
+/// Offset of each layer behind a stacked document or rectangle.
+pub const STACK: f64 = 5.0;
+/// Height of the band above the divider of `DividedRect`, and of the pane bars of
+/// `WindowPane` (kept free below and right of the label as well, so it stays centred).
+pub const BAND: f64 = 10.0;
+/// Depth of the top-left notch of `NotchedRect`.
+pub const NOTCH: f64 = 12.0;
+/// Rise of the top edge of `SlopedRect`.
+pub const SLOPE: f64 = 10.0;
+/// Horizontal depth of the ends of `BowTieRect`.
+pub const BOW: f64 = 8.0;
+/// Size of the folded corner of `TaggedRect` and `TaggedDocument`.
+pub const TAG: f64 = 10.0;
+/// Width of a curly brace.
+pub const BRACE: f64 = 10.0;
+
+/// Control-point offset of the cubic wave: `2·√3` times the amplitude, so the curve
+/// deviates exactly `amplitude` from its base line.
+pub const WAVE_K: f64 = 3.464_101_615_137_754_6;
+
+/// `y` of the wave through `(x1, y0)` and `(x0, y0)` (`x0 < x1`) at `x`: the cubic from
+/// `(x1, y0)` with controls `(xm, y0 − K)`, `(xm, y0 + K)` to `(x0, y0)`, `xm` the
+/// midpoint and `K = WAVE_K · amplitude`. It rises above `y0` on the right half and
+/// dips below it on the left half, by at most `amplitude`.
+pub fn wave_y(x: f64, x0: f64, x1: f64, y0: f64, amplitude: f64) -> f64 {
+    if x1 <= x0 {
+        return y0;
+    }
+    let xm = (x0 + x1) / 2.0;
+    let k = WAVE_K * amplitude;
+    let bx = |t: f64| {
+        let u = 1.0 - t;
+        x1 * u * u * u + xm * 3.0 * t * u * (u + t) + x0 * t * t * t
+    };
+    // x decreases from x1 to x0 as t runs from 0 to 1.
+    let (mut lo, mut hi) = (0.0, 1.0);
+    for _ in 0..50 {
+        let mid = (lo + hi) / 2.0;
+        if bx(mid) > x {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    let t = (lo + hi) / 2.0;
+    y0 + 3.0 * k * t * (1.0 - t) * (2.0 * t - 1.0)
+}
+
+/// `x` where the wave of [`wave_y`] peaks (rises furthest above `y0`); it dips
+/// furthest at `x0 + x1 − peak`.
+fn wave_peak_x(x0: f64, x1: f64) -> f64 {
+    // t = 1/2 − 1/(2√3) on the cubic.
+    const T: f64 = 0.211_324_865_405_187_1;
+    let (u, xm) = (1.0 - T, (x0 + x1) / 2.0);
+    x1 * u * u * u + xm * 3.0 * T * u * (u + T) + x0 * T * T * T
+}
+
+/// Bottom edge of a wavy outline: the wave, held at its peak from the peak to the
+/// right end, so every ray from the centre crosses the outline once (ports and
+/// clipping assume star-shaped outlines).
+pub fn wave_bottom(x: f64, x0: f64, x1: f64, y0: f64, amplitude: f64) -> f64 {
+    if x >= wave_peak_x(x0, x1) {
+        y0 - amplitude
+    } else {
+        wave_y(x, x0, x1, y0, amplitude)
+    }
+}
+
+/// Top edge of a wavy outline (the same wave around `y0`), held at its dip from the
+/// left end to the dip.
+pub fn wave_top(x: f64, x0: f64, x1: f64, y0: f64, amplitude: f64) -> f64 {
+    if x <= x0 + x1 - wave_peak_x(x0, x1) {
+        y0 + amplitude
+    } else {
+        wave_y(x, x0, x1, y0, amplitude)
+    }
+}
+
+/// Vertical offset of the label centre from the node centre: triangles hold their label
+/// in the wide half.
+pub fn label_offset(shape: Shape, h: f64, lh: f64) -> f64 {
+    let d = max(h / 2.0 - lh / 2.0 - PAD_INNER, 0.0);
+    match shape {
+        Shape::Triangle => d,
+        Shape::FlippedTriangle => -d,
+        _ => 0.0,
+    }
+}
 
 /// Outer size of the label-less symbol shapes ([`Shape::draws_label`]), which do not
 /// grow with the label.
@@ -99,6 +203,42 @@ pub fn node_size(shape: Shape, lw: f64, lh: f64) -> (f64, f64) {
         }
         // The notch reaches h/4 into the left side.
         Shape::Asymmetric => (tw + th / 4.0, th),
+        // The wave dips to the bottom and rises 2·WAVE above it; PAD_Y ≥ WAVE keeps the
+        // label clear of it.
+        Shape::Document | Shape::TaggedDocument => (tw, th + 2.0 * WAVE),
+        Shape::LinedDocument => (tw + 2.0 * SUBROUTINE_INSET, th + 2.0 * WAVE),
+        Shape::Flag => (tw, th + 2.0 * WAVE),
+        // The front layer holds the label box; the two layers behind add 2·STACK up and
+        // right, kept on both sides so the label stays centred.
+        Shape::StackedDocument => (tw + 4.0 * STACK, th + 2.0 * WAVE + 4.0 * STACK),
+        Shape::StackedRect => (tw + 4.0 * STACK, th + 4.0 * STACK),
+        Shape::Delay | Shape::CurvedTrapezoid => (lw + 2.0 * PAD_INNER + th, th),
+        // The inner rim reaches 2·ry in from the right end.
+        Shape::HorizontalCylinder => (tw + 4.0 * CYLINDER_RY, th),
+        Shape::LinedCylinder => (tw, th + 4.0 * CYLINDER_RY + 2.0 * STACK),
+        Shape::DividedRect => (tw, th + 2.0 * BAND),
+        Shape::WindowPane => (tw + 2.0 * BAND, th + 2.0 * BAND),
+        Shape::SlopedRect => (tw, th + SLOPE),
+        Shape::BowTieRect => (tw + 2.0 * BOW, th),
+        Shape::NotchedPentagon => (lw + 2.0 * PAD_INNER + th / 2.0, th),
+        // The label sits in the wide half: the padded box (p, q) fits a triangle of
+        // width 2p and height 2q with its label centre q/2 from the base.
+        Shape::Triangle | Shape::FlippedTriangle => {
+            let p = lw + 2.0 * PAD_INNER;
+            let q = lh + 2.0 * PAD_INNER;
+            (2.0 * p, 2.0 * q)
+        }
+        Shape::TaggedRect
+        | Shape::LinedRect
+        | Shape::NotchedRect
+        | Shape::TextBlock
+        | Shape::BraceLeft
+        | Shape::BraceRight
+        | Shape::Braces
+        | Shape::DataStore => match shape {
+            Shape::LinedRect => (tw + 2.0 * SUBROUTINE_INSET, th),
+            _ => (tw, th),
+        },
         // Fixed sizes, returned above.
         Shape::SmallCircle
         | Shape::FilledCircle
@@ -124,6 +264,106 @@ pub fn inside(shape: Shape, w: f64, h: f64, x: f64, y: f64) -> bool {
     match shape {
         Shape::Rect | Shape::Round | Shape::Subroutine => true,
         Shape::Fork | Shape::Hourglass | Shape::Bolt => true,
+        Shape::DividedRect
+        | Shape::WindowPane
+        | Shape::TaggedRect
+        | Shape::LinedRect
+        | Shape::TextBlock
+        | Shape::BraceLeft
+        | Shape::BraceRight
+        | Shape::Braces
+        | Shape::DataStore => true,
+        Shape::Document | Shape::LinedDocument | Shape::TaggedDocument => {
+            y <= wave_bottom(x, -a, a, b - WAVE, WAVE) + EPS
+        }
+        Shape::Flag => {
+            y <= wave_bottom(x, -a, a, b - WAVE, WAVE) + EPS
+                && y >= wave_top(x, -a, a, -b + WAVE, WAVE) - EPS
+        }
+        Shape::StackedDocument => {
+            let front = x <= a - 2.0 * STACK + EPS
+                && y >= -b + 2.0 * STACK - EPS
+                && y <= wave_bottom(x, -a, a - 2.0 * STACK, b - WAVE, WAVE) + EPS;
+            let base = b - WAVE;
+            front
+                || (1..=2).any(|k| {
+                    let o = k as f64 * STACK;
+                    x >= -a + o - EPS
+                        && x <= a - 2.0 * STACK + o + EPS
+                        && y >= -b + 2.0 * STACK - o - EPS
+                        && y <= base - o + EPS
+                })
+        }
+        Shape::StackedRect => (0..=2).any(|k| {
+            let o = k as f64 * STACK;
+            x >= -a + o - EPS
+                && x <= a - 2.0 * STACK + o + EPS
+                && y >= -b + 2.0 * STACK - o - EPS
+                && y <= b - o + EPS
+        }),
+        Shape::Delay => {
+            let r = min(a, b);
+            let cx = a - r;
+            if x <= cx || r <= 0.0 || b <= 0.0 {
+                return true;
+            }
+            let u = (x - cx) / r;
+            u * u + (y / b) * (y / b) <= 1.0 + EPS
+        }
+        Shape::HorizontalCylinder => {
+            let rx = min(CYLINDER_RY, a);
+            if b <= 0.0 {
+                return false;
+            }
+            let v = y / b;
+            let k = sqrt(max(1.0 - v * v, 0.0));
+            x >= -a + rx - rx * k - EPS && x <= a - rx + rx * k + EPS
+        }
+        Shape::CurvedTrapezoid => {
+            if b <= 0.0 {
+                return false;
+            }
+            let s = b / 2.0;
+            let r = min(b, a);
+            let cx = a - r;
+            let right = x <= cx || {
+                let u = (x - cx) / r;
+                u * u + (y / b) * (y / b) <= 1.0 + EPS
+            };
+            right && x >= -a + s * abs(y) / b - EPS
+        }
+        Shape::Triangle | Shape::FlippedTriangle => {
+            if b <= 0.0 {
+                return false;
+            }
+            let from_apex = if shape == Shape::Triangle {
+                y + b
+            } else {
+                b - y
+            };
+            abs(x) <= a * from_apex / (2.0 * b) + EPS
+        }
+        Shape::NotchedPentagon => {
+            let c = h / 4.0;
+            y >= -b + c || abs(x) <= a - c + (y + b) + EPS
+        }
+        Shape::SlopedRect => {
+            if a <= 0.0 {
+                return false;
+            }
+            y >= -b + min(SLOPE, h) * (a - x) / (2.0 * a) - EPS
+        }
+        Shape::BowTieRect => {
+            let rx = min(BOW, a / 2.0);
+            if b <= 0.0 {
+                return false;
+            }
+            let v = y / b;
+            let k = sqrt(max(1.0 - v * v, 0.0));
+            x >= -a + rx - rx * k - EPS && x <= a - rx * k + EPS
+        }
+        Shape::NotchedRect => (x + a) + (y + b) >= min(NOTCH, min(a, b)) - EPS,
+        Shape::LinedCylinder => inside(Shape::Cylinder, w, h, x, y),
         Shape::Stadium => {
             let r = b;
             let cx = max(a - r, 0.0);
@@ -319,29 +559,7 @@ mod tests {
     use alloc::string::String;
     use alloc::vec;
 
-    const ALL: [Shape; 21] = [
-        Shape::Rect,
-        Shape::Round,
-        Shape::Stadium,
-        Shape::Subroutine,
-        Shape::Cylinder,
-        Shape::Circle,
-        Shape::DoubleCircle,
-        Shape::Asymmetric,
-        Shape::Rhombus,
-        Shape::Hexagon,
-        Shape::Parallelogram,
-        Shape::ParallelogramAlt,
-        Shape::Trapezoid,
-        Shape::TrapezoidAlt,
-        Shape::SmallCircle,
-        Shape::FilledCircle,
-        Shape::FramedCircle,
-        Shape::CrossedCircle,
-        Shape::Fork,
-        Shape::Hourglass,
-        Shape::Bolt,
-    ];
+    const ALL: [Shape; 46] = Shape::ALL;
 
     #[test]
     fn rect_is_label_plus_padding() {
@@ -355,9 +573,10 @@ mod tests {
             for (lw, lh) in [(0.0, 17.0), (40.0, 17.0), (180.0, 51.0), (8.0, 34.0)] {
                 let (w, h) = node_size(shape, lw, lh);
                 assert!(w > 0.0 && h > 0.0, "{:?}", shape);
+                let dy = label_offset(shape, h, lh);
                 for (sx, sy) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
                     assert!(
-                        inside(shape, w, h, sx * lw / 2.0, sy * lh / 2.0),
+                        inside(shape, w, h, sx * lw / 2.0, dy + sy * lh / 2.0),
                         "{:?} {}x{} label corner outside {}x{}",
                         shape,
                         lw,
