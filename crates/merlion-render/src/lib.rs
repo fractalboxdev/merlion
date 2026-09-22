@@ -84,8 +84,11 @@ fn map_parse_error(e: parse::ParseError) -> RenderError {
     }
 }
 
-/// The SVG root id: the `id_prefix` when valid, else `m` + 8 hex of FNV-1a 64 over (source, options, hint).
-pub fn diagram_id(source: &str, opts: &RenderOptions) -> String {
+/// The SVG root id: the `id_prefix` when valid, else `m` + 8 hex of FNV-1a 64 over
+/// (source, options, layout). `layout` is the drawn layout's hint string, not the input
+/// hint: re-rendering in place with the previous SVG as the hint then reproduces the same
+/// bytes, because the same layout gives the same id.
+pub fn diagram_id(source: &str, opts: &RenderOptions, layout: &str) -> String {
     if let Some(p) = &opts.id_prefix {
         if ids::is_valid_id_prefix(p) {
             return p.clone();
@@ -106,11 +109,10 @@ pub fn diagram_id(source: &str, opts: &RenderOptions) -> String {
         opts.wrap_width,
         opts.background
     );
-    let hint = opts.hint.as_deref().unwrap_or("");
     ids::default_id(ids::fnv1a64_parts(&[
         source.as_bytes(),
         opt_key.as_bytes(),
-        hint.as_bytes(),
+        layout.as_bytes(),
     ]))
 }
 
@@ -128,7 +130,6 @@ pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
         return RenderResult::failed(RenderError::Parse, diags.items, 0);
     }
     let mut fuel = fuel::Fuel::new(opts.fuel);
-    let id = diagram_id(source, opts);
     match &diagram {
         Diagram::Flowchart(chart) => {
             let geom = match layout::layout_flowchart(chart, opts, &mut fuel, &mut diags) {
@@ -141,6 +142,7 @@ pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
                     )
                 }
             };
+            let id = diagram_id(source, opts, &svg::layout_hint(chart, &geom));
             let out = svg::draw_flowchart(chart, &geom, opts, &id, &mut diags);
             if diags.has_errors() {
                 return RenderResult::failed(RenderError::Parse, diags.items, fuel.used());
