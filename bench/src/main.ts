@@ -6,6 +6,7 @@
  *   pnpm bench report [--input results/<file>.json] [--out <file>.md]
  *   pnpm bench determinism [--font link|embed|system]
  *   pnpm bench parity [--limit N] [--require-rsvg]
+ *   pnpm bench sequence [--limit N] [--out-svgs]
  */
 import { Command, Options } from "@effect/cli";
 import { FetchHttpClient } from "@effect/platform";
@@ -17,6 +18,7 @@ import { parity } from "./parity/gate.ts";
 import { RENDERER_NAMES, type RendererName } from "./renderers/Renderer.ts";
 import { report } from "./report.ts";
 import { run } from "./run.ts";
+import { sequenceRun } from "./sequence-run.ts";
 
 const fetchCmd = Command.make("fetch", {}, () => fetchCorpus.pipe(Effect.asVoid)).pipe(
   Command.withDescription("Download the compat corpus at the pinned mermaid commit and derive the edits corpus"),
@@ -61,7 +63,15 @@ const parityCmd = Command.make("parity", { limit: parityLimit, requireRsvg }, (o
   Command.withDescription("Stylesheet parity: page CSS in Chromium vs baked SVG with no host CSS, without <style>, and through rsvg-convert"),
 );
 
-const bench = Command.make("bench").pipe(Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd]));
+const seqLimit = Options.integer("limit").pipe(Options.optional, Options.withDescription("Render only the first N diagrams"));
+const seqOutSvgs = Options.boolean("out-svgs").pipe(Options.withDescription("Write every SVG to results/svgs-sequence/<renderer>/"));
+const sequenceCmd = Command.make("sequence", { limit: seqLimit, outSvgs: seqOutSvgs }, (o) =>
+  sequenceRun({ limit: o.limit, outSvgs: o.outSvgs }).pipe(Effect.asVoid),
+).pipe(Command.withDescription("Render the compat-sequence corpus with Merlion and mermaid and write the baseline"));
+
+const bench = Command.make("bench").pipe(
+  Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd, sequenceCmd]),
+);
 
 const cli = Command.run(bench, { name: "merlion-bench", version: "0.0.0" });
 
