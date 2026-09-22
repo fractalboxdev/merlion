@@ -6,19 +6,19 @@
 //! node centre at the origin, `a = w/2` and `b = h/2`, is the contract with the draw
 //! stage:
 //!
-//! | Shape | Outline |
+//! | Shape | Outline (the drawn path of `svg/shapes.rs`) |
 //! |---|---|
 //! | `Rect`, `Round`, `Subroutine` | The `w × h` rectangle (corner rounding and the subroutine's inner bars lie inside it) |
 //! | `Stadium` | Rectangle with semicircular ends of radius `b` |
 //! | `Cylinder` | Rectangle whose top and bottom are elliptical arcs with radius `a` × [`cylinder_ry`]: the top cap's upper half and the bottom cap's lower half |
 //! | `Circle`, `DoubleCircle` | Circle of diameter `w = h` (the outer ring for `DoubleCircle`, [`DOUBLE_CIRCLE_GAP`] outside the inner one) |
 //! | `Rhombus` | Diamond with vertices at `(±a, 0)`, `(0, ±b)` |
-//! | `Hexagon` | Points at `(±a, 0)`, flat top and bottom between `±(a − h/4)` |
-//! | `Parallelogram` (`[/t/]`) | Top edge `[−a + s, a]`, bottom `[−a, a − s]`, `s = h ·` [`SLANT`] |
+//! | `Hexagon` | Points at `(±a, 0)`, flat top and bottom between `±(a − m)`, `m = min(h/4, w/4)` |
+//! | `Parallelogram` (`[/t/]`) | Top edge `[−a + s, a]`, bottom `[−a, a − s]`, `s = min(h ·` [`SLANT`]`, w/4)` |
 //! | `ParallelogramAlt` (`[\t\]`) | Top `[−a, a − s]`, bottom `[−a + s, a]` |
 //! | `Trapezoid` (`[/t\]`) | Top `[−a + s, a − s]`, bottom `[−a, a]` |
 //! | `TrapezoidAlt` (`[\t/]`) | Top `[−a, a]`, bottom `[−a + s, a − s]` |
-//! | `Asymmetric` (`>t]`) | Rectangle whose left side has a notch reaching `h/4` inwards at mid-height |
+//! | `Asymmetric` (`>t]`) | Rectangle whose left side has a notch reaching `min(h/4, w/4)` inwards at mid-height |
 //! | `SmallCircle`, `FilledCircle`, `FramedCircle`, `CrossedCircle` | Circle of diameter `w = h` ([`fixed_size`]) |
 //! | `Fork`, `Hourglass`, `Bolt` | The `w × h` rectangle ([`fixed_size`]); the hourglass and bolt are drawn inside it |
 //! | `Document`, `LinedDocument`, `TaggedDocument` | Rectangle whose bottom is the wave [`wave_bottom`] around `b − WAVE` |
@@ -270,7 +270,8 @@ pub fn inside(shape: Shape, w: f64, h: f64, x: f64, y: f64) -> bool {
     if !(abs(x) <= a && abs(y) <= b) {
         return false;
     }
-    let s = h * SLANT;
+    // Slant of the parallelograms and trapezoids, as svg/shapes.rs draws it.
+    let s = min(h * SLANT, w / 4.0);
     // Tiny tolerance so points computed on the outline count as inside.
     const EPS: f64 = 1e-9;
     match shape {
@@ -409,11 +410,12 @@ pub fn inside(shape: Shape, w: f64, h: f64, x: f64, y: f64) -> bool {
             abs(x) / a + abs(y) / b <= 1.0 + EPS
         }
         Shape::Hexagon => {
-            let inset = h / 4.0;
+            // Points at (±a, 0); the flat top and bottom end `inset` short of the box.
+            let inset = min(h / 4.0, w / 4.0);
             if b <= 0.0 {
                 return false;
             }
-            abs(x) <= a - inset * (1.0 - abs(y) / b) + EPS
+            abs(x) <= a - inset * abs(y) / b + EPS
         }
         Shape::Parallelogram | Shape::ParallelogramAlt | Shape::Trapezoid | Shape::TrapezoidAlt => {
             if b <= 0.0 {
@@ -430,7 +432,8 @@ pub fn inside(shape: Shape, w: f64, h: f64, x: f64, y: f64) -> bool {
             x >= left - EPS && x <= right + EPS
         }
         Shape::Asymmetric => {
-            let d = h / 4.0;
+            // Depth of the notch, as svg/shapes.rs draws it.
+            let d = min(h / 4.0, w / 4.0);
             if b <= 0.0 {
                 return false;
             }

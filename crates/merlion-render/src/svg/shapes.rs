@@ -6,8 +6,8 @@
 use alloc::string::String;
 
 use crate::layout::measure::{
-    cylinder_ry, wave_y, BAND, BOW, BRACE, CYLINDER_RY, NOTCH, SLOPE, STACK, SUBROUTINE_INSET, TAG,
-    WAVE, WAVE_K,
+    cylinder_ry, wave_y, BAND, BOW, BRACE, CYLINDER_RY, NOTCH, SLANT, SLOPE, STACK,
+    SUBROUTINE_INSET, TAG, WAVE, WAVE_K,
 };
 use crate::model::Shape;
 use crate::numfmt::push_num;
@@ -179,7 +179,7 @@ pub fn shape_d(shape: Shape, cx: f64, cy: f64, w: f64, h: f64) -> String {
             ellipse(&mut d, cx, cy, irx, iry);
         }
         Shape::Asymmetric => {
-            let n = min(h / 2.0, w / 4.0);
+            let n = min(h / 4.0, w / 4.0);
             polygon(&mut d, &[(l, t), (r, t), (r, b), (l, b), (l + n, cy)]);
         }
         Shape::Rhombus => polygon(&mut d, &[(cx, t), (r, cy), (cx, b), (l, cy)]),
@@ -198,19 +198,19 @@ pub fn shape_d(shape: Shape, cx: f64, cy: f64, w: f64, h: f64) -> String {
             );
         }
         Shape::Parallelogram => {
-            let s = min(h / 2.0, w / 4.0);
+            let s = min(h * SLANT, w / 4.0);
             polygon(&mut d, &[(l + s, t), (r, t), (r - s, b), (l, b)]);
         }
         Shape::ParallelogramAlt => {
-            let s = min(h / 2.0, w / 4.0);
+            let s = min(h * SLANT, w / 4.0);
             polygon(&mut d, &[(l, t), (r - s, t), (r, b), (l + s, b)]);
         }
         Shape::Trapezoid => {
-            let s = min(h / 2.0, w / 4.0);
+            let s = min(h * SLANT, w / 4.0);
             polygon(&mut d, &[(l + s, t), (r - s, t), (r, b), (l, b)]);
         }
         Shape::TrapezoidAlt => {
-            let s = min(h / 2.0, w / 4.0);
+            let s = min(h * SLANT, w / 4.0);
             polygon(&mut d, &[(l, t), (r, t), (r - s, b), (l + s, b)]);
         }
         Shape::SmallCircle | Shape::FilledCircle => ellipse(&mut d, cx, cy, w / 2.0, h / 2.0),
@@ -465,6 +465,58 @@ mod tests {
             }
         }
         out
+    }
+
+    /// The hit test the router uses agrees with the drawn outline: every vertex and edge
+    /// midpoint of a polygonal shape is inside when pulled 1% towards the centre and
+    /// outside when pushed 1% away.
+    #[test]
+    fn hit_test_matches_every_drawn_polygon() {
+        use crate::layout::measure::inside;
+        let polygons = [
+            Shape::Rhombus,
+            Shape::Hexagon,
+            Shape::Parallelogram,
+            Shape::ParallelogramAlt,
+            Shape::Trapezoid,
+            Shape::TrapezoidAlt,
+            Shape::Asymmetric,
+        ];
+        for s in polygons {
+            for (w, h) in [(80.0, 40.0), (200.0, 36.0), (40.0, 60.0), (30.0, 30.0)] {
+                let d = shape_d(s, 0.0, 0.0, w, h);
+                let pts: Vec<(f64, f64)> = end_points(&d)
+                    .into_iter()
+                    .take_while(|(c, _)| *c != 'Z')
+                    .map(|(_, n)| (n[0], n[1]))
+                    .collect();
+                let mut probes = pts.clone();
+                for i in 0..pts.len() {
+                    let (a, b) = (pts[i], pts[(i + 1) % pts.len()]);
+                    probes.push(((a.0 + b.0) / 2.0, (a.1 + b.1) / 2.0));
+                }
+                for (x, y) in probes {
+                    assert!(
+                        inside(s, w, h, x * 0.99, y * 0.99),
+                        "{:?} {}x{} ({}, {}) in",
+                        s,
+                        w,
+                        h,
+                        x,
+                        y
+                    );
+                    assert!(
+                        !inside(s, w, h, x * 1.01, y * 1.01),
+                        "{:?} {}x{} ({}, {}) out",
+                        s,
+                        w,
+                        h,
+                        x,
+                        y
+                    );
+                }
+            }
+        }
     }
 
     #[test]
