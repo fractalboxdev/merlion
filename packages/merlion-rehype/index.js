@@ -157,31 +157,26 @@ export default function rehypeMerlion(options = {}) {
       const key = cacheKey(relPath, n);
       const prev = cache ? readEntry(cache, key) : null;
 
-      let svg = null;
-      let outline = null;
-      if (prev && prev.hash === hash) {
-        // Unchanged source and options: reuse without rendering.
-        ({ svg, outline } = prev);
-      } else {
-        const ropts = { width: o.width, strict: o.strict, idPrefix: idPrefix(relPath, n) };
-        if (prev) ropts.hint = prev.svg;
-        let res;
+      // Cache entries are untrusted (specs/security.md): the stored SVG is only ever a
+      // layout hint, never inlined, so every block renders on every build.
+      const ropts = { width: o.width, strict: o.strict, idPrefix: idPrefix(relPath, n) };
+      if (prev) ropts.hint = prev.svg;
+      let res;
+      try {
+        res = await render(source, ropts);
+      } catch (err) {
+        res = { svg: null, outline: null, diagnostics: [internalError(err)] };
+      }
+      for (const d of Array.isArray(res?.diagnostics) ? res.diagnostics : []) {
+        if (reported(d)) report(file, d, pre, o.strict);
+      }
+      const svg = typeof res?.svg === "string" ? res.svg : null;
+      const outline = typeof res?.outline === "string" ? res.outline : null;
+      if (svg && cache && !(prev && prev.hash === hash && prev.svg === svg)) {
         try {
-          res = await render(source, ropts);
+          writeEntry(cache, key, { hash, svg, outline });
         } catch (err) {
-          res = { svg: null, outline: null, diagnostics: [internalError(err)] };
-        }
-        for (const d of Array.isArray(res?.diagnostics) ? res.diagnostics : []) {
-          if (reported(d)) report(file, d, pre, o.strict);
-        }
-        svg = typeof res?.svg === "string" ? res.svg : null;
-        outline = typeof res?.outline === "string" ? res.outline : null;
-        if (svg && cache) {
-          try {
-            writeEntry(cache, key, { hash, svg, outline });
-          } catch (err) {
-            file.message(`merlion cache write failed: ${err.message}`, { ruleId: "cache-write", source: "merlion" });
-          }
+          file.message(`merlion cache write failed: ${err.message}`, { ruleId: "cache-write", source: "merlion" });
         }
       }
 

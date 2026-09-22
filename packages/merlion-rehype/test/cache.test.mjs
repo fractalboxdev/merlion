@@ -37,13 +37,29 @@ test("first build renders and writes one entry named by the (path, index) hash",
   assert.match(entry.svg, /^<svg /);
 });
 
-test("an unchanged source reuses the stored SVG without rendering", async () => {
+test("an unchanged source renders again with the stored SVG as the layout hint", async () => {
   const first = fakeRender();
   const a = await build(SRC, first.render);
+  const before = JSON.parse(readFileSync(entryPath(), "utf8"));
   const second = fakeRender();
   const b = await build(SRC, second.render);
-  assert.equal(second.calls.length, 0);
+  assert.equal(second.calls.length, 1);
+  assert.equal(second.calls[0].options.hint, before.svg);
   assert.equal(b.tree.children[0].children[0].children[0].value, a.tree.children[0].children[0].children[0].value);
+});
+
+test("a planted entry whose hash matches never reaches the page", async () => {
+  const first = fakeRender();
+  await build(SRC, first.render);
+  const entry = JSON.parse(readFileSync(entryPath(), "utf8"));
+  const planted = '<svg><foreignObject><img src=x onerror="alert(1)"></foreignObject></svg><script>alert(1)</script>';
+  writeFileSync(entryPath(), JSON.stringify({ ...entry, svg: planted }));
+  const second = fakeRender();
+  const { tree } = await build(SRC, second.render);
+  assert.equal(second.calls.length, 1);
+  assert.equal(second.calls[0].options.hint, planted);
+  const inlined = tree.children[0].children[0].children[0].value;
+  assert.doesNotMatch(inlined, /script|onerror|foreignObject/);
 });
 
 test("a changed source renders with the stored SVG as the layout hint and updates the entry", async () => {
