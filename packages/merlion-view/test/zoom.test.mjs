@@ -15,6 +15,8 @@ import {
   labelPx,
   semanticLimit,
   needsControls,
+  clampView,
+  fitsBox,
   viewBoxSize,
   transformOf,
 } from "../zoom.js";
@@ -132,12 +134,40 @@ test("rankLimit is null at or above 9px and shrinks with the label size", () => 
   }
 });
 
-test("needsControls: natural width exceeds container, or controls=always", () => {
+test("needsControls: every diagram has controls unless controls=never", () => {
   assert.equal(needsControls(800, 600, null), true);
-  assert.equal(needsControls(600, 600, null), false);
-  assert.equal(needsControls(400, 600, null), false);
+  assert.equal(needsControls(400, 600, null), true);
   assert.equal(needsControls(400, 600, "always"), true);
-  assert.equal(needsControls(Number.NaN, 600, null), false);
+  assert.equal(needsControls(800, 600, "never"), false);
+});
+
+test("clampView keeps content that fits inside the box", () => {
+  // 400x200 content in a 600x300 box whose left/top edge sits at -100/-50 of the SVG.
+  const box = { x: -100, y: -50, w: 600, h: 300 };
+  const c = { w: 400, h: 200 };
+  assert.deepEqual(clampView({ s: 1, x: 0, y: 0 }, c, box), { s: 1, x: 0, y: 0 });
+  // Dragged down-right past the box edge: stops flush with the box.
+  assert.deepEqual(clampView({ s: 1, x: 500, y: 400 }, c, box), { s: 1, x: 100, y: 50 });
+  assert.deepEqual(clampView({ s: 1, x: -900, y: -900 }, c, box), { s: 1, x: -100, y: -50 });
+});
+
+test("clampView keeps zoomed content covering the box", () => {
+  const box = { x: 0, y: 0, w: 400, h: 200 };
+  const c = { w: 400, h: 200 };
+  // At 2x the content is 800x400: x ranges over [-400, 0], y over [-200, 0].
+  assert.deepEqual(clampView({ s: 2, x: 50, y: 50 }, c, box), { s: 2, x: 0, y: 0 });
+  assert.deepEqual(clampView({ s: 2, x: -999, y: -999 }, c, box), { s: 2, x: -400, y: -200 });
+  assert.deepEqual(clampView({ s: 2, x: -100, y: -60 }, c, box), { s: 2, x: -100, y: -60 });
+});
+
+test("clampView leaves the view alone without finite sizes", () => {
+  const v = { s: 1, x: 3, y: 4 };
+  assert.equal(clampView(v, { w: Number.NaN, h: 1 }, { x: 0, y: 0, w: 1, h: 1 }), v);
+});
+
+test("fitsBox: panning is pointless while the scaled content fits", () => {
+  assert.equal(fitsBox({ s: 1, x: 0, y: 0 }, { w: 400, h: 200 }, { w: 600, h: 300 }), true);
+  assert.equal(fitsBox({ s: 2, x: 0, y: 0 }, { w: 400, h: 200 }, { w: 600, h: 300 }), false);
 });
 
 test("viewBoxSize parses the viewBox attribute", () => {

@@ -107,9 +107,30 @@ export const rankLimit = (px) => {
  */
 export const semanticLimit = (fontSize, fit, s) => (s < 1 ? rankLimit(labelPx(fontSize, fit, s)) : null);
 
-/** Controls show when the SVG is wider than its container, or with controls="always". */
-export const needsControls = (natural, container, attr) =>
-  attr === "always" || (finite(natural) && natural > container);
+/** Every diagram gets controls (shown faintly until hover or focus) unless controls="never". */
+export const needsControls = (_natural, _container, attr) => attr !== "never";
+
+// One axis: content of length `len` (already scaled) starting at `pos`, inside a box
+// [lo, lo + size]. Content that fits stays inside the box; larger content covers it.
+const clampAxis = (pos, len, lo, size) =>
+  len <= size ? Math.min(lo + size - len, Math.max(lo, pos)) : Math.min(lo, Math.max(lo + size - len, pos));
+
+/**
+ * Clamp a view so panning never pushes the drawing out of sight. `content` is the
+ * SVG's untransformed size; `box` is the visible box relative to the SVG's
+ * untransformed top-left corner.
+ */
+export const clampView = (v, content, box) => {
+  if (![content.w, content.h, box.x, box.y, box.w, box.h].every(finite)) return v;
+  return {
+    s: v.s,
+    x: clampAxis(v.x, v.s * content.w, box.x, box.w),
+    y: clampAxis(v.y, v.s * content.h, box.y, box.h),
+  };
+};
+
+/** True while the scaled content fits the box on both axes, so a drag has nothing to reveal. */
+export const fitsBox = (v, content, box) => v.s * content.w <= box.w + 0.5 && v.s * content.h <= box.h + 0.5;
 
 /** Width and height of a `viewBox` attribute, or null when it is absent or invalid. */
 export const viewBoxSize = (attr) => {

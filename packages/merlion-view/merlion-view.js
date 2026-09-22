@@ -9,6 +9,8 @@ import {
   keyView,
   semanticLimit,
   needsControls,
+  clampView,
+  fitsBox,
   viewBoxSize,
   transformOf,
 } from "./zoom.js";
@@ -30,8 +32,9 @@ const BUTTONS = [
 // Controls fade in on hover or focus and stay visible on touch devices (`hover: none`).
 const CSS = `:host{display:grid;align-items:center;justify-items:center;position:relative;overflow:hidden;touch-action:pan-x pan-y}
 :host([zoomed]){touch-action:none;cursor:grab}
+:host([controls="always"]) .c{opacity:1}
 :host(:focus-visible){outline:2px solid var(--merlion-accent,#0969da);outline-offset:2px}
-.c{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.c{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:.4;transition:opacity .15s}
 .c[hidden]{display:none}
 :host(:hover) .c,:host(:focus-within) .c{opacity:1}
 @media (hover:none){.c{opacity:1}}
@@ -147,9 +150,11 @@ export class MerlionView extends Base {
   #set(v, animate) {
     const svg = this.#svg;
     if (!svg || !v) return;
-    this.#v = v;
+    // Panning and zooming never push the drawing out of sight (specs/viewer.md#behaviour).
+    if (v !== IDENTITY) v = clampView(v, this.#content(), this.#frame());
     // CSS transform only: the SVG is never re-rasterised, so text stays vector-sharp.
     svg.style.transition = animate && !reducedMotion() ? "transform .2s ease-out" : "";
+    this.#v = v;
     svg.style.transform = transformOf(v);
     this.toggleAttribute("zoomed", v !== IDENTITY && (v.s !== 1 || v.x !== 0 || v.y !== 0));
     this.#semantic();
@@ -172,9 +177,26 @@ export class MerlionView extends Base {
   }
 
   // Client coordinates → coordinates relative to the SVG's untransformed top-left.
+  // The on-screen box includes the transform as currently drawn, which lags `#v` while
+  // a zoom animates; subtracting the drawn translation (not `#v`) keeps the result exact
+  // mid-transition.
   #local(cx, cy) {
-    const r = this.#svg.getBoundingClientRect();
-    return [cx - (r.left - this.#v.x), cy - (r.top - this.#v.y)];
+    const svg = this.#svg;
+    const r = svg.getBoundingClientRect();
+    const t = getComputedStyle(svg).transform;
+    const m = t && t !== "none" && globalThis.DOMMatrixReadOnly ? new DOMMatrixReadOnly(t) : null;
+    return [cx - (r.left - (m ? m.e : 0)), cy - (r.top - (m ? m.f : 0))];
+  }
+
+  // The SVG's untransformed size (layout size ignores the CSS transform).
+  #content() {
+    return { w: this.#svg.clientWidth, h: this.#svg.clientHeight };
+  }
+
+  // The visible box relative to the SVG's untransformed top-left corner.
+  #frame() {
+    const { cx, cy, w, h } = this.#box();
+    return { x: cx - w / 2, y: cy - h / 2, w, h };
   }
 
   // Centre and size of the visible box (the host, or the dialog in fullscreen).
@@ -214,7 +236,9 @@ export class MerlionView extends Base {
     this.#pts.set(e.pointerId, q);
     if (this.#pts.size === 1) {
       // One finger pans only when zoomed in; otherwise the page scrolls.
-      if (e.pointerType !== "touch" || this.hasAttribute("zoomed")) {
+      // A drag reveals nothing while the whole drawing fits, so it does nothing.
+      const fits = fitsBox(this.#v, this.#content(), this.#frame());
+      if (!fits && (e.pointerType !== "touch" || this.hasAttribute("zoomed"))) {
         this.#set(panBy(this.#v, q[0] - p[0], q[1] - p[1]));
       }
     } else if (this.#pts.size === 2) {
