@@ -66,6 +66,12 @@ fn shipped_themes_compile_with_no_warning() {
         ] {
             let p = s.palette(t, Some("dark")).expect("palette");
             assert!(p.light.colour("bg").is_some());
+            // Every theme sets the tones of the built-in roles.
+            for table in [&p.light, p.dark.as_ref().unwrap()] {
+                for tone in ["accent", "ok", "warn", "danger"] {
+                    assert!(table.colour(tone).is_some(), "{t:?} {tone}");
+                }
+            }
         }
         assert_page_css_safe(&s.to_css());
     }
@@ -85,7 +91,7 @@ fn shipped_themes_resolve_their_foundations() {
         p.light.resolved("node-bg"),
         Some(oklab_mix(hex("#1d3440"), hex("#f6f2ea"), 4.0))
     );
-    assert_eq!(p.light.resolved("danger"), Some(hex("#cf222e")));
+    assert_eq!(p.light.resolved("danger"), Some(hex("#a4262c")));
     let p = palette(THEMES_WITH_ROLES, Some("lantern"), None);
     assert!(p.light.colour("danger").is_some());
     assert_ne!(p.light.colour("danger"), Some(hex("#cf222e")));
