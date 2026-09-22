@@ -12,9 +12,13 @@ flowchart LR
   accTitle: How a theme reaches a diagram
   page["**page CSS**<br/>:root, [data-theme]"] --> vars(["--merlion-* variables"])
   vars --> style["**embedded style**<br/>var(--merlion-node-bg, #f6f7f9)"]
-  attr["**presentation attribute**<br/>fill #f6f7f9"] -.->|no CSS| shape[Node shape]
+  attr["**presentation attribute**<br/>fill #f6f7f9"] e1@-.->|no CSS| shape[Node shape]
   style --> shape
+  class page style
   class vars accent
+  class attr muted
+  class shape output
+  class e1 async
 ```
 
 ## Tokens

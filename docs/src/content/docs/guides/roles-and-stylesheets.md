@@ -57,7 +57,7 @@ A stylesheet is a CSS subset that sets `--merlion-*` tokens and nothing else. It
 .merlion-cc-zone { --merlion-dash: 4 2; }
 ```
 
-This site's stylesheet (`docs/src/styles/diagrams.css`) maps the foundations and the accent to Starlight's colours and defines three roles: `optional` dashes a node, `queue` tones a node plum, and `senders` tones and dashes a cluster teal. Each carries a light and a dark value:
+This site's stylesheet (`docs/src/styles/diagrams.css`) maps the foundations and the accent to Starlight's colours and defines the roles every diagram on the site uses beside the built-in ones: `input` (plum) for where a diagram's source enters, `store` (teal) for hints, caches and other kept state, `output` (green) for what a step produces, `style` (amber) for stylesheets and theme inputs, and `optional` for a dashed step that runs only while fuel lasts. The gallery's roles fixture adds `queue` (a plum node) and `senders` (a teal, dashed cluster). Each role carries a light and a dark value:
 
 ```mermaid
 flowchart LR
@@ -70,7 +70,8 @@ flowchart LR
   end
   q --> a & b
   sched -.-> retry[Retry budget]
-  class cron accent
+  class cron input
+  class sched accent
   class q queue
   class consumers senders
   class retry optional

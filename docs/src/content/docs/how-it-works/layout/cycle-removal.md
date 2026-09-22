@@ -26,7 +26,10 @@ flowchart TB
   cyc -->|yes| els --> flip --> done
   cyc -->|no| done
   dom e1@-.->|out of fuel| big
-  class dom accent
+  class edges input
+  class dom,els accent
+  class cyc warn
+  class done output
   class big danger
   class e1 failure
 ```
@@ -63,9 +66,13 @@ flowchart TB
   src -->|yes| front
   src -->|no| best --> front
   front --> left
-  left -->|yes| sink
+  left e1@-->|yes| sink
   left -->|no| seq
+  class start input
+  class sink,src,left warn
   class best accent
+  class seq output
+  class e1 async
 ```
 
 ## Example
@@ -78,6 +85,10 @@ flowchart TB
   check -->|yes| work[Process item]
   work --> check
   check -->|no| done([Done])
+  class start input
+  class check warn
+  class work accent
+  class done output
 ```
 
 ## Bounds

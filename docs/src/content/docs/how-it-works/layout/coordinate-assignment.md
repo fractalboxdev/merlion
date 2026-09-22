@@ -22,7 +22,8 @@ flowchart TB
   boxes["**Cluster boxes**<br/>members plus padding"]
   next["**Container fit**"]
   mark --> align --> compact --> four --> bal --> clus --> ly --> boxes --> next
-  class bal accent
+  class align,bal accent
+  class next output
   class bk group
 ```
 

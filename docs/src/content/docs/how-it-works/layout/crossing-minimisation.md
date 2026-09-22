@@ -25,13 +25,18 @@ flowchart TB
   out["**Order per layer**<br/>to coordinate assignment"]
   tl["**TooLarge**<br/>fuel exhausted in pass 1"]
   init --> reserve --> sweep --> tr --> count --> stop
-  stop -->|no| sweep
+  stop e2@-->|no| sweep
   stop -->|yes| exact --> local --> out
   count e1@-.->|out of fuel| tl
-  class sweep accent
+  class init input
+  class reserve store
+  class sweep,count accent
+  class stop warn
   class exact,local optional
+  class out output
   class tl danger
   class e1 failure
+  class e2 async
   class p1,opt group
 ```
 

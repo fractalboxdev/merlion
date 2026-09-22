@@ -11,19 +11,24 @@ Re-rendering an edited diagram with its previous SVG as the hint keeps the drawi
 flowchart TB
   accTitle: Stable layout from hint to fallback
   prev[("**previous SVG**<br/>data-merlion-layout")] e1@-.-> parse["**parse hint**<br/>v1;LR;0:a,b;1:c"]
-  parse -->|malformed, unknown version, too large| i022["**I022**<br/>fresh layout"]
+  parse e2@-->|malformed, unknown version, too large| i022["**I022**<br/>fresh layout"]
   parse --> layer["**phases 1–2**<br/>new layers from the edited source"]
   layer --> surv["**survivors**<br/>same id, same layer"]
   surv --> half{"survivors ≥ half<br/>of the nodes?"}
-  half -->|no| i020["**I020**<br/>hint discarded, fresh layout"]
+  half e3@-->|no| i020["**I020**<br/>hint discarded, fresh layout"]
   half -->|yes, some new| i021["**I021**<br/>count of nodes treated as new"]
   half -->|all survive| same{"fresh order already<br/>matches the hint?"}
   same -->|yes| fresh["**keep the fresh layout**<br/>byte-identical re-render"]
   same -->|no| constrained["**phase 3 with constraints**<br/>survivors ordered, ≤ 2 new before each"]
   i021 --> constrained
-  class constrained accent
-  class i020,i022 muted
+  class prev store
+  class surv,constrained accent
+  class half,same warn
+  class fresh output
+  class i020,i022 danger
+  class i021 muted
   class e1 async
+  class e2,e3 failure
 ```
 
 ## Hint

@@ -15,6 +15,9 @@ flowchart LR
   lease["**lease**<br/>one run per window<br/>90 s TTL"] --> scan["**due set**<br/>scan schedules<br/>next_at is due"]
   scan --> send["**enqueue**<br/>batches of 100"]
   send --> plain[A plain label]
+  class lease store
+  class scan accent
+  class send output
 ```
 
 - The title is the first line up to the first `<br>`; surrounding spaces don't count.
@@ -37,6 +40,8 @@ flowchart TB
   accTitle: Markdown inside labels
   a["Run `merlion check --fix`"] --> b["**Fixed** and *re-rendered*"]
   b --> c["line one<br/>line two"]
+  class a input
+  class b output
 ```
 
 Long labels wrap at the node's maximum width; container fit narrows that width in 20 px steps when a diagram is too wide ([container fit](/how-it-works/layout/container-fit/)). A label over 4,096 bytes is truncated with `W012`. Bidirectional control characters are stripped with `W014`; right-to-left scripts still render in order through the Unicode bidirectional algorithm.
@@ -50,7 +55,12 @@ flowchart LR
   accTitle: Edge labels
   src[Source] -->|parse| model[Model]
   model -->|measure| sized[Sized model]
-  model -->|reject| err[Diagnostics]
+  model e1@-->|reject| err[Diagnostics]
+  class src input
+  class model accent
+  class sized output
+  class err danger
+  class e1 failure
 ```
 
 ## Accessible title and description

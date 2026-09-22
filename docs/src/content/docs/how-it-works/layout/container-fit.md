@@ -18,6 +18,8 @@ flowchart LR
   dir -->|LR, RL| column["**one column**<br/>stacked, 24 px apart"]
   rows -->|next passes the width| newrow["**new row**<br/>48 px below"]
   class each accent
+  class dir warn
+  class rows,column output
 ```
 
 Components are packed in declaration order (by each component's first node), aligned on their layer-0 side, `node_spacing` apart and `rank_spacing` between rows. An edit therefore moves only its own component and the components after it in the same row. With `direction: auto`, both directions are packed, and the second replaces the first when it fits or is narrower.
@@ -40,10 +42,13 @@ flowchart TB
   s23f -->|yes| keep
   s23f -->|no| s4["**4. narrower labels**<br/>wrap width −20 px, ≥ 120 px, then 1–3 again"]
   s4 -->|fits| keep
-  s4 -->|nothing fits| s5["**5. plain drawing**<br/>wider than the container, zoomed by the viewer"]
-  class first accent
+  s4 e1@-->|nothing fits| s5["**5. plain drawing**<br/>wider than the container, zoomed by the viewer"]
+  class first input
+  class f0,s1f,hv,s23f warn
   class s1,s2,s3,s4 optional
-  class s5 warn
+  class keep output
+  class s5 danger
+  class e1 failure
 ```
 
 1. **Other direction.** With `direction: auto`, lay out in the other direction. Keep it if it fits; otherwise continue with the narrower of the two.

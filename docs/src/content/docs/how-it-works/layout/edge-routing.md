@@ -18,8 +18,10 @@ flowchart TB
   boxes --> titles["**titles**<br/>centred unless a route crosses"]
   titles --> rest["**remaining labels**<br/>moved along the edge until clear"]
   rest --> margin["**translate**<br/>8 px margin on every side"]
+  class wrap input
   class route accent
   class titles,rest optional
+  class margin output
 ```
 
 The two dashed steps search for a position and draw optional fuel; when it runs out, a title stays centred and a label stays at its first position.
@@ -46,7 +48,9 @@ flowchart LR
   gapq -->|yes| stack["**stack**<br/>gap grows, one slot each"]
   gapq -->|no| mid["**midpoint**<br/>of the longest segment"]
   mid --> slide["**slide along the edge**<br/>off nodes, titles, labels, markers"]
+  class l,gapq warn
   class stack,dummy accent
+  class slide output
 ```
 
 - An edge spanning several layers gets a label dummy in the layered graph, so phase 4 reserves the label's room like a node's.
@@ -69,6 +73,8 @@ flowchart TB
   title -->|yes| move["**move along the band**<br/>nearest clear position, else centred"]
   class cl group
   class box accent
+  class title warn
+  class centre output
 ```
 
 - The box encloses its members with 12 px padding; the title band (padding plus title height) sits on the side that is the top of the screen.

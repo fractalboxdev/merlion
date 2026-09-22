@@ -25,7 +25,10 @@ flowchart TB
   count -->|no| dum --> fill --> out
   lim e1@-->|yes| tl
   count e2@-->|yes| tl
-  class lp accent
+  class in input
+  class lp,sink accent
+  class lim,count warn
+  class out output
   class tl danger
   class e1,e2 failure
 ```
@@ -43,7 +46,9 @@ flowchart TB
   accTitle: A second entry point sits beside the node it feeds
   a[Request] --> b[Parse] --> c[Validate] --> d[Store]
   cfg[(Config)] --> d
+  class a input
   class cfg accent
+  class d store
 ```
 
 `Config` has no predecessor. It sinks from layer 0 to layer 2, next to `Validate`, and its edge to `Store` spans one layer instead of three.

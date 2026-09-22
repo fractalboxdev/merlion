@@ -27,10 +27,14 @@ flowchart RL
   wasm --> wasmcrate
   rehype --> wasm
   astro --> rehype
-  astro -.-> view
-  astro -.-> themes
+  astro e1@-.-> view
+  astro e2@-.-> themes
   class core accent
+  class cli,wasm output
+  class wasmcrate muted
+  class themes style
   class rust,npm group
+  class e1,e2 async
 ```
 
 Arrows point from a package to what it builds on. Solid arrows are code dependencies; the dashed ones are stylesheets and a script the Astro integration adds to pages. `merlion-view` and `merlion-themes` do not depend on the renderer: the viewer wraps any inline SVG, and the themes are plain CSS.
@@ -62,7 +66,11 @@ flowchart LR
   layout --> draw["**Draw**<br/>SVG + outline"]
   palette[("**Palette**<br/>from a stylesheet")] e2@-.-> draw
   draw --> out[/"**SVG + outline**<br/>+ diagnostics, fuel used"/]
-  class layout accent
+  class src input
+  class parse,layout accent
+  class hint store
+  class palette style
+  class out output
   class e1,e2 async
 ```
 

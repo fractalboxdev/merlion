@@ -18,7 +18,10 @@ flowchart LR
   tocss --> page["**page CSS**<br/>literals, fixed selectors"]
   palette --> baked["**baked SVG**<br/>literals in attributes and fallbacks"]
   page e2@-.-> inline["**inline SVG**<br/>rendered without a palette"]
-  class model accent
+  class css style
+  class compile accent
+  class model store
+  class page,baked,inline output
   class e013 danger
   class e1 failure
   class e2 async
@@ -37,16 +40,19 @@ The rehype plugin and the Astro integration compile the `stylesheet` option once
 flowchart TB
   accTitle: What the compiler does to each rule
   scan["**scan blocks**<br/>depth ≤ 2, ≤ 512 rules"] --> sel{"**selector**<br/>in the subset?"}
-  sel -->|no, declares a token| w017["**W017**<br/>rule dropped"]
+  sel e1@-->|no, declares a token| w017["**W017**<br/>rule dropped"]
   sel -->|no token at all| i032["**I032**<br/>counted once"]
   sel -->|yes| decl{"**declaration**<br/>token allowed here?"}
-  decl -->|no| w018["**W018**<br/>declaration dropped"]
+  decl e2@-->|no| w018["**W018**<br/>declaration dropped"]
   decl -->|yes| res["**resolve var()**<br/>memoised, depth ≤ 8"]
-  res -->|cycle, undeclared, too deep| w019["**W019**"]
+  res e3@-->|cycle, undeclared, too deep| w019["**W019**"]
   res -->|literal| typed["**typed value**<br/>colour, dash, stroke"]
-  class typed accent
-  class w017,w018,w019 warn
+  class scan,res accent
+  class sel,decl warn
+  class typed output
+  class w017,w018,w019 danger
   class i032 muted
+  class e1,e2,e3 failure
 ```
 
 - **Selectors.** `:root`, `[data-theme="<t>"]`, `:root:not([data-theme])` inside `@media (prefers-color-scheme: dark)`, `.merlion-c-<name>`, `.merlion-cc-<name>`, and role selectors under a named theme. Lists of up to 8.

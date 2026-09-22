@@ -8,11 +8,15 @@ Every Merlion SVG records its layout in `data-merlion-layout`: the node order of
 ```mermaid
 flowchart LR
   accTitle: A render with a layout hint
-  prev[("**previous SVG**<br/>data-merlion-layout")] -.->|hint| render[Render]
+  prev[("**previous SVG**<br/>data-merlion-layout")] e1@-.->|hint| render[Render]
   src[Edited source] --> render
   render --> next[New SVG]
-  next -.->|next edit| prev
+  next e2@-.->|next edit| prev
+  class prev store
+  class src input
   class render accent
+  class next output
+  class e1,e2 async
 ```
 
 The hint carries order only, never coordinates, so it survives changes to fonts, spacing and container width. Try it in the [playground](/playground/): each keystroke renders with the previous SVG as the hint, and **Fresh layout** drops it.

@@ -25,8 +25,10 @@ flowchart LR
   src e1@--> big
   build e2@--> big
   p3 e3@--> big
-  class draw accent
+  class src input
+  class p12,p3 accent
   class refine,fit,hint optional
+  class draw output
   class big danger
   class e1,e2,e3 failure
 ```
@@ -65,6 +67,7 @@ flowchart LR
   o -->|yes| spend
   m e1@-->|no| tl["**TooLarge**<br/>what: fuel"]
   o -->|no| stop["**pass stops**<br/>best result kept"]
+  class req,m,o warn
   class spend accent
   class tl danger
   class stop muted

@@ -35,6 +35,9 @@ flowchart LR
   start[Parse (fast path)] --> check{Valid?}
   check -->|yes| end
   check -->|no| fix[Apply repairs]
+  class start input
+  class check warn
+  class fix accent
 ```
 
 `merlion check` prints each diagnostic as `file:line:col: severity code message`, and `--fix` writes every repair back to the file (Markdown files included, per ```` ```mermaid ```` block):

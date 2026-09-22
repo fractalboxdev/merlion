@@ -18,6 +18,7 @@ flowchart LR
   wasm --> rehype
   rehype --> astro
   class core accent
+  class cli,wasm output
 ```
 
 ## CLI

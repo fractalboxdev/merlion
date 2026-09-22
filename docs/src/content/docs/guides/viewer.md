@@ -19,6 +19,10 @@ The rehype plugin wraps every diagram in it (`viewer: false` to skip), and the A
 flowchart LR
   accTitle: Release pipeline
   commit[Commit] --> lint[Lint] --> test[Unit tests] --> build[Build wasm] --> opt[wasm-opt] --> hash[Hash check] --> sign[Sign tag] --> attest[Attest] --> npm[Publish npm] --> crates[Publish crates] --> announce[Announce]
+  class commit input
+  class build,sign accent
+  class hash warn
+  class npm,crates,announce output
 ```
 
 ## Input
