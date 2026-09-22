@@ -87,14 +87,18 @@ export const MerlionLive = Layer.scoped(
         if (!present) return failed(`${path.basename(MERLION_BIN)} not built (cargo build --release -p merlion-cli)`);
         const args = ["render", "--json"];
         if (opts?.hint !== undefined) {
-          const hintPath = path.join(tmp, "hint.svg");
-          yield* fs.writeFileString(hintPath, opts.hint);
-          args.push("--hint", hintPath);
+          // The CLI reads a hint only from under its working directory, which is `tmp`.
+          yield* fs.writeFileString(path.join(tmp, "hint.svg"), opts.hint);
+          args.push("--hint", "hint.svg");
         }
         const t0 = performance.now();
         const run = Effect.scoped(
           Effect.gen(function* () {
-            const proc = yield* Command.make(MERLION_BIN, ...args).pipe(Command.feed(source), Command.start);
+            const proc = yield* Command.make(MERLION_BIN, ...args).pipe(
+              Command.workingDirectory(tmp),
+              Command.feed(source),
+              Command.start,
+            );
             const [stdout, stderr, code] = yield* Effect.all([collect(proc.stdout), collect(proc.stderr), proc.exitCode], {
               concurrency: 3,
             });
