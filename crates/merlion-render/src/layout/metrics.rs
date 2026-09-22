@@ -72,7 +72,12 @@ fn overlap(a: (f64, f64, f64, f64), b: (f64, f64, f64, f64)) -> bool {
 
 fn node_box(g: &Geometry, i: usize) -> (f64, f64, f64, f64) {
     let n = &g.nodes[i];
-    (n.x - n.w / 2.0, n.y - n.h / 2.0, n.x + n.w / 2.0, n.y + n.h / 2.0)
+    (
+        n.x - n.w / 2.0,
+        n.y - n.h / 2.0,
+        n.x + n.w / 2.0,
+        n.y + n.h / 2.0,
+    )
 }
 
 fn label_boxes(g: &Geometry) -> impl Iterator<Item = (f64, f64, f64, f64)> + '_ {
@@ -104,8 +109,14 @@ pub fn label_overlaps(g: &Geometry) -> usize {
     let labels: alloc::vec::Vec<_> = label_boxes(g).collect();
     let mut count = 0;
     for (i, &l) in labels.iter().enumerate() {
-        count += (0..g.nodes.len()).filter(|&n| overlap(l, node_box(g, n))).count();
-        count += labels.iter().skip(i + 1).filter(|&&m| overlap(l, m)).count();
+        count += (0..g.nodes.len())
+            .filter(|&n| overlap(l, node_box(g, n)))
+            .count();
+        count += labels
+            .iter()
+            .skip(i + 1)
+            .filter(|&&m| overlap(l, m))
+            .count();
     }
     count
 }
@@ -142,7 +153,14 @@ mod tests {
     }
 
     fn node(x: f64, y: f64, w: f64, h: f64) -> NodeGeom {
-        NodeGeom { x, y, w, h, label: LabelLayout::default(), rank: 0 }
+        NodeGeom {
+            x,
+            y,
+            w,
+            h,
+            label: LabelLayout::default(),
+            rank: 0,
+        }
     }
 
     #[test]
@@ -161,7 +179,10 @@ mod tests {
 
     #[test]
     fn bends_length_and_area() {
-        let g = geom(vec![edge(&[(0.0, 0.0), (0.0, 10.0), (10.0, 10.0), (20.0, 10.0)])], vec![]);
+        let g = geom(
+            vec![edge(&[(0.0, 0.0), (0.0, 10.0), (10.0, 10.0), (20.0, 10.0)])],
+            vec![],
+        );
         assert_eq!(bends(&g), 1);
         assert_eq!(total_edge_length(&g), 30.0);
         assert_eq!(area(&g), 5000.0);
@@ -169,7 +190,14 @@ mod tests {
 
     #[test]
     fn overlap_counts() {
-        let g = geom(vec![], vec![node(0.0, 0.0, 10.0, 10.0), node(5.0, 5.0, 10.0, 10.0), node(10.0, 0.0, 10.0, 10.0)]);
+        let g = geom(
+            vec![],
+            vec![
+                node(0.0, 0.0, 10.0, 10.0),
+                node(5.0, 5.0, 10.0, 10.0),
+                node(10.0, 0.0, 10.0, 10.0),
+            ],
+        );
         // The first and third only touch.
         assert_eq!(node_overlaps(&g), 2);
         assert_eq!(label_overlaps(&g), 0);

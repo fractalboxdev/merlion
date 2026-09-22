@@ -47,7 +47,11 @@ fn chain_runs_top_to_bottom_with_rank_spacing() {
 #[test]
 fn direction_transforms() {
     for (dir, check_order) in [
-        (Direction::TB, (|a: (f64, f64), b: (f64, f64)| b.1 > a.1 && a.0 == b.0) as fn((f64, f64), (f64, f64)) -> bool),
+        (
+            Direction::TB,
+            (|a: (f64, f64), b: (f64, f64)| b.1 > a.1 && a.0 == b.0)
+                as fn((f64, f64), (f64, f64)) -> bool,
+        ),
         (Direction::BT, |a, b| b.1 < a.1 && a.0 == b.0),
         (Direction::LR, |a, b| b.0 > a.0 && a.1 == b.1),
         (Direction::RL, |a, b| b.0 < a.0 && a.1 == b.1),
@@ -146,7 +150,11 @@ fn orthogonal_routes_are_axis_aligned() {
     check(&c, &g);
     for e in &g.edges {
         for s in e.points.windows(2) {
-            assert!(s[0].x == s[1].x || s[0].y == s[1].y, "diagonal segment {:?}", s);
+            assert!(
+                s[0].x == s[1].x || s[0].y == s[1].y,
+                "diagonal segment {:?}",
+                s
+            );
         }
     }
 }
@@ -160,7 +168,10 @@ fn polyline_passes_through_dummies_and_spline_falls_back() {
     b.edge(v[2], v[3]);
     let long = b.edge(v[0], v[3]);
     for style in [EdgeStyle::Polyline, EdgeStyle::Spline] {
-        let opts = RenderOptions { edge_style: style, ..RenderOptions::default() };
+        let opts = RenderOptions {
+            edge_style: style,
+            ..RenderOptions::default()
+        };
         let g = run_with(&b.c, &opts).0.unwrap();
         check(&b.c, &g);
         // Two dummies between the endpoints.
@@ -193,7 +204,10 @@ fn self_loop_in_lr_sits_below() {
     let g = run(&b.c);
     check(&b.c, &g);
     let n = &g.nodes[0];
-    assert!(g.edges[l].points.iter().any(|p| p.y > n.y + n.h / 2.0 + 4.0));
+    assert!(g.edges[l]
+        .points
+        .iter()
+        .any(|p| p.y > n.y + n.h / 2.0 + 4.0));
 }
 
 #[test]
@@ -277,7 +291,10 @@ fn clusters_enclose_members_and_exclude_others() {
     let inside = |c: usize, i: usize| {
         let k = &g.clusters[c];
         let (x0, y0, x1, y1) = node_box(&g, i);
-        x0 >= k.x + 12.0 - 1e-6 && x1 <= k.x + k.w - 12.0 + 1e-6 && y0 >= k.y + 12.0 - 1e-6 && y1 <= k.y + k.h - 12.0 + 1e-6
+        x0 >= k.x + 12.0 - 1e-6
+            && x1 <= k.x + k.w - 12.0 + 1e-6
+            && y0 >= k.y + 12.0 - 1e-6
+            && y1 <= k.y + k.h - 12.0 + 1e-6
     };
     let clear = |c: usize, i: usize| {
         let k = &g.clusters[c];
@@ -362,4 +379,110 @@ fn fuel_used_is_reported() {
     let g = merlion_render::layout::layout_flowchart(&c, &opts, &mut fuel, &mut d).unwrap();
     assert!(g.fuel_used > 0);
     assert_eq!(g.fuel_used, fuel.used());
+}
+
+#[test]
+fn clusters_enclose_members_in_every_direction() {
+    for dir in [Direction::TB, Direction::BT, Direction::LR, Direction::RL] {
+        let mut b = B::new().dir(dir);
+        let v = b.nodes(&["a", "b", "c", "d"]);
+        b.edge(v[0], v[1]);
+        b.edge(v[1], v[2]);
+        b.edge(v[0], v[3]);
+        let s = b.sub("box", "A rather long cluster title", None, &[v[1], v[2]]);
+        let g = run(&b.c);
+        check(&b.c, &g);
+        let k = &g.clusters[s];
+        for &m in &[v[1], v[2]] {
+            let (x0, y0, x1, y1) = node_box(&g, m);
+            assert!(
+                x0 >= k.x + 12.0 - 1e-6 && x1 <= k.x + k.w - 12.0 + 1e-6,
+                "{:?}",
+                dir
+            );
+            assert!(
+                y0 >= k.y + 12.0 - 1e-6 && y1 <= k.y + k.h - 12.0 + 1e-6,
+                "{:?}",
+                dir
+            );
+            // The title band sits above the members.
+            assert!(y0 >= k.y + 12.0 + k.label.height - 1e-6, "{:?}", dir);
+        }
+        assert!(
+            k.w >= k.label.width + 24.0 - 1e-6,
+            "{:?} title wider than box",
+            dir
+        );
+        for &m in &[v[0], v[3]] {
+            let (x0, y0, x1, y1) = node_box(&g, m);
+            assert!(
+                x1 <= k.x || x0 >= k.x + k.w || y1 <= k.y || y0 >= k.y + k.h,
+                "{:?}",
+                dir
+            );
+        }
+    }
+}
+
+#[test]
+fn bold_class_widens_the_node() {
+    use merlion_render::model::{ClassDef, FontWeight, Style};
+    let mut b = B::new();
+    let v = b.nodes(&["plain", "bold"]);
+    b.c.nodes[v[1]].label = "plain".into();
+    b.c.class_defs.push(ClassDef {
+        name: "hot".into(),
+        style: Style {
+            font_weight: Some(FontWeight::SemiBold),
+            ..Style::default()
+        },
+    });
+    b.c.nodes[v[1]].classes.push("hot".into());
+    let g = run(&b.c);
+    assert_eq!(
+        g.nodes[v[1]].label.lines[0].runs[0].weight,
+        merlion_render::text::Weight::SemiBold
+    );
+    assert_eq!(
+        g.nodes[v[0]].label.lines[0].runs[0].weight,
+        merlion_render::text::Weight::Regular
+    );
+}
+
+#[test]
+fn edges_between_layers_have_no_avoidable_crossings() {
+    // Two independent chains declared interleaved: the layout keeps them apart.
+    let mut b = B::new();
+    let v = b.nodes(&["a1", "b1", "a2", "b2", "a3", "b3"]);
+    b.edge(v[0], v[2]);
+    b.edge(v[1], v[3]);
+    b.edge(v[2], v[4]);
+    b.edge(v[3], v[5]);
+    b.edge(v[0], v[5]);
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert_eq!(metrics::crossings(&g), 0);
+}
+
+#[test]
+fn rhombus_and_circle_labels_fit_inside() {
+    let mut b = B::new();
+    let d = b.shape("d", "Is it a long question?", Shape::Rhombus);
+    let c = b.shape("c", "round thing", Shape::Circle);
+    let h = b.shape("h", "hex label", Shape::Hexagon);
+    b.edge(d, c);
+    b.edge(d, h);
+    let g = run(&b.c);
+    check(&b.c, &g);
+    for (i, n) in g.nodes.iter().enumerate() {
+        let shape = b.c.nodes[i].shape;
+        let (lw, lh) = (n.label.width / 2.0, n.label.height / 2.0);
+        for (sx, sy) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
+            assert!(
+                merlion_render::layout::measure::inside(shape, n.w, n.h, sx * lw, sy * lh),
+                "{:?}",
+                shape
+            );
+        }
+    }
 }

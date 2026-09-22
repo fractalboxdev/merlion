@@ -12,9 +12,9 @@ use support::*;
 fn random_graphs_keep_every_invariant() {
     for seed in 0..40u64 {
         let mut r = Lcg(seed);
-        let n = 1 + r.next() % 25;
-        let m = r.next() % 45;
-        let k = r.next() % 4;
+        let n = 1 + r.draw() % 25;
+        let m = r.draw() % 45;
+        let k = r.draw() % 4;
         let c = random(seed, n, m, k);
         let g = run(&c);
         check(&c, &g);
@@ -33,8 +33,15 @@ fn random_graphs_in_every_direction_and_style() {
     for seed in 100..124u64 {
         let mut c = random(seed, 16, 26, 2);
         c.direction = dirs[(seed % 4) as usize];
-        let style = if seed % 3 == 0 { EdgeStyle::Polyline } else { EdgeStyle::Orthogonal };
-        let opts = RenderOptions { edge_style: style, ..RenderOptions::default() };
+        let style = if seed % 3 == 0 {
+            EdgeStyle::Polyline
+        } else {
+            EdgeStyle::Orthogonal
+        };
+        let opts = RenderOptions {
+            edge_style: style,
+            ..RenderOptions::default()
+        };
         let g = run_with(&c, &opts).0.unwrap();
         check(&c, &g);
     }
@@ -56,7 +63,10 @@ fn large_random_graph_stays_within_limits() {
 #[test]
 fn tiny_fuel_is_too_large() {
     let c = random(1, 40, 80, 2);
-    let opts = RenderOptions { fuel: 50, ..RenderOptions::default() };
+    let opts = RenderOptions {
+        fuel: 50,
+        ..RenderOptions::default()
+    };
     let (g, _) = run_with(&c, &opts);
     assert!(matches!(g, Err(LayoutError::TooLarge { .. })));
 }
@@ -66,36 +76,96 @@ fn layered_node_limit_is_too_large() {
     let mut b = B::new();
     let v = b.nodes(&["a", "b"]);
     b.edge_full(v[0], v[1], None, 400, merlion_render::model::Stroke::Normal);
-    let opts = RenderOptions { limits: Limits { layered_nodes: 100, ..Limits::default() }, ..RenderOptions::default() };
-    assert!(matches!(run_with(&b.c, &opts).0, Err(LayoutError::TooLarge { .. })));
+    let opts = RenderOptions {
+        limits: Limits {
+            layered_nodes: 100,
+            ..Limits::default()
+        },
+        ..RenderOptions::default()
+    };
+    assert!(matches!(
+        run_with(&b.c, &opts).0,
+        Err(LayoutError::TooLarge { .. })
+    ));
 }
 
 #[test]
 fn layer_limit_is_too_large() {
     let c = chain(30);
-    let opts = RenderOptions { limits: Limits { layers: 20, ..Limits::default() }, ..RenderOptions::default() };
-    assert!(matches!(run_with(&c, &opts).0, Err(LayoutError::TooLarge { .. })));
+    let opts = RenderOptions {
+        limits: Limits {
+            layers: 20,
+            ..Limits::default()
+        },
+        ..RenderOptions::default()
+    };
+    assert!(matches!(
+        run_with(&c, &opts).0,
+        Err(LayoutError::TooLarge { .. })
+    ));
 }
 
 #[test]
 fn node_and_edge_limits_are_too_large() {
     let c = chain(30);
-    let opts = RenderOptions { limits: Limits { nodes: 10, ..Limits::default() }, ..RenderOptions::default() };
-    assert!(matches!(run_with(&c, &opts).0, Err(LayoutError::TooLarge { .. })));
-    let opts = RenderOptions { limits: Limits { edges: 10, ..Limits::default() }, ..RenderOptions::default() };
-    assert!(matches!(run_with(&c, &opts).0, Err(LayoutError::TooLarge { .. })));
+    let opts = RenderOptions {
+        limits: Limits {
+            nodes: 10,
+            ..Limits::default()
+        },
+        ..RenderOptions::default()
+    };
+    assert!(matches!(
+        run_with(&c, &opts).0,
+        Err(LayoutError::TooLarge { .. })
+    ));
+    let opts = RenderOptions {
+        limits: Limits {
+            edges: 10,
+            ..Limits::default()
+        },
+        ..RenderOptions::default()
+    };
+    assert!(matches!(
+        run_with(&c, &opts).0,
+        Err(LayoutError::TooLarge { .. })
+    ));
 }
 
 #[test]
 fn hostile_options_do_not_panic() {
     let c = random(9, 12, 20, 2);
     for opts in [
-        RenderOptions { node_spacing: f64::NAN, rank_spacing: -5.0, ..RenderOptions::default() },
-        RenderOptions { wrap_width: -1.0, target_width: 0.0, max_aspect: f64::NAN, ..RenderOptions::default() },
-        RenderOptions { target_width: f64::INFINITY, font_size: 0.0, ..RenderOptions::default() },
-        RenderOptions { direction: DirectionOption::Auto, target_width: 10.0, ..RenderOptions::default() },
-        RenderOptions { stability: u32::MAX, hint: Some("v1;TB;0:n0".into()), ..RenderOptions::default() },
-        RenderOptions { node_spacing: 1e300, ..RenderOptions::default() },
+        RenderOptions {
+            node_spacing: f64::NAN,
+            rank_spacing: -5.0,
+            ..RenderOptions::default()
+        },
+        RenderOptions {
+            wrap_width: -1.0,
+            target_width: 0.0,
+            max_aspect: f64::NAN,
+            ..RenderOptions::default()
+        },
+        RenderOptions {
+            target_width: f64::INFINITY,
+            font_size: 0.0,
+            ..RenderOptions::default()
+        },
+        RenderOptions {
+            direction: DirectionOption::Auto,
+            target_width: 10.0,
+            ..RenderOptions::default()
+        },
+        RenderOptions {
+            stability: u32::MAX,
+            hint: Some("v1;TB;0:n0".into()),
+            ..RenderOptions::default()
+        },
+        RenderOptions {
+            node_spacing: 1e300,
+            ..RenderOptions::default()
+        },
     ] {
         let g = run_with(&c, &opts).0.unwrap();
         for n in &g.nodes {

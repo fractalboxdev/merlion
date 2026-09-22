@@ -26,6 +26,9 @@ pub struct CycleInfo {
     /// `reversed[e]`: edge `e` points upwards in the layering (drawn as a back-edge).
     pub reversed: Vec<bool>,
     /// Immediate dominator; `None` for entry nodes (dominated only by the virtual root).
+    /// Layout reads `rank` and `dfs_key`, which derive from it; the field documents the
+    /// tree those come from and is checked directly by the tests.
+    #[allow(dead_code)]
     pub idom: Vec<Option<usize>>,
     /// Dominator-tree depth clamped to 15 (entries are 0): `data-merlion-rank`.
     pub rank: Vec<u8>,
@@ -46,11 +49,7 @@ fn out_lists(n: usize, edges: &[(usize, usize)]) -> Vec<Vec<usize>> {
 
 /// Strongly connected components (Tarjan 1972, iterative). Component ids come in
 /// reverse topological order of the condensation: sinks first.
-pub fn scc(
-    n: usize,
-    edges: &[(usize, usize)],
-    fuel: &mut Fuel,
-) -> Result<Vec<usize>, OutOfFuel> {
+pub fn scc(n: usize, edges: &[(usize, usize)], fuel: &mut Fuel) -> Result<Vec<usize>, OutOfFuel> {
     let out = out_lists(n, edges);
     let mut index = vec![NONE; n];
     let mut low = vec![0usize; n];

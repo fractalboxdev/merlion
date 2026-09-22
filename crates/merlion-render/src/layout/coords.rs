@@ -202,11 +202,18 @@ pub fn assign_x(g: &LGraph, spacing: f64, fuel: &mut Fuel) -> Result<Vec<f64>, O
         .collect();
     let bottom_up: Vec<Vec<usize>> = g.layers.iter().rev().cloned().collect();
     let bottom_up_mirrored: Vec<Vec<usize>> = mirrored.iter().rev().cloned().collect();
-    let mut runs: Vec<(Vec<f64>, bool)> = Vec::with_capacity(4);
-    runs.push((bk_one(&g.layers, &g.up, &dummy, &sep, n, fuel)?, false));
-    runs.push((bk_one(&mirrored, &g.up, &dummy, &sep_mirror, n, fuel)?, true));
-    runs.push((bk_one(&bottom_up, &g.down, &dummy, &sep, n, fuel)?, false));
-    runs.push((bk_one(&bottom_up_mirrored, &g.down, &dummy, &sep_mirror, n, fuel)?, true));
+    let mut runs: Vec<(Vec<f64>, bool)> = vec![
+        (bk_one(&g.layers, &g.up, &dummy, &sep, n, fuel)?, false),
+        (
+            bk_one(&mirrored, &g.up, &dummy, &sep_mirror, n, fuel)?,
+            true,
+        ),
+        (bk_one(&bottom_up, &g.down, &dummy, &sep, n, fuel)?, false),
+        (
+            bk_one(&bottom_up_mirrored, &g.down, &dummy, &sep_mirror, n, fuel)?,
+            true,
+        ),
+    ];
     // Right-priority layouts run mirrored; negate them back.
     for (xs, right) in runs.iter_mut() {
         if *right {
@@ -227,7 +234,8 @@ pub fn assign_x(g: &LGraph, spacing: f64, fuel: &mut Fuel) -> Result<Vec<f64>, O
     if n == 0 {
         return Ok(Vec::new());
     }
-    let ext: Vec<(f64, f64)> = runs.iter().map(|(xs, _)| extent(xs)).collect();    let narrowest = (0..4)
+    let ext: Vec<(f64, f64)> = runs.iter().map(|(xs, _)| extent(xs)).collect();
+    let narrowest = (0..4)
         .min_by(|&a, &b| {
             (ext[a].1 - ext[a].0)
                 .partial_cmp(&(ext[b].1 - ext[b].0))
@@ -365,7 +373,10 @@ pub fn fit_clusters(
         .enumerate()
         .map(|(v, node)| x[v] - node.left)
         .fold(f64::MAX, min);
-    let lo = (0..k).map(|c| val[n + 2 * c]).filter(|v| *v > f64::MIN).fold(lo, min);
+    let lo = (0..k)
+        .map(|c| val[n + 2 * c])
+        .filter(|v| *v > f64::MIN)
+        .fold(lo, min);
     if lo.is_finite() {
         for v in x.iter_mut() {
             *v -= lo;
@@ -399,7 +410,13 @@ fn deepest_first(cl: &Clusters) -> Vec<usize> {
 /// more where nested cluster boxes start or end between them (their padding and titles
 /// stack up, plus [`CLUSTER_LAYER_GAP`]), and at least `min_gap[l]` between layer `l`
 /// and `l + 1` (room for edge labels in that gap).
-pub fn layer_y(g: &LGraph, cl: &Clusters, pads: &[Pad], gap: f64, min_gap: &[f64]) -> (Vec<f64>, Vec<f64>) {
+pub fn layer_y(
+    g: &LGraph,
+    cl: &Clusters,
+    pads: &[Pad],
+    gap: f64,
+    min_gap: &[f64],
+) -> (Vec<f64>, Vec<f64>) {
     let nl = g.layers.len();
     let mut thick = vec![0.0f64; nl];
     for node in &g.nodes {
@@ -456,7 +473,13 @@ pub fn layer_y(g: &LGraph, cl: &Clusters, pads: &[Pad], gap: f64, min_gap: &[f64
 
 /// Box of every cluster: its members (nodes and nested boxes) plus padding. Clusters
 /// with no layered node get `None` (the caller places empty clusters).
-pub fn cluster_boxes(g: &LGraph, cl: &Clusters, pads: &[Pad], x: &[f64], y: &[f64]) -> Vec<Option<Rect>> {
+pub fn cluster_boxes(
+    g: &LGraph,
+    cl: &Clusters,
+    pads: &[Pad],
+    x: &[f64],
+    y: &[f64],
+) -> Vec<Option<Rect>> {
     let k = cl.len();
     let mut own: Vec<Option<Rect>> = vec![None; k];
     let grow = |r: &mut Option<Rect>, add: Rect| {
@@ -554,17 +577,40 @@ mod tests {
         Clusters::from_chart(&c)
     }
 
-    fn graph(widths: &[f64], layers: &[usize], edges: &[(usize, usize)], cl: &Clusters, title: f64) -> LGraph {
+    fn graph(
+        widths: &[f64],
+        layers: &[usize],
+        edges: &[(usize, usize)],
+        cl: &Clusters,
+        title: f64,
+    ) -> LGraph {
         let real: Vec<Extent> = widths
             .iter()
-            .map(|&w| Extent { left: w / 2.0, right: w / 2.0, thick: 20.0 })
+            .map(|&w| Extent {
+                left: w / 2.0,
+                right: w / 2.0,
+                thick: 20.0,
+            })
             .collect();
         let e: Vec<EdgeIn> = edges
             .iter()
             .enumerate()
-            .map(|(i, &(u, v))| EdgeIn { edge: i, upper: u, lower: v, reversed: false, label: None })
+            .map(|(i, &(u, v))| EdgeIn {
+                edge: i,
+                upper: u,
+                lower: v,
+                reversed: false,
+                label: None,
+            })
             .collect();
-        let titles = vec![Extent { left: title / 2.0, right: title / 2.0, thick: 0.0 }; cl.len()];
+        let titles = vec![
+            Extent {
+                left: title / 2.0,
+                right: title / 2.0,
+                thick: 0.0
+            };
+            cl.len()
+        ];
         let mut g = build(&BuildIn {
             real: &real,
             layer: layers,
@@ -590,7 +636,12 @@ mod tests {
         for layer in &g.layers {
             for w in layer.windows(2) {
                 let need = separation(g, w[0], w[1], spacing);
-                assert!(x[w[1]] - x[w[0]] >= need - 1e-9, "{} vs {}", x[w[1]] - x[w[0]], need);
+                assert!(
+                    x[w[1]] - x[w[0]] >= need - 1e-9,
+                    "{} vs {}",
+                    x[w[1]] - x[w[0]],
+                    need
+                );
             }
         }
     }
@@ -625,7 +676,13 @@ mod tests {
     fn long_edge_dummies_line_up() {
         let cl = Clusters::default();
         // 0 -> 3 spans three layers next to a busy chain 1 -> 2 -> 4.
-        let g = graph(&[40.0; 5], &[0, 0, 1, 3, 2], &[(0, 3), (1, 2), (2, 4)], &cl, 0.0);
+        let g = graph(
+            &[40.0; 5],
+            &[0, 0, 1, 3, 2],
+            &[(0, 3), (1, 2), (2, 4)],
+            &cl,
+            0.0,
+        );
         let x = assign_x(&g, 24.0, &mut fuel()).unwrap();
         let ch = &g.chains[0];
         assert_eq!(x[ch.nodes[1]], x[ch.nodes[2]]);
@@ -646,13 +703,26 @@ mod tests {
             let g = graph(&widths, &layers, &edges, &cl, 0.0);
             let x = assign_x(&g, 24.0, &mut fuel()).unwrap();
             assert_separated(&g, &x, 24.0);
-            let min = g.nodes.iter().enumerate().map(|(i, v)| x[i] - v.left).fold(f64::MAX, f64::min);
+            let min = g
+                .nodes
+                .iter()
+                .enumerate()
+                .map(|(i, v)| x[i] - v.left)
+                .fold(f64::MAX, f64::min);
             assert!(min.abs() < 1e-9);
         }
     }
 
     fn pads(k: usize) -> Vec<Pad> {
-        vec![Pad { order_before: 12.0, order_after: 12.0, layer_before: 30.0, layer_after: 12.0 }; k]
+        vec![
+            Pad {
+                order_before: 12.0,
+                order_after: 12.0,
+                layer_before: 30.0,
+                layer_after: 12.0
+            };
+            k
+        ]
     }
 
     #[test]
@@ -662,7 +732,12 @@ mod tests {
             let n = 6 + r.next() % 16;
             let parents = [None, Some(0), None];
             let subs: Vec<Option<usize>> = (0..n)
-                .map(|_| match r.next() % 4 { 0 => None, 1 => Some(0), 2 => Some(1), _ => Some(2) })
+                .map(|_| match r.next() % 4 {
+                    0 => None,
+                    1 => Some(0),
+                    2 => Some(1),
+                    _ => Some(2),
+                })
                 .collect();
             let cl = clusters(&parents, &subs);
             let widths: Vec<f64> = (0..n).map(|_| 20.0 + (r.next() % 80) as f64).collect();
@@ -691,8 +766,14 @@ mod tests {
                         assert!(ny0 >= bx.y0 + 30.0 - 1e-9 && ny1 <= bx.y1 - 12.0 + 1e-9);
                     } else if !matches!(node.kind, Kind::Dummy(_)) || true {
                         let overlap = nx0 < bx.x1 && nx1 > bx.x0 && ny0 < bx.y1 && ny1 > bx.y0;
-                        let is_ancestor_filler = matches!(node.kind, Kind::Filler(f) if cl.within(Some(c), f));
-                        assert!(!overlap || is_ancestor_filler, "node {:?} overlaps cluster {}", node.kind, c);
+                        let is_ancestor_filler =
+                            matches!(node.kind, Kind::Filler(f) if cl.within(Some(c), f));
+                        assert!(
+                            !overlap || is_ancestor_filler,
+                            "node {:?} overlaps cluster {}",
+                            node.kind,
+                            c
+                        );
                     }
                 }
             }
@@ -708,7 +789,12 @@ mod tests {
     fn layer_gaps_respect_rank_spacing_and_cluster_titles() {
         let cl = clusters(&[None], &[None, Some(0)]);
         let g = graph(&[40.0, 40.0], &[0, 1], &[(0, 1)], &cl, 0.0);
-        let p = vec![Pad { order_before: 12.0, order_after: 12.0, layer_before: 80.0, layer_after: 12.0 }];
+        let p = vec![Pad {
+            order_before: 12.0,
+            order_after: 12.0,
+            layer_before: 80.0,
+            layer_after: 12.0,
+        }];
         let (y, thick) = layer_y(&g, &cl, &p, 48.0, &[]);
         assert_eq!(thick, vec![20.0, 20.0]);
         // The cluster starting at layer 1 needs 80 px above its members plus a gap.
@@ -725,7 +811,13 @@ mod tests {
     #[test]
     fn exhausted_fuel_is_reported() {
         let cl = Clusters::default();
-        let g = graph(&[40.0; 6], &[0, 1, 2, 0, 1, 2], &[(0, 1), (1, 2), (3, 4), (4, 5)], &cl, 0.0);
+        let g = graph(
+            &[40.0; 6],
+            &[0, 1, 2, 0, 1, 2],
+            &[(0, 1), (1, 2), (3, 4), (4, 5)],
+            &cl,
+            0.0,
+        );
         assert!(assign_x(&g, 24.0, &mut Fuel::new(3)).is_err());
     }
 }

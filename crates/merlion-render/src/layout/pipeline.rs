@@ -446,7 +446,13 @@ fn keys_from(g: &LGraph, cl: &Clusters, val: &[f64], dummy: DummyKey) -> Vec<f64
         };
         let (ka, kz) = (keys[a], keys[z]);
         let n = ch.nodes.len();
-        for (i, &d) in ch.nodes.iter().enumerate().take(n.saturating_sub(1)).skip(1) {
+        for (i, &d) in ch
+            .nodes
+            .iter()
+            .enumerate()
+            .take(n.saturating_sub(1))
+            .skip(1)
+        {
             keys[d] = match dummy {
                 DummyKey::Lerp => ka + (kz - ka) * i as f64 / (n - 1) as f64,
                 DummyKey::Lower => kz,
@@ -469,7 +475,9 @@ fn keys_from(g: &LGraph, cl: &Clusters, val: &[f64], dummy: DummyKey) -> Vec<f64
                 } else {
                     Some(c)
                 };
-                keys[v] = from.and_then(|c| cluster_min.get(c).copied()).unwrap_or(big);
+                keys[v] = from
+                    .and_then(|c| cluster_min.get(c).copied())
+                    .unwrap_or(big);
             }
             _ => {}
         }
@@ -586,12 +594,17 @@ fn place_label(
             best_i = i;
         }
     }
-    let s_mid: f64 = lens[..best_i].iter().sum::<f64>() + lens.get(best_i).copied().unwrap_or(0.0) / 2.0;
+    let s_mid: f64 =
+        lens[..best_i].iter().sum::<f64>() + lens.get(best_i).copied().unwrap_or(0.0) / 2.0;
     let at = |s: f64| -> (f64, f64) {
         let mut rest = clamp(s, 0.0, total);
         for (i, &l) in lens.iter().enumerate() {
             if rest <= l || i + 1 == lens.len() {
-                let t = if l > 0.0 { clamp(rest / l, 0.0, 1.0) } else { 0.0 };
+                let t = if l > 0.0 {
+                    clamp(rest / l, 0.0, 1.0)
+                } else {
+                    0.0
+                };
                 let (a, b) = (points[i], points[i + 1]);
                 return (a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t);
             }
@@ -608,8 +621,16 @@ fn place_label(
         y1 = max(y1, p.1);
     }
     let area = (x0 - w, y0 - h, x1 + w, y1 + h);
-    let near: Vec<BoxF> = nodes.iter().copied().filter(|&b| boxes_overlap(b, area)).collect();
-    let near_labels: Vec<BoxF> = placed.iter().copied().filter(|&b| boxes_overlap(b, area)).collect();
+    let near: Vec<BoxF> = nodes
+        .iter()
+        .copied()
+        .filter(|&b| boxes_overlap(b, area))
+        .collect();
+    let near_labels: Vec<BoxF> = placed
+        .iter()
+        .copied()
+        .filter(|&b| boxes_overlap(b, area))
+        .collect();
     let step = max(2.0, total / MAX_LABEL_SAMPLES as f64);
     let mut node_free: Option<(f64, f64)> = None;
     let mut k = 0usize;
@@ -738,16 +759,54 @@ fn finish(
         .enumerate()
         .map(|(v, node)| {
             let (dx, dy) = sh(node.layer);
-            (co.x.get(v).copied().unwrap_or(0.0) + dx, ly(node.layer) + dy)
+            (
+                co.x.get(v).copied().unwrap_or(0.0) + dx,
+                ly(node.layer) + dy,
+            )
         })
         .collect();
-    let top_s: Vec<f64> = (0..nl).map(|l| top[l] + sh(l).1).collect();
-    let bot_s: Vec<f64> = (0..nl).map(|l| bot[l] + sh(l).1).collect();
+    // Jogs between layer l and l + 1 stay clear of cluster boxes that end at l or start
+    // at l + 1 (their padding and title bands lie in that gap).
+    let mut top_s: Vec<f64> = (0..nl).map(|l| top[l] + sh(l).1).collect();
+    let mut bot_s: Vec<f64> = (0..nl).map(|l| bot[l] + sh(l).1).collect();
+    let mut cluster_hi: Vec<Option<usize>> = vec![None; base.cl.len()];
+    for v in &g.nodes {
+        for c in base.cl.chain(v.cluster) {
+            cluster_hi[c] = Some(cluster_hi[c].map_or(v.layer, |h: usize| h.max(v.layer)));
+        }
+    }
+    for (c, b) in co.boxes.iter().enumerate() {
+        let (Some(b), Some(lo), Some(hi)) = (b, lay.cluster_lo[c], cluster_hi[c]) else {
+            continue;
+        };
+        let dy = sh(lo).1;
+        if lo > 0 && part(lo - 1) == part(lo) {
+            if let Some(t) = top_s.get_mut(lo) {
+                *t = min(*t, b.y0 + dy);
+            }
+        }
+        if hi + 1 < nl && part(hi + 1) == part(hi) {
+            if let Some(t) = bot_s.get_mut(hi) {
+                *t = max(*t, b.y1 + dy);
+            }
+        }
+    }
+    for l in 0..nl.saturating_sub(1) {
+        // A band squeezed shut falls back to the plain gap.
+        if bot_s[l] >= top_s[l + 1] {
+            bot_s[l] = bot[l] + sh(l).1;
+            top_s[l + 1] = top[l + 1] + sh(l + 1).1;
+        }
+    }
     let shapes: Vec<NodeShape> = chart
         .nodes
         .iter()
         .zip(&m.size)
-        .map(|(n, &(w, h))| NodeShape { shape: n.shape, w, h })
+        .map(|(n, &(w, h))| NodeShape {
+            shape: n.shape,
+            w,
+            h,
+        })
         .collect();
 
     let routed = route::route(&RouteIn {
@@ -815,7 +874,10 @@ fn finish(
             rank: base.rank.get(v).copied().unwrap_or(0),
         });
     }
-    let node_boxes: Vec<BoxF> = nodes.iter().map(|n| centred(n.x, n.y, n.w, n.h, 0.0)).collect();
+    let node_boxes: Vec<BoxF> = nodes
+        .iter()
+        .map(|n| centred(n.x, n.y, n.w, n.h, 0.0))
+        .collect();
 
     // Edge labels: fixed positions first (label dummies, self-loops), then the others
     // moved along their edge until clear.
@@ -945,7 +1007,10 @@ fn finish(
         .zip(labels)
         .enumerate()
         .map(|(e, (pts, label))| EdgeGeom {
-            points: pts.into_iter().map(|(x, y)| Point::new(x + dx, y + dy)).collect(),
+            points: pts
+                .into_iter()
+                .map(|(x, y)| Point::new(x + dx, y + dy))
+                .collect(),
             label: label.map(|mut l| {
                 l.x += dx;
                 l.y += dy;
@@ -1022,17 +1087,18 @@ fn plain(
     let co = coordinates(base, m, &lay, dir, fuel)?;
     let zeros = vec![0usize; lay.g.layers.len()];
     let geom = finish(base, m, &lay, dir, &co, &zeros, fuel)?;
-    Ok(Cand {
-        geom,
-        lay,
-        co,
-        dir,
-    })
+    Ok(Cand { geom, lay, co, dir })
 }
 
 /// Step 2 (`LR`/`RL`): wrap the layer sequence while the drawing is too wide and the
 /// aspect ratio allows.
-fn wrap_layers(base: &Base, m: &Meas, c: &Cand, budget: &mut Budget, fuel: &mut Fuel) -> Option<Geometry> {
+fn wrap_layers(
+    base: &Base,
+    m: &Meas,
+    c: &Cand,
+    budget: &mut Budget,
+    fuel: &mut Fuel,
+) -> Option<Geometry> {
     let g = &c.lay.g;
     let nl = g.layers.len();
     let start: Vec<f64> = (0..nl).map(|l| c.co.y[l] - c.co.thick[l] / 2.0).collect();
@@ -1059,10 +1125,13 @@ fn wrap_layers(base: &Base, m: &Meas, c: &Cand, budget: &mut Budget, fuel: &mut 
     let mut best: Option<Geometry> = None;
     for _ in 0..MAX_FIT_ROUNDS {
         // Split the part that is longest along the layer axis.
-        let (i, &(a, b)) = parts
-            .iter()
-            .enumerate()
-            .max_by(|x, y| cmp_f(end[x.1 .1 - 1] - start[x.1 .0], end[y.1 .1 - 1] - start[y.1 .0]).then(y.0.cmp(&x.0)))?;
+        let (i, &(a, b)) = parts.iter().enumerate().max_by(|x, y| {
+            cmp_f(
+                end[x.1 .1 - 1] - start[x.1 .0],
+                end[y.1 .1 - 1] - start[y.1 .0],
+            )
+            .then(y.0.cmp(&x.0))
+        })?;
         let s = fit::wrap_split(a, b, &start, &end, &crossing, &blocked)?;
         let mut next = parts.clone();
         next[i] = (a, s);
@@ -1168,6 +1237,11 @@ fn split_layers(base: &Base, m: &Meas, c: Cand, budget: &mut Budget, fuel: &mut 
         if !aspect_ok(&next.geom, &base.o) {
             break;
         }
+        // More rows only help while they make the drawing narrower.
+        let narrowest = best.as_ref().map_or(c.geom.width, |b| b.geom.width);
+        if next.geom.width >= narrowest {
+            break;
+        }
         let done = fits(&next.geom, &base.o);
         best = Some(next);
         if done {
@@ -1258,7 +1332,11 @@ fn read_hint(
             Severity::Info,
             "I021",
             Span::default(),
-            format!("layout hint partial: {} of {} nodes treated as new", n - survivors, n),
+            format!(
+                "layout hint partial: {} of {} nodes treated as new",
+                n - survivors,
+                n
+            ),
         );
     }
     Some((ranks, h.direction))
@@ -1455,10 +1533,16 @@ mod tests {
         let mut fuel = Fuel::new(1_000_000);
         let (x, y) = place_label(&pts, 10.0, 10.0, &[node], &[], &mut fuel).unwrap();
         assert_eq!(x, 0.0);
-        assert!(!boxes_overlap(centred(x, y, 10.0, 10.0, LABEL_CLEAR / 2.0), node));
+        assert!(!boxes_overlap(
+            centred(x, y, 10.0, 10.0, LABEL_CLEAR / 2.0),
+            node
+        ));
         // Without fuel the midpoint is used.
         let mut empty = Fuel::new(0);
-        assert_eq!(place_label(&pts, 10.0, 10.0, &[node], &[], &mut empty), Some((0.0, 50.0)));
+        assert_eq!(
+            place_label(&pts, 10.0, 10.0, &[node], &[], &mut empty),
+            Some((0.0, 50.0))
+        );
     }
 
     #[test]

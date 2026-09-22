@@ -78,14 +78,17 @@ fn cmp_f(a: f64, b: f64) -> Ordering {
 }
 
 fn cmp_key(a: &Key, b: &Key) -> Ordering {
-    cmp_f(a.m, b.m)
-        .then(cmp_f(a.b, b.b))
-        .then(a.p.cmp(&b.p))
+    cmp_f(a.m, b.m).then(cmp_f(a.b, b.b)).then(a.p.cmp(&b.p))
 }
 
 /// Crossings between the edges of `u` and of `v` (towards the same neighbour layer)
 /// when `u` is left of `v`: pairs of neighbours `a` of `u`, `b` of `v` with `a` right of `b`.
-fn pair_crossings(a: &[usize], b: &[usize], pos: &[usize], budget: &mut Budget) -> Result<usize, OutOfFuel> {
+fn pair_crossings(
+    a: &[usize],
+    b: &[usize],
+    pos: &[usize],
+    budget: &mut Budget,
+) -> Result<usize, OutOfFuel> {
     budget.spend((a.len() * b.len()) as u64 + 1)?;
     let mut c = 0;
     for &x in a {
@@ -138,7 +141,13 @@ fn bilayer(g: &LGraph, pos: &[usize], l: usize, budget: &mut Budget) -> Result<u
 }
 
 /// Crossings between layer `l` and `l + 1` (Barth–Jünger–Mutzel accumulator tree).
-pub fn bilayer_crossings(g: &LGraph, pos: &[usize], l: usize, fuel: &mut Fuel) -> Result<usize, OutOfFuel> {
+#[cfg(test)]
+pub fn bilayer_crossings(
+    g: &LGraph,
+    pos: &[usize],
+    l: usize,
+    fuel: &mut Fuel,
+) -> Result<usize, OutOfFuel> {
     bilayer(g, pos, l, &mut Budget::Mandatory(fuel))
 }
 
@@ -151,6 +160,7 @@ fn total(g: &LGraph, pos: &[usize], budget: &mut Budget) -> Result<usize, OutOfF
 }
 
 /// Total crossings of the current order.
+#[cfg(test)]
 pub fn total_crossings(g: &LGraph, fuel: &mut Fuel) -> Result<usize, OutOfFuel> {
     total(g, &g.positions(), &mut Budget::Mandatory(fuel))
 }
@@ -242,9 +252,9 @@ pub fn best_permutation(
     };
     let start_cost = eval(&start);
     let mut lb = 0usize;
-    for a in 0..k {
-        for b in a + 1..k {
-            lb += cost[a][b].min(cost[b][a]);
+    for (a, row) in cost.iter().enumerate() {
+        for (b, &ab) in row.iter().enumerate().skip(a + 1) {
+            lb += ab.min(cost[b][a]);
         }
     }
     let mut s = Search {
@@ -276,7 +286,9 @@ impl Ctx {
             .map(|v| stable.and_then(|s| s.fixed.get(v).copied().flatten()))
             .collect();
         let new_real = (0..n)
-            .map(|v| stable.is_some() && fixed[v].is_none() && matches!(g.nodes[v].kind, Kind::Real(_)))
+            .map(|v| {
+                stable.is_some() && fixed[v].is_none() && matches!(g.nodes[v].kind, Kind::Real(_))
+            })
             .collect();
         Ctx {
             chains: g.nodes.iter().map(|v| cl.chain(v.cluster)).collect(),
@@ -315,7 +327,9 @@ impl Ctx {
         let mut groups: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
         for v in items {
             match self.chains[v].get(level) {
-                Some(&c) if level <= super::lgraph::MAX_CLUSTER_DEPTH => groups.entry(c).or_default().push(v),
+                Some(&c) if level <= super::lgraph::MAX_CLUSTER_DEPTH => {
+                    groups.entry(c).or_default().push(v)
+                }
                 _ => {
                     if self.fixed[v].is_some() {
                         surv.push(v)
@@ -356,8 +370,11 @@ impl Ctx {
             })
             .collect();
         blocks.sort_by(|a, b| {
-            cmp_f(self.rank.get(a.0).copied().unwrap_or(0.0), self.rank.get(b.0).copied().unwrap_or(0.0))
-                .then(a.0.cmp(&b.0))
+            cmp_f(
+                self.rank.get(a.0).copied().unwrap_or(0.0),
+                self.rank.get(b.0).copied().unwrap_or(0.0),
+            )
+            .then(a.0.cmp(&b.0))
         });
         let mut li = 0;
         let mut blocks = blocks.into_iter().peekable();
@@ -389,7 +406,11 @@ impl Ctx {
     }
 
     fn new_before(&self, layer: &[usize], idx: usize) -> usize {
-        layer.iter().take(idx).filter(|&&v| self.new_real[v]).count()
+        layer
+            .iter()
+            .take(idx)
+            .filter(|&&v| self.new_real[v])
+            .count()
     }
 
     fn stability_ok(&self, layer: &[usize]) -> bool {
@@ -419,7 +440,10 @@ impl Ctx {
             if self.fixed[s].is_some() {
                 let mut nb = self.new_before(layer, i);
                 while nb > self.stability {
-                    let Some(x) = (0..i).rev().find(|&j| self.new_real[layer[j]] && cluster[layer[j]] == cluster[s]) else {
+                    let Some(x) = (0..i)
+                        .rev()
+                        .find(|&j| self.new_real[layer[j]] && cluster[layer[j]] == cluster[s])
+                    else {
                         break;
                     };
                     let node = layer.remove(x);
@@ -443,19 +467,37 @@ impl Ctx {
         if self.fixed[u].is_some() && self.fixed[v].is_some() {
             return false;
         }
-        if self.fixed[u].is_some() && self.new_real[v] && self.new_before(layer, i) + 1 > self.stability {
+        if self.fixed[u].is_some()
+            && self.new_real[v]
+            && self.new_before(layer, i) + 1 > self.stability
+        {
             return false;
         }
         true
     }
 
-    fn swap_gain(&self, g: &LGraph, pos: &[usize], u: usize, v: usize, budget: &mut Budget) -> Result<(usize, usize), OutOfFuel> {
-        let uv = pair_crossings(&g.up[u], &g.up[v], pos, budget)? + pair_crossings(&g.down[u], &g.down[v], pos, budget)?;
-        let vu = pair_crossings(&g.up[v], &g.up[u], pos, budget)? + pair_crossings(&g.down[v], &g.down[u], pos, budget)?;
+    fn swap_gain(
+        &self,
+        g: &LGraph,
+        pos: &[usize],
+        u: usize,
+        v: usize,
+        budget: &mut Budget,
+    ) -> Result<(usize, usize), OutOfFuel> {
+        let uv = pair_crossings(&g.up[u], &g.up[v], pos, budget)?
+            + pair_crossings(&g.down[u], &g.down[v], pos, budget)?;
+        let vu = pair_crossings(&g.up[v], &g.up[u], pos, budget)?
+            + pair_crossings(&g.down[v], &g.down[u], pos, budget)?;
         Ok((uv, vu))
     }
 
-    fn transpose_layer(&self, g: &mut LGraph, pos: &mut [usize], l: usize, budget: &mut Budget) -> Result<bool, OutOfFuel> {
+    fn transpose_layer(
+        &self,
+        g: &mut LGraph,
+        pos: &mut [usize],
+        l: usize,
+        budget: &mut Budget,
+    ) -> Result<bool, OutOfFuel> {
         let mut improved = false;
         let len = g.layers[l].len();
         for i in 0..len.saturating_sub(1) {
@@ -476,10 +518,25 @@ impl Ctx {
 
     /// Median / barycenter keys of layer `l` from the neighbouring layer (above when
     /// `from_up`). Nodes without neighbours there keep their relative position.
-    fn sweep_keys(&self, g: &LGraph, pos: &[usize], l: usize, from_up: bool, key: &mut [Key], fuel: &mut Fuel) -> Result<(), OutOfFuel> {
+    fn sweep_keys(
+        &self,
+        g: &LGraph,
+        pos: &[usize],
+        l: usize,
+        from_up: bool,
+        key: &mut [Key],
+        fuel: &mut Fuel,
+    ) -> Result<(), OutOfFuel> {
         let this_len = g.layers[l].len().max(1) as f64;
-        let other = if from_up { l.checked_sub(1) } else { Some(l + 1) };
-        let other_len = other.and_then(|o| g.layers.get(o)).map_or(1, Vec::len).max(1) as f64;
+        let other = if from_up {
+            l.checked_sub(1)
+        } else {
+            Some(l + 1)
+        };
+        let other_len = other
+            .and_then(|o| g.layers.get(o))
+            .map_or(1, Vec::len)
+            .max(1) as f64;
         let mut ps: Vec<f64> = Vec::new();
         for &v in &g.layers[l] {
             let nbrs = if from_up { &g.up[v] } else { &g.down[v] };
@@ -491,7 +548,10 @@ impl Ctx {
                 let x = (pos[v] as f64 + 0.5) * other_len / this_len - 0.5;
                 (x, x)
             } else {
-                (weighted_median(&ps), ps.iter().sum::<f64>() / ps.len() as f64)
+                (
+                    weighted_median(&ps),
+                    ps.iter().sum::<f64>() / ps.len() as f64,
+                )
             };
             key[v] = Key { m, b, p: pos[v] };
         }
@@ -541,7 +601,12 @@ pub fn initial_order(g: &mut LGraph, cl: &Clusters, keys: &[f64], stable: Option
 }
 
 /// Pass 1: layer sweeps and transposition (mandatory; fuel exhaustion is an error).
-pub fn minimise(g: &mut LGraph, cl: &Clusters, stable: Option<&Stable>, fuel: &mut Fuel) -> Result<(), OutOfFuel> {
+pub fn minimise(
+    g: &mut LGraph,
+    cl: &Clusters,
+    stable: Option<&Stable>,
+    fuel: &mut Fuel,
+) -> Result<(), OutOfFuel> {
     let mut ctx = Ctx::new(g, cl, stable);
     ctx.set_ranks(g, |_, i, len| (i as f64 + 0.5) / len as f64);
     let mut pos = g.positions();
@@ -592,7 +657,12 @@ pub fn minimise(g: &mut LGraph, cl: &Clusters, stable: Option<&Stable>, fuel: &m
 }
 
 /// Largest number of crossings on one segment between layers `l` and `l + 1`.
-fn max_edge_crossings(g: &LGraph, pos: &[usize], l: usize, fuel: &mut Fuel) -> Result<usize, OutOfFuel> {
+fn max_edge_crossings(
+    g: &LGraph,
+    pos: &[usize],
+    l: usize,
+    fuel: &mut Fuel,
+) -> Result<usize, OutOfFuel> {
     let Some(upper) = g.layers.get(l) else {
         return Ok(0);
     };
@@ -631,7 +701,12 @@ fn local_total(g: &LGraph, pos: &[usize], l: usize, fuel: &mut Fuel) -> Result<u
     Ok(above + bilayer(g, pos, l, &mut b)?)
 }
 
-fn exact_pass(ctx: &Ctx, g: &mut LGraph, pos: &mut [usize], fuel: &mut Fuel) -> Result<(), OutOfFuel> {
+fn exact_pass(
+    ctx: &Ctx,
+    g: &mut LGraph,
+    pos: &mut [usize],
+    fuel: &mut Fuel,
+) -> Result<(), OutOfFuel> {
     let nl = g.layers.len();
     for l in 0..nl.saturating_sub(1) {
         for (free, from_up) in [(l + 1, true), (l, false)] {
@@ -644,7 +719,9 @@ fn exact_pass(ctx: &Ctx, g: &mut LGraph, pos: &mut [usize], fuel: &mut Fuel) -> 
             let mut start = 0;
             while start < layer.len() {
                 let mut end = start + 1;
-                while end < layer.len() && g.nodes[layer[end]].cluster == g.nodes[layer[start]].cluster {
+                while end < layer.len()
+                    && g.nodes[layer[end]].cluster == g.nodes[layer[start]].cluster
+                {
                     end += 1;
                 }
                 if (2..=EXACT_MAX_SEGMENT).contains(&(end - start)) {
@@ -658,7 +735,16 @@ fn exact_pass(ctx: &Ctx, g: &mut LGraph, pos: &mut [usize], fuel: &mut Fuel) -> 
 }
 
 #[allow(clippy::too_many_arguments)]
-fn refine_segment(ctx: &Ctx, g: &mut LGraph, pos: &mut [usize], l: usize, start: usize, end: usize, from_up: bool, fuel: &mut Fuel) -> Result<(), OutOfFuel> {
+fn refine_segment(
+    ctx: &Ctx,
+    g: &mut LGraph,
+    pos: &mut [usize],
+    l: usize,
+    start: usize,
+    end: usize,
+    from_up: bool,
+    fuel: &mut Fuel,
+) -> Result<(), OutOfFuel> {
     let seg: Vec<usize> = g.layers[l][start..end].to_vec();
     let k = seg.len();
     let mut cost = vec![vec![0usize; k]; k];
@@ -667,7 +753,11 @@ fn refine_segment(ctx: &Ctx, g: &mut LGraph, pos: &mut [usize], l: usize, start:
         for i in 0..k {
             for j in 0..k {
                 if i != j {
-                    let (a, c) = if from_up { (&g.up[seg[i]], &g.up[seg[j]]) } else { (&g.down[seg[i]], &g.down[seg[j]]) };
+                    let (a, c) = if from_up {
+                        (&g.up[seg[i]], &g.up[seg[j]])
+                    } else {
+                        (&g.down[seg[i]], &g.down[seg[j]])
+                    };
                     cost[i][j] = pair_crossings(a, c, pos, &mut b)?;
                 }
             }
@@ -677,7 +767,10 @@ fn refine_segment(ctx: &Ctx, g: &mut LGraph, pos: &mut [usize], l: usize, start:
     let Some((perm, c)) = best_permutation(&cost, &fixed, fuel) else {
         return Err(OutOfFuel);
     };
-    let current: usize = (0..k).flat_map(|i| (i + 1..k).map(move |j| (i, j))).map(|(i, j)| cost[i][j]).sum();
+    let current: usize = (0..k)
+        .flat_map(|i| (i + 1..k).map(move |j| (i, j)))
+        .map(|(i, j)| cost[i][j])
+        .sum();
     if c >= current {
         return Ok(());
     }
@@ -698,15 +791,21 @@ fn refine_segment(ctx: &Ctx, g: &mut LGraph, pos: &mut [usize], l: usize, start:
     after.map(|_| ())
 }
 
-fn local_pass(ctx: &Ctx, g: &mut LGraph, pos: &mut [usize], fuel: &mut Fuel) -> Result<(), OutOfFuel> {
+fn local_pass(
+    ctx: &Ctx,
+    g: &mut LGraph,
+    pos: &mut [usize],
+    fuel: &mut Fuel,
+) -> Result<(), OutOfFuel> {
     let nl = g.layers.len();
-    let local_max = |g: &LGraph, pos: &[usize], l: usize, fuel: &mut Fuel| -> Result<usize, OutOfFuel> {
-        let above = match l.checked_sub(1) {
-            Some(p) => max_edge_crossings(g, pos, p, fuel)?,
-            None => 0,
+    let local_max =
+        |g: &LGraph, pos: &[usize], l: usize, fuel: &mut Fuel| -> Result<usize, OutOfFuel> {
+            let above = match l.checked_sub(1) {
+                Some(p) => max_edge_crossings(g, pos, p, fuel)?,
+                None => 0,
+            };
+            Ok(above.max(max_edge_crossings(g, pos, l, fuel)?))
         };
-        Ok(above.max(max_edge_crossings(g, pos, l, fuel)?))
-    };
     for l in 0..nl {
         for i in 0..g.layers[l].len().saturating_sub(1) {
             if !ctx.allowed(g, &g.layers[l], i) {
@@ -755,12 +854,22 @@ mod tests {
     fn graph(layers: &[usize], edges: &[(usize, usize)], cl: &Clusters) -> LGraph {
         let real: Vec<Extent> = layers
             .iter()
-            .map(|_| Extent { left: 10.0, right: 10.0, thick: 10.0 })
+            .map(|_| Extent {
+                left: 10.0,
+                right: 10.0,
+                thick: 10.0,
+            })
             .collect();
         let e: Vec<EdgeIn> = edges
             .iter()
             .enumerate()
-            .map(|(i, &(u, v))| EdgeIn { edge: i, upper: u, lower: v, reversed: false, label: None })
+            .map(|(i, &(u, v))| EdgeIn {
+                edge: i,
+                upper: u,
+                lower: v,
+                reversed: false,
+                label: None,
+            })
             .collect();
         let titles = vec![Extent::default(); cl.len()];
         build(&BuildIn {
@@ -862,7 +971,11 @@ mod tests {
         for _ in 0..40 {
             let k = 2 + r.next() % 5;
             let cost: Vec<Vec<usize>> = (0..k)
-                .map(|i| (0..k).map(|j| if i == j { 0 } else { r.next() % 4 }).collect())
+                .map(|i| {
+                    (0..k)
+                        .map(|j| if i == j { 0 } else { r.next() % 4 })
+                        .collect()
+                })
                 .collect();
             let (perm, c) = best_permutation(&cost, &vec![None; k], &mut fuel()).unwrap();
             let eval = |p: &[usize]| {
@@ -882,7 +995,11 @@ mod tests {
             let mut i = 0;
             while i < k {
                 if cs[i] < i {
-                    if i % 2 == 0 { p.swap(0, i) } else { p.swap(cs[i], i) }
+                    if i % 2 == 0 {
+                        p.swap(0, i)
+                    } else {
+                        p.swap(cs[i], i)
+                    }
                     best = best.min(eval(&p));
                     cs[i] += 1;
                     i = 0;
@@ -907,8 +1024,10 @@ mod tests {
 
     #[test]
     fn exact_permutation_gives_up_on_tiny_fuel() {
-        let cost: Vec<Vec<usize>> = (0..8).map(|i| (0..8).map(|j| (i * 7 + j * 3) % 5).collect()).collect();
-        assert!(best_permutation(&cost, &vec![None; 8], &mut Fuel::new(3)).is_none());
+        let cost: Vec<Vec<usize>> = (0..8)
+            .map(|i| (0..8).map(|j| (i * 7 + j * 3) % 5).collect())
+            .collect();
+        assert!(best_permutation(&cost, &[None; 8], &mut Fuel::new(3)).is_none());
     }
 
     fn chart_clusters(parents: &[Option<usize>], node_sub: &[Option<usize>]) -> Clusters {
@@ -961,7 +1080,13 @@ mod tests {
             let n = 6 + r.next() % 20;
             let parents = [None, Some(0), None, Some(2)];
             let subs: Vec<Option<usize>> = (0..n)
-                .map(|_| match r.next() % 6 { 0 => None, 1 => Some(0), 2 => Some(1), 3 => Some(2), _ => Some(3) })
+                .map(|_| match r.next() % 6 {
+                    0 => None,
+                    1 => Some(0),
+                    2 => Some(1),
+                    3 => Some(2),
+                    _ => Some(3),
+                })
                 .collect();
             let cl = chart_clusters(&parents, &subs);
             let layers: Vec<usize> = (0..n).map(|_| r.next() % 4).collect();
@@ -1005,13 +1130,20 @@ mod tests {
         for (rank, v) in [4usize, 3, 2, 1].iter().enumerate() {
             fixed[*v] = Some(rank);
         }
-        let stable = Stable { fixed, stability: 2 };
+        let stable = Stable {
+            fixed,
+            stability: 2,
+        };
         let keys: Vec<f64> = (0..g.nodes.len()).map(|i| (10 - i) as f64).collect();
         initial_order(&mut g, &cl, &keys, Some(&stable));
         minimise(&mut g, &cl, Some(&stable), &mut fuel()).unwrap();
         refine(&mut g, &cl, Some(&stable), &mut fuel());
         let layer = &g.layers[1];
-        let surv: Vec<usize> = layer.iter().copied().filter(|&v| (1..5).contains(&v)).collect();
+        let surv: Vec<usize> = layer
+            .iter()
+            .copied()
+            .filter(|&v| (1..5).contains(&v))
+            .collect();
         assert_eq!(surv, vec![4, 3, 2, 1]);
         for (rank, &s) in surv.iter().enumerate() {
             let idx = layer.iter().position(|&v| v == s).unwrap();

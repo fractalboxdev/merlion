@@ -21,7 +21,7 @@
 //! | `Asymmetric` (`>t]`) | Rectangle whose left side has a notch reaching `h/4` inwards at mid-height |
 
 use crate::math::{abs, hypot, max, min, sqrt};
-use crate::model::{FontStyle, FontWeight, Flowchart, Node, Shape, Style};
+use crate::model::{Flowchart, FontStyle, FontWeight, Node, Shape, Style};
 use crate::text::{TextStyle, Weight};
 
 /// Horizontal padding between the label box and a rectangular outline, per side.
@@ -76,10 +76,9 @@ pub fn node_size(shape: Shape, lw: f64, lh: f64) -> (f64, f64) {
         // W − 2·(h/4) of width, measured at the top and bottom.
         Shape::Hexagon => (lw + 2.0 * PAD_INNER + th / 2.0, th),
         // A full-height box fits between the slants: W − 2s with s = h·SLANT.
-        Shape::Parallelogram
-        | Shape::ParallelogramAlt
-        | Shape::Trapezoid
-        | Shape::TrapezoidAlt => (lw + 2.0 * PAD_INNER + 2.0 * th * SLANT, th),
+        Shape::Parallelogram | Shape::ParallelogramAlt | Shape::Trapezoid | Shape::TrapezoidAlt => {
+            (lw + 2.0 * PAD_INNER + 2.0 * th * SLANT, th)
+        }
         // The notch reaches h/4 into the left side.
         Shape::Asymmetric => (tw + th / 4.0, th),
     };
@@ -132,10 +131,7 @@ pub fn inside(shape: Shape, w: f64, h: f64, x: f64, y: f64) -> bool {
             }
             abs(x) <= a - inset * (1.0 - abs(y) / b) + EPS
         }
-        Shape::Parallelogram
-        | Shape::ParallelogramAlt
-        | Shape::Trapezoid
-        | Shape::TrapezoidAlt => {
+        Shape::Parallelogram | Shape::ParallelogramAlt | Shape::Trapezoid | Shape::TrapezoidAlt => {
             if b <= 0.0 {
                 return false;
             }
@@ -237,7 +233,7 @@ pub fn port_span(shape: Shape, w: f64, h: f64, side: Side) -> f64 {
 /// relative to the centre.
 pub fn boundary_toward(shape: Shape, w: f64, h: f64, dx: f64, dy: f64) -> (f64, f64) {
     let len = hypot(dx, dy);
-    if !(len > 0.0) || !len.is_finite() {
+    if len.is_nan() || len <= 0.0 || !len.is_finite() {
         return (0.0, h / 2.0);
     }
     let (ux, uy) = (dx / len, dy / len);
@@ -362,8 +358,18 @@ mod tests {
                     };
                     let px = tx * t + nx * d;
                     let py = ty * t + ny * d;
-                    assert!(inside(shape, w, h, px - nx * 0.01, py - ny * 0.01), "{:?} {:?}", shape, side);
-                    assert!(!inside(shape, w, h, px + nx * 0.01, py + ny * 0.01), "{:?} {:?}", shape, side);
+                    assert!(
+                        inside(shape, w, h, px - nx * 0.01, py - ny * 0.01),
+                        "{:?} {:?}",
+                        shape,
+                        side
+                    );
+                    assert!(
+                        !inside(shape, w, h, px + nx * 0.01, py + ny * 0.01),
+                        "{:?} {:?}",
+                        shape,
+                        side
+                    );
                 }
             }
         }
@@ -383,7 +389,11 @@ mod tests {
             for (dx, dy) in [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (-3.0, 1.0), (0.2, -1.0)] {
                 let (x, y) = boundary_toward(shape, w, h, dx, dy);
                 assert!(inside(shape, w, h, x * 0.999, y * 0.999), "{:?}", shape);
-                assert!(!inside(shape, w, h, x * 1.001 + dx * 0.001, y * 1.001 + dy * 0.001), "{:?}", shape);
+                assert!(
+                    !inside(shape, w, h, x * 1.001 + dx * 0.001, y * 1.001 + dy * 0.001),
+                    "{:?}",
+                    shape
+                );
             }
         }
     }

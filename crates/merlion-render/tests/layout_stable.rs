@@ -15,7 +15,10 @@ fn hint_of(c: &Flowchart, g: &Geometry) -> String {
 }
 
 fn with_hint(h: &str) -> RenderOptions {
-    RenderOptions { hint: Some(h.into()), ..RenderOptions::default() }
+    RenderOptions {
+        hint: Some(h.into()),
+        ..RenderOptions::default()
+    }
 }
 
 /// A two-level fan whose second layer the sweeps are free to reorder.
@@ -95,7 +98,12 @@ fn whole_svg_is_accepted_as_hint() {
 #[test]
 fn malformed_hint_is_discarded_with_i022() {
     let b = fan();
-    for bad in ["garbage", "v9;TB;0:root", "v1;TB;0:root,root", "v1;QQ;0:root"] {
+    for bad in [
+        "garbage",
+        "v9;TB;0:root",
+        "v1;TB;0:root,root",
+        "v1;QQ;0:root",
+    ] {
         let (g, d) = run_with(&b.c, &with_hint(bad));
         assert!(g.is_ok());
         assert_eq!(codes(&d), vec!["I022"], "{}", bad);
@@ -144,4 +152,65 @@ fn auto_direction_keeps_the_hint_direction_when_it_fits() {
     };
     let g = run_with(&c, &opts).0.unwrap();
     assert_eq!(g.direction, Direction::LR);
+}
+
+#[test]
+fn source_direction_wins_over_the_hint_direction() {
+    let c = chain(3);
+    let g = run_with(&c, &with_hint("v1;LR;0:n0;1:n1;2:n2")).0.unwrap();
+    assert_eq!(g.direction, Direction::TB);
+}
+
+#[test]
+fn random_hints_never_panic() {
+    let b = fan();
+    let mut r = Lcg(77);
+    let alphabet: Vec<char> = "v1;:,TBLR_0123456789abcxyz\"<>= -".chars().collect();
+    let mut hints: Vec<String> = vec![
+        String::new(),
+        "v1".into(),
+        "v1;TB".into(),
+        "v1;TB;".into(),
+        "v1;TB;0:".into(),
+        "v1;TB;x:root".into(),
+        "v1;TB;0:root;0:p".into(),
+        "v1;TB;99999999999999:root".into(),
+        "v1;TB;0:_zz".into(),
+        "<svg data-merlion-layout=\"v1;TB;0:root".into(),
+        "<svg data-merlion-layout=\"\">".into(),
+    ];
+    for _ in 0..300 {
+        let len = r.draw() % 40;
+        hints.push(
+            (0..len)
+                .map(|_| alphabet[r.draw() % alphabet.len()])
+                .collect(),
+        );
+    }
+    for h in &hints {
+        let (g, d) = run_with(&b.c, &with_hint(h));
+        let g = g.unwrap();
+        check(&b.c, &g);
+        for code in codes(&d) {
+            assert!(
+                ["I020", "I021", "I022"].contains(&code),
+                "{:?}: {}",
+                h,
+                code
+            );
+        }
+    }
+}
+
+#[test]
+fn stable_layout_is_deterministic() {
+    let b = fan();
+    let g1 = run(&b.c);
+    let h = hint_of(&b.c, &g1);
+    let mut b2 = fan();
+    let n = b2.node("late");
+    b2.edge(3, n);
+    let a = run_with(&b2.c, &with_hint(&h)).0.unwrap();
+    let c = run_with(&b2.c, &with_hint(&h)).0.unwrap();
+    assert_eq!(a, c);
 }

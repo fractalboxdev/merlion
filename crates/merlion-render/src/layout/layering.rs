@@ -63,7 +63,10 @@ mod tests {
     #[test]
     fn node_sits_below_all_predecessors() {
         // 0 -> 1 -> 2 -> 3 and 0 -> 3: 3 sits at layer 3.
-        assert_eq!(run(4, &[(0, 1, 1), (1, 2, 1), (2, 3, 1), (0, 3, 1)]), [0, 1, 2, 3]);
+        assert_eq!(
+            run(4, &[(0, 1, 1), (1, 2, 1), (2, 3, 1), (0, 3, 1)]),
+            [0, 1, 2, 3]
+        );
     }
 
     #[test]

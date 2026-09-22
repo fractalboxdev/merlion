@@ -35,10 +35,8 @@ pub enum LSide {
     Down,
     /// Towards the previous layer.
     Up,
-    /// Towards larger order-axis coordinates.
+    /// Towards larger order-axis coordinates (self-loops sit on this side).
     After,
-    /// Towards smaller order-axis coordinates.
-    Before,
 }
 
 /// The screen side a layout side becomes in direction `dir`.
@@ -51,16 +49,14 @@ pub fn final_side(dir: Direction, s: LSide) -> Side {
         (LR, Down) | (RL, Up) => Side::Right,
         (LR, Up) | (RL, Down) => Side::Left,
         (TB | BT, After) => Side::Right,
-        (TB | BT, Before) => Side::Left,
         (LR | RL, After) => Side::Bottom,
-        (LR | RL, Before) => Side::Top,
     }
 }
 
 /// Sign between the layout-frame tangential offset along side `s` and the screen one.
 fn tangent_sign(dir: Direction, s: LSide) -> f64 {
     match (s, dir) {
-        (LSide::After | LSide::Before, Direction::BT | Direction::RL) => -1.0,
+        (LSide::After, Direction::BT | Direction::RL) => -1.0,
         _ => 1.0,
     }
 }
@@ -97,7 +93,13 @@ impl NodeShape {
     /// Distance from the centre to the outline across layout side `s` at layout-frame
     /// tangential offset `t`.
     pub fn offset(&self, dir: Direction, s: LSide, t: f64) -> f64 {
-        measure::side_offset(self.shape, self.w, self.h, final_side(dir, s), tangent_sign(dir, s) * t)
+        measure::side_offset(
+            self.shape,
+            self.w,
+            self.h,
+            final_side(dir, s),
+            tangent_sign(dir, s) * t,
+        )
     }
 
     pub fn span(&self, dir: Direction, s: LSide) -> f64 {
@@ -222,7 +224,9 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
             at(c[n - 2]).0
         };
         ends.entry((c[0], true)).or_default().push((k_up, ci));
-        ends.entry((c[n - 1], false)).or_default().push((k_down, ci));
+        ends.entry((c[n - 1], false))
+            .or_default()
+            .push((k_down, ci));
     }
     let mut port: BTreeMap<(usize, bool), f64> = BTreeMap::new();
     for ((v, down), list) in ends.iter_mut() {
@@ -279,10 +283,9 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
         let pa = part(layer(c[i - 1]));
         let pb = part(layer(c[i]));
         let chan = w.map_or(0.0, |w| w.chan_y) + WRAP_STEP * k as f64;
-        let gx = w.and_then(|w| w.gap_x.get(pa).copied()).unwrap_or(0.0)
-            + WRAP_STEP * local as f64;
-        let entry = w.and_then(|w| w.entry_y.get(pb).copied()).unwrap_or(0.0)
-            - WRAP_STEP * local as f64;
+        let gx = w.and_then(|w| w.gap_x.get(pa).copied()).unwrap_or(0.0) + WRAP_STEP * local as f64;
+        let entry =
+            w.and_then(|w| w.entry_y.get(pb).copied()).unwrap_or(0.0) - WRAP_STEP * local as f64;
         [(from_x, chan), (gx, chan), (gx, entry), (to_x, entry)]
     };
 
@@ -340,12 +343,10 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
             if !downward(c) {
                 // Same layer (never produced by phase 2): a straight line between outlines.
                 let (pa, pz) = (at(a), at(z));
-                let ba = shape_of(a).map_or((0.0, 0.0), |s| {
-                    s.toward(dir, pz.0 - pa.0, pz.1 - pa.1)
-                });
-                let bz = shape_of(z).map_or((0.0, 0.0), |s| {
-                    s.toward(dir, pa.0 - pz.0, pa.1 - pz.1)
-                });
+                let ba =
+                    shape_of(a).map_or((0.0, 0.0), |s| s.toward(dir, pz.0 - pa.0, pz.1 - pa.1));
+                let bz =
+                    shape_of(z).map_or((0.0, 0.0), |s| s.toward(dir, pa.0 - pz.0, pa.1 - pz.1));
                 return Routed {
                     points: vec![(pa.0 + ba.0, pa.1 + ba.1), (pz.0 + bz.0, pz.1 + bz.1)],
                     label: None,
@@ -390,9 +391,8 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
                 let ba = shape_of(a).map_or((0.0, 0.0), |s| {
                     s.toward(dir, first.0 - pa.0, first.1 - pa.1)
                 });
-                let bz = shape_of(z).map_or((0.0, 0.0), |s| {
-                    s.toward(dir, last.0 - pz.0, last.1 - pz.1)
-                });
+                let bz =
+                    shape_of(z).map_or((0.0, 0.0), |s| s.toward(dir, last.0 - pz.0, last.1 - pz.1));
                 points = vec![(pa.0 + ba.0, pa.1 + ba.1)];
                 points.extend(via);
                 points.push((pz.0 + bz.0, pz.1 + bz.1));
@@ -410,13 +410,27 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
 /// Self-loop `index` on a node centred at `(cx, cy)` in the layout frame: out of the
 /// order-axis "after" side a quarter of the node's thickness above the centre, around,
 /// and back in below it. Returns the points and the far edge of the loop.
-pub fn self_loop(dir: Direction, shape: &NodeShape, cx: f64, cy: f64, index: usize) -> (Vec<(f64, f64)>, f64) {
+pub fn self_loop(
+    dir: Direction,
+    shape: &NodeShape,
+    cx: f64,
+    cy: f64,
+    index: usize,
+) -> (Vec<(f64, f64)>, f64) {
     let (hx, hy) = shape.half(dir);
     let q = hy / 2.0;
     let out = cx + hx + LOOP_OUT + LOOP_STEP * index as f64;
     let o1 = shape.offset(dir, LSide::After, -q);
     let o2 = shape.offset(dir, LSide::After, q);
-    (vec![(cx + o1, cy - q), (out, cy - q), (out, cy + q), (cx + o2, cy + q)], out)
+    (
+        vec![
+            (cx + o1, cy - q),
+            (out, cy - q),
+            (out, cy + q),
+            (cx + o2, cy + q),
+        ],
+        out,
+    )
 }
 
 /// Midpoint of the longest segment of a polyline.
@@ -466,7 +480,11 @@ mod tests {
 
     #[test]
     fn self_loop_leaves_and_returns_on_the_side() {
-        let s = NodeShape { shape: Shape::Rect, w: 60.0, h: 40.0 };
+        let s = NodeShape {
+            shape: Shape::Rect,
+            w: 60.0,
+            h: 40.0,
+        };
         let (p, out) = self_loop(Direction::TB, &s, 100.0, 50.0, 0);
         assert_eq!(p[0], (130.0, 40.0));
         assert_eq!(p[3], (130.0, 60.0));
@@ -477,10 +495,22 @@ mod tests {
 
     fn chain_graph(n: usize) -> LGraph {
         use super::super::lgraph::{build, BuildIn, Clusters, EdgeIn, Extent};
-        let real: Vec<Extent> = (0..n).map(|_| Extent { left: 20.0, right: 20.0, thick: 20.0 }).collect();
+        let real: Vec<Extent> = (0..n)
+            .map(|_| Extent {
+                left: 20.0,
+                right: 20.0,
+                thick: 20.0,
+            })
+            .collect();
         let layers: Vec<usize> = (0..n).collect();
         let edges: Vec<EdgeIn> = (1..n)
-            .map(|i| EdgeIn { edge: i - 1, upper: i - 1, lower: i, reversed: false, label: None })
+            .map(|i| EdgeIn {
+                edge: i - 1,
+                upper: i - 1,
+                lower: i,
+                reversed: false,
+                label: None,
+            })
             .collect();
         build(&BuildIn {
             real: &real,
@@ -503,8 +533,16 @@ mod tests {
         let pos = [(20.0, 10.0), (20.0, 60.0), (100.0, 10.0), (100.0, 60.0)];
         let top = [0.0, 50.0, 0.0, 50.0];
         let bot = [20.0, 70.0, 20.0, 70.0];
-        let shapes = [NodeShape { shape: Shape::Rect, w: 40.0, h: 20.0 }; 4];
-        let wrap = WrapFrame { chan_y: 90.0, gap_x: vec![60.0], entry_y: vec![0.0, -20.0] };
+        let shapes = [NodeShape {
+            shape: Shape::Rect,
+            w: 40.0,
+            h: 20.0,
+        }; 4];
+        let wrap = WrapFrame {
+            chan_y: 90.0,
+            gap_x: vec![60.0],
+            entry_y: vec![0.0, -20.0],
+        };
         for style in [EdgeStyle::Orthogonal, EdgeStyle::Polyline] {
             let r = route(&RouteIn {
                 dir: Direction::TB,
@@ -517,17 +555,26 @@ mod tests {
                 shapes: &shapes,
                 wrap: Some(&wrap),
             });
-            assert_eq!(r.iter().map(|x| x.wrap).collect::<Vec<_>>(), vec![false, true, false]);
+            assert_eq!(
+                r.iter().map(|x| x.wrap).collect::<Vec<_>>(),
+                vec![false, true, false]
+            );
             let w = &r[1].points;
             assert_eq!(w.first(), Some(&(20.0, 70.0)));
             assert_eq!(w.last(), Some(&(100.0, 0.0)));
-            assert_eq!(&w[1..w.len() - 1], &[(20.0, 90.0), (60.0, 90.0), (60.0, -20.0), (100.0, -20.0)]);
+            assert_eq!(
+                &w[1..w.len() - 1],
+                &[(20.0, 90.0), (60.0, 90.0), (60.0, -20.0), (100.0, -20.0)]
+            );
         }
     }
 
     #[test]
     fn longest_segment_midpoint() {
-        assert_eq!(longest_segment_mid(&[(0.0, 0.0), (0.0, 2.0), (10.0, 2.0)]), Some((5.0, 2.0)));
+        assert_eq!(
+            longest_segment_mid(&[(0.0, 0.0), (0.0, 2.0), (10.0, 2.0)]),
+            Some((5.0, 2.0))
+        );
         assert_eq!(longest_segment_mid(&[(1.0, 1.0)]), None);
     }
 }

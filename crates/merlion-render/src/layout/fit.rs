@@ -35,7 +35,11 @@ pub fn wrap_split(
         .copied()
         .filter(|&s| crate::math::abs(start[s] - mid) <= quarter)
         .collect();
-    let pool = if centred.is_empty() { candidates } else { centred };
+    let pool = if centred.is_empty() {
+        candidates
+    } else {
+        centred
+    };
     pool.into_iter().min_by(|&x, &y| {
         let cx = crossing.get(x).copied().unwrap_or(usize::MAX);
         let cy = crossing.get(y).copied().unwrap_or(usize::MAX);
@@ -181,12 +185,22 @@ mod tests {
     fn fan(k: usize, width: f64) -> (LGraph, Vec<usize>) {
         let cl = Clusters::default();
         let real: Vec<Extent> = (0..=k)
-            .map(|_| Extent { left: width / 2.0, right: width / 2.0, thick: 10.0 })
+            .map(|_| Extent {
+                left: width / 2.0,
+                right: width / 2.0,
+                thick: 10.0,
+            })
             .collect();
         let mut layers = vec![1; k + 1];
         layers[0] = 0;
         let edges: Vec<EdgeIn> = (1..=k)
-            .map(|i| EdgeIn { edge: i, upper: 0, lower: i, reversed: false, label: None })
+            .map(|i| EdgeIn {
+                edge: i,
+                upper: 0,
+                lower: i,
+                reversed: false,
+                label: None,
+            })
             .collect();
         let g = build(&BuildIn {
             real: &real,
@@ -216,7 +230,10 @@ mod tests {
         assert_eq!(layer_rows(&g, 0, &x, 2), None);
         let new = apply_splits(&layers, &[(1, rows)]);
         assert_eq!(new, vec![0, 1, 1, 1, 2, 2, 2]);
-        assert_eq!(apply_splits(&[0, 1, 2], &[(0, vec![vec![0]])]), vec![1, 2, 3]);
+        assert_eq!(
+            apply_splits(&[0, 1, 2], &[(0, vec![vec![0]])]),
+            vec![1, 2, 3]
+        );
     }
 
     #[test]

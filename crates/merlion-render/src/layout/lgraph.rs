@@ -78,10 +78,6 @@ impl Clusters {
         self.parent.len()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.parent.is_empty()
-    }
-
     fn up(&self, c: Option<usize>) -> Option<usize> {
         c.and_then(|c| self.parent.get(c).copied().flatten())
     }
@@ -132,6 +128,7 @@ impl Clusters {
     }
 
     /// Whether cluster `c` lies inside `anc` or is `anc`.
+    #[cfg(test)]
     pub fn within(&self, c: Option<usize>, anc: usize) -> bool {
         let mut cur = c;
         let mut guard = 0;
@@ -281,7 +278,7 @@ pub fn build(input: &BuildIn) -> Result<LGraph, BuildError> {
     }
 
     let mut g = LGraph::default();
-    let mut push = |g: &mut LGraph, node: LNode| -> usize {
+    let push = |g: &mut LGraph, node: LNode| -> usize {
         g.nodes.push(node);
         g.up.push(Vec::new());
         g.down.push(Vec::new());
@@ -593,8 +590,20 @@ mod tests {
         let cl = Clusters::from_chart(&chart);
         let real = [ext(40.0), ext(40.0), ext(40.0)];
         let edges = [
-            EdgeIn { edge: 0, upper: 0, lower: 1, reversed: false, label: None },
-            EdgeIn { edge: 1, upper: 0, lower: 2, reversed: false, label: None },
+            EdgeIn {
+                edge: 0,
+                upper: 0,
+                lower: 1,
+                reversed: false,
+                label: None,
+            },
+            EdgeIn {
+                edge: 1,
+                upper: 0,
+                lower: 2,
+                reversed: false,
+                label: None,
+            },
         ];
         let titles = [ext(0.0), ext(0.0)];
         let g = build(&input(&real, &[0, 2, 2], &edges, &cl, &titles)).unwrap();
@@ -641,7 +650,13 @@ mod tests {
     fn limits_are_enforced() {
         let cl = Clusters::default();
         let real = [ext(40.0), ext(40.0)];
-        let edges = [EdgeIn { edge: 0, upper: 0, lower: 1, reversed: false, label: None }];
+        let edges = [EdgeIn {
+            edge: 0,
+            upper: 0,
+            lower: 1,
+            reversed: false,
+            label: None,
+        }];
         let mut inp = input(&real, &[0, 50], &edges, &cl, &[]);
         inp.max_nodes = 20;
         assert_eq!(build(&inp).unwrap_err(), BuildError::TooManyNodes);

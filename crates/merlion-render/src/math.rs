@@ -251,7 +251,12 @@ mod tests {
             }
             let r = sqrt(x);
             assert!(is_correctly_rounded(x, r), "sqrt({:e}) = {:e}", x, r);
-            assert_eq!(r.to_bits(), x.sqrt().to_bits(), "hardware disagrees at {:e}", x);
+            assert_eq!(
+                r.to_bits(),
+                x.sqrt().to_bits(),
+                "hardware disagrees at {:e}",
+                x
+            );
         }
     }
 
