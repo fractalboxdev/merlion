@@ -58,7 +58,7 @@ The viewer layer rebuilds each element's text from the SVG alone:
 
 ### Rules
 
-Emitted after all theming rules when the render option `hover` is `"css"` (the default) and the diagram draws at most **N = 128** nodes plus edges. Above N, the rules are left out with `I034 HoverRulesOmitted` (Info), and the ids are still emitted.
+Emitted after all theming rules when the render option `hover` is `"css"` (the default) and the diagram draws at most **N = 128** nodes plus edges. Above N, the rules are left out with `I035 HoverRulesOmitted` (Info), and the ids are still emitted.
 
 ```css
 /* 1. dim everything while any node or edge is hovered */
