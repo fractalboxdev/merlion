@@ -240,13 +240,15 @@ Participants carry the node classes and messages the edge classes, so the token 
 | Participant | `<g class="merlion-node merlion-participant" data-merlion-id="{id}" data-merlion-kind="{kind}" data-merlion-rank="0" id="{id}-n{k}">` | `.merlion-lifeline` line, `.merlion-shape` head box or actor figure, `<text>`, mirrored `.merlion-shape.merlion-participant-foot` |
 | Message | `<g class="merlion-edge merlion-message" data-merlion-from="{id}" data-merlion-to="{id}" data-merlion-index="{n}" id="{id}-e{k}">` | `.merlion-edge-path`, optional `.merlion-edge-text` with its `.merlion-edge-label-bg` chip, optional `.merlion-message-number` badge, optional `.merlion-central` dot |
 | Note | `<g class="merlion-note" data-merlion-from="{id}" data-merlion-to="{id}" data-merlion-placement="over\|left\|right">` | `.merlion-note-box`, `<text>` |
-| Fragment | `<g class="merlion-cluster merlion-fragment" data-merlion-kind="{kind}" data-merlion-index="{n}">` | `.merlion-cluster-box`, `.merlion-fragment-tab`, `.merlion-cluster-title` (the kind word), `.merlion-fragment-label`, one `.merlion-fragment-divider` and `.merlion-fragment-section` text per later section |
+| Fragment | `<g class="merlion-cluster merlion-fragment" data-merlion-id="frag-{n}" data-merlion-kind="{kind}" data-merlion-index="{n}" data-merlion-span="{lo} {hi}">` | `.merlion-cluster-box`, `.merlion-fragment-tab`, `.merlion-cluster-title` (the kind word), `.merlion-fragment-label`, one `.merlion-fragment-divider` and `.merlion-fragment-section` text per later section |
 | Activation | `<g class="merlion-activation" data-merlion-id="{id}" data-merlion-depth="{d}">` | `.merlion-shape` bar |
-| Box | `<g class="merlion-cluster merlion-box" data-merlion-index="{n}">` | `.merlion-cluster-box`, `.merlion-cluster-title` |
+| Box | `<g class="merlion-cluster merlion-box" data-merlion-id="box-{n}" data-merlion-index="{n}" data-merlion-span="{lo} {hi}">` | `.merlion-cluster-box`, `.merlion-cluster-title` |
 
 - `k` in `{id}-n{k}` is the participant's 0-based declaration index and in `{id}-e{k}` the message's index, matching [interaction.md](interaction.md#svg-additions).
 - Draw order: boxes, fragments, columns, activations, notes, messages. Later elements paint over earlier ones, so a message's label chip covers the fragment box behind it. A fragment box is filled, so it precedes the columns it encloses: a lifeline stays visible inside a fragment, and the head box of a participant `create`d inside one is not painted over.
 - `data-merlion-back` and `data-merlion-wrap` never appear: sequences reverse nothing and wrap nothing.
+- `data-merlion-id` is `frag-{n}` or `box-{n}`, `n` being the same pre-order index the group's `data-merlion-index` carries. The two namespaces are the viewer's clusters and its nodes, so neither id ever stands for a participant, whatever a participant is called.
+- `data-merlion-span` is the first and last thing the group's rect draws around, inclusive: for a fragment, `Message::index` of its first and last message over every section and nested fragment; for a box, the declaration index of its first and last participant. A fragment holding no message spans no row and carries no span. About 49 bytes per fragment and per box (147 bytes on the 3-fragment `api-retry-backoff` fixture, 0.67% of its 21,981 bytes).
 
 ### Theme tokens
 
@@ -309,15 +311,23 @@ Note over Customer,Bank: One order, one transaction
 
 The highlight sets of [interaction.md](interaction.md#highlight-set) carry over with no new rule: a participant's incident "edges" are the messages naming it, and a message's endpoints are its two participants. Clicking a participant therefore lights its lifeline (inside its group), its head and foot boxes and every message it sends or receives; clicking a message lights the message and both participants.
 
-- The viewer's `interact` module activates on `.merlion-edge` groups carrying `data-merlion-from` and `data-merlion-to`, which every message carries, so `@fractalboxdev/merlion-view/interact` needs no sequence-specific code.
-- Path mode follows messages in source direction, which for a sequence walks the call graph the diagram describes.
-- The CSS hover layer emits the same rules over participant and message ids, and `N = 128` counts participants plus messages.
-- Notes, fragments and boxes are never dimmed and are not targets, matching the cluster rule.
+An activation bar sits outside its participant's group, so the viewer joins it to that participant: a bar lights and dims with the participant named by its `data-merlion-id`, and a bar naming none joins nothing. Clicking Gateway in `api-retry-backoff` lights 3 participants, 7 messages and both bars and dims nothing, because Gateway touches every one; clicking message 3 lights 2 participants, 1 message and the 2 bars of those participants, and dims the remaining 1 participant and 6 messages (measured, headless Chromium 153).
 
-TODO(owner): decide whether a click on a fragment collapses its rows, as a cluster title collapses a cluster, once the viewer's collapse path is exercised on sequences.
+The keyboard walks the participants in declaration order and then the messages in the order the outline numbers them, and the live region reads the walked target's outline line: `Gateway`, then `3. Upstream --> Gateway: 12 KiB of JSON`. That line is also the popover's heading for a message, and its only line, since it already carries the number, the arrow as the outline draws it and the text.
+
+- Sequence support lives in `interact-seq.js`, which `interact` imports for an SVG carrying `merlion-sequence` ([interaction.md](interaction.md#loading)). It fills in the model `interact` has read; the highlight set, the gestures and the popover are the flowchart's.
+- Path mode follows messages in source direction, which for a sequence walks the call graph the diagram describes.
+- The CSS hover layer emits the same rules over participant and message ids, and `N = 128` counts participants plus messages. Activation bars carry no id and take no rule, so with JavaScript off a hovered participant's bars stay at full opacity along with the rest of the dimmed drawing.
+Clicking a fragment's or a box's title pins what its rect draws around, read from `data-merlion-span`: a fragment lights the messages in its rows and the participants they name, a box lights its columns and every message with both ends among them, and everything else dims. Clicking the same title again clears it. In `api-retry-backoff`, `loop` lights 2 participants, 4 messages and both activation bars and dims 1 participant and 3 messages; `alt` lights 2 participants and 3 messages, dimming 5 elements; `break`, one row tall, lights 2 participants and 1 message and dims 8. In `notes-and-boxes`, the `Mobile clients` box lights its 2 participants and the 1 message between them, dimming 6, and the `Dispatch` box lights 2 participants and 2 messages, dimming 5 (measured, headless Chromium 153).
+
+- The pinned fragment or box carries the accent on its own rect: clusters never dim, so the drawing shows which one is pinned without dimming the box the lit messages sit in.
+- Its popover and the live region read the heading the outline writes for it — the kind word and the label beside it, `loop Up to 4 attempts, 100ms doubling`, or the box's name — then a muted line counting what it holds.
+- Neither collapses. Collapse hides a cluster's member nodes, and a fragment encloses no participant: its rows are messages, which a collapse would leave pointing at nothing. Notes are never dimmed and are not targets, matching the cluster rule.
 
 ## Testing
 
+- Viewer (`node --test`, no DOM): the outline's numbered lines in source order, including under an autonumber with decimals; an outline whose numbered count differs from the message count yields no lines, so `accDescr` announces nothing rather than the wrong message; the messages join the keyboard's walk by `data-merlion-index`, not by draw order; an activation bar joins its participant's element list and a bar naming no participant joins nothing; a fragment's span selects messages by index rather than by draw position, and a box's selects the columns it holds and only the messages with both ends among them.
+- SVG: every fragment and box names itself and the rows or columns it spans, a nested fragment's span sits inside its parent's, and a fragment holding no message carries no span.
 - Parser: one fixture per statement form, each asserting the model, plus a repair fixture per `R009`–`R013` whose fix, applied to the source, re-parses without that diagnostic.
 - Layout: column and row geometry over the `compat` sequence diagrams, asserting that no label overlaps another element and that every message stays inside its fragment box.
 - SVG: `assert_safe` and `assert_well_formed` over every sequence fixture, the same checks flowcharts pass, extended with the sequence class names and the draw order above.

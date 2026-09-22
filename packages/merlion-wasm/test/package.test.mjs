@@ -27,12 +27,21 @@ test("files is an allow-list of the shipped entry points", () => {
   }
 });
 
-test("merlion.wasmSha256 matches merlion.wasm when it has been built", (t) => {
-  const wasm = `${dir}/merlion.wasm`;
-  if (!existsSync(wasm)) {
-    t.skip("merlion.wasm not built; run scripts/build-wasm.sh");
+test("merlion.wasmSha256 records a SHA-256, and the release build reproduces it", (t) => {
+  // `scripts/build-wasm.sh` writes the hash through `scripts/record-sha256.mjs`, so the committed
+  // value is empty until a build records one: the field holds a hash or nothing, never a malformed
+  // value. Only the release build reproduces an attested hash — a local build runs an unpinned
+  // toolchain without SOURCE_DATE_EPOCH — so the file comparison runs under MERLION_RELEASE=1,
+  // which the release workflow sets, and skips with its reason everywhere else
+  // (specs/supply-chain.md#releases).
+  const sha = pkg.merlion?.wasmSha256 ?? "";
+  const release = process.env.MERLION_RELEASE === "1";
+  assert.match(sha, release ? /^[0-9a-f]{64}$/ : /^(|[0-9a-f]{64})$/);
+  if (!release) {
+    t.skip("MERLION_RELEASE is not 1: a local build reproduces no attested hash");
     return;
   }
-  const sha = createHash("sha256").update(readFileSync(wasm)).digest("hex");
-  assert.equal(pkg.merlion?.wasmSha256, sha);
+  const wasm = `${dir}/merlion.wasm`;
+  assert.ok(existsSync(wasm), "merlion.wasm not built; run scripts/build-wasm.sh");
+  assert.equal(createHash("sha256").update(readFileSync(wasm)).digest("hex"), sha);
 });

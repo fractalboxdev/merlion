@@ -42,6 +42,8 @@ const title = (c) => c.querySelector(":scope>.merlion-cluster-title");
 const id = (g) => g.dataset.merlionId;
 const all = (el, sel) => [...el.querySelectorAll(sel)];
 const toggle = (el, c, on) => el.classList.toggle(c, on);
+// Two targets ({ n } or { e }) name the same element.
+const same = (a, b) => a && b && a.n === b.n && a.e === b.e && a.c === b.c;
 
 /** The extension: attaches to one host and SVG and returns its cleanup (specs/interaction.md#loading). */
 export const interact = (host, svg) => {
@@ -53,7 +55,7 @@ export const interact = (host, svg) => {
   const nodes = all(svg, ".merlion-node").map((g) => {
     const L = textOf(g.querySelector(".merlion-label"));
     const cs = clustersOf(g);
-    return { g, id: id(g), L, name: nameOf(L), path: cs.map((c) => nameOf(textOf(title(c)))), cl: cs.map(id) };
+    return { g, els: [g], id: id(g), L, name: nameOf(L), path: cs.map((c) => nameOf(textOf(title(c)))), cl: cs.map(id) };
   });
   const edges = edgeEls.map((el) => {
     const p = el.querySelector(".merlion-edge-path");
@@ -73,18 +75,37 @@ export const interact = (host, svg) => {
   const name = (k) => byId.get(k)?.name ?? k;
   const desc = svg.querySelector(":scope>desc")?.textContent.split("\n") ?? [];
   const [at, order] = outline(nodes, desc);
+  nodes.forEach((n, i) => (n.line = desc[at[i]] ?? prefix(n)));
 
   // State, all in the viewer.
   let pin = null; // { n } or { e }, plus `path`
-  let active = null; // the keyboard's current node
+  let active = null; // the keyboard's current target
   let gone;
   const collapsed = new Set();
   const hidden = new Set();
   const badges = new Map();
-  // Shown: the pin, else the keyboard's node as a preview.
-  const shown = () => pin ?? (active && { n: active.id });
-  const elOf = (t) => (t.e >= 0 ? edges[t.e].el : byId.get(t.n).g);
-  const visible = () => order.map((i) => nodes[i]).filter((n) => !gone.nodes.has(n.id));
+  // Lit sets an extension supplies for a cluster the viewer cannot derive one for, by its
+  // `data-merlion-id`: a sequence's fragments and boxes (specs/interaction.md#highlight-set).
+  const groups = new Map();
+  // The keyboard's walk: every node in outline order. A sequence appends its messages to it, gives
+  // each message the outline line that numbers it and lights the activation bars of a lit
+  // participant, all by filling in the model above (specs/sequence.md#interaction). That module
+  // loads for an SVG carrying `merlion-sequence` only, so a page of flowcharts never fetches it and
+  // this one stays inside its budget (specs/viewer.md#constraints).
+  const walk = order.map((i) => ({ n: nodes[i].id }));
+  if (svg.classList.contains("merlion-sequence"))
+    import("./interact-seq.js").then(
+      (m) => (
+        m.sequence({ svg, nodes, edges, cls, desc, walk, groups, text: (el) => nameOf(textOf(el)), style: MerlionView.style }),
+        paint()
+      ),
+    );
+
+  // Shown: the pin, else the keyboard's target as a preview.
+  const shown = () => pin ?? active;
+  const elOf = (t) => (t.c ? groups.get(t.c).g : t.e >= 0 ? edges[t.e].el : byId.get(t.n).g);
+  const away = (t) => (t.e >= 0 ? gone.edges.get(t.e) === "hidden" : gone.nodes.has(t.n));
+  const visible = () => walk.filter((t) => !away(t));
 
   host.toggleAttribute("data-merlion-interactive", true);
 
@@ -96,8 +117,13 @@ export const interact = (host, svg) => {
     const lbl = (e) => (e.label ? ` [${e.label}]` : "");
     const e = edges[t.e];
     const n = byId.get(t.n);
-    add(e ? `${name(e.from)} ${e.g} ${name(e.to)}` : nameOf(n.L.filter((l) => !l.d)) || n.id, "font-weight:600");
-    if (e) return add(e.label);
+    // A supplied group heads with its own line and says what it holds; it has no edge list.
+    const c = groups.get(t.c);
+    if (c) return add(c.line, "font-weight:600"), add(c.sub, "opacity:.7");
+    // A message's outline line is its heading and its whole story: number, arrow and text.
+    const ln = e?.line;
+    add(ln ?? (e ? `${name(e.from)} ${e.g} ${name(e.to)}` : nameOf(n.L.filter((l) => !l.d)) || n.id), "font-weight:600");
+    if (e) return ln || add(e.label);
     for (const l of n.L) if (l.d) add(l.t, "opacity:.7");
     add(n.path.join(" / "), "opacity:.7");
     for (const e of edges) if (e.from === n.id) add(`${e.g} ${name(e.to)}${lbl(e)}`);
@@ -107,19 +133,19 @@ export const interact = (host, svg) => {
   const paint = () => {
     for (const el of all(svg, ".merlion-lit,.merlion-primary,.merlion-active"))
       el.classList.remove("merlion-lit", "merlion-primary", "merlion-active");
-    active?.g.classList.add("merlion-active");
+    if (active) elOf(active).classList.add("merlion-active");
     const t = shown();
     host.toggleAttribute("data-merlion-state", !!t);
     host.tip(t && elOf(t), t && fill(t));
     if (!t) return;
-    const f = focusSet(adj, edges, t, t.path);
+    const f = t.c ? groups.get(t.c) : focusSet(adj, edges, t, t.path);
     // An edge may end on a cluster (`A --> subgraph`): that end has no node group to light.
-    for (const k of f.nodes) byId.get(k)?.g.classList.add("merlion-lit");
+    for (const k of f.nodes) for (const el of byId.get(k)?.els ?? []) el.classList.add("merlion-lit");
     for (const i of f.edges) edges[i].el.classList.add("merlion-lit");
     elOf(t).classList.add("merlion-primary");
-    // The polite live region reads the node's outline line.
-    const n = byId.get(t.n);
-    if (n) host.say(desc[at[nodes.indexOf(n)]] ?? prefix(n));
+    // The polite live region reads the target's outline line.
+    const ln = (edges[t.e] ?? byId.get(t.n) ?? groups.get(t.c))?.line;
+    if (ln) host.say(ln);
   };
 
   // Hide and collapse (specs/interaction.md#hide-and-collapse): classes, plus a "+N" badge per collapsed cluster.
@@ -146,8 +172,8 @@ export const interact = (host, svg) => {
     }
     // The base shows its "Show all" control while this is set.
     host.toggleAttribute("data-merlion-hidden", !!(collapsed.size + hidden.size));
-    if (pin && (pin.e >= 0 ? gone.edges.get(pin.e) === "hidden" : gone.nodes.has(pin.n))) pin = null;
-    if (gone.nodes.has(active?.id)) active = null;
+    if (pin && away(pin)) pin = null;
+    if (active && away(active)) active = null;
     paint();
   };
 
@@ -174,7 +200,7 @@ export const interact = (host, svg) => {
               : eg
                 ? "edge"
                 : "bg",
-      same: pin && target && pin.n === target.n && pin.e === target.e && (pin.path ? "path" : "pin"),
+      same: same(pin, target) && (pin.path ? "path" : "pin"),
       shift: e.shiftKey,
       alt: e.altKey,
     });
@@ -182,8 +208,11 @@ export const interact = (host, svg) => {
     active = null;
     if (a === "hide") hidden.add(target.n);
     else if (a === "collapse") {
+      // A cluster the SVG names collapses; one an extension lit set covers pins instead; one with
+      // neither does nothing, so a title that names no cluster never reaches the collapsed set.
       const k = id(t.closest(".merlion-cluster"));
-      collapsed.delete(k) || collapsed.add(k);
+      if (groups.has(k)) pin = same(pin, { c: k }) ? null : { c: k };
+      else if (k) collapsed.delete(k) || collapsed.add(k);
     } else pin = a === "clear" ? null : { ...target, path: a === "path" };
     apply();
   };
@@ -196,9 +225,10 @@ export const interact = (host, svg) => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
     const vis = visible();
     if (step) {
-      const i = vis.indexOf(active);
+      const i = vis.findIndex((t) => same(t, active));
       active = vis[i < 0 ? (step > 0 ? 0 : vis.length - 1) : (i + step + vis.length) % vis.length];
-    } else if (k === "Enter" && active) pin = pin?.n === active.id ? null : { n: active.id }; else if (k === "Escape" && (pin || active)) pin = active = null;
+    } else if (k === "Enter" && active) pin = same(pin, active) ? null : active;
+    else if (k === "Escape" && (pin || active)) pin = active = null;
     else return;
     e.preventDefault();
     paint();
