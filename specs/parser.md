@@ -32,9 +32,10 @@ Subgraph ids follow mermaid's resolution, which happens after the whole source i
 - YAML front matter (`---` … `---`) accepts `title`, `config.flowchart.curve`, `config.layout`, `accTitle`, `accDescr`.
 - The front matter parser accepts a YAML subset: block mappings, plain and quoted scalars, and flow sequences. Anchors, aliases, tags, multi-document streams and duplicate keys are rejected with an `Error` (`E011 FrontMatterUnsupported`), which rules out alias-expansion attacks.
 - `%%{init: …}%%` accepts the same keys as JSON. The JSON parser rejects nesting deeper than 64 and strings longer than 4,096 bytes (`E012 DirectiveTooLarge`).
-- Every accepted key takes an enumerated or numeric value (`curve` is one of Mermaid's curve names, `layout` is `dagre`, `elk` or `merlion`, all laid out by Merlion's engine); a value outside its set is ignored with a `Warning`.
-- `theme`, `themeVariables` and `look` are accepted and ignored with an `Info` diagnostic, because themes are CSS ([svg-output.md](svg-output.md)).
-- Unknown keys produce a `Warning` diagnostic and are otherwise ignored.
+- Every accepted key takes an enumerated or numeric value (`curve` is one of Mermaid's curve names, `layout` is `dagre`, `elk` or `merlion`, all laid out by Merlion's engine); a value outside its set is ignored with `W016`.
+- `theme`, `themeVariables` and `look` are accepted and ignored with `I011`, because themes are CSS ([svg-output.md](svg-output.md)).
+- Unknown keys and values outside a key's set produce `W016` and are otherwise ignored.
+- Neither front matter nor `%%{init}%%` names a stylesheet; only the caller passes one ([integrations.md](integrations.md#cli)).
 - `accTitle:` and `accDescr:` statements override the generated `<title>` and `<desc>`.
 
 ## Error tolerance
@@ -53,7 +54,7 @@ In the default mode, the parser applies each repair below, records it as a `Repa
 
 A syntax error that no rule repairs stops parsing and returns an `Error` diagnostic with its location and the tokens expected at that point.
 
-Style statements (`classDef`, `style`, `linkStyle`) and `click` statements are parsed into typed values and validated as specified in [svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle); the parser never passes their text through. Subgraphs nest at most 64 deep (`E010 NestingTooDeep`); the parser tracks depth explicitly, so deep input fails with a diagnostic instead of exhausting the stack.
+Style statements (`classDef`, `style`, `linkStyle`) and `click` statements are parsed into typed values and validated as specified in [svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle); the parser never passes their text through. Edge ids (`a e1@--> b`) are kept in the model: `class e1 <name>` gives the edge a role ([svg-output.md](svg-output.md#roles)), and `e1@{…}` still configures it. TODO(owner): decide what `class` does with an id that names both a node and an edge. Subgraphs nest at most 64 deep (`E010 NestingTooDeep`); the parser tracks depth explicitly, so deep input fails with a diagnostic instead of exhausting the stack.
 
 ## Diagnostics
 
@@ -82,17 +83,26 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `E010` NestingTooDeep | Error | Subgraphs nested beyond 64 |
 | `E011` FrontMatterUnsupported | Error | YAML outside the accepted subset, or nested beyond 64 |
 | `E012` DirectiveTooLarge | Error | `%%{init}%%` JSON nested beyond 64 or with a string over 4,096 bytes |
+| `E013` StylesheetTooLarge | Error | Stylesheet over 64 KiB, 512 rules, 32 declarations per rule, 16 theme names, 256 role selectors or block depth 2 ([svg-output.md](svg-output.md#stylesheet)) |
 | `W010` StyleRejected | Warning | Style property or value outside the accepted set |
 | `W011` ClassNameRejected | Warning | `classDef` name outside `[A-Za-z_][A-Za-z0-9_-]{0,63}` |
 | `W012` LabelTruncated | Warning | Label longer than 4,096 bytes |
 | `W013` LinkRejected | Warning | `click … href` URL outside the accepted schemes |
 | `W014` BidiControlStripped | Warning | Bidirectional formatting characters removed from a label |
+| `W015` ShapeUnsupported | Warning | `@{ shape: … }` names a shape Merlion draws as a rectangle ([Compatibility](#compatibility)) |
+| `W016` ConfigRejected | Warning | Front-matter or `%%{init}%%` key unknown, or its value outside the key's set |
+| `W017` StylesheetRuleRejected | Warning | A rule declaring a token under a selector or at-rule outside the subset; or a role left out of the embedded style by the 16 KiB cap |
+| `W018` StylesheetDeclarationRejected | Warning | A property outside the token list, a font token, or a value outside the token's grammar |
+| `W019` StylesheetReferenceInvalid | Warning | `var()` naming an undefined token, forming a cycle, or nested deeper than 8 |
 | `I010` UnmeasuredGlyph | Info | Code point outside the font table ([text-measurement.md](text-measurement.md)) |
+| `I011` ThemeConfigIgnored | Info | `theme`, `themeVariables` or `look` in front matter or `%%{init}%%` |
 | `I020` LayoutHintDiscarded | Info | Fewer than 50% of nodes survive ([layout.md](layout.md#stable-layout)) |
 | `I021` LayoutHintPartial | Info | Some nodes treated as new |
 | `I022` LayoutHintInvalid | Info | Hint malformed, of unknown version, or too large |
-| `I030` FixedColour | Info | Source sets a colour that ignores the theme |
+| `I030` FixedColour | Info | Source sets a colour that ignores the theme: a `classDef` colour is fixed unless a stylesheet or page sets its `--merlion-c-{name}-*` token; a `style` or `linkStyle` colour is fixed |
 | `I031` ClickCallbackIgnored | Info | `click` callback or `call` dropped |
+| `I032` StylesheetRulesIgnored | Info | Count of stylesheet rules declaring no `--merlion-*` token |
+| `I033` ToneMasked | Info | A source `style` colour, or a `classDef` colour whose token the stylesheet leaves unset, overrides a stylesheet tone on the same element |
 | `R001`–`R007` | Repair | See [Error tolerance](#error-tolerance) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.

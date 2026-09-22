@@ -6,6 +6,8 @@
 merlion render [<input>] [-o <output>] [--width <px>] [--direction auto]
                [--edge-style orthogonal|polyline|spline] [--font link|embed|system]
                [--hint <previous.svg>] [--strict] [--outline <file>]
+               [--css <file>] [--theme <name>] [--auto-dark <name>]
+merlion css    <input.css> [-o <output.css>] [--strict]
 merlion check  [<input>...] [--strict] [--fix]
 merlion outline [<input>] [--follow-symlinks]
 merlion --version
@@ -14,6 +16,9 @@ merlion --version
 - The input defaults to stdin and the output to stdout. A Markdown input (`.md`, `.mdx`) renders every ```` ```mermaid ```` block, and `-o` then names a directory: block `n` (1-based) of `<name>.md` is written to `<dir>/<name>-<n>.svg`. A block that fails leaves its previous output file untouched; the other blocks are still written.
 - `--hint` defaults to the existing output file when one exists, so re-rendering in place is stable without any extra flag. `--no-hint` forces a fresh layout.
 - `check` parses without rendering and prints diagnostics as `file:line:col: severity code message`. `--fix` applies every `Repair` fix to the file.
+- `merlion css` compiles a stylesheet ([svg-output.md](svg-output.md#stylesheet)) and writes the page CSS; diagnostics use the `check` format. `--strict` turns every `W017`–`W019` into an error.
+- `--css` bakes a stylesheet into the output ([svg-output.md](svg-output.md#palette)). `--theme <name>` picks the `[data-theme="<name>"]` block over `:root`; the default is `:root` alone. `--auto-dark <name>` adds the named block as the `prefers-color-scheme: dark` variant. A name the stylesheet does not define is a usage error (exit 2). Neither flag reads the `:root:not([data-theme])` media block. A Markdown input parses the stylesheet once for all its blocks. Without `--css`, built-in roles still render in their default tones ([svg-output.md](svg-output.md#built-in-roles)).
+- Front matter and `%%{init}%%` never name a stylesheet.
 - Exit codes: `0` every diagram rendered (warnings allowed); `1` at least one diagram failed to parse or render; `2` usage error; `3` at least one input exceeds limits (`TooLarge`) and none failed otherwise.
 
 ### File handling
@@ -21,8 +26,9 @@ merlion --version
 The CLI runs in CI against repositories it doesn't control, so every write assumes the tree is hostile.
 
 - Every write (`-o`, `--outline`, `--fix`) goes to a temporary file in the target's directory, is flushed, and is renamed over the target. The rename replaces a symbolic link rather than writing through it, and a crash never leaves a half-written file.
-- Unless `--follow-symlinks` is given, the CLI refuses to read an input or a hint from, or write to, a path that is a symbolic link or whose resolved directory lies outside the current working directory. This covers `render`, `check` and `outline` inputs, Markdown files, and every `--batch` directory entry; a symbolic link in a `--batch` directory is skipped. A link planted in the tree therefore cannot echo a file from outside it (`/proc/self/environ`, a credentials file) into CI logs through a diagnostic. Standard input is always read.
+- Unless `--follow-symlinks` is given, the CLI refuses to read an input or a hint from, or write to, a path that is a symbolic link or whose resolved directory lies outside the current working directory. This covers `render`, `check`, `outline` and `css` inputs, `--css` stylesheets, Markdown files, and every `--batch` directory entry; a symbolic link in a `--batch` directory is skipped. A link planted in the tree therefore cannot echo a file from outside it (`/proc/self/environ`, a credentials file) into CI logs through a diagnostic. Standard input is always read.
 - A hint file larger than the 1 MiB input limit is ignored with `I022 LayoutHintInvalid`.
+- A stylesheet larger than 64 KiB, checked from file metadata before reading, fails with `E013 StylesheetTooLarge`.
 - Arguments are parsed by hand with the standard library ([supply-chain.md](supply-chain.md)).
 - Distributed as prebuilt binaries for macOS (arm64, x86_64), Linux (x86_64, arm64, musl static) and Windows (x86_64), and through `cargo install`.
 
@@ -33,6 +39,10 @@ export function init(wasm?: BufferSource | URL | Response): Promise<void>; // br
 export function initSync(wasm: BufferSource): void;                         // Node, at build time
 export function render(source: string, options?: RenderOptions): RenderResult;
 export function check(source: string, options?: { strict?: boolean }): Diagnostic[];
+export function compileStylesheet(
+  css: string,
+  options?: { theme?: string; autoDark?: string; strict?: boolean },
+): { css: string | null; palette: Palette | null; diagnostics: Diagnostic[] };
 
 interface RenderOptions {
   width?: number;                              // container width in px; default 720
@@ -43,7 +53,16 @@ interface RenderOptions {
   idPrefix?: string;                           // [a-z][a-z0-9-]{0,31}
   hint?: string;                               // the previous SVG, for stable layout
   fuel?: number;
+  palette?: Palette;                           // from compileStylesheet; validated against the token grammars
 }
+type Palette = {
+  roles: Record<string, string>;               // token name without `--merlion-` → colour, incl. `c-{name}-fill`
+  dark?: Record<string, string>;
+  tones?: Record<string, { tone?: string; dash?: number[] }>;          // node and edge roles
+  clusterTones?: Record<string, { tone?: string; dash?: number[] }>;
+  darkTones?: Record<string, { tone?: string; dash?: number[] }>;
+  darkClusterTones?: Record<string, { tone?: string; dash?: number[] }>;
+};
 interface Diagnostic {
   severity: "error" | "warning" | "repair" | "info";
   code: string;
@@ -58,7 +77,7 @@ interface RenderResult {
 }
 ```
 
-- `packages/merlion-wasm/index.d.ts` is the authoritative JavaScript contract; the rehype plugin, the Astro integration and the demo use its names and shapes. Option names are camelCase. The core's own names (`target_width`, `id_prefix`, `edge_style`) throw a `TypeError` naming the camelCase option; other unknown keys are ignored.
+- `packages/merlion-wasm/index.d.ts` is the authoritative JavaScript contract; the rehype plugin, the Astro integration and the demo use its names and shapes. Option names are camelCase. The core's own names (`target_width`, `id_prefix`, `edge_style`) and any other unknown key throw a `TypeError` naming the key (for the core's names, also the camelCase option), so an older module never silently ignores `palette`. A `css` string above 64 KiB returns `E013` without crossing the boundary.
 - The module returns the JSON of `merlion render --json` (`merlion_render::json`, shared by both surfaces); the glue converts it to the camelCase shape above.
 
 - `render` is synchronous after initialisation. Its worst-case time is bounded by the fuel limit ([ADR-0008](adr/0008-deterministic-work-budget.md)), not by a clock. For source the page doesn't control, run it in a Web Worker so a heavy diagram never blocks the main thread; the package exports a `worker.js` entry that wraps `render` in a message handler.
@@ -80,6 +99,7 @@ unified().use(remarkParse).use(remarkRehype).use(rehypeMerlion, {
   cacheDir: ".merlion", // previous renders, used as layout hints
   viewer: true,        // wrap each SVG in <merlion-view>
   fontCss: true,       // the page loads @fractalboxdev/merlion-themes/merlion-font.css; silences the font warning
+  stylesheet: "diagram.css", // compiled once per build; never passed to inline renders
 });
 ```
 
@@ -99,10 +119,11 @@ unified().use(remarkParse).use(remarkRehype).use(rehypeMerlion, {
 - A parse error leaves the code block in place and reports the diagnostic through the unified `vfile` (`file.message`), which fails the build when `strict` is set.
 - `cacheDir` holds one entry per (file path, block index). The entry's filename is the FNV-1a 64 hash of that pair (with the path relative to the project root) in hex, so no source path can name a location outside `cacheDir`. It stores the last SVG and the content hash of the source that produced it. Every build renders every block, with the stored SVG as the layout hint; the stored SVG is never inlined, because anyone who can write `cacheDir` (a pull-request author committing it, for example) controls its bytes and can compute the public FNV hash ([security.md](security.md)). An entry is rewritten only when the hash or the SVG changes. When a diagram is inserted above others the indices shift and a hint lands on a different diagram; the core then discards it as having too few surviving nodes.
 - Writes to `cacheDir` follow the CLI's [file handling](#file-handling) rules.
+- `stylesheet` is read under the CLI's [file handling](#file-handling) rules, compiled once per build through `compileStylesheet`, and exposed as `file.data.merlion.css`. Inline diagrams are rendered without a palette; the page's cascade themes them.
 
 ## `@fractalboxdev/merlion-astro`
 
-Registers `@fractalboxdev/merlion-rehype` in `markdown.rehypePlugins` and adds `merlion-themes.css`, `merlion-font.css` (both from `@fractalboxdev/merlion-themes`) and the `<merlion-view>` script (only on pages that contain a diagram). Its options match the rehype plugin's, except that `fontCss` names the font stylesheet to import (default `@fractalboxdev/merlion-themes/merlion-font.css`, `false` to skip it) and the plugin receives `fontCss: true` whenever one is imported.
+Registers `@fractalboxdev/merlion-rehype` in `markdown.rehypePlugins` and adds `merlion-themes.css`, `merlion-font.css` (both from `@fractalboxdev/merlion-themes`), the compiled `stylesheet` when one is set (written as an asset), and the `<merlion-view>` script, only on pages that contain a diagram. Its options match the rehype plugin's, except that `fontCss` names the font stylesheet to import (default `@fractalboxdev/merlion-themes/merlion-font.css`, `false` to skip it) and the plugin receives `fontCss: true` whenever one is imported.
 
 ## Editors
 

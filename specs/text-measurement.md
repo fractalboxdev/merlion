@@ -15,6 +15,7 @@ Layout needs the size of every label before it can place anything. Merlion measu
 - Height = (ascender − descender + line gap), scaled, per line. A label's height is the sum of its line heights and its width is its widest line.
 - Title + detail node labels ([svg-output.md](svg-output.md#text)) measure the title line at the font size and every detail line with the same tables at 0.8 × the font size; a detail line's height and baseline offset scale by the same factor. The last title line is 2 px taller at 14 px (1/7 of the font size), which leaves a gap between the tiers. Every other label measures all lines at the font size.
 - Labels wrap at a maximum width (default 200 px) on whitespace, with a hard break inside any word longer than the maximum. Explicit `<br>` in a label forces a break.
+- Stylesheets never set font tokens ([svg-output.md](svg-output.md#stylesheet)), so measurement depends only on the source and the render options; font size is `RenderOptions.font_size`.
 - Padding comes from the node shape (see [layout.md](layout.md)), never from the text measure.
 - Measurement applies pair kerning and no other OpenType feature. The browser draws the same way because the SVG's embedded style disables contextual alternates and ligatures (Inter's `calt` substitutes glyphs in sequences such as `->`) and resets `letter-spacing`, `word-spacing`, `text-transform` and the font weight and stretch that the host page would otherwise pass down ([svg-output.md](svg-output.md#embedded-style)). `tools/fontgen` reads advances with the same features off.
 

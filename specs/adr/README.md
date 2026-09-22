@@ -10,5 +10,6 @@
 | [0006](0006-stable-layout.md) | Stable layout from a hint in the previous SVG, in M2 | Proposed |
 | [0007](0007-reader-panel.md) | Reader-preference panel in the benchmark | Proposed |
 | [0008](0008-deterministic-work-budget.md) | Layout work bounded by fuel, not by time | Proposed |
+| [0009](0009-stylesheet.md) | One compiled stylesheet for web and standalone diagrams | Proposed |
 
 A superseding decision is a new ADR; the old one keeps its text and changes status to `Superseded by <link>`.

@@ -12,6 +12,7 @@ Merlion claims to beat an existing renderer only where this benchmark shows it, 
 | mermaid-rs-renderer (mmdr) | pinned commit | Native binary |
 | merman | 0.8.0-alpha.6, default features (no ELK) | Native, through its Rust API |
 | MSAGL.js layered layout | `@msagl/core` 1.1.24 | Node, for layout-only comparison |
+| librsvg (`rsvg-convert`) | pinned version | Native binary; parity target for baked SVGs, not a compared renderer |
 
 Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 
@@ -40,6 +41,7 @@ Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 | Weight | Gzip size per published artifact, including `merlion-themes.css`; runtime dependency count; packages in the install tree | |
 | Accessibility / SEO | axe violations on the inlined SVG; share of label text extractable by `curl` + HTML-to-text; `<title>`/`<desc>` present | |
 | Theme switch | Cost of a light→dark switch: re-render vs CSS change | |
+| Stylesheet parity | Per corpus diagram, theme and element: the plain SVG inlined in Chrome with the compiled CSS linked is the reference; the baked SVG in Chrome with no host CSS, the baked SVG with its `<style>` removed, and the baked SVG through rsvg-convert must each match it | Colours normalised to 8-bit sRGB through a canvas `fillStyle` round trip; ±1 per channel; rsvg-convert compared by pixels sampled inside each shape. The gate's stylesheet compiles under `--strict` and covers every built-in role and a re-themed `classDef`. Every named theme of `merlion-themes.css` bakes with no warning. Must be 100% |
 
 ## Reader preference
 

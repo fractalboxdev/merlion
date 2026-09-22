@@ -28,6 +28,7 @@ MIT (`LICENSE` at the repository root; SPDX `MIT` in every `Cargo.toml` and `pac
 | [merman](https://github.com/Latias94/merman) 0.8.0-alpha.6 | MIT OR Apache-2.0; its optional ELK feature is EPL-2.0 | Benchmark baseline, built with default features | Run only; the ELK feature is never enabled |
 | [elkjs](https://github.com/kieler/elkjs) | `EPL-2.0 OR GPL-3.0-or-later` | Runs inside the mermaid-ELK baseline | Run only (rule 3). Contributors don't read ELK source while implementing layout; the algorithms come from the papers ELK itself cites |
 | [dagre](https://github.com/dagrejs/dagre) | MIT (© Chris Pettitt) | Runs inside the mermaid-dagre baseline (`layout: dagre`) | Run only |
+| [librsvg](https://gitlab.gnome.org/GNOME/librsvg) | LGPL-2.1-or-later | Runs as `rsvg-convert` in the stylesheet parity gate ([benchmark.md](benchmark.md)) | Run only (rule 3); never linked, vendored or read |
 | [@types/hast](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/hast) | MIT | Development dependency of `@fractalboxdev/merlion-rehype` | Never a runtime dependency ([supply-chain.md](supply-chain.md)) |
 
 ## Datasets
