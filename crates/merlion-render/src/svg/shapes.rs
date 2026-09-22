@@ -376,12 +376,19 @@ pub fn shape_d(shape: Shape, cx: f64, cy: f64, w: f64, h: f64) -> String {
             let n = min(NOTCH, min(w, h) / 2.0);
             polygon(&mut d, &[(l + n, t), (r, t), (r, b), (l, b), (l, t + n)]);
         }
-        // The label alone: an empty subpath keeps one `<path>` per node.
+        // The label alone: two bare moves draw nothing but keep the path's extent the
+        // node box, like the extra move after a single brace.
         Shape::TextBlock => {
+            d.cmd('M', &[l, t]).cmd('M', &[r, b]);
+        }
+        Shape::BraceLeft => {
+            brace(&mut d, l, 1.0, t, b, cy, min(BRACE, min(w, h) / 2.0));
+            d.cmd('M', &[r, b]);
+        }
+        Shape::BraceRight => {
+            brace(&mut d, r, -1.0, t, b, cy, min(BRACE, min(w, h) / 2.0));
             d.cmd('M', &[l, t]);
         }
-        Shape::BraceLeft => brace(&mut d, l, 1.0, t, b, cy, min(BRACE, min(w, h) / 2.0)),
-        Shape::BraceRight => brace(&mut d, r, -1.0, t, b, cy, min(BRACE, min(w, h) / 2.0)),
         Shape::Braces => {
             let bw = min(BRACE, min(w / 4.0, h / 2.0));
             brace(&mut d, l, 1.0, t, b, cy, bw);
@@ -539,6 +546,42 @@ mod tests {
                     top
                 );
             }
+        }
+    }
+
+    #[test]
+    fn outline_free_shapes_still_span_their_box() {
+        // The path's extent is the node's box for tools that read it, even where the
+        // drawing leaves part of the box empty.
+        for s in [
+            Shape::TextBlock,
+            Shape::BraceLeft,
+            Shape::BraceRight,
+            Shape::DataStore,
+        ] {
+            let d = shape_d(s, 60.0, 30.0, 80.0, 40.0);
+            let pts: Vec<(f64, f64)> = end_points(&d)
+                .into_iter()
+                .filter(|(c, _)| !matches!(c, 'H' | 'V' | 'Z'))
+                .flat_map(|(_, n)| n.chunks(2).map(|p| (p[0], p[1])).collect::<Vec<_>>())
+                .collect();
+            let xs = pts.iter().map(|p| p.0);
+            let ys = pts.iter().map(|p| p.1);
+            let (x0, x1) = (
+                xs.clone().fold(f64::MAX, f64::min),
+                xs.fold(f64::MIN, f64::max),
+            );
+            let (y0, y1) = (
+                ys.clone().fold(f64::MAX, f64::min),
+                ys.fold(f64::MIN, f64::max),
+            );
+            assert_eq!(
+                (x0, y0, x1, y1),
+                (20.0, 10.0, 100.0, 50.0),
+                "{:?}: {}",
+                s,
+                d
+            );
         }
     }
 
