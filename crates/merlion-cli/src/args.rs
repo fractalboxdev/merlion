@@ -12,6 +12,7 @@ Usage:
                  [--edge-style orthogonal|polyline|spline] [--font link|embed|system]
                  [--hint <previous.svg>] [--no-hint] [--strict] [--outline <file>]
                  [--id-prefix <prefix>] [--fuel <units>] [--follow-symlinks] [--json]
+                 [--no-auto-tone]
                  [--css <file.css> [--theme <name>] [--auto-dark <name>]]
   merlion render --batch <dir> [-o <outdir>] [--json-summary] [render options]
   merlion css [<input.css>] [-o <output.css>] [--strict] [--follow-symlinks]
@@ -28,6 +29,9 @@ The input defaults to stdin (also `-`) and the output to stdout. A Markdown inpu
 shapes. `render --css` bakes it into the SVG: `--theme` picks a [data-theme] block over
 :root (default :root alone), `--auto-dark` adds a named block as the
 prefers-color-scheme: dark variant. --strict turns W017-W019 into errors.
+
+Decisions, stores, terminals and top-level subgraphs take automatic tones unless an
+element has its own class or style; --no-auto-tone draws them untoned.
 
 Exit codes: 0 rendered, 1 failed, 2 usage error, 3 input exceeds limits.
 ";
@@ -53,6 +57,7 @@ pub struct RenderArgs {
     pub css: Option<PathBuf>,
     pub theme: Option<String>,
     pub auto_dark: Option<String>,
+    pub no_auto_tone: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -71,6 +76,8 @@ pub struct CheckArgs {
     pub follow_symlinks: bool,
 }
 
+// Parsed once per process; boxing `RenderArgs` would buy nothing.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     Help,
@@ -256,6 +263,7 @@ fn parse_render(mut it: impl Iterator<Item = Tok>) -> Result<RenderArgs, String>
             "--css" => r.css = Some(value(&name, inline, &mut it)?.into()),
             "--theme" => r.theme = Some(str_value(&name, inline, &mut it)?),
             "--auto-dark" => r.auto_dark = Some(str_value(&name, inline, &mut it)?),
+            "--no-auto-tone" => r.no_auto_tone = flag(&name, inline)?,
             _ => return Err(format!("unknown option `{name}` for `render`")),
         }
     }
@@ -401,6 +409,7 @@ mod tests {
             "1000",
             "--follow-symlinks",
             "--json",
+            "--no-auto-tone",
         ]);
         assert_eq!(r.input, Some(PathBuf::from("in.mmd")));
         assert_eq!(r.output, Some(PathBuf::from("out.svg")));
@@ -413,6 +422,8 @@ mod tests {
         assert_eq!(r.outline, Some(PathBuf::from("o.txt")));
         assert_eq!(r.id_prefix.as_deref(), Some("d1"));
         assert_eq!(r.fuel, Some(1000));
+        assert!(r.no_auto_tone);
+        assert!(!render(&["render"]).no_auto_tone);
     }
 
     #[test]

@@ -701,3 +701,29 @@ fn render_css_applies_to_every_markdown_block_and_batch_file() {
         .unwrap()
         .contains("#b8408f"));
 }
+
+#[test]
+fn no_auto_tone_matches_the_core_option_byte_for_byte() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("auto-tone");
+    let src = "flowchart LR\nsubgraph g [G]\n  d{D} --> c[(C)]\nend\nc --> s([S])\n";
+    let o = merlion(&d, &["render", "--no-auto-tone"], Some(src));
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let off = merlion_render::render(
+        src,
+        &merlion_render::RenderOptions {
+            auto_tone: false,
+            ..Default::default()
+        },
+    )
+    .svg
+    .unwrap();
+    assert_eq!(stdout(&o), off);
+    assert!(!off.contains("merlion-auto"));
+    let o = merlion(&d, &["render"], Some(src));
+    assert!(stdout(&o).contains("merlion-c-warn merlion-auto"));
+    let o = merlion(&d, &["render", "--no-auto-tone=yes"], Some(src));
+    assert_eq!(o.status.code(), Some(2));
+}

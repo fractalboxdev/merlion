@@ -306,6 +306,7 @@ fn options(r: &RenderArgs, palette: Option<Palette>) -> RenderOptions {
     o.strict = r.strict;
     o.id_prefix = r.id_prefix.clone();
     o.palette = palette;
+    o.auto_tone = !r.no_auto_tone;
     o
 }
 

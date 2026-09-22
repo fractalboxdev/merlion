@@ -6,7 +6,7 @@
 merlion render [<input>] [-o <output>] [--width <px>] [--direction auto]
                [--edge-style orthogonal|polyline|spline] [--font link|embed|system]
                [--hint <previous.svg>] [--strict] [--outline <file>]
-               [--css <file>] [--theme <name>] [--auto-dark <name>]
+               [--css <file>] [--theme <name>] [--auto-dark <name>] [--no-auto-tone]
 merlion css    [<input.css>] [-o <output.css>] [--strict] [--follow-symlinks]
 merlion check  [<input>...] [--strict] [--fix]
 merlion outline [<input>] [--follow-symlinks]
@@ -18,6 +18,7 @@ merlion --version
 - `check` parses without rendering and prints diagnostics as `file:line:col: severity code message`. `--fix` applies every `Repair` fix to the file.
 - `merlion css` compiles a stylesheet ([svg-output.md](svg-output.md#stylesheet)) from a file or stdin and writes the page CSS to `-o` or stdout; diagnostics use the `check` format under the stylesheet's name. `--strict` turns every `W017`–`W019` into an error, and an error writes nothing. `E013` exits `3`.
 - `--css` bakes a stylesheet into the output ([svg-output.md](svg-output.md#palette)). `--theme <name>` picks the `[data-theme="<name>"]` block over `:root`; the default is `:root` alone. `--auto-dark <name>` adds the named block as the `prefers-color-scheme: dark` variant. A name the stylesheet does not define is a usage error (exit 2). Neither flag reads the `:root:not([data-theme])` media block. A Markdown input parses the stylesheet once for all its blocks. Without `--css`, built-in roles still render in their default tones ([svg-output.md](svg-output.md#built-in-roles)).
+- Decisions, stores, terminals and top-level subgraphs take automatic tones ([svg-output.md](svg-output.md#automatic-tones)); `--no-auto-tone` sets `auto_tone: false` and draws them untoned, byte-identical to the core with that option.
 - Front matter and `%%{init}%%` never name a stylesheet.
 - Exit codes: `0` every diagram rendered (warnings allowed); `1` at least one diagram failed to parse or render; `2` usage error; `3` at least one input exceeds limits (`TooLarge`) and none failed otherwise.
 
@@ -53,6 +54,7 @@ interface RenderOptions {
   idPrefix?: string;                           // [a-z][a-z0-9-]{0,31}
   hint?: string;                               // the previous SVG, for stable layout
   fuel?: number;
+  autoTone?: boolean;                          // automatic tones; default true, false draws them untoned
   palette?: Palette;                           // from compileStylesheet; validated against the token grammars
 }
 type Palette = {
@@ -77,7 +79,7 @@ interface RenderResult {
 }
 ```
 
-- `packages/merlion-wasm/index.d.ts` is the authoritative JavaScript contract; the rehype plugin, the Astro integration and the demo use its names and shapes. Option names are camelCase. The core's own names (`target_width`, `id_prefix`, `edge_style`) and any other unknown key throw a `TypeError` naming the key (for the core's names, also the camelCase option), so an older module never silently ignores `palette`. A `css` string above 64 KiB returns `E013` without crossing the boundary.
+- `packages/merlion-wasm/index.d.ts` is the authoritative JavaScript contract; the rehype plugin, the Astro integration and the demo use its names and shapes. Option names are camelCase. The core's own names (`target_width`, `id_prefix`, `edge_style`, `auto_tone`) and any other unknown key throw a `TypeError` naming the key (for the core's names, also the camelCase option), so an older module never silently ignores `palette`. A `css` string above 64 KiB returns `E013` without crossing the boundary.
 - `compileStylesheet` throws `RangeError` for a `theme` or `autoDark` the stylesheet does not define. The glue turns `palette` into the canonical string of `Palette::canonical` (shape and separators checked in JavaScript); the core parses it with `Palette::parse`, which checks every value against its token's grammar and refuses what no compiled stylesheet produces: more than 256 tones in one table, or a canonical string over 128 KiB. A compiled stylesheet is at most 64 KiB and every palette entry is shorter than the CSS line it comes from, so a light plus a dark table always fit. So a render from `compileStylesheet`'s palette and a CLI render with the same `--css`/`--theme` are byte-identical.
 - The module returns the JSON of `merlion render --json` (`merlion_render::json`, shared by both surfaces); the glue converts it to the camelCase shape above.
 

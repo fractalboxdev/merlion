@@ -155,11 +155,11 @@ function call(ex, fn, source, optionsJson) {
   return JSON.parse(text);
 }
 
-const OPTION_KEYS = ["width", "direction", "edgeStyle", "font", "strict", "idPrefix", "hint", "fuel", "palette"];
+const OPTION_KEYS = ["width", "direction", "edgeStyle", "font", "strict", "idPrefix", "hint", "fuel", "autoTone", "palette"];
 const STYLESHEET_KEYS = ["theme", "autoDark", "strict"];
 
 /** The core's field names, which a caller would otherwise pass and have silently ignored. */
-const SNAKE_CASE = { target_width: "width", id_prefix: "idPrefix", edge_style: "edgeStyle" };
+const SNAKE_CASE = { target_width: "width", id_prefix: "idPrefix", edge_style: "edgeStyle", auto_tone: "autoTone" };
 
 /** The stylesheet size limit (specs/svg-output.md#stylesheet), checked before crossing. */
 const MAX_STYLESHEET_BYTES = 64 * 1024;

@@ -1,9 +1,9 @@
 // Types for the hand-written glue (specs/integrations.md#fractalboxdevmerlion-wasm).
 // This file is the JavaScript contract of Merlion: @fractalboxdev/merlion-rehype, the
 // demo and every other JS caller use these names and shapes. Option names are
-// camelCase; the core's snake_case names (`target_width`, `id_prefix`, `edge_style`)
-// throw a TypeError naming the camelCase one, and every other unknown key throws a
-// TypeError naming it, so an older module never silently ignores an option.
+// camelCase; the core's snake_case names (`target_width`, `id_prefix`, `edge_style`,
+// `auto_tone`) throw a TypeError naming the camelCase one, and every other unknown key
+// throws a TypeError naming it, so an older module never silently ignores an option.
 
 export interface RenderOptions {
   /** Container width in px the layout fits (`target_width`); default 720. */
@@ -20,6 +20,12 @@ export interface RenderOptions {
   hint?: string;
   /** Work budget in fuel units (a whole number up to 2^53). */
   fuel?: number;
+  /**
+   * Automatic tones: decisions take `warn`, stores `store`, terminals `ok` and each
+   * top-level subgraph a series tone, unless the element has its own class or style.
+   * Default `true`; `false` draws them untoned. Presentation only: layout is unchanged.
+   */
+  autoTone?: boolean;
   /**
    * Literals to bake into a standalone SVG, from `compileStylesheet`. The glue checks
    * the shape and the core checks every value against its token's grammar; either

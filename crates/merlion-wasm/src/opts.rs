@@ -1,7 +1,7 @@
 //! Render options as a flat JSON object, parsed by hand (RFC 8259; zero dependencies).
 //!
 //! Accepted keys: `width`, `direction` (`"auto"` | `"source"`), `edgeStyle`, `font`,
-//! `strict`, `idPrefix`, `hint`, `fuel`, and `palette`, the canonical palette string
+//! `strict`, `idPrefix`, `hint`, `fuel`, `autoTone` (boolean), and `palette`, the canonical palette string
 //! (`merlion_render::stylesheet::Palette::parse`). `null` keeps the default; an unknown
 //! key or a nested object or array is an error. The parser is iterative and never
 //! recurses.
@@ -256,6 +256,10 @@ pub fn render_options(src: &[u8]) -> Result<RenderOptions, String> {
                 Value::Bool(b) => o.strict = b,
                 _ => return Err("`strict` must be a boolean".into()),
             },
+            "autoTone" => match v {
+                Value::Bool(b) => o.auto_tone = b,
+                _ => return Err("`autoTone` must be a boolean".into()),
+            },
             "idPrefix" => o.id_prefix = Some(string_of(&key, &v)?.to_string()),
             "hint" => o.hint = Some(string_of(&key, &v)?.to_string()),
             "fuel" => match v {
@@ -364,6 +368,9 @@ mod tests {
         assert_eq!(o.id_prefix.as_deref(), Some("d1"));
         assert_eq!(o.hint.as_deref(), Some("<svg/>"));
         assert_eq!(o.fuel, 1000);
+        assert!(o.auto_tone);
+        assert!(!render_options(br#"{"autoTone":false}"#).unwrap().auto_tone);
+        assert!(render_options(br#"{"autoTone":true}"#).unwrap().auto_tone);
     }
 
     #[test]
@@ -406,6 +413,8 @@ mod tests {
             br#"{"fuel":1.5}"#,
             br#"{"fuel":1e300}"#,
             br#"{"idPrefix":false}"#,
+            br#"{"autoTone":"false"}"#,
+            br#"{"autoTone":0}"#,
         ] {
             assert!(
                 render_options(bad).is_err(),

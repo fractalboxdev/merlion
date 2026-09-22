@@ -33,7 +33,9 @@ Re-rendering onto an existing output file uses it as the layout hint, so nodes k
 
 ### Roles and stylesheets
 
-A class name given with `class` or `:::` is a role, with or without a `classDef`; `class e1 failure` gives edge `a e1@--> b` a role. Eight roles work with no stylesheet: node tones `accent`, `ok`, `warn`, `danger`, `muted`, the dashed cluster `group`, and the edges `failure` (danger tone, dashed) and `async` (dashed). `merlion-themes.css` defines their tones for every theme.
+A class name given with `class` or `:::` is a role, with or without a `classDef`; `class e1 failure` gives edge `a e1@--> b` a role. Seventeen roles work with no stylesheet: node tones `accent`, `ok`, `warn`, `danger`, `muted`, `store`, the dashed cluster `group`, the cluster tones `series-1` … `series-8`, and the edges `failure` (danger tone, dashed) and `async` (dashed). `merlion-themes.css` defines their tones for every theme.
+
+Diagrams are coloured by default with no roles written: decisions (`{…}`, `{{…}}`) take `warn`, stores (`[(…)]`) take `store`, terminals (`([…])`, `((…))`, `(((…)))`) take `ok`, and each top-level subgraph takes the next series tone as a light tint with a coloured border and title. An element with its own `class`, `:::` or `style` keeps exactly what it asks for, and edges stay neutral. `--no-auto-tone`, the WASM option `autoTone: false` or `%%{init: {"merlion": {"autoTone": false}}}%%` in the source draws everything untoned ([specs/svg-output.md](specs/svg-output.md#automatic-tones)).
 
 A stylesheet colours roles and themes in a CSS subset that sets `--merlion-*` tokens only ([specs/svg-output.md](specs/svg-output.md#stylesheet)):
 

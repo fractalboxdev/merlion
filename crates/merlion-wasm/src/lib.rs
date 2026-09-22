@@ -402,6 +402,25 @@ mod tests {
     }
 
     #[test]
+    fn auto_tone_false_matches_the_core_option_byte_for_byte() {
+        let src = "flowchart LR\nsubgraph g [G]\n  d{D} --> c[(C)]\nend\nc --> s([S])";
+        let off = merlion_render::render(
+            src,
+            &merlion_render::RenderOptions {
+                auto_tone: false,
+                ..Default::default()
+            },
+        );
+        assert_eq!(
+            render_json(src.as_bytes(), br#"{"autoTone":false}"#),
+            json::render_result(&off)
+        );
+        assert!(!off.svg.unwrap().contains("merlion-auto"));
+        let on = render_json(src.as_bytes(), b"");
+        assert!(on.contains("merlion-auto"), "{on}");
+    }
+
+    #[test]
     fn oversized_hint_is_dropped_with_i022() {
         let hint = "a".repeat(MAX_HINT_BYTES + 1);
         let opts = format!(r#"{{"hint":"{hint}"}}"#);

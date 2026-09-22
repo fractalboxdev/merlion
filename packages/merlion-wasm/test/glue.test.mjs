@@ -104,6 +104,21 @@ test("snake_case option names are rejected with the camelCase name", () => {
   assert.throws(() => render(VALID, { edge_style: "spline" }), /`edge_style`.*`edgeStyle`/);
 });
 
+test("autoTone: false draws the untoned diagram; the flag is typed", () => {
+  const src = "flowchart LR\nsubgraph g [G]\n  d{D} --> c[(C)]\nend\nc --> s([S])\n";
+  const on = render(src, { idPrefix: "a1" }).svg;
+  assert.ok(on.includes('class="merlion-node merlion-c-warn merlion-auto"'), on);
+  assert.ok(on.includes('class="merlion-cluster merlion-cc-series-1 merlion-auto"'));
+  const off = render(src, { idPrefix: "a1", autoTone: false }).svg;
+  assert.ok(!off.includes("merlion-auto"));
+  const directive = render(`%%{init: {"merlion": {"autoTone": false}}}%%\n${src}`, { idPrefix: "a1" }).svg;
+  assert.equal(directive, off);
+  assert.equal(render(src, { idPrefix: "a1", autoTone: true }).svg, on);
+  assert.throws(() => render(src, { autoTone: "no" }), TypeError);
+  assert.throws(() => render(src, { auto_tone: false }), /`auto_tone`.*`autoTone`/);
+  assert.throws(() => render(src, { autoTones: false }), /unknown option `autoTones`/);
+});
+
 test("diagnostics have the flat documented shape", () => {
   const r = render("flowchart LR\nA -->\n");
   const d = r.diagnostics.find((x) => x.code === "E002");
