@@ -271,6 +271,52 @@ fn refuses_symlink_targets_and_hints() {
     assert!(stderr(&o).contains("symbolic link"), "{}", stderr(&o));
 }
 
+#[cfg(unix)]
+#[test]
+fn refuses_to_read_inputs_through_symbolic_links() {
+    // A planted link must not echo a file from outside the tree into CI logs.
+    let d = tempdir("inlink");
+    fs::create_dir(d.join("work")).unwrap();
+    fs::create_dir(d.join("work/docs")).unwrap();
+    fs::write(d.join("secret"), "GITHUB_TOKEN=ghs_secretvalue123\n").unwrap();
+    let w = d.join("work");
+    std::os::unix::fs::symlink(d.join("secret"), w.join("docs/g.mmd")).unwrap();
+    std::os::unix::fs::symlink(d.join("secret"), w.join("docs/g.md")).unwrap();
+    fs::write(w.join("docs/ok.mmd"), VALID).unwrap();
+    for args in [
+        &["check", "docs/g.mmd"][..],
+        &["check", "docs/g.md"],
+        &["render", "docs/g.mmd"],
+        &["render", "docs/g.md"],
+        &["outline", "docs/g.mmd"],
+        &["render", "--batch", "docs", "-o", "out", "--json-summary"],
+    ] {
+        let o = merlion(&w, args, None);
+        assert!(!stderr(&o).contains("ghs_"), "{:?}: {}", args, stderr(&o));
+        assert!(!stdout(&o).contains("ghs_"), "{:?}: {}", args, stdout(&o));
+        if args[1] != "--batch" {
+            assert_eq!(o.status.code(), Some(1), "{:?}", args);
+            assert!(
+                stderr(&o).contains("symbolic link"),
+                "{:?}: {}",
+                args,
+                stderr(&o)
+            );
+        }
+    }
+    // Files outside the working directory are refused too, unless --follow-symlinks.
+    let o = merlion(&w, &["check", "../secret"], None);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(stderr(&o).contains("outside"), "{}", stderr(&o));
+    let o = merlion(&w, &["check", "docs/g.mmd", "--follow-symlinks"], None);
+    assert!(stderr(&o).contains("E003"), "{}", stderr(&o));
+    if core_renders() {
+        let o = merlion(&w, &["render", "--batch", "docs", "-o", "out"], None);
+        assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+        assert_eq!(names(&w.join("out")), vec!["ok.svg"]);
+    }
+}
+
 #[test]
 fn refuses_targets_outside_the_working_directory() {
     let d = tempdir("outside");

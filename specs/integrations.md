@@ -7,7 +7,7 @@ merlion render [<input>] [-o <output>] [--width <px>] [--direction auto]
                [--edge-style orthogonal|polyline|spline] [--font link|embed|system]
                [--hint <previous.svg>] [--strict] [--outline <file>]
 merlion check  [<input>...] [--strict] [--fix]
-merlion outline [<input>]
+merlion outline [<input>] [--follow-symlinks]
 merlion --version
 ```
 
@@ -21,7 +21,7 @@ merlion --version
 The CLI runs in CI against repositories it doesn't control, so every write assumes the tree is hostile.
 
 - Every write (`-o`, `--outline`, `--fix`) goes to a temporary file in the target's directory, is flushed, and is renamed over the target. The rename replaces a symbolic link rather than writing through it, and a crash never leaves a half-written file.
-- Unless `--follow-symlinks` is given, the CLI refuses to read a hint from, or write to, a path that is a symbolic link or whose resolved directory lies outside the current working directory.
+- Unless `--follow-symlinks` is given, the CLI refuses to read an input or a hint from, or write to, a path that is a symbolic link or whose resolved directory lies outside the current working directory. This covers `render`, `check` and `outline` inputs, Markdown files, and every `--batch` directory entry; a symbolic link in a `--batch` directory is skipped. A link planted in the tree therefore cannot echo a file from outside it (`/proc/self/environ`, a credentials file) into CI logs through a diagnostic. Standard input is always read.
 - A hint file larger than the 1 MiB input limit is ignored with `I022 LayoutHintInvalid`.
 - Arguments are parsed by hand with the standard library ([supply-chain.md](supply-chain.md)).
 - Distributed as prebuilt binaries for macOS (arm64, x86_64), Linux (x86_64, arm64, musl static) and Windows (x86_64), and through `cargo install`.

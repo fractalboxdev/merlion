@@ -15,9 +15,9 @@ pub fn guard_target(path: &Path, cwd: &Path, follow: bool) -> Result<PathBuf, St
     guard(path, cwd, follow, false)
 }
 
-/// Checks a hint path before reading it; the same rules as [`guard_target`], and the file
-/// must exist.
-pub fn guard_hint(path: &Path, cwd: &Path, follow: bool) -> Result<PathBuf, String> {
+/// Checks a path before reading it (an input or a hint); the same rules as
+/// [`guard_target`], and the file must exist.
+pub fn guard_read(path: &Path, cwd: &Path, follow: bool) -> Result<PathBuf, String> {
     guard(path, cwd, follow, true)
 }
 
@@ -301,7 +301,7 @@ mod tests {
     #[test]
     fn guard_hint_never_creates_directories() {
         let d = testdir::fresh("ghmk");
-        assert!(guard_hint(&d.join("nope/h.svg"), &d, false).is_err());
+        assert!(guard_read(&d.join("nope/h.svg"), &d, false).is_err());
         assert!(!d.join("nope").exists());
     }
 
@@ -316,11 +316,11 @@ mod tests {
         assert!(guard_target(&link, &d, false)
             .unwrap_err()
             .contains("symbolic link"));
-        assert!(guard_hint(&link, &d, false)
+        assert!(guard_read(&link, &d, false)
             .unwrap_err()
             .contains("symbolic link"));
         assert_eq!(guard_target(&link, &d, true).unwrap(), real);
-        assert_eq!(guard_hint(&link, &d, true).unwrap(), real);
+        assert_eq!(guard_read(&link, &d, true).unwrap(), real);
     }
 
     #[test]
@@ -328,12 +328,12 @@ mod tests {
         let d = testdir::fresh("hint");
         let h = d.join("h.svg");
         fs::write(&h, "<svg/>").unwrap();
-        assert_eq!(guard_hint(&h, &d, false).unwrap(), h);
+        assert_eq!(guard_read(&h, &d, false).unwrap(), h);
         assert_eq!(read_hint(&h).unwrap(), Hint::Text("<svg/>".into()));
         fs::write(&h, [0xff, 0xfe]).unwrap();
         assert_eq!(read_hint(&h).unwrap(), Hint::NotUtf8);
         fs::write(&h, vec![b'a'; MAX_HINT_BYTES as usize + 1]).unwrap();
         assert_eq!(read_hint(&h).unwrap(), Hint::TooLarge);
-        assert!(guard_hint(&d.join("missing.svg"), &d, false).is_err());
+        assert!(guard_read(&d.join("missing.svg"), &d, false).is_err());
     }
 }

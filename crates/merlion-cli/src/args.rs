@@ -14,7 +14,7 @@ Usage:
                  [--id-prefix <prefix>] [--fuel <units>] [--follow-symlinks] [--json]
   merlion render --batch <dir> [-o <outdir>] [--json-summary] [render options]
   merlion check [<input>...] [--strict] [--fix] [--follow-symlinks]
-  merlion outline [<input>]
+  merlion outline [<input>] [--follow-symlinks]
   merlion --version
   merlion --help
 
@@ -59,7 +59,10 @@ pub enum Command {
     Version,
     Render(RenderArgs),
     Check(CheckArgs),
-    Outline { input: Option<PathBuf> },
+    Outline {
+        input: Option<PathBuf>,
+        follow_symlinks: bool,
+    },
 }
 
 /// Parses the arguments after the program name. `Err` carries a usage message (exit 2).
@@ -271,11 +274,15 @@ fn parse_check(it: impl Iterator<Item = Tok>) -> Result<CheckArgs, String> {
 fn parse_outline(it: impl Iterator<Item = Tok>) -> Result<Command, String> {
     let mut input = None;
     let mut inputs = 0;
+    let mut follow_symlinks = false;
     for tok in it {
         match tok {
             Tok::Pos(p) => {
                 inputs += 1;
                 input = input_path(p);
+            }
+            Tok::Opt { name, inline } if name == "--follow-symlinks" => {
+                follow_symlinks = flag(&name, inline)?;
             }
             Tok::Opt { name, .. } => return Err(format!("unknown option `{name}` for `outline`")),
         }
@@ -283,7 +290,10 @@ fn parse_outline(it: impl Iterator<Item = Tok>) -> Result<Command, String> {
     if inputs > 1 {
         return Err("`outline` takes at most one input".into());
     }
-    Ok(Command::Outline { input })
+    Ok(Command::Outline {
+        input,
+        follow_symlinks,
+    })
 }
 
 #[cfg(test)]
@@ -409,10 +419,17 @@ mod tests {
         assert_eq!(
             p(&["outline", "a.mmd"]),
             Ok(Command::Outline {
-                input: Some("a.mmd".into())
+                input: Some("a.mmd".into()),
+                follow_symlinks: false,
             })
         );
-        assert_eq!(p(&["outline"]), Ok(Command::Outline { input: None }));
+        assert_eq!(
+            p(&["outline", "--follow-symlinks"]),
+            Ok(Command::Outline {
+                input: None,
+                follow_symlinks: true,
+            })
+        );
         assert!(p(&["outline", "a", "b"]).is_err());
         assert!(p(&["check", "--width", "3"]).is_err());
     }

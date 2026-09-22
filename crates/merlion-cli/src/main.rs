@@ -97,7 +97,16 @@ fn run(cmd: Command) -> u8 {
             }
         }
         Command::Check(c) => check(&c, &cwd, &mut status),
-        Command::Outline { input } => outline(input.as_deref(), &mut status),
+        Command::Outline {
+            input,
+            follow_symlinks,
+        } => {
+            let guard = ReadGuard {
+                cwd: &cwd,
+                follow: follow_symlinks,
+            };
+            outline(input.as_deref(), guard, &mut status)
+        }
     }
     status.code()
 }
@@ -114,11 +123,25 @@ fn display(path: Option<&Path>) -> String {
     path.map_or_else(|| "<stdin>".to_string(), |p| p.display().to_string())
 }
 
+/// Where inputs may be read from: paths are checked like hint paths
+/// (specs/integrations.md#file-handling).
+#[derive(Clone, Copy)]
+struct ReadGuard<'a> {
+    cwd: &'a Path,
+    follow: bool,
+}
+
 /// Reads a file (or stdin) up to `cap` bytes. `Err` is already reported.
-fn read_input(path: Option<&Path>, cap: u64) -> Result<Input, ()> {
+fn read_input(path: Option<&Path>, cap: u64, guard: ReadGuard) -> Result<Input, ()> {
     let name = display(path);
+    let resolved = match path {
+        Some(p) => Some(fsio::guard_read(p, guard.cwd, guard.follow).map_err(|msg| {
+            eprintln!("merlion: {name}: refusing to read: {msg}");
+        })?),
+        None => None,
+    };
     let mut buf = Vec::new();
-    let res = match path {
+    let res = match &resolved {
         Some(p) => std::fs::File::open(p).and_then(|f| f.take(cap + 1).read_to_end(&mut buf)),
         None => io::stdin().lock().take(cap + 1).read_to_end(&mut buf),
     };
@@ -135,8 +158,13 @@ fn read_input(path: Option<&Path>, cap: u64) -> Result<Input, ()> {
 }
 
 /// Reads an input, reporting an oversized one as `E004`. `None` means stop (status set).
-fn read_or_record(path: Option<&Path>, cap: u64, status: &mut Status) -> Option<String> {
-    match read_input(path, cap) {
+fn read_or_record(
+    path: Option<&Path>,
+    cap: u64,
+    guard: ReadGuard,
+    status: &mut Status,
+) -> Option<String> {
+    match read_input(path, cap, guard) {
         Ok(Input::Text(t)) => Some(t),
         Ok(Input::TooLarge) => {
             print_diagnostics(&display(path), &[error_diagnostic(&too_large())]);
@@ -273,7 +301,7 @@ fn options(r: &RenderArgs) -> RenderOptions {
 /// unreadable, oversized or non-UTF-8 hint is ignored with `I022` (specs/security.md).
 fn load_hint(path: &Path, cwd: &Path, follow: bool) -> Result<Option<String>, ()> {
     let name = path.display().to_string();
-    let resolved = fsio::guard_hint(path, cwd, follow).map_err(|msg| {
+    let resolved = fsio::guard_read(path, cwd, follow).map_err(|msg| {
         eprintln!("merlion: {name}: refusing to read hint: {msg}");
     })?;
     let ignored = |why: String| {
@@ -326,7 +354,11 @@ fn render_single(r: &RenderArgs, cwd: &Path, status: &mut Status) {
         Ok(h) => opts.hint = h,
         Err(()) => return status.failed = true,
     }
-    let result = match read_input(r.input.as_deref(), opts.limits.input_bytes as u64) {
+    let guard = ReadGuard {
+        cwd,
+        follow: r.follow_symlinks,
+    };
+    let result = match read_input(r.input.as_deref(), opts.limits.input_bytes as u64, guard) {
         Ok(Input::Text(src)) => merlion_render::render(&src, &opts),
         Ok(Input::TooLarge) => RenderResult::from_error(too_large()),
         Err(()) => return status.failed = true,
@@ -355,7 +387,11 @@ fn render_markdown(r: &RenderArgs, cwd: &Path, status: &mut Status) {
         return;
     };
     let name = input.display().to_string();
-    let Some(text) = read_or_record(Some(input), MAX_MARKDOWN_BYTES, status) else {
+    let guard = ReadGuard {
+        cwd,
+        follow: r.follow_symlinks,
+    };
+    let Some(text) = read_or_record(Some(input), MAX_MARKDOWN_BYTES, guard, status) else {
         return;
     };
     let stem = input
@@ -414,8 +450,14 @@ fn render_batch(r: &RenderArgs, dir: &Path, cwd: &Path, status: &mut Status) {
     let mut files: Vec<PathBuf> = match std::fs::read_dir(dir) {
         Ok(rd) => rd
             .filter_map(Result::ok)
+            .filter(|e| {
+                // A symbolic link is followed only with --follow-symlinks; the read
+                // checks where it leads.
+                let link = e.file_type().is_ok_and(|t| t.is_symlink());
+                (!link || r.follow_symlinks) && e.path().extension().is_some_and(|x| x == "mmd")
+            })
             .map(|e| e.path())
-            .filter(|p| p.extension().is_some_and(|e| e == "mmd") && p.is_file())
+            .filter(|p| p.is_file())
             .collect(),
         Err(e) => {
             eprintln!("merlion: {}: cannot read directory: {e}", dir.display());
@@ -450,7 +492,12 @@ fn render_batch(r: &RenderArgs, dir: &Path, cwd: &Path, status: &mut Status) {
                 }
             }
         }
-        let (result, micros) = match read_input(Some(&file), opts.limits.input_bytes as u64) {
+        let guard = ReadGuard {
+            cwd,
+            follow: r.follow_symlinks,
+        };
+        let (result, micros) = match read_input(Some(&file), opts.limits.input_bytes as u64, guard)
+        {
             Ok(Input::Text(src)) => {
                 let start = Instant::now();
                 let res = merlion_render::render(&src, &opts);
@@ -496,7 +543,11 @@ fn check(c: &CheckArgs, cwd: &Path, status: &mut Status) {
         c.inputs.iter().map(|p| Some(p.as_path())).collect()
     };
     for input in inputs {
-        let Some(text) = read_or_record(input, input_cap(input), status) else {
+        let guard = ReadGuard {
+            cwd,
+            follow: c.follow_symlinks,
+        };
+        let Some(text) = read_or_record(input, input_cap(input), guard, status) else {
             continue;
         };
         let diags: Vec<Diagnostic> = if input.is_some_and(markdown::is_markdown_path) {
@@ -556,9 +607,9 @@ fn apply_fixes(
 }
 
 /// Prints the plain-text outline of every diagram (specs/svg-output.md#text-alternative).
-fn outline(input: Option<&Path>, status: &mut Status) {
+fn outline(input: Option<&Path>, guard: ReadGuard, status: &mut Status) {
     let name = display(input);
-    let Some(text) = read_or_record(input, input_cap(input), status) else {
+    let Some(text) = read_or_record(input, input_cap(input), guard, status) else {
         return;
     };
     let sources: Vec<(String, Option<Block>)> = if input.is_some_and(markdown::is_markdown_path) {
