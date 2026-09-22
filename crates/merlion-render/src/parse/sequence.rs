@@ -599,7 +599,18 @@ impl P<'_, '_> {
             kind = Some(ParticipantKind::Participant);
         }
         let span = self.stmt_span(kw_start, stmt_end);
-        let label = alias.map(|(s, e, raw)| self.finish_label(&raw, s, e));
+        let mut wrap = None;
+        let label = alias.map(|(s, e, raw)| {
+            let (w, text, at) = if let Some(r) = strip_prefix_ci(&raw, "wrap:") {
+                (Some(true), r.to_string(), s + 5)
+            } else if let Some(r) = strip_prefix_ci(&raw, "nowrap:") {
+                (Some(false), r.to_string(), s + 7)
+            } else {
+                (None, raw, s)
+            };
+            wrap = w;
+            self.finish_label(&text, at, e)
+        });
         if let Some(p) = self.participants.get_mut(i) {
             p.implicit = false;
             p.span = span;
@@ -608,6 +619,9 @@ impl P<'_, '_> {
             }
             if let Some(l) = label {
                 p.label = l;
+            }
+            if wrap.is_some() {
+                p.wrap = wrap;
             }
         }
         if let Some(b) = self.open_box() {
@@ -1258,13 +1272,21 @@ impl P<'_, '_> {
             first
         };
         let raw = self.src.get(colon + 1..end).unwrap_or("");
-        let text = self.finish_label(raw, colon + 1, end);
+        let (wrap, raw, at) = if let Some(r) = strip_prefix_ci(raw, "wrap:") {
+            (Some(true), r, colon + 6)
+        } else if let Some(r) = strip_prefix_ci(raw, "nowrap:") {
+            (Some(false), r, colon + 8)
+        } else {
+            (None, raw, colon + 1)
+        };
+        let text = self.finish_label(raw, at, end);
         let span = self.stmt_span(kw_start, end);
         self.push_item(Item::Note(Note {
             placement,
             from: first,
             to: last,
             text,
+            wrap,
             span,
         }));
         self.pos = end;

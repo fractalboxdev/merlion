@@ -125,7 +125,8 @@ pub fn clean_label(raw: &str) -> String {
     out
 }
 
-/// Rewrites every `<br>` variant (`<br/>`, `<br />`, `<BR>`) to a `\n`.
+/// Rewrites every `<br>` variant to a `\n`: any case, and any ASCII whitespace inside
+/// the tag, so `<br/>`, `<br />`, `<BR>` and `<br \t/>` all break the line.
 fn normalise_br(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let bytes = s.as_bytes();
@@ -141,11 +142,14 @@ fn normalise_br(s: &str) -> String {
                 .is_some_and(|b| b.eq_ignore_ascii_case(&b'r'))
         {
             let mut j = i + 3;
-            while bytes.get(j) == Some(&b' ') {
+            while bytes.get(j).is_some_and(u8::is_ascii_whitespace) {
                 j += 1;
             }
             if bytes.get(j) == Some(&b'/') {
                 j += 1;
+                while bytes.get(j).is_some_and(u8::is_ascii_whitespace) {
+                    j += 1;
+                }
             }
             if bytes.get(j) == Some(&b'>') {
                 out.push_str(s.get(last..i).unwrap_or(""));
@@ -305,6 +309,7 @@ mod tests {
         assert_eq!(clean_label("`**x**`"), "**x**");
         assert_eq!(clean_label("a\n  b\n c"), "a\nb\nc");
         assert_eq!(clean_label("a<br />b<BR/>c<br"), "a\nb\nc<br");
+        assert_eq!(clean_label("a<br \t/>b<br\t>c"), "a\nb\nc");
         // An escaped break is text, and splitting before decoding keeps it one line.
         assert_eq!(clean_label("a#lt;br#gt;b"), "a<br>b");
         assert_eq!(

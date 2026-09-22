@@ -69,6 +69,7 @@ fn message(index: u32, from: usize, to: usize, text: &str) -> Message {
 
 fn note(placement: Placement, from: usize, to: usize, text: &str) -> Note {
     Note {
+        wrap: None,
         placement,
         from,
         to,

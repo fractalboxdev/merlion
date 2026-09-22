@@ -598,6 +598,35 @@ fn wrap_is_stripped_from_the_label() {
 }
 
 #[test]
+fn an_alias_takes_the_same_wrap_annotations() {
+    let s = sq("participant A as wrap:Extremely long");
+    assert_eq!(find(&s, "A").wrap, Some(true));
+    assert_eq!(labels(&s), ["Extremely long"]);
+    let s = sq("participant A as nowrap: Extremely long");
+    assert_eq!(find(&s, "A").wrap, Some(false));
+    assert_eq!(labels(&s), ["Extremely long"]);
+    let s = sq("participant A as Alice");
+    assert_eq!(find(&s, "A").wrap, None);
+}
+
+#[test]
+fn a_note_takes_the_same_wrap_annotations() {
+    let s = sq("Note over A:wrap: hi there");
+    assert_eq!(notes(&s)[0].wrap, Some(true));
+    assert_eq!(notes(&s)[0].text, "hi there");
+    let s = sq("Note right of A:nowrap:hi there");
+    assert_eq!(notes(&s)[0].wrap, Some(false));
+    assert_eq!(notes(&s)[0].text, "hi there");
+    let s = sq("Note over A: hi there");
+    assert_eq!(notes(&s)[0].wrap, None);
+    assert_eq!(notes(&s)[0].text, "hi there");
+    // A space before the keyword leaves it as note text, as it does for a message.
+    let s = sq("Note over A: wrap: hi");
+    assert_eq!(notes(&s)[0].wrap, None);
+    assert_eq!(notes(&s)[0].text, "wrap: hi");
+}
+
+#[test]
 fn a_label_that_starts_with_the_word_wrap_is_text() {
     let m = sq("A->>B: wrap: the box");
     assert_eq!(only_message(&m).label, "wrap: the box");

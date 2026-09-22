@@ -135,6 +135,7 @@ impl S {
 
     pub fn note(&mut self, placement: Placement, from: usize, to: usize, text: &str) -> Item {
         Item::Note(Note {
+            wrap: None,
             placement,
             from,
             to,

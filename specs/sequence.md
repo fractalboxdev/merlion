@@ -72,7 +72,7 @@ actor DB@{ "type": "database" } as User Database
 
 - A dotted line draws `stroke-dasharray: 3 3`; `Open` is mermaid's async arrowhead (two open strokes), `Cross` an ✕ at the end.
 - `A->>B: text` with `text` empty draws no label and no chip.
-- `:wrap:` and `:nowrap:` directly after the colon set `Message::wrap` to `Some(true)` / `Some(false)`: `wrap` wraps at `wrap_width` even when the label is short enough, `nowrap` keeps the label on one line whatever its width. Unset, a label wraps at `wrap_width` like every other label.
+- `:wrap:` and `:nowrap:` directly after the colon set `Message::wrap` — and, in the same position, `Note::wrap` and, opening an `as` alias, `Participant::wrap` — to `Some(true)` / `Some(false)`: `wrap` wraps at `wrap_width` even when the label is short enough, `nowrap` keeps the label on one line whatever its width. Unset, a label wraps at `wrap_width` like every other label.
 - `()` marks a central connection: `A->>()B` is `Central::Target`, `A()->>B` is `Central::Source`, `A()->>()B` is `Central::Both`. The message draws as usual and the marked end terminates in a 4 px filled dot on the lifeline (`.merlion-central`) instead of on the activation bar's edge.
 - A self-message (`from == to`) draws as a bracket to the right of its own lifeline ([Rows](#rows)).
 
@@ -88,7 +88,7 @@ Note left of John: Text
 Note over Alice,John: A typical interaction
 ```
 
-`over` takes one participant or a pair. Text may contain `<br/>`.
+`over` takes one participant or a pair. Text may contain `<br/>`, and the same `:wrap:` / `:nowrap:` annotations a message takes sit directly after the colon and set `Note::wrap`; a space before the keyword leaves it as note text.
 
 ### Fragments
 
