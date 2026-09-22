@@ -129,3 +129,68 @@ fn quoted_source_excerpts_are_bounded() {
         e => panic!("{:?}", e),
     }
 }
+
+/// A source that repairs on every other byte fills the diagnostic list no further than
+/// the cap: past it the list holds one `I034` naming how many are dropped, so a 1 MiB
+/// source costs bounded memory whatever its shape (specs/architecture.md#boundaries).
+#[test]
+fn diagnostics_stop_at_the_limit_and_say_how_many_were_dropped() {
+    let cap = merlion_render::options::Limits::default().diagnostics;
+    let sources = [
+        // `R015`: one repair per two bytes.
+        format!("stateDiagram-v2\n{}", "}\n".repeat(cap * 4)),
+        // `R016`: one repair per three bytes.
+        format!("stateDiagram-v2\n{}", "--\n".repeat(cap * 4)),
+        // `W024`: one warning per statement.
+        format!(
+            "stateDiagram-v2\n{}",
+            "hide empty description\n".repeat(cap * 4)
+        ),
+        // The flowchart path shares the cap.
+        format!(
+            "flowchart TD\na-->b\n{}",
+            "linkStyle 9999 stroke:#f00\n".repeat(cap * 4)
+        ),
+    ];
+    for src in sources {
+        // The same render with the cap lifted says how many diagnostics the source has.
+        let uncapped = RenderOptions {
+            limits: merlion_render::options::Limits {
+                diagnostics: usize::MAX,
+                ..merlion_render::options::Limits::default()
+            },
+            ..RenderOptions::default()
+        };
+        let all = render(&src, &uncapped).diagnostics.len();
+        assert!(
+            all > cap * 3,
+            "{all} diagnostics for a {}-byte source",
+            src.len()
+        );
+
+        let r = render(&src, &RenderOptions::default());
+        assert_eq!(r.diagnostics.len(), cap, "{} bytes", src.len());
+        let last = r.diagnostics.last().expect("a diagnostic");
+        assert_eq!(last.code, "I034", "{last:?}");
+        // Every diagnostic the source has is either kept or counted.
+        let dropped = all - (cap - 1);
+        assert!(last.message.contains(&dropped.to_string()), "{last:?}");
+        assert_eq!(check(&src, false).len(), cap);
+    }
+}
+
+/// An error dropped past the cap still fails the render: counting a diagnostic instead
+/// of keeping it never turns a rejected source into a rendered one.
+#[test]
+fn an_error_past_the_diagnostic_limit_still_fails_the_render() {
+    let cap = merlion_render::options::Limits::default().diagnostics;
+    // Under `strict` every repair is an error, so errors alone reach the cap.
+    let src = format!("stateDiagram-v2\n{}", "}\n".repeat(cap * 2));
+    let opts = RenderOptions {
+        strict: true,
+        ..RenderOptions::default()
+    };
+    let r = render(&src, &opts);
+    assert_eq!(r.error, Some(RenderError::Parse), "{:?}", r.error);
+    assert_eq!(r.diagnostics.len(), cap);
+}

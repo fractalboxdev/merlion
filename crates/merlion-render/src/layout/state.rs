@@ -171,13 +171,17 @@ pub fn lower(
     if fuel.burn(units).is_err() {
         return Err(LayoutError::TooLarge { what: "fuel" });
     }
-    // `nodes` bounds states and `edges` transitions, counted on the model rather than on
-    // the lowered graph, where a composite state is a cluster (specs/state.md#diagnostics).
+    // `nodes` bounds states, `edges` transitions and `notes` notes, counted on the model
+    // rather than on the lowered graph, where a composite state is a cluster and a note
+    // is no graph element at all (specs/state.md#diagnostics).
     if sm.states.len() > opts.limits.nodes {
         return Err(LayoutError::TooLarge { what: "nodes" });
     }
     if sm.transitions.len() > opts.limits.edges {
         return Err(LayoutError::TooLarge { what: "edges" });
+    }
+    if sm.notes.len() > opts.limits.notes {
+        return Err(LayoutError::TooLarge { what: "notes" });
     }
 
     let n = sm.states.len();

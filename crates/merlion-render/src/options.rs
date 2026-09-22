@@ -51,10 +51,21 @@ pub struct Limits {
     pub input_bytes: usize,
     pub nodes: usize,
     pub edges: usize,
+    /// Notes a state diagram carries. A note is a drawn box that no other limit counts:
+    /// it is neither a node nor an edge, so without this a source of nothing but notes
+    /// grows the SVG far past what `nodes` and `edges` allow
+    /// (specs/state.md#diagnostics).
+    pub notes: usize,
     pub layered_nodes: usize,
     pub layers: usize,
     pub nesting: usize,
     pub label_bytes: usize,
+    /// Diagnostics kept. A repair costs a few source bytes and about a hundred bytes of
+    /// message, so an unbounded list is the cheapest way to grow a render past its
+    /// input. Past this many, [`crate::diag::Diagnostics`] counts instead of keeping,
+    /// and the last slot holds `I034` naming how many were dropped. The default matches
+    /// `edges`, so a diagram inside every other limit keeps every diagnostic it earns.
+    pub diagnostics: usize,
 }
 
 impl Default for Limits {
@@ -63,10 +74,12 @@ impl Default for Limits {
             input_bytes: 1 << 20,
             nodes: 2_000,
             edges: 4_000,
+            notes: 2_000,
             layered_nodes: 20_000,
             layers: 500,
             nesting: 64,
             label_bytes: 4_096,
+            diagnostics: 4_000,
         }
     }
 }

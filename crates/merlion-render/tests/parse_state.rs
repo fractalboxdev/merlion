@@ -1138,6 +1138,32 @@ fn more_transitions_than_the_limit_is_too_large() {
 }
 
 #[test]
+fn more_notes_than_the_limit_is_too_large() {
+    let mut src = String::from("stateDiagram-v2\na\n");
+    for i in 0..40 {
+        src.push_str(&format!("note left of a : n{i}\n"));
+    }
+    let limits = Limits {
+        notes: 10,
+        ..Limits::default()
+    };
+    let (r, _) = run(&src, false, limits);
+    assert_eq!(r, Err(ParseError::TooLarge { what: "notes" }));
+}
+
+/// A note draws a box the size of its text, so a source of nothing but notes reaches the
+/// limit long before it reaches `input_bytes` and never grows an SVG without bound.
+#[test]
+fn a_source_of_nothing_but_notes_stops_at_the_limit() {
+    let mut src = String::from("stateDiagram-v2\na\n");
+    for _ in 0..(Limits::default().notes + 1) {
+        src.push_str("note left of a : x\n");
+    }
+    let (r, _) = run(&src, false, Limits::default());
+    assert_eq!(r, Err(ParseError::TooLarge { what: "notes" }));
+}
+
+#[test]
 fn a_label_longer_than_the_limit_is_truncated() {
     let long = "x".repeat(200);
     let limits = Limits {
@@ -1305,6 +1331,37 @@ fn a_one_line_diagram_stays_linear() {
     let (s, d) = sm_d(&src);
     assert_eq!(s.transitions.len(), 500);
     assert!(errors(&d).is_empty(), "{:?}", codes(&d));
+}
+
+/// A statement separated by `;` costs what the same statement separated by `\n` costs:
+/// both end the line lookup in constant time, so neither shape is quadratic in the
+/// length of its line (specs/state.md#syntax).
+#[test]
+fn a_one_line_diagram_costs_what_the_same_lines_cost() {
+    const N: usize = 100_000;
+    let one_line = format!("stateDiagram-v2\n{}", "a;".repeat(N));
+    let many_lines = format!("stateDiagram-v2\n{}", "a\n".repeat(N));
+    assert_eq!(one_line.len(), many_lines.len());
+
+    let time = |src: &str| {
+        let t = std::time::Instant::now();
+        let (s, _) = sm_d(src);
+        assert_eq!(s.states.len(), 1);
+        t.elapsed()
+    };
+    // Parse each shape twice and keep the faster run, so a cold cache or a descheduled
+    // first run cannot decide the comparison.
+    let lines = time(&many_lines).min(time(&many_lines));
+    let inline = time(&one_line).min(time(&one_line));
+    // 16× leaves room for the constant factors a line lookup adds; the quadratic scan
+    // this guards against costs `N / 2` times more, which is four orders of magnitude.
+    // 4× leaves room for the constant factors a line lookup adds; a scan to the end of
+    // the line instead costs 8× here and grows with `N`.
+    assert!(
+        inline <= lines * 4 + core::time::Duration::from_millis(50),
+        "{N} `;`-separated statements took {inline:?}, the same statements on their own \
+         lines took {lines:?}: the line lookup is not constant time"
+    );
 }
 
 #[test]

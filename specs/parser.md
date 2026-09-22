@@ -120,10 +120,13 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I031` ClickCallbackIgnored | Info | `click` callback or `call` dropped |
 | `I032` StylesheetRulesIgnored | Info | Count of stylesheet rules declaring no `--merlion-*` token |
 | `I033` ToneMasked | Info | A source `style` colour, or a `classDef` colour whose token the stylesheet leaves unset, overrides a stylesheet tone on the same element |
+| `I034` DiagnosticsTruncated | Info | Count of diagnostics past `limits.diagnostics`, which are counted rather than kept; always the last diagnostic |
 | `R001`–`R008` | Repair | See [Error tolerance](#error-tolerance) |
 | `R009`–`R013` | Repair | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 | `R014`–`R018` | Repair | State diagrams ([state.md](state.md#diagnostics)) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
+
+The list holds at most `limits.diagnostics` (4,000). Past that a diagnostic is counted rather than kept and the last slot holds `I034` with the count, so a source that repairs every second byte costs bounded memory. A dropped `Error` still fails the render: the count never turns a rejected source into a rendered one.
 
 A failed render always carries at least one `Error` diagnostic. When no stage recorded one, the core adds `E002`, `E003` or `E004` for its `RenderError`, so the CLI, the WASM module and every other caller report the same codes.

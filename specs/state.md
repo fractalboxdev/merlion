@@ -147,7 +147,9 @@ Codes shared with flowcharts keep their meaning: `E002`, `E004`, `E010`, `E011`,
 
 Every repair carries a `fix` that edits the source, as in flowcharts. A transition to an undeclared state is **not** repaired: declaring every state before naming it is not idiomatic, so `R005`'s flowchart reasoning does not hold and the state is declared silently, as mermaid does.
 
-Limits reuse the fields of `options::Limits`: `nodes` bounds states, `edges` bounds transitions, `nesting` bounds composite nesting. Exceeding `nodes` or `edges` is `E004 TooLarge`; exceeding `nesting` is `E010`.
+Limits are fields of `options::Limits`: `nodes` bounds states, `edges` bounds transitions, `notes` bounds notes (2,000), `nesting` bounds composite nesting. Exceeding `nodes`, `edges` or `notes` is `E004 TooLarge`; exceeding `nesting` is `E010`.
+
+`notes` is the one limit a state diagram adds. A note is no graph element, so neither `nodes` nor `edges` counts it, and a note box is as large as its text: without its own limit a source of nothing but notes stays one state wide, spends almost no fuel and still grows the SVG past what 2,000 nodes and 4,000 edges can.
 
 ## Lowering
 

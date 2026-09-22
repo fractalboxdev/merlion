@@ -176,7 +176,7 @@ pub fn diagram_id(source: &str, opts: &RenderOptions, layout: &str) -> String {
 
 /// Renders one diagram. Never panics; failures are reported in `error` and `diagnostics`.
 pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
-    let mut diags = Diagnostics::new(opts.strict);
+    let mut diags = Diagnostics::with_limit(opts.strict, opts.limits.diagnostics);
     if source.len() > opts.limits.input_bytes {
         return RenderResult::failed(RenderError::TooLarge { what: "input" }, diags.items, 0);
     }
@@ -288,7 +288,7 @@ pub fn check(source: &str, strict: bool) -> Vec<Diagnostic> {
         strict,
         ..RenderOptions::default()
     };
-    let mut diags = Diagnostics::new(strict);
+    let mut diags = Diagnostics::with_limit(strict, opts.limits.diagnostics);
     if source.len() > opts.limits.input_bytes {
         explain(&mut diags.items, &RenderError::TooLarge { what: "input" });
         return diags.items;

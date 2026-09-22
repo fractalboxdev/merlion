@@ -9,8 +9,9 @@
 //! The parser is statement-oriented and never recurses: composite states nest on an
 //! explicit stack bounded by `Limits::nesting` (`E010`), and every scan is bounded by the
 //! end of the current statement, which ends at the first `;` or unmatched `}` that closes
-//! no entity code (`#59;`) or at the end of the line, so parsing stays linear even on a
-//! single 1 MiB line.
+//! no entity code (`#59;`) or at the end of the line. The end of the line is found once
+//! per line and cached, not once per statement, so a statement never pays for the rest
+//! of its line and parsing stays linear even on a single 1 MiB line.
 //!
 //! `[*]` resolves per scope: the top level is one scope, each composite state is another,
 //! and a composite split by `--` gives one scope per region. A scope's start and end
@@ -27,6 +28,7 @@
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::cell::Cell;
 
 use super::cursor::LineIndex;
 use super::flowchart::MAX_CLASSES;
@@ -228,6 +230,9 @@ struct P<'a, 'd> {
     src: &'a str,
     idx: &'a LineIndex<'a>,
     pos: usize,
+    /// `(from, end)` of the last [`P::eol_from`]: `src[from..end]` holds no `\n`, so
+    /// every offset in `from..=end` ends its line at `end`.
+    line: Cell<(usize, usize)>,
     opts: &'a ParseOptions,
     diags: &'d mut Diagnostics,
     meta: Meta,
@@ -255,6 +260,8 @@ pub(crate) fn parse_state(
         src: idx.src(),
         idx,
         pos,
+        // An empty range no offset falls in, so the first lookup misses and fills it.
+        line: Cell::new((1, 0)),
         opts,
         diags,
         meta,
@@ -300,11 +307,26 @@ impl P<'_, '_> {
         at
     }
 
-    /// Offset of the end of the line containing `at`.
+    /// Offset of the end of the line containing `at`: the `\n` that ends it, or the end
+    /// of input.
+    ///
+    /// The last answer is cached with the range `from..=end` it holds for: `src[from..end]`
+    /// carries no `\n`, so every offset in that range ends its line at `end`.
+    /// A statement therefore scans to the `\n` once per line rather than once per
+    /// statement: without the cache a source separated by `;` instead of newlines pays
+    /// for the rest of its line at every statement, which is quadratic in the length of
+    /// the line.
     fn eol_from(&self, at: usize) -> usize {
-        self.rest_at(at)
+        let (from, end) = self.line.get();
+        if at >= from && at <= end {
+            return end;
+        }
+        let end = self
+            .rest_at(at)
             .find('\n')
-            .map_or(self.src.len(), |i| at + i)
+            .map_or(self.src.len(), |i| at + i);
+        self.line.set((at, end));
+        end
     }
 
     /// End of the statement starting at `at`: the first `;` or unmatched `}` that closes
@@ -1318,6 +1340,9 @@ impl P<'_, '_> {
                 (body, line_end, consumed, consumed)
             }
         };
+        if self.notes.len() >= self.opts.limits.notes {
+            return Err(Stop::TooLarge("notes"));
+        }
         let text = self.finish_label(&raw, text_start, text_end);
         let span = self.span(kw_start, stmt_end);
         self.notes.push(Note {

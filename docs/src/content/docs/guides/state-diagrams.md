@@ -241,6 +241,7 @@ The outline reads the machine, not the graph it lowers to: a transition naming `
 |---|---|
 | States | 2,000 (`E004`) |
 | Transitions | 4,000 (`E004`) |
+| Notes | 2,000 (`E004`) |
 | Composite nesting | 64 (`E010`) |
 | Label bytes | 4,096 |
 
