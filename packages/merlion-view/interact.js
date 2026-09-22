@@ -87,19 +87,24 @@ export const interact = (host, svg) => {
   // Lit sets an extension supplies for a cluster the viewer cannot derive one for, by its
   // `data-merlion-id`: a sequence's fragments and boxes (specs/interaction.md#highlight-set).
   const groups = new Map();
-  // The keyboard's walk: every node in outline order. A sequence appends its messages to it, gives
-  // each message the outline line that numbers it and lights the activation bars of a lit
-  // participant, all by filling in the model above (specs/sequence.md#interaction). That module
-  // loads for an SVG carrying `merlion-sequence` only, so a page of flowcharts never fetches it and
-  // this one stays inside its budget (specs/viewer.md#constraints).
+  // The keyboard's walk: every node in outline order. A diagram type with more to say fills in the
+  // model above — a sequence appends its messages and lights the activation bars of a lit
+  // participant (specs/sequence.md#interaction), a state machine names its label-less states,
+  // walks them in declaration order and lights what a composite holds (specs/state.md#interaction).
+  // Each module loads for the SVG that carries its class only, so a page of flowcharts fetches
+  // neither and this one stays inside its budget (specs/viewer.md#constraints).
   const walk = order.map((i) => ({ n: nodes[i].id }));
-  if (svg.classList.contains("merlion-sequence"))
-    import("./interact-seq.js").then(
-      (m) => (
-        m.sequence({ svg, nodes, edges, cls, desc, walk, groups, text: (el) => nameOf(textOf(el)), style: MerlionView.style }),
-        paint()
-      ),
-    );
+  const ext = svg.classList.contains("merlion-sequence")
+    ? import("./interact-seq.js")
+    : svg.classList.contains("merlion-state")
+      ? import("./interact-state.js")
+      : null;
+  ext?.then(
+    (m) => (
+      m.default({ svg, nodes, edges, cls, desc, walk, groups, text: (el) => nameOf(textOf(el)), style: MerlionView.style }),
+      paint()
+    ),
+  );
 
   // Shown: the pin, else the keyboard's target as a preview.
   const shown = () => pin ?? active;
@@ -122,7 +127,8 @@ export const interact = (host, svg) => {
     if (c) return add(c.line, "font-weight:600"), add(c.sub, "opacity:.7");
     // A message's outline line is its heading and its whole story: number, arrow and text.
     const ln = e?.line;
-    add(ln ?? (e ? `${name(e.from)} ${e.g} ${name(e.to)}` : nameOf(n.L.filter((l) => !l.d)) || n.id), "font-weight:600");
+    // A state that draws no label heads with the name its kind reads as, never with its generated id.
+    add(ln ?? (e ? `${name(e.from)} ${e.g} ${name(e.to)}` : nameOf(n.L.filter((l) => !l.d)) || n.name || n.id), "font-weight:600");
     if (e) return ln || add(e.label);
     for (const l of n.L) if (l.d) add(l.t, "opacity:.7");
     add(n.path.join(" / "), "opacity:.7");
@@ -151,7 +157,8 @@ export const interact = (host, svg) => {
   // Hide and collapse (specs/interaction.md#hide-and-collapse): classes, plus a "+N" badge per collapsed cluster.
   const apply = () => {
     gone = collapseSets(nodes, cls, edges, collapsed, hidden);
-    for (const n of nodes) toggle(n.g, "merlion-hidden", gone.nodes.has(n.id));
+    // Everything a node owns goes with it: a sequence's activation bars, a state's notes.
+    for (const n of nodes) for (const el of n.els) toggle(el, "merlion-hidden", gone.nodes.has(n.id));
     edges.forEach((e, i) => {
       toggle(e.el, "merlion-hidden", gone.edges.get(i) === "hidden");
       toggle(e.el, "merlion-stub", gone.edges.get(i) === "stub");
@@ -208,10 +215,14 @@ export const interact = (host, svg) => {
     active = null;
     if (a === "hide") hidden.add(target.n);
     else if (a === "collapse") {
-      // A cluster the SVG names collapses; one an extension lit set covers pins instead; one with
-      // neither does nothing, so a title that names no cluster never reaches the collapsed set.
+      // A cluster the SVG names collapses; one an extension lit set covers pins instead. A cluster
+      // that does both — a composite state, which holds members to hide and states to light —
+      // collapses on a plain tap and pins on Alt, the key that already pins an edge. Shift is not
+      // that key: a title is text, and Shift+click extends the selection, which is never a tap.
+      // A cluster with neither does nothing, so a title that names no cluster never reaches the
+      // collapsed set.
       const k = id(t.closest(".merlion-cluster"));
-      if (groups.has(k)) pin = same(pin, { c: k }) ? null : { c: k };
+      if (groups.has(k) && (e.altKey || !groups.get(k).collapse)) pin = same(pin, { c: k }) ? null : { c: k };
       else if (k) collapsed.delete(k) || collapsed.add(k);
     } else pin = a === "clear" ? null : { ...target, path: a === "path" };
     apply();

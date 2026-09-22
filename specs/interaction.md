@@ -9,7 +9,7 @@ Two layers deliver it ([ADR-0010](adr/0010-hover-interaction.md)):
 | **Viewer layer** | `@fractalbox/merlion-view/interact`, loaded by `<merlion-view>` for every Merlion SVG | Click to pin a highlight (neighbourhood or transitive path), click to collapse clusters and hide nodes, a detail popover, keyboard traversal with screen-reader announcements, a hover preview. Reads only the `data-merlion-*` attributes and text the SVG already carries |
 | **CSS layer** (Proposed, core) | Rules in the SVG's embedded `<style>`, for diagrams of at most 128 nodes plus edges | Hover preview with JavaScript off: dims the rest and keeps the hovered element's neighbourhood at full opacity. No pinning, popover or keyboard |
 
-Both layers compute the same highlight set; the acceptance tests hold them to it ([Testing](#testing)). This spec extends [svg-output.md](svg-output.md) (data attributes, embedded rules) and [viewer.md](viewer.md) (gestures, extension hook). It reads "node" and "edge" as the classes an element carries, so a sequence diagram's participants and messages are interactive under exactly these rules ([sequence.md](sequence.md#interaction)).
+Both layers compute the same highlight set; the acceptance tests hold them to it ([Testing](#testing)). This spec extends [svg-output.md](svg-output.md) (data attributes, embedded rules) and [viewer.md](viewer.md) (gestures, extension hook). It reads "node" and "edge" as the classes an element carries, so a sequence diagram's participants and messages, and a state diagram's states and transitions, are interactive under exactly these rules ([sequence.md](sequence.md#interaction), [state.md](state.md#interaction)).
 
 ## Highlight set
 
@@ -25,7 +25,7 @@ Both layers compute the same highlight set; the acceptance tests hold them to it
 - A self-loop is an incident edge of its node; parallel edges between the same pair are all incident.
 - Path mode is two breadth-first searches over per-node incidence lists: O(V + E).
 - Nodes and edges outside the lit set are dimmed. Clusters are never dimmed: a cluster group contains its members, so group opacity would dim them too, and the box and title are low-contrast already. A pinned cluster is marked on its own rect instead, by the accent and `--merlion-highlight-stroke`.
-- A cluster is a target only where an extension supplies its lit set: a sequence does, for the fragments and boxes whose rects enclose rows and columns of the drawing ([sequence.md](sequence.md#interaction)). A flowchart supplies none, so its clusters collapse and never pin.
+- A cluster is a target only where an extension supplies its lit set: a sequence does, for the fragments and boxes whose rects enclose rows and columns of the drawing ([sequence.md](sequence.md#interaction)), and a state machine does, for the composite states whose members are states of their own ([state.md](state.md#interaction)). A flowchart supplies none, so its clusters collapse and never pin.
 - An edge endpoint that names no node group (an edge ending on a cluster) lights nothing at that end.
 - Invisible links (`~~~`) are not drawn and take no part.
 
@@ -114,7 +114,7 @@ Rules cost about 125 raw bytes and 17 gzip bytes per element, linear in V + E; r
 ### Loading
 
 - `<merlion-view>` imports `./interact.js` the first time it adopts an SVG with class `merlion`, so every Merlion diagram on a page is interactive with no extra script. `<merlion-view interactive="off">` runs no extension and loads nothing. Pages that wrap other renderers' SVGs never fetch the module. `import "@fractalbox/merlion-view/interact"` loads it eagerly.
-- `interact.js` imports `./interact-seq.js` for an SVG that also carries `merlion-sequence`, and repaints when it arrives. That module fills in the model `interact` has already read — the activation bars each participant lights, each message's outline line, the messages at the end of the keyboard's walk, and a lit set for every fragment and box ([sequence.md](sequence.md#interaction)) — so the interaction module holds the extension points and no sequence rule, and a page of flowcharts fetches neither the rules nor their bytes.
+- `interact.js` imports `./interact-seq.js` for an SVG that also carries `merlion-sequence` and `./interact-state.js` for one that carries `merlion-state`, and repaints when the module arrives. Each fills in the model `interact` has already read — a sequence's activation bars, each message's outline line, the messages at the end of the keyboard's walk, and a lit set for every fragment and box ([sequence.md](sequence.md#interaction)); a state machine's label-less state names, the walk in declaration order with each composite ahead of the states it holds, each note joined to its state, and a lit set for every composite state ([state.md](state.md#interaction)) — so the interaction module holds the extension points and no rule of either diagram type, and a page of flowcharts fetches neither the rules nor their bytes.
 - The module registers through the base element's extension hook, `MerlionView.extend(fn)`: `fn(host, svg)` runs whenever a host adopts an SVG and returns a cleanup function, called when the SVG changes, the host disconnects or `interactive` becomes `"off"`. A `view` method on the returned function runs after every view change.
 - The base element provides the viewer chrome that extensions share ([viewer.md](viewer.md#extension-hook)): `tip(el, build)` (the popover), `say(text)` (the live region), `tap(e)` (click qualification) and `MerlionView.style(css)` (rules for the slotted SVG).
 - The extension activates only for an SVG with class `merlion` whose `.merlion-edge` groups all carry `data-merlion-from` and `data-merlion-to`.
@@ -128,7 +128,7 @@ A click commands the diagram only when it is a **tap**: it lands on the drawing 
 |---|---|---|---|
 | A node (shape or label) | Pin it; on the pinned node, clear | Pin in path mode; on a node pinned in path mode, clear | Hide the node |
 | An edge (path or label) | Pin it; on the pinned edge, clear | Pin in path mode | Pin it |
-| A cluster title or its badge | Collapse the cluster; on a collapsed one, expand. A cluster with a supplied lit set pins instead; on the pinned one, clear. A cluster the SVG names with no `data-merlion-id` does neither | Same | Same |
+| A cluster title or its badge | Collapse the cluster; on a collapsed one, expand. A cluster with a supplied lit set and no members to hide pins instead; on the pinned one, clear. A cluster the SVG names with no `data-merlion-id` does neither | Same | Pin the supplied lit set of a cluster that also collapses — a composite state; on the pinned one, clear. Otherwise the same |
 | The background (anywhere else in the host) | Clear | Clear | Clear |
 | A node inside `<a href>` | The link is followed; nothing is pinned | | |
 
@@ -231,7 +231,7 @@ The popover never overlaps `E`. Every view change (zoom, pan, fullscreen, resize
 | `Shift` + arrow keys | Pan by 10% (plain arrow keys pan only when the extension is not loaded) |
 | `+`, `-`, `0`, `Tab` | Unchanged: zoom, reset, leave the diagram |
 
-- A **target** is a node or an edge. A flowchart's walk holds its nodes; a sequence appends its messages, so the walk reads the diagram the way the outline does — the participants, then each message in the order it numbers them ([sequence.md](sequence.md#interaction)).
+- A **target** is a node, an edge, or a cluster an extension supplies a lit set for. A flowchart's walk holds its nodes; a sequence appends its messages, so the walk reads the diagram the way the outline does — the participants, then each message in the order it numbers them ([sequence.md](sequence.md#interaction)); a state machine walks its states in declaration order with each composite state ahead of the first state it holds, which is the order the outline lists them ([state.md](state.md#interaction)).
 - **Outline order** is the order of the nodes' lines in the SVG's `<desc>` outline ([svg-output.md](svg-output.md#text-alternative)): a line matches a node when it equals the node's prefix (`{cluster path}: {name}`) or continues it with a space and an edge glyph. Nodes without a line follow in document order. Document order differs from outline order in 10 of the 43 gallery flowcharts, so the viewer does not use it alone.
 - The current target gets `merlion-active` and the focus ring. With nothing pinned, its lit set and popover show as a preview.
 - The extension handles `keydown` on the host in the capture phase and calls `preventDefault` on the keys it consumes; the base viewer skips an event whose default is prevented, so a consumed arrow does not also pan and an `Esc` that clears a pin does not also close fullscreen.
@@ -266,14 +266,15 @@ The popover never overlaps `E`. Every view change (zoom, pan, fullscreen, resize
 
 | Item | Budget |
 |---|---|
-| `@fractalbox/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,237 B), enforced by `scripts/size.mjs` |
-| Its sequence module, loaded only for a sequence diagram | ≤ 1 KB (986 B), enforced by the same script |
+| `@fractalbox/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,272 B), enforced by `scripts/size.mjs` |
+| Its sequence module, loaded only for a sequence diagram | ≤ 1 KB (984 B), enforced by the same script |
+| Its state module, loaded only for a state diagram | ≤ 1 KB (1,020 B), enforced by the same script |
 | Base `<merlion-view>` with the hook and the shared chrome | ≤ 6 KB (4,953 B), enforced by the same script |
 | Model and text | Built once per adopted SVG, O(V + E); popover text is rebuilt per pin from the target only |
 | Per pin | Class removal on the old lit set, class addition on the new one, one layout read to place the popover |
 | Path mode | One breadth-first search per direction, O(V + E), bounded by the core's 2,000-node, 4,000-edge limits |
 
-The size script bundles each entry on its own, every on-demand import external: the base without `./interact.js`, the interaction module without the base or `./interact-seq.js`, and the sequence module alone. The pure logic (adjacency, reachability, focus sets, collapse sets, tap outcome, text reconstruction, outline order) lives in `interact-model.js`; the gesture rules and popover placement live in `zoom.js`. Both run without a DOM and are tested with `node --test`.
+The size script bundles each entry on its own, every on-demand import external: the base without `./interact.js`, the interaction module without the base or either diagram module, the sequence module alone, and the state module without `./interact-model.js`, which the interaction module has already loaded. The pure logic (adjacency, reachability, focus sets, collapse sets, tap outcome, text reconstruction, outline order) lives in `interact-model.js`; the gesture rules and popover placement live in `zoom.js`. Both run without a DOM and are tested with `node --test`.
 
 ## Determinism
 

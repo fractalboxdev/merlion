@@ -290,11 +290,15 @@ Note right of Draft: Waits for the author
 
 The highlight sets of [interaction.md](interaction.md#highlight-set) carry over with no new rule: a state's incident edges are its transitions, and a transition's endpoints are its two states. Clicking a state lights the state, every transition touching it and the states at their other ends, and dims the rest; clicking a transition lights it and both its states.
 
-- Composite states collapse, like every flowchart cluster: clicking the title hides the members, badges the box `+N` and leaves the box and title ([interaction.md](interaction.md#hide-and-collapse)). They never pin, because a flowchart supplies no cluster lit set and a state diagram supplies none either.
+- Composite states collapse, like every flowchart cluster: clicking the title hides the members, badges the box `+N` and leaves the box and title ([interaction.md](interaction.md#hide-and-collapse)). A collapsed composite also hides its concurrency regions, because a region's whole mark is the divider between members that are no longer drawn.
+- A composite state also **pins what it holds**: Alt + tap on its title, or `Enter` on it in the keyboard walk, lights every state inside it and every transition between two of them, marks its own box with the accent and heads the popover with its outline line and the counts. Alt is the key because a title is text and Shift + click extends the selection, which is never a tap ([interaction.md](interaction.md#gestures)). A composite is the one cluster that both collapses and pins, so a plain tap keeps the collapse gesture the reader already knows.
 - Concurrency regions are neither collapsed nor pinned: they carry no title and no box.
-- Notes are never dimmed and are not targets, matching the cluster rule and the sequence one ([sequence.md](sequence.md#interaction)).
+- Notes are never dimmed and are not targets, matching the cluster rule and the sequence one ([sequence.md](sequence.md#interaction)). A note belongs to the state it points at: it lights with that state and hides with it, so a hidden state leaves no orphaned note behind.
 - Path mode follows transitions in source direction, which walks the reachable states of the machine.
-- The CSS hover layer emits the same rules over state and transition ids, and `N = 128` counts states plus transitions. No support module of its own is needed: `interact.js` reads the node, edge and cluster attributes the lowered graph already writes, so no `interact-state.js` ships ([interaction.md](interaction.md#loading)).
+- The keyboard walks the states in declaration order, each composite state ahead of the first state it holds, which is the order the outline lists them. A state that draws no label is announced as the outline names it — `start`, `end`, `if_state (choice)` — never as the generated id `root_start`.
+- The CSS hover layer emits the same rules over state and transition ids, and `N = 128` counts states plus transitions.
+
+`interact-state.js` carries all of it and nothing else; `interact.js` imports it for an SVG carrying `merlion-state` and for no other, so a page of flowcharts never fetches it ([interaction.md](interaction.md#loading)). It supplies no highlight rule, no gesture and no popover of its own: it fills in the model the interaction module has already read from the node, edge and cluster attributes the lowered graph writes — each state's name and outline line, the walk, the notes, and a lit set per composite state.
 
 ## Testing
 
@@ -302,4 +306,5 @@ The highlight sets of [interaction.md](interaction.md#highlight-set) carry over 
 - Lowering: the six guarantees above, each as its own test — id injectivity over a source that declares `root_start`, declaration order, parents before children, innermost cluster, endpoints of a transition naming a composite, and a graph whose node, layer and crossing counts are equal with and without notes.
 - Layout: over the `compat` state diagrams, no label overlaps another element, every member sits inside its composite's box, and every note box sits inside the extent the lowering reserved.
 - SVG: `assert_safe` and `assert_well_formed` over every state fixture, the same checks flowcharts pass, extended with the state class names and the draw order above.
+- Viewer: the pure model of `interact-state.js` under `node --test` — declaration order read from the core's node ids, the name each kind reads as, the walk with a composite ahead of the first state it holds, the forward scan that gives three concurrency regions three different `Active: start` lines, and the lit set of a composite.
 - Determinism: the state fixtures render byte-identically native and through the WASM module in Node, in each font mode — `pnpm bench determinism --corpus state` ([benchmark.md](benchmark.md)) — and flowchart and sequence output stay byte-identical to their recorded digests.

@@ -80,7 +80,7 @@ let styled = false;
  * label as the outline writes it and `style` is the base element's `MerlionView.style`, both passed
  * in so this module loads without a DOM and its rules reach the sheet once per page.
  */
-export const sequence = ({ svg, nodes, edges, cls, desc, walk, groups, text, style }) => {
+export default ({ svg, nodes, edges, cls, desc, walk, groups, text, style }) => {
   if (!styled) (styled = true), style(CSS);
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const acts = [...svg.querySelectorAll(".merlion-activation")];
