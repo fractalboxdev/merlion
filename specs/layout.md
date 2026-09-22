@@ -27,7 +27,7 @@ Graph-shaped diagrams (flowchart, state, class, ER) use one layered layout engin
 
 Every forward edge `u → v` gets `layer(v) > layer(u)`.
 
-- **Flowcharts:** longest-path layering from the virtual root over the acyclic graph left by phase 1. A node sits below all of its non-back-edge predecessors, and therefore below its dominators, which keeps the happens-before order readable (VEIL; Schaad, Ben-Nun, Hoefler, 2025). The dominator tree also orders nodes within a layer: phase 3 starts from a depth-first order of the dominator tree, so a node's dominated region stays contiguous.
+- **Flowcharts:** longest-path layering from the virtual root over the acyclic graph left by phase 1. A node sits below all of its non-back-edge predecessors, and therefore below its dominators, which keeps the happens-before order readable (VEIL; Schaad, Ben-Nun, Hoefler, 2025). A source (a node with no predecessor) then moves down to one `min_len` above its highest successor, so a second entry point sits next to the node it feeds instead of at the top with a long edge; a source has no predecessor to stay below, so the invariant above still holds. The dominator tree also orders nodes within a layer: phase 3 starts from a depth-first order of the dominator tree, so a node's dominated region stays contiguous.
 - **Other graph types:** network simplex (Gansner et al.), minimising total edge length.
 - Edges spanning more than one layer get dummy nodes, one per intermediate layer. The layered graph's size and layer count are checked against the limits in [architecture.md](architecture.md#boundaries) before phase 3.
 

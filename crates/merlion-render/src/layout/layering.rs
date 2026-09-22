@@ -47,6 +47,27 @@ pub fn longest_path(
     Ok(layer)
 }
 
+/// Moves every source (a node without predecessors) with at least one successor down
+/// to the lowest layer its successors allow, one `min_len` above the highest of them.
+/// Only sources move, and a source has no predecessor to stay below, so every edge
+/// still points down.
+pub fn sink_sources(n: usize, edges: &[(usize, usize, usize)], layer: &mut [usize]) {
+    let mut has_pred = vec![false; n];
+    let mut limit: Vec<Option<usize>> = vec![None; n];
+    for &(u, v, len) in edges {
+        if u < n && v < n && u != v {
+            has_pred[v] = true;
+            let above = layer[v].saturating_sub(len.max(1));
+            limit[u] = Some(limit[u].map_or(above, |a: usize| a.min(above)));
+        }
+    }
+    for v in 0..n {
+        if let (false, Some(a)) = (has_pred[v], limit[v]) {
+            layer[v] = layer[v].max(a);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,6 +103,24 @@ mod tests {
     }
 
     #[test]
+    fn sources_sink_to_just_above_their_highest_successor() {
+        // 0 -> 1 -> 2 -> 3, 4 -> 3 (min_len 1), 5 -> 3 (min_len 2), 6 -> 1 and 6 -> 3,
+        // and 7 isolated.
+        let e = [
+            (0, 1, 1),
+            (1, 2, 1),
+            (2, 3, 1),
+            (4, 3, 1),
+            (5, 3, 2),
+            (6, 1, 1),
+            (6, 3, 1),
+        ];
+        let mut l = run(8, &e);
+        sink_sources(8, &e, &mut l);
+        assert_eq!(l, [0, 1, 2, 3, 2, 1, 0, 0]);
+    }
+
+    #[test]
     fn every_edge_points_down_on_random_dags() {
         let mut s: u64 = 5;
         let mut next = || {
@@ -100,7 +139,8 @@ mod tests {
                 })
                 .filter(|&(a, b, _)| a != b)
                 .collect();
-            let l = run(n, &e);
+            let mut l = run(n, &e);
+            sink_sources(n, &e, &mut l);
             for &(a, b, len) in &e {
                 assert!(l[b] >= l[a] + len);
             }

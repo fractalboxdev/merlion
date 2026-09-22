@@ -1651,7 +1651,7 @@ fn run_one(
         reversed[e] = info.reversed.get(k).copied().unwrap_or(false);
     }
 
-    // Phase 2: longest-path layering honouring `min_len`.
+    // Phase 2: longest-path layering honouring `min_len`, sources sunk to their successors.
     let cap = lim.layers.saturating_add(1);
     let lp_edges: Vec<(usize, usize, usize)> = normal
         .iter()
@@ -1665,7 +1665,8 @@ fn run_one(
             }
         })
         .collect();
-    let layer = layering::longest_path(n, &lp_edges, fuel).map_err(too_large_fuel)?;
+    let mut layer = layering::longest_path(n, &lp_edges, fuel).map_err(too_large_fuel)?;
+    layering::sink_sources(n, &lp_edges, &mut layer);
     if layer.iter().any(|&l| l >= lim.layers) {
         return Err(LayoutError::TooLarge { what: "layers" });
     }
