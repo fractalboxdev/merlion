@@ -6,7 +6,7 @@ import { sectionRank } from "../lib/llms";
 
 export const GET: APIRoute = async ({ site }) => {
   const entries = (await getCollection("docs")).sort((a, b) => sectionRank(a.id) - sectionRank(b.id) || a.id.localeCompare(b.id));
-  const base = site ?? new URL("https://merlion-docs.example.workers.dev");
+  const base = site ?? new URL("https://merlion-docs.debuggingfuturecors.workers.dev");
   const parts = entries.map((e) => {
     const url = new URL(e.id === "index" ? "/" : `/${e.id}/`, base).href;
     const body = (e.body ?? "").replace(/^# .*\n+/, "").trim();

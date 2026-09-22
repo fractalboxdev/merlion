@@ -5,7 +5,7 @@ import type { APIRoute } from "astro";
 const AI_CRAWLERS = ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended", "Applebot-Extended", "CCBot"];
 
 export const GET: APIRoute = ({ site }) => {
-  const sitemap = new URL("/sitemap-index.xml", site ?? "https://merlion-docs.example.workers.dev").href;
+  const sitemap = new URL("/sitemap-index.xml", site ?? "https://merlion-docs.debuggingfuturecors.workers.dev").href;
   const body = [
     "User-agent: *",
     "Allow: /",

@@ -6,7 +6,7 @@ import { sectionOf, SECTIONS } from "../lib/llms";
 
 export const GET: APIRoute = async ({ site }) => {
   const entries = await getCollection("docs");
-  const base = site ?? new URL("https://merlion-docs.example.workers.dev");
+  const base = site ?? new URL("https://merlion-docs.debuggingfuturecors.workers.dev");
   const lines = [
     "# Merlion",
     "",

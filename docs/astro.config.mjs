@@ -7,8 +7,7 @@ import starlightLinksValidator from "starlight-links-validator";
 import { specLinks } from "./src/lib/specs.mjs";
 
 export default defineConfig({
-  // TODO(operator): set the production host once the Worker has its route or custom domain.
-  site: "https://merlion-docs.example.workers.dev",
+  site: "https://merlion-docs.debuggingfuturecors.workers.dev",
   trailingSlash: "always",
   markdown: {
     // Relative links inside specs/ point at sibling files, as on GitHub; on the site they
