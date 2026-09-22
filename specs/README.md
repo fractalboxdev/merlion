@@ -25,6 +25,7 @@ Merlion renders Mermaid diagrams to static, themeable, accessible SVG. It is a R
 | [svg-output.md](svg-output.md) | The SVG contract: CSS variables, roles, the stylesheet subset and baked palettes, accessibility, ids, data attributes, escaping |
 | [security.md](security.md) | Threat model, output safety, resource bounds, fuzzing |
 | [viewer.md](viewer.md) | `<merlion-view>` pan, zoom, semantic zoom |
+| [interaction.md](interaction.md) | Hover and focus highlighting: CSS rules in the SVG, the viewer's `interact` module, popover, keyboard, touch |
 | [integrations.md](integrations.md) | CLI, WASM package, rehype plugin, Astro |
 | [supply-chain.md](supply-chain.md) | Dependency policy, release provenance |
 | [licensing.md](licensing.md) | Project licence; every project, dataset and tool Merlion uses, and its terms |
