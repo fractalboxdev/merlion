@@ -4,7 +4,7 @@
  *   pnpm bench fetch
  *   pnpm bench run [--renderers merlion,mermaid-dagre,mermaid-elk] [--corpus compat] [--limit N] [--out-svgs] [--no-edits]
  *   pnpm bench report [--input results/<file>.json] [--out <file>.md]
- *   pnpm bench determinism [--font link|embed|system]
+ *   pnpm bench determinism [--corpus compat|sequence] [--font link|embed|system]
  *   pnpm bench parity [--limit N] [--require-rsvg]
  *   pnpm bench sequence [--limit N] [--out-svgs]
  */
@@ -13,7 +13,7 @@ import { FetchHttpClient } from "@effect/platform";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Effect, Layer, Schema } from "effect";
 import { fetchCorpus } from "./corpus/fetch.ts";
-import { determinism, FONT_MODES } from "./determinism.ts";
+import { CORPUS_NAMES, determinism, FONT_MODES } from "./determinism.ts";
 import { parity } from "./parity/gate.ts";
 import { RENDERER_NAMES, type RendererName } from "./renderers/Renderer.ts";
 import { report } from "./report.ts";
@@ -51,9 +51,13 @@ const reportCmd = Command.make("report", { input, out }, (o) => report(o.input, 
 );
 
 const font = Options.choice("font", FONT_MODES).pipe(Options.withDefault("link" as const));
-const determinismCmd = Command.make("determinism", { font }, (o) => determinism(o.font).pipe(Effect.asVoid)).pipe(
-  Command.withDescription("Check native (CLI --batch) and WASM output are byte-identical over the compat corpus"),
+const determinismCorpus = Options.choice("corpus", CORPUS_NAMES).pipe(
+  Options.withDefault("compat" as const),
+  Options.withDescription("compat (mermaid flowcharts) or sequence (the core's sequence fixtures)"),
 );
+const determinismCmd = Command.make("determinism", { corpus: determinismCorpus, font }, (o) =>
+  determinism(o.corpus, o.font).pipe(Effect.asVoid),
+).pipe(Command.withDescription("Check native (CLI --batch) and WASM output are byte-identical over a corpus"));
 
 const parityLimit = Options.integer("limit").pipe(Options.optional, Options.withDescription("Check only the first N diagrams"));
 const requireRsvg = Options.boolean("require-rsvg").pipe(Options.withDescription("Fail instead of skipping when rsvg-convert is not on PATH"));

@@ -7,6 +7,8 @@ export const REPO_DIR = resolve(BENCH_DIR, "..");
 export const COMPAT_DIR = join(BENCH_DIR, "corpus", "compat");
 export const COMPAT_SEQUENCE_DIR = join(BENCH_DIR, "corpus", "compat-sequence");
 export const EDITS_DIR = join(BENCH_DIR, "corpus", "edits");
+/** The core's sequence fixtures; the compat corpus holds no sequence diagram. */
+export const SEQUENCE_DIR = join(REPO_DIR, "crates", "merlion-render", "tests", "fixtures", "sequence");
 export const RESULTS_DIR = join(BENCH_DIR, "results");
 export const MERLION_BIN = join(REPO_DIR, "target", "release", "merlion");
 export const MERLION_WASM_DIR = join(REPO_DIR, "packages", "merlion-wasm");
