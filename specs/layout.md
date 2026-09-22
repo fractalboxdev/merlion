@@ -50,10 +50,10 @@ A diagram with more than one weakly connected component is laid out one componen
 After coordinates are assigned, if the drawing's width exceeds `target_width`, the engine applies these steps in order and stops at the first that fits:
 
 1. With `direction: auto`, lay out in the other direction and keep whichever fits; if both fit, keep the smaller area; if neither fits, continue the steps below with the narrower one.
-2. **`LR` / `RL` — wrap the layer sequence.** Layers are columns, so width grows with the number of layers. Split the sequence at the point closest to the midpoint where the fewest edges cross the split, and place the second part below the first. Repeat on the widest part while the result is still too wide and height / width stays at or below `max_aspect`; a wrap that would exceed `max_aspect` is not applied. Edges that cross a wrap are routed around the outside and marked `data-merlion-wrap="true"`.
+2. **`LR` / `RL` — wrap the layer sequence.** Layers are columns, so width grows with the number of layers. Split the sequence at the point closest to the midpoint where the fewest edges cross the split, and place the second part below the first. Repeat on the widest part while the result is still too wide and height / width stays at or below `max_aspect`; a wrap that would exceed `max_aspect` is not applied, and the step succeeds only when a wrap reaches `target_width`. Edges that cross a wrap are routed around the outside and marked `data-merlion-wrap="true"`.
 3. **`TB` / `BT` — split wide layers.** Layers are rows, so width grows with the widest layer. Split each layer wider than `target_width` into two sub-rows at the position that separates the fewest edges, inserting a pseudo-layer so that edges stay downward. Repeat under the same `max_aspect` rule as step 2.
 4. Reduce the label wrap width in steps of 20 px, down to 120 px, and lay out again.
-5. When nothing fits, the SVG is wider than the container and `<merlion-view>` handles it by zooming ([viewer.md](viewer.md)).
+5. When nothing fits, no wrap, split or narrower label wrap is kept: the result is the step-1 drawing, wider than the container, and `<merlion-view>` handles it by zooming ([viewer.md](viewer.md)). A partial wrap or split that stays too wide routes edges around every wrap and splits layers into staircases, and costs more crossings, bends and edge length than zooming the whole drawing.
 
 Aspect ratio is a soft constraint, following ARCOL (Alsuwaykit et al., 2026).
 

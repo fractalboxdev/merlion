@@ -88,31 +88,44 @@ fn tb_splits_a_wide_layer_into_rows_that_fit() {
 }
 
 #[test]
-fn tb_split_narrows_a_wide_fan_and_keeps_edges_downward() {
-    // Edges into lower rows pass between the nodes of the rows above, so a single
-    // fan narrows but does not reach 720 px with these label widths.
-    let b = wide_fan(14);
-    let plain = run_with(
-        &b.c,
-        &RenderOptions {
-            target_width: 1e9,
-            ..RenderOptions::default()
-        },
-    )
-    .0
-    .unwrap();
-    assert!(plain.width > 720.0, "precondition: {}", plain.width);
-    let g = run(&b.c);
+fn a_tb_split_that_does_not_fit_is_not_kept() {
+    // Under a tight max_aspect, a split into sub-rows narrows the fan but does not reach
+    // 720 px; the unsplit drawing stays and the viewer zooms it.
+    let b = wide_fan(40);
+    let opts = |target_width: f64| RenderOptions {
+        target_width,
+        max_aspect: 0.3,
+        ..RenderOptions::default()
+    };
+    let plain = run_with(&b.c, &opts(1e9)).0.unwrap();
+    assert!(plain.width > 2.0 * 720.0, "precondition: {}", plain.width);
+    let g = run_with(&b.c, &opts(720.0)).0.unwrap();
     check(&b.c, &g);
-    assert!(g.width < plain.width, "{} vs {}", g.width, plain.width);
-    assert!(g.height / g.width <= 1.6);
-    for (i, n) in g.nodes.iter().enumerate().skip(1) {
-        assert!(n.y > g.nodes[0].y, "child {} not below root", i);
-    }
-    for e in &g.edges {
-        assert!(e.points[e.points.len() - 1].y > e.points[0].y);
+    assert_eq!(g.width, plain.width);
+    assert_eq!(g.height, plain.height);
+    for n in g.nodes.iter().skip(1) {
+        assert_eq!(n.y, g.nodes[1].y, "every child stays in one row");
     }
     assert_eq!(g.layers, plain.layers);
+}
+
+#[test]
+fn an_lr_wrap_that_does_not_fit_is_not_kept() {
+    // One wrap passes max_aspect but leaves the chain wider than 720 px, and a second
+    // wrap would pass max_aspect: the unwrapped drawing stays.
+    let mut c = chain(24);
+    c.direction = Direction::LR;
+    let opts = |target_width: f64| RenderOptions {
+        target_width,
+        max_aspect: 0.3,
+        ..RenderOptions::default()
+    };
+    let plain = run_with(&c, &opts(1e9)).0.unwrap();
+    assert!(plain.width > 2.0 * 720.0, "precondition: {}", plain.width);
+    let g = run_with(&c, &opts(720.0)).0.unwrap();
+    check(&c, &g);
+    assert!(g.edges.iter().all(|e| !e.wrap));
+    assert_eq!(g.width, plain.width);
 }
 
 #[test]

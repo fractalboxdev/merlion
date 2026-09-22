@@ -1226,7 +1226,7 @@ fn plain(
 }
 
 /// Step 2 (`LR`/`RL`): wrap the layer sequence while the drawing is too wide and the
-/// aspect ratio allows.
+/// aspect ratio allows. Only a wrap that fits is returned; a partial wrap is dropped.
 fn wrap_layers(
     base: &Base,
     m: &Meas,
@@ -1257,7 +1257,6 @@ fn wrap_layers(
         }
     }
     let mut parts: Vec<(usize, usize)> = vec![(0, nl)];
-    let mut best: Option<Geometry> = None;
     for _ in 0..MAX_FIT_ROUNDS {
         // Split the part that is longest along the layer axis.
         let (i, &(a, b)) = parts.iter().enumerate().max_by(|x, y| {
@@ -1281,21 +1280,19 @@ fn wrap_layers(
         if !aspect_ok(&geom, &base.o) {
             break;
         }
-        parts = next;
-        let done = fits(&geom, &base.o);
-        best = Some(geom);
-        if done {
-            break;
+        if fits(&geom, &base.o) {
+            return Some(geom);
         }
+        parts = next;
     }
-    best
+    None
 }
 
 /// Step 3 (`TB`/`BT`): split every layer wider than the target into sub-rows, each
 /// row a pseudo-layer below the previous one so edges keep pointing down. Round `i`
 /// splits a layer of width `w` into `ceil(w / target) + i` rows of the original
 /// candidate; the first round that fits wins, and a round beyond `max_aspect` ends the
-/// search (the previous result stands).
+/// search. When no round fits, the unsplit candidate stands.
 fn split_layers(base: &Base, m: &Meas, c: Cand, budget: &mut Budget, fuel: &mut Fuel) -> Cand {
     let inner = base.o.target_width - 2.0 * MARGIN;
     let g = &c.lay.g;
@@ -1320,7 +1317,7 @@ fn split_layers(base: &Base, m: &Meas, c: Cand, budget: &mut Budget, fuel: &mut 
         })
         .collect();
     let prev_x: Vec<f64> = g.real.iter().map(|&v| c.co.x[v]).collect();
-    let mut best: Option<Cand> = None;
+    let mut narrowest_w = c.geom.width;
     for round in 0..MAX_FIT_ROUNDS {
         let splits: Vec<(usize, Vec<Vec<usize>>)> = wide
             .iter()
@@ -1377,17 +1374,15 @@ fn split_layers(base: &Base, m: &Meas, c: Cand, budget: &mut Budget, fuel: &mut 
             break;
         }
         // More rows only help while they make the drawing narrower.
-        let narrowest = best.as_ref().map_or(c.geom.width, |b| b.geom.width);
-        if next.geom.width >= narrowest {
+        if next.geom.width >= narrowest_w {
             break;
         }
-        let done = fits(&next.geom, &base.o);
-        best = Some(next);
-        if done {
-            break;
+        if fits(&next.geom, &base.o) {
+            return next;
         }
+        narrowest_w = next.geom.width;
     }
-    best.unwrap_or(c)
+    c
 }
 
 /// Steps 1–3 of container fit for one measurement.
