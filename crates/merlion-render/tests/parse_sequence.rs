@@ -1659,3 +1659,49 @@ fn the_arrow_gallery_covers_every_head() {
     assert_eq!(seen.len(), messages(&s).len(), "duplicate arrow forms");
     assert!(seen.len() >= 18, "{seen:?}");
 }
+
+// ------------------------------------------------------------- bounded scans
+
+/// Every scan a statement runs is bounded by the statement, so the cost of a line is
+/// the same whether its statements are separated by `;` or by newlines
+/// (specs/sequence.md#syntax).
+#[test]
+fn statements_on_one_line_cost_the_same_as_one_per_line() {
+    let n = 40_000;
+    let mut one_line = String::from("sequenceDiagram\n");
+    let mut one_each = String::from("sequenceDiagram\n");
+    for _ in 0..n {
+        one_line.push_str("participant P;");
+        one_each.push_str("participant P\n");
+    }
+    let a = seq(&one_line);
+    let b = seq(&one_each);
+    assert_eq!(a.participants.len(), 1);
+    assert_eq!(b.participants.len(), a.participants.len());
+}
+
+/// An `@{` that no `}` closes costs the statement, not the rest of the source: the
+/// scan stops and the statement takes `W022`.
+#[test]
+fn an_unclosed_at_block_scans_no_further_than_its_statement() {
+    let n = 20_000;
+    let mut src = String::from("sequenceDiagram\n");
+    for _ in 0..n {
+        src.push_str("participant P@{\n");
+    }
+    let (s, d) = seq_d(&src);
+    assert_eq!(s.participants.len(), 1);
+    assert!(count(&d, "W022") > 0);
+}
+
+/// A block longer than the scan window is not closed: it takes `W022` and the
+/// participant declares plain, as an unclosed `@{` does.
+#[test]
+fn an_at_block_past_the_scan_window_is_ignored() {
+    let filler = "x".repeat(16_000);
+    let src = format!("sequenceDiagram\n    participant A@{{ \"alias\": \"{filler}\" }}\n");
+    let (s, d) = seq_d(&src);
+    assert!(has(&d, "W022"), "{:?}", codes(&d));
+    assert_eq!(s.participants.len(), 1);
+    assert_eq!(s.participants[0].id, "A");
+}

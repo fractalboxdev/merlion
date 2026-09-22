@@ -60,6 +60,20 @@ const ARROWS: &[(&str, MessageLine, Head, Head)] = &[
     ("-)", MessageLine::Solid, Head::None, Head::Open),
 ];
 
+/// Longest `@{ … }` block scanned for its closing `}`: twice the directive parser's
+/// own string limit, so every block that parser accepts is reachable while the scan
+/// costs a statement a fixed amount whatever follows it.
+const BRACE_SCAN_BYTES: usize = 2 * super::DIRECTIVE_STRING_BYTES;
+
+/// The largest offset at or below `at` that starts a character.
+fn floor_boundary(src: &str, at: usize) -> usize {
+    let mut at = at.min(src.len());
+    while at > 0 && !src.is_char_boundary(at) {
+        at -= 1;
+    }
+    at
+}
+
 /// The arrow token starting at `at`, if any.
 fn arrow_at(src: &str, at: usize) -> Option<&'static (&'static str, MessageLine, Head, Head)> {
     let rest = src.get(at..)?;
@@ -194,6 +208,9 @@ impl FrameKind {
 struct P<'a, 'd> {
     src: &'a str,
     idx: &'a LineIndex<'a>,
+    /// Offset of the last `}` in the source; a block opening at or after it closes
+    /// nowhere, so [`P::brace_end`] answers without scanning.
+    last_brace: usize,
     pos: usize,
     opts: &'a ParseOptions,
     diags: &'d mut Diagnostics,
@@ -206,6 +223,10 @@ struct P<'a, 'd> {
     stack: Vec<Frame>,
     autonumber: Option<Autonumber>,
     messages: u32,
+    /// Items that take a row: messages, notes, fragments and activations. `limits.edges`
+    /// bounds them together, so a document cannot draw more rows than it declares
+    /// messages (specs/sequence.md#diagnostics).
+    rows: u32,
     /// `create`d participants waiting for the message that names them.
     creating: Vec<usize>,
     /// `destroy`ed participants waiting for the message that ends them, with the
@@ -225,6 +246,7 @@ pub(crate) fn parse_sequence(
     let mut p = P {
         src: idx.src(),
         idx,
+        last_brace: idx.src().rfind('}').unwrap_or(0),
         pos,
         opts,
         diags,
@@ -236,6 +258,7 @@ pub(crate) fn parse_sequence(
         stack: Vec::new(),
         autonumber: None,
         messages: 0,
+        rows: 0,
         creating: Vec::new(),
         destroying: Vec::new(),
     };
@@ -270,11 +293,15 @@ impl P<'_, '_> {
         at
     }
 
-    /// Offset of the end of the line containing `at`.
+    /// Offset of the end of the line containing `at`, answered from the line index in
+    /// amortised constant time so a statement never rescans its line.
     fn eol_from(&self, at: usize) -> usize {
-        self.rest_at(at)
-            .find('\n')
-            .map_or(self.src.len(), |i| at + i)
+        let next = self.idx.next_line_start(at);
+        if next > at && self.src.as_bytes().get(next - 1) == Some(&b'\n') {
+            next - 1
+        } else {
+            next
+        }
     }
 
     /// End of the statement starting at `at`: the first `;` that closes no entity code,
@@ -550,11 +577,13 @@ impl P<'_, '_> {
     ) -> Result<(), Stop> {
         self.skip_hws();
         let id_start = self.pos;
-        let line_end = self.eol_from(id_start);
-        // `@{ … }` may hold a `;`, so the statement ends after the block.
+        // `@{ … }` may hold a `;`, so the statement ends after the block; the `@{`
+        // itself opens before the `;` that would otherwise end the statement, so the
+        // search reads the statement and not the rest of the line.
+        let scan_end = self.stmt_end(id_start);
         let at = self
             .src
-            .get(id_start..line_end)
+            .get(id_start..scan_end)
             .and_then(|l| l.find("@{"))
             .map(|i| id_start + i);
         let (id_end, mut kind, mut alias, rest_start, stmt_end) = match at {
@@ -728,10 +757,20 @@ impl P<'_, '_> {
         Ok((close, kind, alias))
     }
 
-    /// The offset just past the `}` closing the block that opens at `at`, quotes honoured.
+    /// The offset just past the `}` closing the block that opens at `at`, quotes
+    /// honoured.
+    ///
+    /// The scan reads at most [`BRACE_SCAN_BYTES`] and stops at once past the last `}`
+    /// in the source, so a statement whose block is never closed costs a fixed amount
+    /// rather than the tail of the input.
     fn brace_end(&self, at: usize) -> Option<usize> {
+        if at >= self.last_brace {
+            return None;
+        }
+        let stop = floor_boundary(self.src, self.src.len().min(at + 1 + BRACE_SCAN_BYTES));
+        let window = self.src.get(at + 1..stop).unwrap_or("");
         let mut quote: Option<char> = None;
-        for (i, c) in self.rest_at(at + 1).char_indices() {
+        for (i, c) in window.char_indices() {
             match (quote, c) {
                 (Some(q), c) if c == q => quote = None,
                 (Some(_), _) => {}
@@ -830,6 +869,7 @@ impl P<'_, '_> {
     // ------------------------------------------------------------ fragments
 
     fn fragment_stmt(&mut self, kw_start: usize, word: &str) -> Result<(), Stop> {
+        self.charge_row()?;
         let start = self.pos;
         let end = self.stmt_end(start);
         let text = cut_comment(self.src.get(start..end).unwrap_or(""));
@@ -1018,6 +1058,29 @@ impl P<'_, '_> {
         }
     }
 
+    /// Opens one activation on `p`, or reports that `limits.nesting` is reached. Each
+    /// level offsets the drawn bar, so an uncapped stack widens the drawing without
+    /// bound (specs/sequence.md#activation).
+    fn open_activation(&mut self, p: usize) -> bool {
+        let depth = self.open.get(p).copied().unwrap_or(0) as usize;
+        if depth >= self.opts.limits.nesting {
+            return true;
+        }
+        if let Some(n) = self.open.get_mut(p) {
+            *n += 1;
+        }
+        false
+    }
+
+    /// Counts one row-producing item against `limits.edges`.
+    fn charge_row(&mut self) -> Result<(), Stop> {
+        self.rows = self.rows.saturating_add(1);
+        if self.rows as usize > self.opts.limits.edges {
+            return Err(Stop::TooLarge("items"));
+        }
+        Ok(())
+    }
+
     /// Adds an item to the innermost open fragment section, else to the diagram.
     fn push_item(&mut self, item: Item) {
         for f in self.stack.iter_mut().rev() {
@@ -1143,13 +1206,22 @@ impl P<'_, '_> {
         if self.messages as usize >= self.opts.limits.edges {
             return Err(Stop::TooLarge("messages"));
         }
+        self.charge_row()?;
         let index = self.messages;
         self.messages += 1;
         let mut deactivate = deactivate;
-        if activate {
-            if let Some(n) = self.open.get_mut(to) {
-                *n += 1;
-            }
+        let mut activate = activate;
+        if activate && self.open_activation(to) {
+            self.warn(
+                "W023",
+                start,
+                end,
+                alloc::format!(
+                    "activations nested deeper than {}; the bar is dropped",
+                    self.opts.limits.nesting
+                ),
+            );
+            activate = false;
         }
         if deactivate {
             match self.open.get_mut(from) {
@@ -1211,6 +1283,7 @@ impl P<'_, '_> {
 
     /// `Note left of A: …`, `Note right of A: …`, `Note over A[,B]: …`.
     fn note_stmt(&mut self, kw_start: usize) -> Result<(), Stop> {
+        self.charge_row()?;
         self.skip_hws();
         let word_end = self.word_end(self.pos);
         let word = self
@@ -1306,9 +1379,19 @@ impl P<'_, '_> {
         let span = self.stmt_span(kw_start, end);
         self.pos = end;
         if activate {
-            if let Some(n) = self.open.get_mut(i) {
-                *n += 1;
+            if self.open_activation(i) {
+                self.diags.emit(
+                    Severity::Warning,
+                    "W023",
+                    span,
+                    alloc::format!(
+                        "activations nested deeper than {}; the bar is dropped",
+                        self.opts.limits.nesting
+                    ),
+                );
+                return Ok(());
             }
+            self.charge_row()?;
             self.push_item(Item::Activate {
                 participant: i,
                 span,
@@ -1318,6 +1401,7 @@ impl P<'_, '_> {
         match self.open.get_mut(i) {
             Some(n) if *n > 0 => {
                 *n -= 1;
+                self.charge_row()?;
                 self.push_item(Item::Deactivate {
                     participant: i,
                     span,
