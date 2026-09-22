@@ -7,10 +7,11 @@
     "node": ">=20.6"
   },
   "scripts": {
-    "test": "pnpm -r --if-present test && node --test demo/*.test.mjs",
-    "gallery": "node demo/build-gallery.mjs",
+    "test": "pnpm -r --if-present test && node scripts/check-docs-alignment.mjs",
+    "docs": "pnpm --filter docs dev",
+    "docs:build": "pnpm --filter docs build",
+    "docs:deploy": "pnpm --filter docs run deploy",
     "size": "pnpm --filter @fractalboxdev/merlion-view size",
-    "demo": "node demo/serve.mjs",
     "determinism": "pnpm --dir bench bench determinism"
   }
 }

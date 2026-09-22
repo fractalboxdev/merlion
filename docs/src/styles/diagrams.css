@@ -1,0 +1,59 @@
+/*
+ * Merlion stylesheet of the docs site (specs/svg-output.md#stylesheet). The Astro
+ * integration compiles it once per build and imports the compiled page CSS after
+ * merlion-themes.css; this file never reaches a page.
+ *
+ * Starlight sets data-theme="light" or "dark" on <html>, so the two named blocks carry
+ * Starlight's default colours: its page background and text for the foundations, and its accent for
+ * the `accent` role. `:root` repeats the light values for standalone renders.
+ *
+ * Site roles, beside the built-in ones (accent, ok, warn, danger, muted, group,
+ * failure, async):
+ *   optional  node   a step that runs only while fuel lasts, or may be skipped
+ *   queue     node   the roles gallery entry's queue
+ *   senders   cluster the roles gallery entry's consumers
+ */
+
+:root,
+[data-theme="light"] {
+  --paper: #ffffff;
+  --ink: #23262f;
+  --accent: hsl(234, 90%, 60%);
+  --plum: #7a4fb5;
+  --teal: #1b8a8f;
+  --merlion-bg: var(--paper);
+  --merlion-fg: var(--ink);
+  --merlion-accent: var(--accent);
+}
+
+[data-theme="dark"] {
+  --paper: #17181c;
+  --ink: #eceef2;
+  --accent: hsl(224, 100%, 72%);
+  --plum: #b79cf0;
+  --teal: #5cc8cc;
+  --merlion-bg: var(--paper);
+  --merlion-fg: var(--ink);
+  --merlion-accent: var(--accent);
+}
+
+.merlion-c-optional {
+  --merlion-dash: 4 3;
+}
+
+.merlion-c-queue {
+  --merlion-tone: var(--plum);
+}
+
+[data-theme="dark"] .merlion-c-queue {
+  --merlion-tone: var(--plum);
+}
+
+.merlion-cc-senders {
+  --merlion-tone: var(--teal);
+  --merlion-dash: 2 3;
+}
+
+[data-theme="dark"] .merlion-cc-senders {
+  --merlion-tone: var(--teal);
+}

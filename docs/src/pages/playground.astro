@@ -1,0 +1,294 @@
+---
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+
+const initial = `flowchart LR
+  accTitle: How a page gets its diagrams
+  md["**Markdown**<br/>docs page"] --> parse{mermaid fence?}
+  parse -->|yes| render["**Render SVG**<br/>merlion-wasm"]
+  parse -->|no| html[Plain HTML]
+  render --> cache[(Hint cache)]
+  cache e1@-.-> render
+  render --> page[Page]
+  html --> page
+  class render accent
+  class e1 async`;
+---
+
+<StarlightPage
+  frontmatter={{
+    title: "Playground",
+    description:
+      "Edit Mermaid and watch Merlion re-render it in the browser through WebAssembly, with diagnostics and stable layout while you type.",
+    tableOfContents: false,
+    editUrl: false,
+  }}
+>
+  <p>
+    The renderer is the Merlion core compiled to WebAssembly (<code>/merlion.wasm</code>, about 1.3 MB). Each render
+    passes the previous SVG as its layout hint, so nodes keep their places while you type; <strong>Fresh layout</strong>
+    drops the hint. Diagnostics list every error, warning and repair; select one to jump to its position.
+  </p>
+
+  <div class="panes not-content">
+    <div class="pane">
+      <div class="pane-bar">
+        <label for="src">Mermaid source</label>
+        <button id="fresh" type="button" class="ghost" title="Drop the layout hint and lay out from scratch">
+          Fresh layout
+        </button>
+      </div>
+      <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" rows="16">{initial}</textarea>
+      <ul id="diagnostics" class="diagnostics" aria-label="Diagnostics"></ul>
+    </div>
+    <div class="pane">
+      <div class="pane-bar">
+        <span>Preview</span>
+        <span id="status" class="status" aria-live="polite"></span>
+      </div>
+      <div id="preview" class="preview">
+        <merlion-view id="live" controls="always"></merlion-view>
+        <p id="preview-empty" class="placeholder">Loading the renderer…</p>
+      </div>
+    </div>
+  </div>
+</StarlightPage>
+
+<script>
+  // The glue and the module are static files next to each other (/merlion-wasm.js and
+  // /merlion.wasm, copied by scripts/prepare.mjs), loaded at runtime and never bundled,
+  // so the 1.3 MB module ships once.
+  import type { Diagnostic, RenderResult } from "@fractalboxdev/merlion-wasm";
+  type Wasm = typeof import("@fractalboxdev/merlion-wasm");
+
+  const $ = <T extends HTMLElement>(sel: string): T => {
+    const el = document.querySelector<T>(sel);
+    if (!el) throw new Error(`playground: ${sel} is missing`);
+    return el;
+  };
+
+  const src = $<HTMLTextAreaElement>("#src");
+  const live = $("#live");
+  const preview = $("#preview");
+  const empty = $("#preview-empty");
+  const status = $("#status");
+  const diagList = $("#diagnostics");
+  const fresh = $<HTMLButtonElement>("#fresh");
+  /** The last successful SVG: the next render's layout hint. */
+  let previous: string | null = null;
+
+  // Parse as XML so a malformed result fails visibly instead of half-rendering.
+  const parseSvg = (text: string): Element | null => {
+    const doc = new DOMParser().parseFromString(text, "image/svg+xml");
+    const svg = doc.documentElement;
+    if (svg.localName !== "svg" || doc.querySelector("parsererror")) return null;
+    return document.importNode(svg, true);
+  };
+
+  // Select the diagnostic's position in the textarea (1-based line and column).
+  const jumpTo = (line: number, column: number) => {
+    const lines = src.value.split("\n");
+    let offset = 0;
+    for (let i = 0; i < Math.min(line - 1, lines.length); i++) offset += (lines[i]?.length ?? 0) + 1;
+    offset += Math.max(0, column - 1);
+    src.focus();
+    src.setSelectionRange(offset, Math.min(src.value.length, offset + 1));
+  };
+
+  const showDiagnostics = (list: Diagnostic[]) => {
+    diagList.replaceChildren(
+      ...list.map((d) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const sev = document.createElement("span");
+        sev.className = `sev-${d.severity}`;
+        sev.textContent = `${d.severity} ${d.code}`;
+        btn.append(sev, ` ${d.line}:${d.column} ${d.message}`);
+        if (d.line > 0) btn.addEventListener("click", () => jumpTo(d.line, d.column));
+        const li = document.createElement("li");
+        li.append(btn);
+        return li;
+      }),
+    );
+  };
+
+  const renderLive = (render: Wasm["render"]) => {
+    const t0 = performance.now();
+    let out: Pick<RenderResult, "svg" | "diagnostics">;
+    try {
+      out = render(src.value, {
+        idPrefix: "live",
+        width: Math.max(240, Math.round(preview.clientWidth - 32)),
+        ...(previous ? { hint: previous } : {}),
+      });
+    } catch (err) {
+      out = {
+        svg: null,
+        diagnostics: [
+          { severity: "error", code: "E001", line: 0, column: 0, byteStart: 0, byteEnd: 0, message: String(err), fix: null },
+        ],
+      };
+    }
+    const ms = performance.now() - t0;
+    showDiagnostics(out.diagnostics);
+    const svg = out.svg ? parseSvg(out.svg) : null;
+    if (out.svg && svg) {
+      previous = out.svg;
+      live.replaceChildren(svg);
+      empty.textContent = "";
+      preview.classList.remove("stale");
+      status.textContent = `${ms.toFixed(1)} ms · ${(out.svg.length / 1024).toFixed(1)} KB`;
+    } else {
+      preview.classList.add("stale");
+      status.textContent = "Not rendered: see diagnostics";
+      if (!previous) empty.textContent = "Nothing to show yet.";
+    }
+  };
+
+  (async () => {
+    let wasm: Wasm;
+    try {
+      const glue = new URL("/merlion-wasm.js", location.href).href;
+      wasm = (await import(/* @vite-ignore */ glue)) as Wasm;
+      await wasm.init();
+    } catch (err) {
+      console.warn("merlion-wasm unavailable:", err);
+      empty.textContent = "The renderer did not load: /merlion-wasm.js or /merlion.wasm is missing or blocked. Reload to retry.";
+      status.textContent = "Renderer offline";
+      return;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    src.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => renderLive(wasm.render), 150);
+    });
+    fresh.addEventListener("click", () => {
+      previous = null;
+      renderLive(wasm.render);
+    });
+    renderLive(wasm.render);
+  })();
+</script>
+
+<style>
+  .panes {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  @media (min-width: 72rem) {
+    .panes {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
+  }
+  .pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    background: var(--sl-color-bg);
+  }
+  .pane-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.875rem;
+    border-bottom: 1px solid var(--sl-color-gray-5);
+    color: var(--sl-color-gray-3);
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+  }
+  .ghost {
+    padding: 0.25rem 0.625rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--sl-color-text);
+    cursor: pointer;
+    font-size: var(--sl-text-xs);
+  }
+  .ghost:hover {
+    border-color: var(--sl-color-accent);
+  }
+  textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 20rem;
+    margin: 0;
+    padding: 0.875rem 1rem;
+    border: 0;
+    resize: vertical;
+    background: transparent;
+    color: var(--sl-color-white);
+    font: 0.85rem/1.6 var(--__sl-font-mono);
+    tab-size: 2;
+  }
+  .diagnostics {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--sl-color-gray-5);
+    font: 0.78rem/1.5 var(--__sl-font-mono);
+  }
+  .diagnostics:empty {
+    display: none;
+  }
+  .diagnostics :global(button) {
+    display: block;
+    width: 100%;
+    padding: 0.375rem 1rem;
+    border: 0;
+    background: none;
+    color: var(--sl-color-text);
+    text-align: left;
+    cursor: pointer;
+  }
+  .diagnostics :global(button:hover) {
+    background: var(--sl-color-gray-6);
+  }
+  .diagnostics :global(.sev-error) {
+    color: var(--sl-color-red-high);
+  }
+  .diagnostics :global(.sev-warning),
+  .diagnostics :global(.sev-repair) {
+    color: var(--sl-color-orange-high);
+  }
+  .diagnostics :global(.sev-info) {
+    color: var(--sl-color-gray-3);
+  }
+  .status {
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+  .preview {
+    position: relative;
+    flex: 1;
+    min-height: 20rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  /* The viewer takes the pane's full height: the diagram centres inside it and the zoom
+     controls sit in the pane's top-right corner, clear of the drawing. */
+  .preview > merlion-view {
+    flex: 1 1 auto;
+  }
+  .preview.stale merlion-view {
+    opacity: 0.45;
+    transition: opacity 0.2s;
+  }
+  .placeholder {
+    margin: 0;
+    color: var(--sl-color-gray-3);
+    font-size: var(--sl-text-sm);
+    text-align: center;
+  }
+  .placeholder:empty {
+    display: none;
+  }
+</style>

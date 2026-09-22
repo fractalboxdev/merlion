@@ -133,3 +133,37 @@ jobs:
       - name: Stylesheet parity, compat corpus and role fixtures
         working-directory: bench
         run: pnpm bench parity --require-rsvg
+
+  docs:
+    # The docs site builds with every diagram rendered through the WASM build and every
+    # internal link valid (docs/astro.config.mjs); the README quick start matches it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: rustup toolchain install
+      - run: corepack enable
+      - name: Build merlion.wasm
+        run: sh packages/merlion-wasm/scripts/build-wasm.sh
+      - name: Install workspace (no install scripts)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: README and docs alignment
+        run: node scripts/check-docs-alignment.mjs
+      - name: Typecheck the docs site
+        run: pnpm --filter docs check
+      - name: Build the docs site
+        run: pnpm --filter docs build
+      - name: Every diagram rendered
+        # A mermaid block the integration could not render stays a code block.
+        run: |
+          if grep -rl 'data-language="mermaid"\|class="language-mermaid"' docs/dist --include='*.html'; then
+            echo "::error::unrendered mermaid blocks in the pages above"; exit 1
+          fi
+          echo "$(grep -o '<svg[^>]*class="merlion ' -r docs/dist --include='*.html' | wc -l) diagrams rendered"
+      - name: Worker config
+        working-directory: docs
+        run: pnpm exec wrangler deploy --dry-run

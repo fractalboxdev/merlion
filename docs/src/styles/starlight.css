@@ -1,0 +1,23 @@
+/* Site chrome around diagrams. Diagram colours come from src/styles/diagrams.css,
+   compiled by the Merlion integration. */
+
+.sl-markdown-content figure.merlion-figure {
+  margin-block: 1.5rem;
+}
+
+.sl-markdown-content figure.merlion-figure figcaption {
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.sl-markdown-content figure.merlion-figure details {
+  margin-top: 0.5rem;
+  font-size: var(--sl-text-sm);
+}
+
+.sl-markdown-content figure.merlion-figure summary {
+  cursor: pointer;
+  color: var(--sl-color-gray-3);
+}
