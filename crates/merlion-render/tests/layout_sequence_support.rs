@@ -474,6 +474,15 @@ pub fn check_endpoints(seq: &Sequence, g: &SequenceGeometry) {
             v.push(a.bar.x + a.bar.w);
         }
     }
+    // A creating message ends on the head box it opens, not on the lifeline under it.
+    for (p, part) in seq.participants.iter().enumerate() {
+        if part.created_by.is_some() {
+            if let (Some(v), Some(pg)) = (anchors.get_mut(p), g.participants.get(p)) {
+                v.push(pg.head.x);
+                v.push(pg.head.x + pg.head.w);
+            }
+        }
+    }
     let on = |v: &[f64], x: f64| v.iter().any(|a| (a - x).abs() <= EPS);
     for (from, to, k) in messages(seq) {
         let Some(m) = g.messages.get(k as usize) else {

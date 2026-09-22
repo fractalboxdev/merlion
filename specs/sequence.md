@@ -196,7 +196,7 @@ A row cursor starts below the tallest head box plus `ROW_GAP` and advances per i
 | Fragment | `FRAGMENT_TAB + header_label_height + FRAGMENT_PAD` before its first section, `FRAGMENT_PAD` after its last, and `section_label_height + ROW_GAP` for each divider between sections |
 | `Activate` / `Deactivate` | 0; the bar's end sits at the current cursor |
 
-The arrow of a message row sits at the row's bottom, its label centred above it. A message's endpoints are the activation-bar edges of its participants when a bar is open there, else the lifelines.
+The arrow of a message row sits at the row's bottom, its label centred above it. A message's endpoints are the activation-bar edges of its participants when a bar is open there, else the lifelines. A message that `create`s its target ends at the near edge of the head box it opens, since that box sits on this very row and the lifeline starts below it.
 
 ### Activations, lifelines, create and destroy
 

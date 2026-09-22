@@ -766,10 +766,30 @@ impl<'a> Build<'a> {
                 Central::Source | Central::Both => self.centre(msg.from),
                 _ => self.edge(msg.from, rightwards),
             };
+            // The head box a message creates sits on that message's own row, so the
+            // arrow stops at the box's near edge instead of running under it.
+            let creates = self
+                .seq
+                .participants
+                .get(msg.to)
+                .is_some_and(|p| p.created_by == Some(msg.index));
             let tx = match msg.central {
                 Central::Target | Central::Both => self.centre(msg.to),
+                _ if creates => {
+                    let half = self.head_w(msg.to) / 2.0;
+                    let c = self.centre(msg.to);
+                    if rightwards {
+                        c - half
+                    } else {
+                        c + half
+                    }
+                }
                 _ => self.edge(msg.to, !rightwards),
             };
+            if creates {
+                let half = self.head_w(msg.to) / 2.0;
+                ext.span(self.centre(msg.to) - half, self.centre(msg.to) + half);
+            }
             if msg.deactivate {
                 self.close(msg.from, arrow + ROW_GAP / 2.0);
             }

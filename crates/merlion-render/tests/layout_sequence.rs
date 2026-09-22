@@ -383,6 +383,28 @@ fn a_created_participant_starts_at_its_creating_row() {
 }
 
 #[test]
+fn a_message_that_creates_its_target_stops_at_the_new_head_box() {
+    let mut s = S::new();
+    let v = s.ps(&["A", "B"]);
+    let first = s.msg(v[0], v[0], "warm up");
+    let create = s.peek();
+    let m = s.msg(v[0], v[1], "create");
+    s.seq.participants[v[1]].created_by = Some(create);
+    let seq = s.done(vec![first, m]);
+    let g = run(&seq);
+    check(&seq, &g);
+    // The head box sits on the creating row, so an arrow run to the lifeline ends
+    // under it and buries its own head.
+    let b = &g.participants[1];
+    let end = g.messages[create as usize].to.0;
+    assert!(
+        (end - b.head.x).abs() < EPS,
+        "the arrow ends at {end}, inside the head box {:?}",
+        b.head
+    );
+}
+
+#[test]
 fn a_destroyed_participant_loses_its_foot_box() {
     let mut s = S::new();
     let v = s.ps(&["A", "B"]);
