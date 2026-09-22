@@ -2,6 +2,7 @@
 
 mod acyclic;
 mod coords;
+pub mod hint;
 mod layering;
 mod lgraph;
 mod measure;
