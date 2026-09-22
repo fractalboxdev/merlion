@@ -8,7 +8,10 @@
 export interface RenderOptions {
   /** Container width in px the layout fits (`target_width`); default 720. */
   width?: number;
-  /** `"auto"` lets the engine choose TB or LR to fit `width`; default `"source"`. */
+  /**
+   * `"auto"` lets the engine choose TB or LR to fit `width`; default `"source"`.
+   * A sequence draws its participants in source order whatever this says.
+   */
   direction?: "auto" | "source";
   edgeStyle?: "orthogonal" | "polyline" | "spline";
   font?: "link" | "embed" | "system";
@@ -16,13 +19,19 @@ export interface RenderOptions {
   strict?: boolean;
   /** SVG root id, `[a-z][a-z0-9-]{0,31}`; pass one per diagram when a page holds several. */
   idPrefix?: string;
-  /** The previous SVG of this diagram, for stable layout; over 1 MiB it is ignored with I022. */
+  /**
+   * The previous SVG of this diagram, for stable layout; over 1 MiB it is ignored with I022.
+   * A sequence reads none: its geometry is the source's and repeats byte for byte without one.
+   */
   hint?: string;
   /** Work budget in fuel units (a whole number up to 2^53). */
   fuel?: number;
   /**
    * Automatic tones: decisions take `warn`, stores `store`, terminals `ok` and each
    * top-level subgraph a series tone, unless the element has its own class or style.
+   * In a sequence, actors take `accent`, database, collections and queue participants
+   * `store`, and each fragment kind its own tone (`loop` a series tone, `alt` `warn`,
+   * `critical` and `break` `danger`).
    * Default `true`; `false` draws them untoned. Presentation only: layout is unchanged.
    */
   autoTone?: boolean;

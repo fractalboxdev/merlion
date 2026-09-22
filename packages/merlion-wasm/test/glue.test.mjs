@@ -142,6 +142,46 @@ test("invalid arguments throw instead of reaching the module", () => {
   assert.throws(() => check(VALID, { zoom: 3 }), /unknown option `zoom`/);
 });
 
+const SEQ = "sequenceDiagram\n    actor Alice\n    participant Bob\n    Alice->>+Bob: Hello\n    Bob-->>-Alice: Hi\n";
+
+test("a sequence renders through the same API and returns its outline", () => {
+  const r = render(SEQ, { idPrefix: "s1" });
+  assert.ok(r.svg?.includes('class="merlion merlion-sequence"'), JSON.stringify(r.diagnostics));
+  assert.ok(r.svg.includes('data-merlion-layout="v1;SEQ;0:Alice,Bob"'), r.svg.slice(0, 400));
+  assert.equal(r.error, null);
+  assert.ok(r.outline.startsWith("Sequence diagram. 2 participants, 2 messages."), r.outline);
+  assert.ok(r.outline.includes("1. Alice → Bob: Hello"), r.outline);
+  assert.deepEqual(Object.keys(r).sort(), ["diagnostics", "error", "fuelUsed", "outline", "svg"]);
+});
+
+test("a sequence ignores direction and a layout hint: its order is the source's", () => {
+  const plain = render(SEQ, { idPrefix: "s1" }).svg;
+  assert.equal(render(SEQ, { idPrefix: "s1", direction: "auto" }).svg, plain);
+  const again = render(SEQ, { idPrefix: "s1", hint: plain });
+  assert.equal(again.svg, plain);
+  // No I020-I022: a sequence reads no hint, so none can be stale or invalid.
+  assert.deepEqual(again.diagnostics.filter((d) => d.code.startsWith("I02")), []);
+});
+
+test("automatic tones reach a sequence's participants and fragments", () => {
+  const src = "sequenceDiagram\n    actor A\n    participant DB@{ \"type\": \"database\" }\n    loop twice\n        A->>DB: read\n    end\n";
+  const on = render(src, { idPrefix: "s2" }).svg;
+  assert.ok(on.includes("merlion-c-accent merlion-auto"), on);
+  assert.ok(on.includes("merlion-c-store merlion-auto"), on);
+  assert.ok(on.includes("merlion-cc-series-1 merlion-auto"), on);
+  assert.ok(!render(src, { idPrefix: "s2", autoTone: false }).svg.includes("merlion-auto"));
+});
+
+test("a sequence repair crosses the boundary with its fix", () => {
+  const ds = check("sequenceDiagram\n    Alice->>Bob Hello\n");
+  const r013 = ds.find((d) => d.code === "R013");
+  assert.ok(r013, JSON.stringify(ds));
+  assert.equal(r013.severity, "repair");
+  assert.equal(r013.line, 2);
+  assert.equal(typeof r013.fix.replacement, "string");
+  assert.ok(check(SEQ).every((d) => d.severity !== "error"), JSON.stringify(check(SEQ)));
+});
+
 const SHEET = `
 :root { --merlion-accent: #0f766e; --merlion-fg: #202830; --merlion-stroke: 1.5px; }
 [data-theme="dark"] { --merlion-bg: #101418; --merlion-fg: #e6e6e6; }
