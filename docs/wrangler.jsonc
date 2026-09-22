@@ -1,6 +1,9 @@
 // Cloudflare Worker serving the built site from static assets (no Worker script).
-// Deploy: `pnpm --filter docs run deploy` (astro build + wrangler deploy). The account comes
-// from CLOUDFLARE_ACCOUNT_ID or `wrangler login`; none is committed here.
+// Cloudflare Workers Builds deploys it on every push: it runs `sh scripts/cf-build.sh`
+// from the repository root and then `pnpm --filter docs exec wrangler deploy`, and uploads a
+// preview version for other branches. `pnpm --filter docs run deploy` does the same by hand.
+// The account comes from the build connection, CLOUDFLARE_ACCOUNT_ID or `wrangler login`;
+// none is committed here.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "merlion-docs",

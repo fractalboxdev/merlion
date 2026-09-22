@@ -122,7 +122,7 @@ pnpm --filter docs build                                # docs/dist/
 pnpm --filter docs run deploy                           # build, then wrangler deploy to Cloudflare Workers
 ```
 
-`docs/scripts/prepare.mjs` runs before every dev server and build: it copies `merlion.wasm` and its glue into `docs/public/` for the playground and generates the gallery pages from the test fixtures and the benchmark corpus. Deploying needs `CLOUDFLARE_API_TOKEN` (Account → Workers Scripts:Edit) and `CLOUDFLARE_ACCOUNT_ID`, or `wrangler login`.
+`docs/scripts/prepare.mjs` runs before every dev server and build: it copies `merlion.wasm` and its glue into `docs/public/` for the playground and generates the gallery pages from the test fixtures and the benchmark corpus. Cloudflare Workers Builds deploys the site on every push to `main` and uploads a preview version for every other branch, running `sh scripts/cf-build.sh` (which installs the pinned Rust toolchain, builds the WebAssembly module and then the site) and `pnpm --filter docs exec wrangler deploy`. Deploying by hand needs `wrangler login` or `CLOUDFLARE_API_TOKEN` (Account → Workers Scripts:Edit) with `CLOUDFLARE_ACCOUNT_ID`.
 
 ## Benchmark and determinism
 
