@@ -141,6 +141,11 @@ pub struct WrapFrame {
     pub gap_x: Vec<f64>,
     /// Layer-axis coordinate of the first entry channel before part `p`.
     pub entry_y: Vec<f64>,
+    /// Order-axis thickness, clearance included, of the label chip on each chain's run
+    /// through the gap (0 without a label there). Gap tracks next to a chip sit apart by
+    /// [`WRAP_STEP`] plus half of each neighbouring chip, so chips stack in the gap,
+    /// which is wider by the sum of its chips.
+    pub chip: Vec<f64>,
 }
 
 pub struct RouteIn<'a> {
@@ -372,8 +377,13 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
             }
         }
     }
-    // (track, tracks at the boundary) per wrapping step.
-    let mut wrap_slot: BTreeMap<(usize, usize), (usize, usize)> = BTreeMap::new();
+    // (track, tracks at the boundary, gap-track offset) per wrapping step.
+    let chip = |ci: usize| {
+        inp.wrap
+            .and_then(|w| w.chip.get(ci).copied())
+            .unwrap_or(0.0)
+    };
+    let mut wrap_slot: BTreeMap<(usize, usize), (usize, usize, f64)> = BTreeMap::new();
     for list in steps.values_mut() {
         list.sort_by(|a, b| {
             cmp_f(b.0, a.0)
@@ -382,18 +392,26 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
                 .then(a.3.cmp(&b.3))
         });
         let k = list.len();
+        let mut off = 0.0;
+        let mut prev: Option<f64> = None;
         for (r, &(_, _, ci, i)) in list.iter().enumerate() {
-            wrap_slot.insert((ci, i), (r, k));
+            let t = chip(ci);
+            off += match prev {
+                None => t / 2.0,
+                Some(p) => WRAP_STEP + (p + t) / 2.0,
+            };
+            prev = Some(t);
+            wrap_slot.insert((ci, i), (r, k, off));
         }
     }
     let detour = |ci: usize, c: &[usize], i: usize, from_x: f64, to_x: f64| -> [(f64, f64); 4] {
-        let (r, k) = wrap_slot.get(&(ci, i)).copied().unwrap_or((0, 1));
+        let (r, k, off) = wrap_slot.get(&(ci, i)).copied().unwrap_or((0, 1, 0.0));
         let outer = k.saturating_sub(1).saturating_sub(r);
         let w = inp.wrap;
         let pa = part(layer(c[i - 1]));
         let pb = part(layer(c[i]));
         let chan = w.map_or(0.0, |w| w.chan_y) + WRAP_STEP * r as f64;
-        let gx = w.and_then(|w| w.gap_x.get(pa).copied()).unwrap_or(0.0) + WRAP_STEP * r as f64;
+        let gx = w.and_then(|w| w.gap_x.get(pa).copied()).unwrap_or(0.0) + off;
         let entry =
             w.and_then(|w| w.entry_y.get(pb).copied()).unwrap_or(0.0) - WRAP_STEP * outer as f64;
         [(from_x, chan), (gx, chan), (gx, entry), (to_x, entry)]
@@ -751,6 +769,7 @@ mod tests {
             chan_y: 90.0,
             gap_x: vec![60.0],
             entry_y: vec![0.0, -20.0],
+            chip: vec![],
         };
         for style in [EdgeStyle::Orthogonal, EdgeStyle::Polyline] {
             let r = route(&RouteIn {
@@ -793,6 +812,7 @@ mod tests {
             chan_y: 60.0,
             gap_x: vec![120.0],
             entry_y: vec![-30.0, -30.0],
+            chip: vec![],
         };
         for style in [EdgeStyle::Orthogonal, EdgeStyle::Polyline] {
             let r = route(&RouteIn {

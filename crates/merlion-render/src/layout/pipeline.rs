@@ -822,13 +822,23 @@ fn finish(
                 (o0[p], o1[p], l0[p], l1[p]) = (0.0, 0.0, 0.0, 0.0);
             }
         }
-        // Wrap crossings per boundary.
+        // Wrap crossings per boundary, and the label chips (order axis, clearance
+        // included) of edges between neighbouring layers that cross it: such a label
+        // sits on the detour's run through the gap, which grows to stack them.
         let mut cnt = vec![0usize; np];
-        for ch in &g.chains {
+        let mut chips = vec![0.0f64; np];
+        let mut chip = vec![0.0f64; g.chains.len()];
+        for (ci, ch) in g.chains.iter().enumerate() {
             for w in ch.nodes.windows(2) {
                 let (pa, pb) = (part(g.nodes[w[0]].layer), part(g.nodes[w[1]].layer));
                 if pa != pb {
                     cnt[pa.min(np - 1)] += 1;
+                    if let (2, Some(Some(l))) = (ch.nodes.len(), m.edge_label.get(ch.edge)) {
+                        let (cw, chh) = chip_size(l);
+                        let (t, _) = axes(dir, cw, chh);
+                        chip[ci] = t + LABEL_CLEAR;
+                        chips[pa.min(np - 1)] += chip[ci];
+                    }
                 }
             }
         }
@@ -840,7 +850,7 @@ fn finish(
             } else {
                 let prev_end = o1[p - 1] + shift[p - 1].0;
                 gap_x[p - 1] = prev_end + o.node_spacing / 2.0 + route::WRAP_STEP / 2.0;
-                let channels = route::WRAP_STEP * cnt[p - 1] as f64;
+                let channels = route::WRAP_STEP * cnt[p - 1] as f64 + chips[p - 1];
                 prev_end + o.node_spacing + channels - o0[p]
             };
             shift[p] = (dx, dy);
@@ -851,6 +861,7 @@ fn finish(
             chan_y: far + out,
             gap_x,
             entry_y: vec![l0[0] - out; np],
+            chip,
         });
     }
     let sh = |l: usize| shift.get(part(l)).copied().unwrap_or((0.0, 0.0));

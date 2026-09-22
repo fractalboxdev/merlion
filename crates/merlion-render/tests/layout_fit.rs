@@ -206,3 +206,44 @@ fn polyline_wraps_stay_inside_the_drawing() {
     assert!(g.width <= 720.0);
     assert!(g.edges.iter().any(|e| e.wrap));
 }
+
+#[test]
+fn labels_on_wrap_detours_clear_nodes_and_each_other() {
+    // Two tall labelled edges cross the same wrap boundary; their chips sit in the gap
+    // between the parts, which must hold them.
+    let mut b = B::new().dir(Direction::LR);
+    let a = b.shape(
+        "a",
+        "first line<br>second line<br>third line",
+        merlion_render::model::Shape::Rect,
+    );
+    let v = b.nodes(&["b", "c", "d", "e"]);
+    b.edge_l(
+        a,
+        v[0],
+        "a rather long first line<br>two<br>three<br>four<br>five",
+    );
+    b.edge_l(a, v[1], "another long label line<br>six<br>seven");
+    b.edge(v[0], v[2]);
+    b.edge(v[1], v[3]);
+    let plain = run_with(
+        &b.c,
+        &RenderOptions {
+            target_width: 1e9,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    let opts = RenderOptions {
+        target_width: plain.width - 40.0,
+        ..RenderOptions::default()
+    };
+    let g = run_with(&b.c, &opts).0.unwrap();
+    check(&b.c, &g);
+    assert!(
+        g.edges.iter().filter(|e| e.wrap).count() >= 2,
+        "precondition"
+    );
+    assert_eq!(merlion_render::layout::metrics::label_overlaps(&g), 0);
+}
