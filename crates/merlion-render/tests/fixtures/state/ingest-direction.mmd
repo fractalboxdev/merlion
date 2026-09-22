@@ -1,0 +1,12 @@
+stateDiagram-v2
+    direction LR
+    [*] --> Ingest
+    state Ingest {
+        direction TB
+        [*] --> Fetch
+        Fetch --> Parse : the payload arrives
+        Parse --> [*]
+    }
+    Ingest --> Store
+    Store --> Indexed : the writer commits
+    Indexed --> [*]

@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Locked
+    Locked --> Unlocked : the code matches
+    Locked --> Alarm : three codes in a row do not
+    Alarm --> Locked : an operator resets the panel
+    Unlocked --> Locked : no motion for 30s
+    Unlocked --> [*]

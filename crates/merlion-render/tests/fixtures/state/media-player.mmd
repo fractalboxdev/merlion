@@ -1,0 +1,10 @@
+stateDiagram-v2
+    direction LR
+    [*] --> Stopped
+    Stopped --> Playing : play
+    Playing --> Paused : pause
+    Paused --> Playing : resume
+    Playing --> Stopped : stop
+    Paused --> Stopped : stop
+    Playing --> Playing : seek
+    Stopped --> [*]

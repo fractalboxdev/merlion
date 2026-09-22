@@ -1,0 +1,16 @@
+stateDiagram-v2
+    state score_gate <<choice>>
+    state fan_out <<fork>>
+    state fan_in <<join>>
+
+    [*] --> Collect
+    Collect --> score_gate
+    score_gate --> Reject : the score is under 0.5
+    score_gate --> fan_out : the score is 0.5 or over
+    fan_out --> Index
+    fan_out --> Notify
+    Index --> fan_in
+    Notify --> fan_in
+    fan_in --> Done
+    Reject --> [*]
+    Done --> [*]

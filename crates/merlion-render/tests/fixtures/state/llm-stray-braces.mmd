@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Open
+    Open --> Triaged : an owner takes the issue
+    }
+    --
+    Triaged --> Closed : the fix ships
+    Closed --> [*]

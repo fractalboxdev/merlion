@@ -1,0 +1,11 @@
+---
+title: Order lifecycle
+---
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted : submit
+    Submitted --> Review : queue for an editor
+    Review --> Published : approved
+    Review --> Draft : rejected
+    Published --> Archived : retire
+    Archived --> [*]

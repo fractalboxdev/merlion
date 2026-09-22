@@ -35,10 +35,12 @@ fn parse_state(src: &str) -> StateMachine {
 
 #[test]
 fn both_headers_dispatch_to_the_state_parser() {
-    for src in [SRC, "stateDiagram\n    [*] --> Still\n"] {
+    // `[*]` resolves to one start and one end state per scope, so the three transitions
+    // above name four states (specs/state.md#start-and-end).
+    for (src, states, transitions) in [(SRC, 4, 3), ("stateDiagram\n    [*] --> Still\n", 2, 1)] {
         let s = parse_state(src);
-        assert!(s.states.is_empty(), "the scaffold parses no statements");
-        assert!(s.transitions.is_empty());
+        assert_eq!(s.states.len(), states, "{src:?}");
+        assert_eq!(s.transitions.len(), transitions, "{src:?}");
     }
 }
 

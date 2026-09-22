@@ -1,0 +1,17 @@
+stateDiagram-v2
+    direction LR
+    [*] --> Closed
+    Closed --> Listen : passive open
+    Closed --> SynSent : active open
+    Listen --> SynReceived : receive SYN
+    SynSent --> SynReceived : receive SYN
+    SynSent --> Established : receive SYN+ACK
+    SynReceived --> Established : receive ACK
+    Established --> FinWait1 : close
+    Established --> CloseWait : receive FIN
+    FinWait1 --> FinWait2 : receive ACK
+    FinWait2 --> TimeWait : receive FIN
+    CloseWait --> LastAck : close
+    LastAck --> Closed : receive ACK
+    TimeWait --> Closed : the 2MSL timer expires
+    Closed --> [*]

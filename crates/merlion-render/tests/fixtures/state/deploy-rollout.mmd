@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Staged
+    Staged --> Canary : promote 5% of the fleet
+    Canary --> Rollout : the error rate stays under 1%
+    Canary --> RollingBack : the error rate passes 1%
+    Rollout --> Live : every shard runs the new build
+    RollingBack --> Staged : the previous build is back
+    Live --> [*]

@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Ready
+    Ready --> Working : start
+    state Working {
+        [*] --> Fetching
+        Fetching --> Transforming
+        Transforming --> [*]
+    Working --> Done : finish
+    Done --> [*]

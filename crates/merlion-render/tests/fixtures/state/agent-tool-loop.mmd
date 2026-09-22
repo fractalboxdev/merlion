@@ -1,0 +1,10 @@
+stateDiagram-v2
+    state decide <<choice>>
+    [*] --> Planning
+    Planning --> decide
+    decide --> CallingTool : a tool call is needed
+    decide --> Answering : the answer is ready
+    CallingTool --> Observing
+    Observing --> Planning : feed the result back
+    Answering --> [*]
+    note right of Observing : Each observation is appended to the transcript.

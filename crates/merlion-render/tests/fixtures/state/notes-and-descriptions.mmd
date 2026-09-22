@@ -1,0 +1,12 @@
+stateDiagram-v2
+    state "Waiting for the author" as Draft
+    Review : Two approvals are required
+    note right of Draft
+        The author edits freely
+        until they submit.
+    end note
+    note left of Review : An approval expires after 14 days.
+    [*] --> Draft
+    Draft --> Review : submit
+    Review --> Published : approve
+    Published --> [*]

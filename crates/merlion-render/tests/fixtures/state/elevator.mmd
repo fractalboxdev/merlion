@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Moving : a floor is requested
+    state Moving {
+        [*] --> Accelerating
+        Accelerating --> Cruising
+        state Cruising {
+            [*] --> Level
+            Level --> Level : pass a floor
+            Level --> [*]
+        }
+        Cruising --> Decelerating
+        Decelerating --> [*]
+    }
+    Moving --> DoorsOpen : the car arrives
+    DoorsOpen --> Idle : the doors close
+    Idle --> [*]
