@@ -1,7 +1,18 @@
-//! Hand-written JSON serialiser for `render --json` and `--json-summary`
-//! (zero dependencies, specs/supply-chain.md).
+//! JSON serialisation of render results and diagnostics, shared by `merlion render --json`
+//! and the WASM module so both surfaces emit the same bytes (specs/integrations.md).
+//! Hand-written: the core has no dependencies (specs/supply-chain.md).
+//!
+//! Shapes:
+//! - result: `{svg, outline, diagnostics, fuel_used, error}`;
+//! - diagnostic: `{severity, code, line, column, byte_start, byte_end, message, fix}`,
+//!   `fix` being `null` or `{byte_start, byte_end, replacement}`;
+//! - error: `null`, `{kind:"parse"}`, `{kind:"unsupported_diagram", header}` or
+//!   `{kind:"too_large", what}`.
 
-use merlion_render::{Diagnostic, RenderError, RenderResult};
+use alloc::string::String;
+use core::fmt::Write;
+
+use crate::{Diagnostic, RenderError, RenderResult};
 
 /// Appends `s` as a JSON string literal (RFC 8259 §7). U+2028 and U+2029 are escaped
 /// too, so the output is also a valid JavaScript string literal.
@@ -15,7 +26,7 @@ pub fn push_str(out: &mut String, s: &str) {
             '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
             c if (c as u32) < 0x20 || c == '\u{2028}' || c == '\u{2029}' => {
-                out.push_str(&format!("\\u{:04x}", c as u32));
+                let _ = write!(out, "\\u{:04x}", c as u32);
             }
             c => out.push(c),
         }
@@ -23,7 +34,7 @@ pub fn push_str(out: &mut String, s: &str) {
     out.push('"');
 }
 
-fn push_opt_str(out: &mut String, s: Option<&str>) {
+pub fn push_opt_str(out: &mut String, s: Option<&str>) {
     match s {
         Some(s) => push_str(out, s),
         None => out.push_str("null"),
@@ -54,19 +65,21 @@ pub fn push_diagnostic(out: &mut String, d: &Diagnostic) {
     push_str(out, d.severity.as_str());
     out.push_str(r#","code":"#);
     push_str(out, d.code);
-    out.push_str(&format!(
+    let _ = write!(
+        out,
         r#","line":{},"column":{},"byte_start":{},"byte_end":{},"message":"#,
         d.span.line, d.span.column, d.span.byte_start, d.span.byte_end
-    ));
+    );
     push_str(out, &d.message);
     out.push_str(r#","fix":"#);
     match &d.fix {
         None => out.push_str("null"),
         Some(f) => {
-            out.push_str(&format!(
+            let _ = write!(
+                out,
                 r#"{{"byte_start":{},"byte_end":{},"replacement":"#,
                 f.span.byte_start, f.span.byte_end
-            ));
+            );
             push_str(out, &f.replacement);
             out.push('}');
         }
@@ -94,7 +107,7 @@ pub fn render_result(r: &RenderResult) -> String {
     push_opt_str(&mut out, r.outline.as_deref());
     out.push_str(r#","diagnostics":"#);
     push_diagnostics(&mut out, &r.diagnostics);
-    out.push_str(&format!(r#","fuel_used":{},"error":"#, r.fuel_used));
+    let _ = write!(out, r#","fuel_used":{},"error":"#, r.fuel_used);
     push_error(&mut out, r.error.as_ref());
     out.push('}');
     out
@@ -103,7 +116,9 @@ pub fn render_result(r: &RenderResult) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use merlion_render::{Severity, Span};
+    use crate::{Severity, Span};
+    use alloc::format;
+    use alloc::vec;
 
     fn lit(s: &str) -> String {
         let mut out = String::new();
@@ -165,7 +180,7 @@ mod tests {
                 code: "R003",
                 span: Span::default(),
                 message: "m".into(),
-                fix: Some(merlion_render::diag::Fix {
+                fix: Some(crate::diag::Fix {
                     span: Span {
                         line: 1,
                         column: 1,

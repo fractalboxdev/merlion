@@ -5,7 +5,6 @@
 mod args;
 mod fix;
 mod fsio;
-mod json;
 mod markdown;
 
 use std::io::{self, Read, Write};
@@ -17,7 +16,8 @@ use args::{CheckArgs, Command, RenderArgs};
 use markdown::Block;
 use merlion_render::diag::Fix;
 use merlion_render::{
-    Diagnostic, DirectionOption, RenderError, RenderOptions, RenderResult, Severity, Span,
+    error_diagnostic, json, Diagnostic, DirectionOption, RenderError, RenderOptions, RenderResult,
+    Severity, Span,
 };
 
 /// A Markdown file may hold many diagrams, each under the core's 1 MiB limit.
@@ -165,40 +165,6 @@ fn too_large() -> RenderError {
     RenderError::TooLarge { what: "input" }
 }
 
-/// A diagnostic for a failure the core reports only through `RenderError`. `E003` and
-/// `E004` match `merlion_render::check`; `E002` covers a parse failure that arrives
-/// without an `Error` diagnostic.
-fn error_diagnostic(e: &RenderError) -> Diagnostic {
-    let (code, message) = match e {
-        RenderError::UnsupportedDiagram { header } if header.is_empty() => {
-            ("E003", "no supported diagram type found".to_string())
-        }
-        RenderError::UnsupportedDiagram { header } => {
-            ("E003", format!("unsupported diagram type `{header}`"))
-        }
-        RenderError::TooLarge { what } => ("E004", format!("{what} exceeds its limit")),
-        RenderError::Parse => ("E002", "the diagram failed to parse".to_string()),
-    };
-    Diagnostic {
-        severity: Severity::Error,
-        code,
-        span: Span::default(),
-        message,
-        fix: None,
-    }
-}
-
-/// The result's diagnostics, plus one for the error when no `Error` diagnostic explains it.
-fn diagnostics_of(r: &RenderResult) -> Vec<Diagnostic> {
-    let mut ds = r.diagnostics.clone();
-    if let Some(e) = &r.error {
-        if !ds.iter().any(|d| d.severity == Severity::Error) {
-            ds.push(error_diagnostic(e));
-        }
-    }
-    ds
-}
-
 /// Rewrites a block-relative diagnostic into file positions.
 fn map_diagnostic(d: &Diagnostic, block: &Block) -> Diagnostic {
     let map_span = |s: Span| {
@@ -339,16 +305,6 @@ fn default_hint(target: &Path, r: &RenderArgs, cwd: &Path) -> Result<Option<Stri
     load_hint(target, cwd, r.follow_symlinks)
 }
 
-fn failed_result(error: RenderError) -> RenderResult {
-    RenderResult {
-        svg: None,
-        outline: None,
-        diagnostics: Vec::new(),
-        error: Some(error),
-        fuel_used: 0,
-    }
-}
-
 fn render_single(r: &RenderArgs, cwd: &Path, status: &mut Status) {
     let name = display(r.input.as_deref());
     // Every path is checked before any work, so a refused path never costs a render.
@@ -370,12 +326,11 @@ fn render_single(r: &RenderArgs, cwd: &Path, status: &mut Status) {
         Ok(h) => opts.hint = h,
         Err(()) => return status.failed = true,
     }
-    let mut result = match read_input(r.input.as_deref(), opts.limits.input_bytes as u64) {
+    let result = match read_input(r.input.as_deref(), opts.limits.input_bytes as u64) {
         Ok(Input::Text(src)) => merlion_render::render(&src, &opts),
-        Ok(Input::TooLarge) => failed_result(too_large()),
+        Ok(Input::TooLarge) => RenderResult::from_error(too_large()),
         Err(()) => return status.failed = true,
     };
-    result.diagnostics = diagnostics_of(&result);
     print_diagnostics(&name, &result.diagnostics);
     status.record(result.error.as_ref());
     if r.json {
@@ -428,7 +383,8 @@ fn render_markdown(r: &RenderArgs, cwd: &Path, status: &mut Status) {
             }
         }
         let mut result = merlion_render::render(&block.source, &opts);
-        result.diagnostics = diagnostics_of(&result)
+        result.diagnostics = result
+            .diagnostics
             .iter()
             .map(|d| map_diagnostic(d, block))
             .collect();
@@ -500,14 +456,14 @@ fn render_batch(r: &RenderArgs, dir: &Path, cwd: &Path, status: &mut Status) {
                 let res = merlion_render::render(&src, &opts);
                 (res, start.elapsed().as_micros())
             }
-            Ok(Input::TooLarge) => (failed_result(too_large()), 0),
+            Ok(Input::TooLarge) => (RenderResult::from_error(too_large()), 0),
             Err(()) => {
                 status.failed = true;
                 continue;
             }
         };
-        let diags = diagnostics_of(&result);
-        print_diagnostics(&name, &diags);
+        let diags = &result.diagnostics;
+        print_diagnostics(&name, diags);
         status.record(result.error.as_ref());
         if let (Some(t), Some(svg)) = (&target, &result.svg) {
             status.failed |= !write_or_report(t, svg.as_bytes());
@@ -521,7 +477,7 @@ fn render_batch(r: &RenderArgs, dir: &Path, cwd: &Path, status: &mut Status) {
                 result.fuel_used,
                 result.svg.as_ref().map_or(0, String::len),
             ));
-            json::push_diagnostics(&mut line, &diags);
+            json::push_diagnostics(&mut line, diags);
             line.push_str(r#","error":"#);
             json::push_error(&mut line, result.error.as_ref());
             line.push_str("}\n");
@@ -618,11 +574,8 @@ fn outline(input: Option<&Path>, status: &mut Status) {
         match merlion_render::outline(src) {
             Ok(o) => outlines.push(o),
             Err(e) => {
-                // The parser's own diagnostics explain a parse failure best.
-                let mut ds = match e {
-                    RenderError::Parse => merlion_render::check(src, false),
-                    _ => Vec::new(),
-                };
+                // `check` explains every failure `outline` can hit with the same codes.
+                let mut ds = merlion_render::check(src, false);
                 if !ds.iter().any(|d| d.severity == Severity::Error) {
                     ds.push(error_diagnostic(&e));
                 }

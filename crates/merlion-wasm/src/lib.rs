@@ -11,14 +11,13 @@
 //!
 //! The exports never free their inputs; the host deallocates them.
 
-mod json;
 mod opts;
 
 /// A hint larger than the core's 1 MiB input limit is ignored with `I022`, as in the CLI
 /// (specs/integrations.md#file-handling).
 const MAX_HINT_BYTES: usize = 1 << 20;
 
-use merlion_render::{Diagnostic, RenderError, RenderResult, Severity, Span};
+use merlion_render::{json, Diagnostic, RenderResult, Severity, Span};
 
 /// `{"kind": kind, "message": message}`, for failures before the core runs.
 fn boundary_error(kind: &str, message: &str) -> String {
@@ -67,38 +66,7 @@ pub fn render_json(src: &[u8], opts: &[u8]) -> String {
         pre.append(&mut result.diagnostics);
         result.diagnostics = pre;
     }
-    if let Some(e) = &result.error {
-        if !result
-            .diagnostics
-            .iter()
-            .any(|d| d.severity == Severity::Error)
-        {
-            result.diagnostics.push(error_diagnostic(e));
-        }
-    }
     json::render_result(&result)
-}
-
-/// A diagnostic for a failure the core reports only through `RenderError`; the codes
-/// match `merlion_render::check` and the CLI.
-fn error_diagnostic(e: &RenderError) -> Diagnostic {
-    let (code, message) = match e {
-        RenderError::UnsupportedDiagram { header } if header.is_empty() => {
-            ("E003", "no supported diagram type found".to_string())
-        }
-        RenderError::UnsupportedDiagram { header } => {
-            ("E003", format!("unsupported diagram type `{header}`"))
-        }
-        RenderError::TooLarge { what } => ("E004", format!("{what} exceeds its limit")),
-        RenderError::Parse => ("E002", "the diagram failed to parse".to_string()),
-    };
-    Diagnostic {
-        severity: Severity::Error,
-        code,
-        span: Span::default(),
-        message,
-        fix: None,
-    }
 }
 
 /// The JSON of `check` for already-copied inputs. Only `strict` is read from the options.

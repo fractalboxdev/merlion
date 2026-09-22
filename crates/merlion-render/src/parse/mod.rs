@@ -6,11 +6,11 @@
 //! diagram parser. Every parser works on the original source, so every span and every
 //! repair fix refers to the text the caller passed in.
 //!
-//! Diagnostic codes this module adds to the table in specs/parser.md#codes:
+//! Diagnostic codes this module adds to the table in specs/parser.md#codes (`E002`,
+//! `E003` and `E004` are listed there):
 //!
 //! | Code | Severity | Meaning |
 //! |---|---|---|
-//! | `E002` | Error | Syntax error no repair covers; the message names the expected tokens |
 //! | `W015` | Warning | `@{ shape: … }` shape or key Merlion does not draw; the node is a rectangle |
 //! | `W016` | Warning | Unknown configuration key, value outside its set, or malformed directive |
 //! | `I011` | Info | `theme`, `themeVariables` or `look` ignored: themes are CSS |

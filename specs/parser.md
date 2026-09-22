@@ -66,6 +66,9 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | Code | Severity | Meaning |
 |---|---|---|
 | `E001` InternalError | Error | The WASM instance trapped and was replaced ([integrations.md](integrations.md#fractalboxdevmerlion-wasm)) |
+| `E002` SyntaxError | Error | Syntax error no repair covers; the message names the expected tokens |
+| `E003` UnsupportedDiagram | Error | The header names a diagram type Merlion does not render, or there is no header |
+| `E004` TooLarge | Error | Input over its size limit, a structural limit exceeded, or mandatory-phase fuel exhausted |
 | `E010` NestingTooDeep | Error | Subgraphs nested beyond 64 |
 | `E011` FrontMatterUnsupported | Error | YAML outside the accepted subset, or nested beyond 64 |
 | `E012` DirectiveTooLarge | Error | `%%{init}%%` JSON nested beyond 64 or with a string over 4,096 bytes |
@@ -83,3 +86,5 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `R001`–`R007` | Repair | See [Error tolerance](#error-tolerance) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
+
+A failed render always carries at least one `Error` diagnostic. When no stage recorded one, the core adds `E002`, `E003` or `E004` for its `RenderError`, so the CLI, the WASM module and every other caller report the same codes.

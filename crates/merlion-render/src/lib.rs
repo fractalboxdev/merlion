@@ -13,6 +13,7 @@ pub mod diag;
 pub mod fuel;
 pub mod geometry;
 pub mod ids;
+pub mod json;
 pub mod layout;
 pub mod math;
 pub mod model;
@@ -55,8 +56,45 @@ pub struct RenderResult {
     pub fuel_used: u64,
 }
 
+/// The `Error` diagnostic for a failure: `E002` parse, `E003` unsupported diagram,
+/// `E004` a size limit or exhausted mandatory fuel (specs/parser.md#codes).
+pub fn error_diagnostic(e: &RenderError) -> Diagnostic {
+    let (code, message) = match e {
+        RenderError::UnsupportedDiagram { header } if header.is_empty() => {
+            ("E003", String::from("no supported diagram type found"))
+        }
+        RenderError::UnsupportedDiagram { header } => (
+            "E003",
+            alloc::format!("unsupported diagram type `{}`", header),
+        ),
+        RenderError::TooLarge { what } => ("E004", alloc::format!("{} exceeds its limit", what)),
+        RenderError::Parse => ("E002", String::from("the diagram failed to parse")),
+    };
+    Diagnostic {
+        severity: Severity::Error,
+        code,
+        span: Span::default(),
+        message,
+        fix: None,
+    }
+}
+
+/// Appends the diagnostic of `error` unless an `Error` diagnostic already explains it.
+fn explain(diagnostics: &mut Vec<Diagnostic>, error: &RenderError) {
+    if !diagnostics.iter().any(|d| d.severity == Severity::Error) {
+        diagnostics.push(error_diagnostic(error));
+    }
+}
+
 impl RenderResult {
-    fn failed(error: RenderError, diagnostics: Vec<Diagnostic>, fuel_used: u64) -> Self {
+    /// A failed result for an error found before the core runs (an input the caller
+    /// refused to read, for example), with its diagnostic.
+    pub fn from_error(error: RenderError) -> Self {
+        Self::failed(error, Vec::new(), 0)
+    }
+
+    fn failed(error: RenderError, mut diagnostics: Vec<Diagnostic>, fuel_used: u64) -> Self {
+        explain(&mut diagnostics, &error);
         RenderResult {
             svg: None,
             outline: None,
@@ -166,23 +204,11 @@ pub fn check(source: &str, strict: bool) -> Vec<Diagnostic> {
     };
     let mut diags = Diagnostics::new(strict);
     if source.len() > opts.limits.input_bytes {
-        diags.emit(
-            Severity::Error,
-            "E004",
-            Span::default(),
-            "input exceeds the size limit",
-        );
+        explain(&mut diags.items, &RenderError::TooLarge { what: "input" });
         return diags.items;
     }
-    if let Err(parse::ParseError::UnsupportedDiagram { header }) =
-        parse::parse(source, &parse_opts(&opts), &mut diags)
-    {
-        diags.emit(
-            Severity::Error,
-            "E003",
-            Span::default(),
-            alloc::format!("unsupported diagram type `{}`", header),
-        );
+    if let Err(e) = parse::parse(source, &parse_opts(&opts), &mut diags) {
+        explain(&mut diags.items, &map_parse_error(e));
     }
     diags.items
 }
