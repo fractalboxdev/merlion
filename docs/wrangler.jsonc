@@ -8,8 +8,14 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "merlion-docs",
   "compatibility_date": "2026-09-01",
+  // The site answers on its custom domain only; branch builds still get a preview URL.
+  "workers_dev": false,
+  "preview_urls": true,
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page"
-  }
+  },
+  // The site answers on its own hostname; wrangler creates the DNS record and the custom
+  // domain on deploy. The zone lives in the same account as the Worker.
+  "routes": [{ "pattern": "merlion.fractalbox.dev", "custom_domain": true }]
 }

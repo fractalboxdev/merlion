@@ -2,7 +2,7 @@
 
 Merlion renders Mermaid flowcharts to static, themeable, accessible SVG. The core (`crates/merlion-render`) is a `no_std` Rust library with zero dependencies; the same code runs as the `merlion` CLI and as a WebAssembly module, and native and WASM output are byte-identical. Labels are `<text>`, colours are CSS custom properties, so light, dark and custom themes switch with CSS alone, and every SVG carries `role="img"`, a `<title>` and a generated `<desc>`. The output is safe to inline without a sanitiser.
 
-Documentation: <https://merlion-docs.debuggingfuturecors.workers.dev/> (source in [docs/](docs/)). Design and contracts: [specs/](specs/README.md).
+Documentation: <https://merlion.fractalbox.dev/> (source in [docs/](docs/)). Design and contracts: [specs/](specs/README.md).
 
 ## Guarantees
 
@@ -47,7 +47,7 @@ target/release/merlion render diagram.mmd --json        # {svg, outline, diagnos
 
 Re-rendering onto an existing output file uses it as the layout hint, so nodes keep their positions across edits. `--font embed` inlines an Inter subset for standalone files. Exit codes: `0` rendered, `1` failed, `2` usage error, `3` input over a limit.
 
-Diagrams are coloured by default: decisions take `warn`, stores `store`, terminals `ok`, and each top-level subgraph the next series tint; `--no-auto-tone` draws everything neutral. Roles given with `class` or `:::` and one compiled stylesheet colour the rest ([roles and stylesheets](https://merlion-docs.debuggingfuturecors.workers.dev/guides/roles-and-stylesheets/)).
+Diagrams are coloured by default: decisions take `warn`, stores `store`, terminals `ok`, and each top-level subgraph the next series tint; `--no-auto-tone` draws everything neutral. Roles given with `class` or `:::` and one compiled stylesheet colour the rest ([roles and stylesheets](https://merlion.fractalbox.dev/guides/roles-and-stylesheets/)).
 
 ### Stylesheet
 
