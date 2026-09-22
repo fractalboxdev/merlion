@@ -12,7 +12,9 @@ Usage:
                  [--edge-style orthogonal|polyline|spline] [--font link|embed|system]
                  [--hint <previous.svg>] [--no-hint] [--strict] [--outline <file>]
                  [--id-prefix <prefix>] [--fuel <units>] [--follow-symlinks] [--json]
+                 [--css <file.css> [--theme <name>] [--auto-dark <name>]]
   merlion render --batch <dir> [-o <outdir>] [--json-summary] [render options]
+  merlion css [<input.css>] [-o <output.css>] [--strict] [--follow-symlinks]
   merlion check [<input>...] [--strict] [--fix] [--follow-symlinks]
   merlion outline [<input>] [--follow-symlinks]
   merlion --version
@@ -21,6 +23,11 @@ Usage:
 The input defaults to stdin (also `-`) and the output to stdout. A Markdown input
 (.md, .mdx) renders every ```mermaid block; -o then names a directory and block n of
 <name>.md is written to <dir>/<name>-<n>.svg.
+
+`css` compiles a stylesheet into page CSS: literal token values under fixed selector
+shapes. `render --css` bakes it into the SVG: `--theme` picks a [data-theme] block over
+:root (default :root alone), `--auto-dark` adds a named block as the
+prefers-color-scheme: dark variant. --strict turns W017-W019 into errors.
 
 Exit codes: 0 rendered, 1 failed, 2 usage error, 3 input exceeds limits.
 ";
@@ -43,6 +50,17 @@ pub struct RenderArgs {
     pub json: bool,
     pub batch: Option<PathBuf>,
     pub json_summary: bool,
+    pub css: Option<PathBuf>,
+    pub theme: Option<String>,
+    pub auto_dark: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct CssArgs {
+    pub input: Option<PathBuf>,
+    pub output: Option<PathBuf>,
+    pub strict: bool,
+    pub follow_symlinks: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -59,6 +77,7 @@ pub enum Command {
     Version,
     Render(RenderArgs),
     Check(CheckArgs),
+    Css(CssArgs),
     Outline {
         input: Option<PathBuf>,
         follow_symlinks: bool,
@@ -85,6 +104,7 @@ pub fn parse<I: IntoIterator<Item = OsString>>(args: I) -> Result<Command, Strin
         Some(Tok::Pos(cmd)) => match cmd.to_str() {
             Some("render") => parse_render(it).map(Command::Render),
             Some("check") => parse_check(it).map(Command::Check),
+            Some("css") => parse_css(it).map(Command::Css),
             Some("outline") => parse_outline(it),
             _ => Err(format!("unknown command `{}`", cmd.to_string_lossy())),
         },
@@ -233,11 +253,17 @@ fn parse_render(mut it: impl Iterator<Item = Tok>) -> Result<RenderArgs, String>
             "--json" => r.json = flag(&name, inline)?,
             "--batch" => r.batch = Some(value(&name, inline, &mut it)?.into()),
             "--json-summary" => r.json_summary = flag(&name, inline)?,
+            "--css" => r.css = Some(value(&name, inline, &mut it)?.into()),
+            "--theme" => r.theme = Some(str_value(&name, inline, &mut it)?),
+            "--auto-dark" => r.auto_dark = Some(str_value(&name, inline, &mut it)?),
             _ => return Err(format!("unknown option `{name}` for `render`")),
         }
     }
     if inputs > 1 {
         return Err("`render` takes at most one input".into());
+    }
+    if r.css.is_none() && (r.theme.is_some() || r.auto_dark.is_some()) {
+        return Err("`--theme` and `--auto-dark` need `--css`".into());
     }
     if r.hint.is_some() && r.no_hint {
         return Err("`--hint` and `--no-hint` conflict".into());
@@ -267,6 +293,29 @@ fn parse_check(it: impl Iterator<Item = Tok>) -> Result<CheckArgs, String> {
                 _ => return Err(format!("unknown option `{name}` for `check`")),
             },
         }
+    }
+    Ok(c)
+}
+
+fn parse_css(mut it: impl Iterator<Item = Tok>) -> Result<CssArgs, String> {
+    let mut c = CssArgs::default();
+    let mut inputs = 0;
+    while let Some(tok) = it.next() {
+        match tok {
+            Tok::Pos(p) => {
+                inputs += 1;
+                c.input = input_path(p);
+            }
+            Tok::Opt { name, inline } => match name.as_str() {
+                "-o" | "--output" => c.output = Some(value(&name, inline, &mut it)?.into()),
+                "--strict" => c.strict = flag(&name, inline)?,
+                "--follow-symlinks" => c.follow_symlinks = flag(&name, inline)?,
+                _ => return Err(format!("unknown option `{name}` for `css`")),
+            },
+        }
+    }
+    if inputs > 1 {
+        return Err("`css` takes at most one input".into());
     }
     Ok(c)
 }
@@ -432,5 +481,47 @@ mod tests {
         );
         assert!(p(&["outline", "a", "b"]).is_err());
         assert!(p(&["check", "--width", "3"]).is_err());
+    }
+
+    #[test]
+    fn css_command() {
+        assert_eq!(
+            p(&[
+                "css",
+                "s.css",
+                "-o",
+                "out.css",
+                "--strict",
+                "--follow-symlinks"
+            ]),
+            Ok(Command::Css(CssArgs {
+                input: Some("s.css".into()),
+                output: Some("out.css".into()),
+                strict: true,
+                follow_symlinks: true,
+            }))
+        );
+        assert_eq!(p(&["css"]), Ok(Command::Css(CssArgs::default())));
+        assert_eq!(p(&["css", "-"]), Ok(Command::Css(CssArgs::default())));
+        assert!(p(&["css", "a", "b"]).is_err());
+        assert!(p(&["css", "--json"]).is_err());
+    }
+
+    #[test]
+    fn render_stylesheet_options() {
+        let r = render(&[
+            "render",
+            "--css",
+            "s.css",
+            "--theme",
+            "dark",
+            "--auto-dark=night",
+        ]);
+        assert_eq!(r.css, Some(PathBuf::from("s.css")));
+        assert_eq!(r.theme.as_deref(), Some("dark"));
+        assert_eq!(r.auto_dark.as_deref(), Some("night"));
+        assert!(p(&["render", "--theme", "dark"]).is_err());
+        assert!(p(&["render", "--auto-dark", "dark"]).is_err());
+        assert!(p(&["render", "--css"]).is_err());
     }
 }

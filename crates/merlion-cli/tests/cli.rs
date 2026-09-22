@@ -413,3 +413,291 @@ fn outline_fails_on_invalid_input() {
     assert_eq!(o.status.code(), Some(1));
     assert!(stderr(&o).contains("<stdin>:"));
 }
+
+// ---------------------------------------------------------------------------------------
+// Stylesheets (specs/integrations.md#cli, specs/svg-output.md#stylesheet)
+
+const SHEET: &str = r#"
+:root { --merlion-accent: #0f766e; --merlion-fg: #202830; }
+[data-theme="dark"] { --merlion-bg: #101418; --merlion-fg: #e6e6e6; }
+[data-theme="brand"] { --merlion-bg: #fdf6e3; }
+.merlion-c-store { --merlion-tone: #b8408f; --merlion-dash: 4 2; }
+.viewer-rule { color: red; }
+"#;
+
+const ROLES: &str = "flowchart LR\nA-->B\nclass A store\n";
+
+#[test]
+fn css_compiles_to_page_css_on_stdout_or_a_file() {
+    let d = tempdir("css");
+    fs::write(d.join("site.css"), SHEET).unwrap();
+    let o = merlion(&d, &["css", "site.css"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let css = stdout(&o);
+    assert!(
+        css.starts_with(":root {\n  --merlion-fg: #202830;\n  --merlion-accent: #0f766e;\n}\n"),
+        "{css}"
+    );
+    assert!(
+        css.contains(
+            ".merlion .merlion-c-store {\n  --merlion-tone: #b8408f;\n  --merlion-dash: 4 2;\n}\n"
+        ),
+        "{css}"
+    );
+    assert!(!css.contains("viewer-rule"), "{css}");
+    // The token-free rule is reported once, located, as I032.
+    assert!(stderr(&o).starts_with("site.css:"), "{}", stderr(&o));
+    assert!(stderr(&o).contains(" info I032 "), "{}", stderr(&o));
+    // -o writes atomically; compiling the output again gives the same bytes.
+    let o = merlion(
+        &d,
+        &["css", "site.css", "-o", "out/site.compiled.css"],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert!(o.stdout.is_empty());
+    let written = fs::read_to_string(d.join("out/site.compiled.css")).unwrap();
+    assert_eq!(written, css);
+    assert_eq!(names(&d.join("out")), vec!["site.compiled.css"]);
+    let o = merlion(&d, &["css", "out/site.compiled.css"], None);
+    assert_eq!(stdout(&o), css);
+    assert!(stderr(&o).is_empty(), "{}", stderr(&o));
+    // Standard input works too.
+    let o = merlion(&d, &["css"], Some(SHEET));
+    assert_eq!(stdout(&o), css);
+    assert!(stderr(&o).starts_with("<stdin>:"), "{}", stderr(&o));
+}
+
+#[test]
+fn css_warnings_pass_and_strict_makes_them_errors() {
+    let d = tempdir("cssstrict");
+    let sheet =
+        ":root { --merlion-bg: #fff; --merlion-font: Comic; }\nbody { --merlion-fg: red; }\n";
+    fs::write(d.join("s.css"), sheet).unwrap();
+    let o = merlion(&d, &["css", "s.css", "-o", "o.css"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let err = stderr(&o);
+    assert!(
+        err.contains("s.css:1:") && err.contains(" warning W018 "),
+        "{err}"
+    );
+    assert!(err.contains(" warning W017 "), "{err}");
+    assert!(d.join("o.css").is_file());
+    fs::remove_file(d.join("o.css")).unwrap();
+    let o = merlion(&d, &["css", "s.css", "-o", "o.css", "--strict"], None);
+    assert_eq!(o.status.code(), Some(1), "{}", stderr(&o));
+    assert!(stderr(&o).contains(" error W018 "), "{}", stderr(&o));
+    assert!(!d.join("o.css").exists());
+}
+
+#[test]
+fn css_limits_exit_3_with_e013() {
+    let d = tempdir("cssbig");
+    fs::write(
+        d.join("big.css"),
+        format!(":root{{--merlion-bg:#fff;}}\n/*{}*/", "x".repeat(64 * 1024)),
+    )
+    .unwrap();
+    for args in [&["css", "big.css"][..], &["render", "--css", "big.css"]] {
+        let o = merlion(&d, args, Some(VALID));
+        assert_eq!(o.status.code(), Some(3), "{args:?}: {}", stderr(&o));
+        assert!(
+            stderr(&o).contains("big.css:1:1: error E013"),
+            "{}",
+            stderr(&o)
+        );
+        assert!(o.stdout.is_empty());
+    }
+    let rules: String = (0..600)
+        .map(|i| format!(".merlion-c-r{i} {{ --merlion-tone: #123456; }}\n"))
+        .collect();
+    fs::write(d.join("many.css"), rules).unwrap();
+    let o = merlion(&d, &["css", "many.css"], None);
+    assert_eq!(o.status.code(), Some(3), "{}", stderr(&o));
+    assert!(stderr(&o).contains("E013"), "{}", stderr(&o));
+}
+
+#[test]
+fn css_rejects_non_utf8_and_usage_errors() {
+    let d = tempdir("cssusage");
+    fs::write(d.join("bin.css"), [0xff, 0xfe]).unwrap();
+    let o = merlion(&d, &["css", "bin.css"], None);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(stderr(&o).contains("not UTF-8"), "{}", stderr(&o));
+    for args in [
+        &["css", "a.css", "b.css"][..],
+        &["css", "--width", "3"],
+        &["render", "--theme", "dark"],
+        &["render", "--auto-dark", "dark"],
+    ] {
+        let o = merlion(&d, args, Some(VALID));
+        assert_eq!(o.status.code(), Some(2), "{args:?}: {}", stderr(&o));
+        assert!(stderr(&o).contains("Usage:"), "{args:?}");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn css_inputs_follow_the_file_handling_rules() {
+    let d = tempdir("csslink");
+    fs::create_dir(d.join("work")).unwrap();
+    fs::write(
+        d.join("secret"),
+        ":root{--merlion-bg:#fff}\nGITHUB_TOKEN=ghs_secretvalue123\n",
+    )
+    .unwrap();
+    let w = d.join("work");
+    std::os::unix::fs::symlink(d.join("secret"), w.join("s.css")).unwrap();
+    fs::write(w.join("in.mmd"), VALID).unwrap();
+    for args in [
+        &["css", "s.css"][..],
+        &["render", "in.mmd", "--css", "s.css"],
+        &["css", "../secret"],
+        &["render", "in.mmd", "--css", "../secret"],
+    ] {
+        let o = merlion(&w, args, None);
+        assert_eq!(o.status.code(), Some(1), "{args:?}: {}", stderr(&o));
+        assert!(!stderr(&o).contains("ghs_"), "{args:?}");
+        assert!(!stdout(&o).contains("ghs_"), "{args:?}");
+        assert!(
+            stderr(&o).contains("refusing to read"),
+            "{args:?}: {}",
+            stderr(&o)
+        );
+    }
+    let o = merlion(&w, &["css", "s.css", "--follow-symlinks"], None);
+    assert!(stdout(&o).starts_with(":root"), "{}", stderr(&o));
+}
+
+#[test]
+fn render_css_bakes_the_chosen_theme() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("bake");
+    fs::write(d.join("site.css"), SHEET).unwrap();
+    fs::write(d.join("in.mmd"), ROLES).unwrap();
+    let plain = stdout(&merlion(&d, &["render", "in.mmd"], None));
+    let o = merlion(&d, &["render", "in.mmd", "--css", "site.css"], None);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let root = stdout(&o);
+    assert_ne!(root, plain);
+    assert!(root.contains("#b8408f"), "role tone baked");
+    assert!(root.contains("#202830"), "foreground baked");
+    assert!(!root.contains("#101418"), "--theme defaults to :root alone");
+    // Layout is untouched by the palette.
+    let layout = |s: &str| {
+        s.split("data-merlion-layout=\"")
+            .nth(1)
+            .and_then(|r| r.split('"').next())
+            .map(String::from)
+    };
+    assert_eq!(layout(&root), layout(&plain));
+    let o = merlion(
+        &d,
+        &["render", "in.mmd", "--css", "site.css", "--theme", "dark"],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let dark = stdout(&o);
+    assert!(dark.contains("#101418"), "dark bg baked");
+    assert!(!dark.contains("prefers-color-scheme"));
+    let o = merlion(
+        &d,
+        &[
+            "render",
+            "in.mmd",
+            "--css",
+            "site.css",
+            "--theme",
+            "brand",
+            "--auto-dark",
+            "dark",
+        ],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let auto = stdout(&o);
+    assert!(auto.contains("#fdf6e3") && auto.contains("@media (prefers-color-scheme: dark)"));
+    // The same palette gives the same bytes; the palette joins the id.
+    assert_eq!(
+        stdout(&merlion(
+            &d,
+            &["render", "in.mmd", "--css", "site.css"],
+            None
+        )),
+        root
+    );
+    // The stylesheet's I032 is reported under its own name.
+    assert!(stderr(&o).contains("site.css:"), "{}", stderr(&o));
+}
+
+#[test]
+fn render_css_unknown_theme_is_a_usage_error() {
+    let d = tempdir("baketheme");
+    fs::write(d.join("site.css"), SHEET).unwrap();
+    fs::write(d.join("in.mmd"), VALID).unwrap();
+    for flag in ["--theme", "--auto-dark"] {
+        let o = merlion(
+            &d,
+            &["render", "in.mmd", "--css", "site.css", flag, "nope"],
+            None,
+        );
+        assert_eq!(o.status.code(), Some(2), "{flag}: {}", stderr(&o));
+        assert!(stderr(&o).contains("`nope`"), "{}", stderr(&o));
+        assert!(o.stdout.is_empty());
+    }
+    // The automatic dark block is not a theme name.
+    fs::write(
+        d.join("auto.css"),
+        "@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --merlion-bg: #000; } }\n",
+    )
+    .unwrap();
+    let o = merlion(
+        &d,
+        &["render", "in.mmd", "--css", "auto.css", "--theme", "dark"],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(2), "{}", stderr(&o));
+}
+
+#[test]
+fn render_css_applies_to_every_markdown_block_and_batch_file() {
+    if !core_renders() {
+        return;
+    }
+    let d = tempdir("bakemd");
+    fs::write(d.join("site.css"), SHEET).unwrap();
+    fs::write(
+        d.join("doc.md"),
+        format!("```mermaid\n{ROLES}```\n\n```mermaid\n{ROLES}```\n"),
+    )
+    .unwrap();
+    let o = merlion(
+        &d,
+        &[
+            "render", "doc.md", "-o", "out", "--css", "site.css", "--theme", "dark",
+        ],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    // Parsed once: the I032 of the stylesheet is printed once.
+    assert_eq!(stderr(&o).matches("I032").count(), 1, "{}", stderr(&o));
+    for n in [1, 2] {
+        let svg = fs::read_to_string(d.join(format!("out/doc-{n}.svg"))).unwrap();
+        assert!(svg.contains("#101418") && svg.contains("#b8408f"));
+    }
+    fs::create_dir(d.join("corpus")).unwrap();
+    fs::write(d.join("corpus/a.mmd"), ROLES).unwrap();
+    let o = merlion(
+        &d,
+        &[
+            "render", "--batch", "corpus", "-o", "b", "--css", "site.css",
+        ],
+        None,
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert!(fs::read_to_string(d.join("b/a.svg"))
+        .unwrap()
+        .contains("#b8408f"));
+}

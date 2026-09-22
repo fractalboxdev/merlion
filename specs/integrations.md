@@ -7,7 +7,7 @@ merlion render [<input>] [-o <output>] [--width <px>] [--direction auto]
                [--edge-style orthogonal|polyline|spline] [--font link|embed|system]
                [--hint <previous.svg>] [--strict] [--outline <file>]
                [--css <file>] [--theme <name>] [--auto-dark <name>]
-merlion css    <input.css> [-o <output.css>] [--strict]
+merlion css    [<input.css>] [-o <output.css>] [--strict] [--follow-symlinks]
 merlion check  [<input>...] [--strict] [--fix]
 merlion outline [<input>] [--follow-symlinks]
 merlion --version
@@ -16,7 +16,7 @@ merlion --version
 - The input defaults to stdin and the output to stdout. A Markdown input (`.md`, `.mdx`) renders every ```` ```mermaid ```` block, and `-o` then names a directory: block `n` (1-based) of `<name>.md` is written to `<dir>/<name>-<n>.svg`. A block that fails leaves its previous output file untouched; the other blocks are still written.
 - `--hint` defaults to the existing output file when one exists, so re-rendering in place is stable without any extra flag. `--no-hint` forces a fresh layout.
 - `check` parses without rendering and prints diagnostics as `file:line:col: severity code message`. `--fix` applies every `Repair` fix to the file.
-- `merlion css` compiles a stylesheet ([svg-output.md](svg-output.md#stylesheet)) and writes the page CSS; diagnostics use the `check` format. `--strict` turns every `W017`–`W019` into an error.
+- `merlion css` compiles a stylesheet ([svg-output.md](svg-output.md#stylesheet)) from a file or stdin and writes the page CSS to `-o` or stdout; diagnostics use the `check` format under the stylesheet's name. `--strict` turns every `W017`–`W019` into an error, and an error writes nothing. `E013` exits `3`.
 - `--css` bakes a stylesheet into the output ([svg-output.md](svg-output.md#palette)). `--theme <name>` picks the `[data-theme="<name>"]` block over `:root`; the default is `:root` alone. `--auto-dark <name>` adds the named block as the `prefers-color-scheme: dark` variant. A name the stylesheet does not define is a usage error (exit 2). Neither flag reads the `:root:not([data-theme])` media block. A Markdown input parses the stylesheet once for all its blocks. Without `--css`, built-in roles still render in their default tones ([svg-output.md](svg-output.md#built-in-roles)).
 - Front matter and `%%{init}%%` never name a stylesheet.
 - Exit codes: `0` every diagram rendered (warnings allowed); `1` at least one diagram failed to parse or render; `2` usage error; `3` at least one input exceeds limits (`TooLarge`) and none failed otherwise.

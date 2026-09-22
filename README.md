@@ -31,6 +31,27 @@ target/release/merlion render diagram.mmd --json        # {svg, outline, diagnos
 
 Re-rendering onto an existing output file uses it as the layout hint, so nodes keep their positions across edits. `--font embed` inlines an Inter subset for standalone files. Exit codes: `0` rendered, `1` failed, `2` usage error, `3` input over a limit.
 
+### Roles and stylesheets
+
+A class name given with `class` or `:::` is a role, with or without a `classDef`; `class e1 failure` gives edge `a e1@--> b` a role. Eight roles work with no stylesheet: node tones `accent`, `ok`, `warn`, `danger`, `muted`, the dashed cluster `group`, and the edges `failure` (danger tone, dashed) and `async` (dashed). `merlion-themes.css` defines their tones for every theme.
+
+A stylesheet colours roles and themes in a CSS subset that sets `--merlion-*` tokens only ([specs/svg-output.md](specs/svg-output.md#stylesheet)):
+
+```css
+:root { --brand: #0f766e; --merlion-accent: var(--brand); }
+[data-theme="dark"] { --merlion-bg: #101418; --merlion-fg: #e6e6e6; }
+.merlion-c-store { --merlion-tone: #b8408f; }
+.merlion-cc-zone { --merlion-dash: 4 2; }
+```
+
+```sh
+target/release/merlion css site.css -o site.compiled.css  # page CSS: literal values, fixed selector shapes
+target/release/merlion render d.mmd --css site.css --theme dark -o d.svg  # bake one theme into a standalone SVG
+target/release/merlion render d.mmd --css site.css --auto-dark dark -o d.svg  # :root, plus dark under prefers-color-scheme
+```
+
+A page links only the compiled CSS, never the source stylesheet; inline SVGs render without `--css` and follow the page's cascade. Baked SVGs carry the theme's literals in attributes and fallbacks, so GitHub image embeds and librsvg draw them. `--theme` and `--auto-dark` name `[data-theme]` blocks; an undefined name exits `2`. A stylesheet over 64 KiB or its other limits exits `3` with `E013`; `--strict` turns `W017`–`W019` into errors.
+
 ### WebAssembly
 
 ```sh

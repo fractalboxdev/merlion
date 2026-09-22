@@ -12,9 +12,10 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
 
-use args::{CheckArgs, Command, RenderArgs};
+use args::{CheckArgs, Command, CssArgs, RenderArgs};
 use markdown::Block;
 use merlion_render::diag::{printable, Fix};
+use merlion_render::stylesheet::{self, Palette, Stylesheet, StylesheetLimits};
 use merlion_render::{
     error_diagnostic, json, Diagnostic, DirectionOption, RenderError, RenderOptions, RenderResult,
     Severity, Span,
@@ -83,20 +84,27 @@ fn run(cmd: Command) -> u8 {
             return 0;
         }
         Command::Render(r) => {
+            let palette = match load_palette(&r, &cwd, &mut status) {
+                Ok(p) => p,
+                Err(PaletteError::Usage(msg)) => return usage_error(&msg),
+                Err(PaletteError::Reported) => return status.code(),
+            };
+            let base = options(&r, palette);
             if let Some(dir) = &r.batch {
-                render_batch(&r, dir, &cwd, &mut status);
+                render_batch(&r, &base, dir, &cwd, &mut status);
             } else if r.input.as_deref().is_some_and(markdown::is_markdown_path) {
                 if r.outline.is_some() || r.hint.is_some() {
                     return usage_error(
                         "`--outline` and `--hint` apply to one diagram, not to a Markdown file",
                     );
                 }
-                render_markdown(&r, &cwd, &mut status);
+                render_markdown(&r, &base, &cwd, &mut status);
             } else {
-                render_single(&r, &cwd, &mut status);
+                render_single(&r, &base, &cwd, &mut status);
             }
         }
         Command::Check(c) => check(&c, &cwd, &mut status),
+        Command::Css(c) => css(&c, &cwd, &mut status),
         Command::Outline {
             input,
             follow_symlinks,
@@ -277,7 +285,8 @@ fn write_stdout(bytes: &[u8]) -> bool {
 // ---------------------------------------------------------------------------------------
 // Render
 
-fn options(r: &RenderArgs) -> RenderOptions {
+/// The render options of every diagram of the invocation; `palette` comes from `--css`.
+fn options(r: &RenderArgs, palette: Option<Palette>) -> RenderOptions {
     let mut o = RenderOptions::default();
     if let Some(w) = r.width {
         o.target_width = w;
@@ -296,6 +305,7 @@ fn options(r: &RenderArgs) -> RenderOptions {
     }
     o.strict = r.strict;
     o.id_prefix = r.id_prefix.clone();
+    o.palette = palette;
     o
 }
 
@@ -335,7 +345,7 @@ fn default_hint(target: &Path, r: &RenderArgs, cwd: &Path) -> Result<Option<Stri
     load_hint(target, cwd, r.follow_symlinks)
 }
 
-fn render_single(r: &RenderArgs, cwd: &Path, status: &mut Status) {
+fn render_single(r: &RenderArgs, base: &RenderOptions, cwd: &Path, status: &mut Status) {
     let name = display(r.input.as_deref());
     // Every path is checked before any work, so a refused path never costs a render.
     let guarded = |p: &Option<PathBuf>| match p {
@@ -346,7 +356,7 @@ fn render_single(r: &RenderArgs, cwd: &Path, status: &mut Status) {
         status.failed = true;
         return;
     };
-    let mut opts = options(r);
+    let mut opts = base.clone();
     let hint = match (&r.hint, &target) {
         (Some(h), _) => load_hint(h, cwd, r.follow_symlinks),
         (None, Some(t)) => default_hint(t, r, cwd),
@@ -384,7 +394,7 @@ fn render_single(r: &RenderArgs, cwd: &Path, status: &mut Status) {
 
 /// Block `n` (1-based) of `<name>.md` renders to `<dir>/<name>-<n>.svg`; `<dir>` is `-o`
 /// or the Markdown file's own directory.
-fn render_markdown(r: &RenderArgs, cwd: &Path, status: &mut Status) {
+fn render_markdown(r: &RenderArgs, base: &RenderOptions, cwd: &Path, status: &mut Status) {
     let Some(input) = r.input.as_deref() else {
         return;
     };
@@ -404,7 +414,6 @@ fn render_markdown(r: &RenderArgs, cwd: &Path, status: &mut Status) {
         (None, Some(p)) if !p.as_os_str().is_empty() => p.to_path_buf(),
         (None, _) => PathBuf::from("."),
     };
-    let base = options(r);
     for (i, block) in markdown::mermaid_blocks(&text).iter().enumerate() {
         let n = i + 1;
         let path = dir.join(format!("{stem}-{n}.svg"));
@@ -448,7 +457,7 @@ fn render_markdown(r: &RenderArgs, cwd: &Path, status: &mut Status) {
 /// `render --batch <dir>`: every `.mmd` file of a directory, in name order, in one
 /// process. With `--json-summary` it prints one JSON line per file with the render time
 /// in microseconds, measured here because the core never reads a clock.
-fn render_batch(r: &RenderArgs, dir: &Path, cwd: &Path, status: &mut Status) {
+fn render_batch(r: &RenderArgs, base: &RenderOptions, dir: &Path, cwd: &Path, status: &mut Status) {
     let mut files: Vec<PathBuf> = match std::fs::read_dir(dir) {
         Ok(rd) => rd
             .filter_map(Result::ok)
@@ -467,7 +476,6 @@ fn render_batch(r: &RenderArgs, dir: &Path, cwd: &Path, status: &mut Status) {
         }
     };
     files.sort();
-    let base = options(r);
     for file in files {
         let name = file.display().to_string();
         let target = match &r.output {
@@ -533,6 +541,150 @@ fn render_batch(r: &RenderArgs, dir: &Path, cwd: &Path, status: &mut Status) {
             status.failed |= !write_stdout(line.as_bytes());
         }
     }
+}
+
+// ---------------------------------------------------------------------------------------
+// Stylesheets (specs/svg-output.md#stylesheet)
+
+fn stylesheet_too_large() -> Diagnostic {
+    Diagnostic {
+        severity: Severity::Error,
+        code: "E013",
+        span: Span::default(),
+        message: "stylesheet exceeds its limit on size".into(),
+        fix: None,
+    }
+}
+
+/// Reads and compiles a stylesheet under the file-handling rules: the path is guarded
+/// like every input, and a file over 64 KiB is refused from its metadata before any byte
+/// is read. Diagnostics are printed under the stylesheet's name; with `strict`, `W017`–
+/// `W019` become errors. `None` means stop (reported, status set): `E013` sets exit 3,
+/// anything else exit 1.
+fn load_stylesheet(
+    path: Option<&Path>,
+    guard: ReadGuard,
+    strict: bool,
+    status: &mut Status,
+) -> Option<Stylesheet> {
+    let name = display(path);
+    let limits = StylesheetLimits::default();
+    let cap = limits.bytes as u64;
+    if let Some(p) = path {
+        let resolved = match fsio::guard_read(p, guard.cwd, guard.follow) {
+            Ok(r) => r,
+            Err(msg) => {
+                eprintln!("merlion: {name}: refusing to read: {msg}");
+                status.failed = true;
+                return None;
+            }
+        };
+        if std::fs::metadata(&resolved).is_ok_and(|m| m.len() > cap) {
+            print_diagnostics(&name, &[stylesheet_too_large()]);
+            status.too_large = true;
+            return None;
+        }
+    }
+    let text = match read_input(path, cap, guard) {
+        Ok(Input::Text(t)) => t,
+        Ok(Input::TooLarge) => {
+            print_diagnostics(&name, &[stylesheet_too_large()]);
+            status.too_large = true;
+            return None;
+        }
+        Err(()) => {
+            status.failed = true;
+            return None;
+        }
+    };
+    let (sheet, diags) = stylesheet::compile(&text, &limits);
+    let mut items = diags.items;
+    if strict {
+        for d in &mut items {
+            if matches!(d.code, "W017" | "W018" | "W019") {
+                d.severity = Severity::Error;
+            }
+        }
+    }
+    print_diagnostics(&name, &items);
+    for d in items.iter().filter(|d| d.severity == Severity::Error) {
+        if d.code == "E013" {
+            status.too_large = true;
+        } else {
+            status.failed = true;
+        }
+    }
+    if status.failed || status.too_large {
+        return None;
+    }
+    sheet
+}
+
+enum PaletteError {
+    /// An undefined theme name: a usage error (exit 2).
+    Usage(String),
+    /// Reported already; the status carries the exit code.
+    Reported,
+}
+
+/// `render --css`: compiles the stylesheet once for every diagram of the invocation and
+/// resolves the palette of `--theme` (`:root` alone by default) and `--auto-dark`.
+fn load_palette(
+    r: &RenderArgs,
+    cwd: &Path,
+    status: &mut Status,
+) -> Result<Option<Palette>, PaletteError> {
+    let Some(path) = &r.css else {
+        return Ok(None);
+    };
+    let guard = ReadGuard {
+        cwd,
+        follow: r.follow_symlinks,
+    };
+    let sheet =
+        load_stylesheet(Some(path), guard, r.strict, status).ok_or(PaletteError::Reported)?;
+    for t in [&r.theme, &r.auto_dark].into_iter().flatten() {
+        if !sheet.theme_names().contains(&t.as_str()) {
+            let mut known = sheet.theme_names().join("`, `");
+            if known.is_empty() {
+                known = "none".into();
+            } else {
+                known = format!("`{known}`");
+            }
+            return Err(PaletteError::Usage(format!(
+                "{}: the stylesheet defines no theme `{}` (themes: {known})",
+                path.display(),
+                printable(t)
+            )));
+        }
+    }
+    sheet
+        .palette(r.theme.as_deref(), r.auto_dark.as_deref())
+        .map(Some)
+        .ok_or_else(|| PaletteError::Usage("the stylesheet defines no such theme".into()))
+}
+
+/// `merlion css`: compiles a stylesheet into page CSS on stdout or `-o`.
+fn css(c: &CssArgs, cwd: &Path, status: &mut Status) {
+    let target = match &c.output {
+        Some(o) => match guard_or_report(o, cwd, c.follow_symlinks) {
+            Some(t) => Some(t),
+            None => return status.failed = true,
+        },
+        None => None,
+    };
+    let guard = ReadGuard {
+        cwd,
+        follow: c.follow_symlinks,
+    };
+    let Some(sheet) = load_stylesheet(c.input.as_deref(), guard, c.strict, status) else {
+        return;
+    };
+    let out = sheet.to_css();
+    status.failed |= !match &target {
+        Some(t) => write_or_report(t, out.as_bytes()),
+        None => write_stdout(out.as_bytes()),
+    };
 }
 
 // ---------------------------------------------------------------------------------------
