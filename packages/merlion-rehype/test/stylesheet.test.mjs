@@ -1,4 +1,4 @@
-// The `stylesheet` option (specs/integrations.md#fractalboxdevmerlion-rehype): read under
+// The `stylesheet` option (specs/integrations.md#fractalboxmerlion-rehype): read under
 // the CLI's file-handling rules, compiled once per build, exposed as file.data.merlion.css
 // and never passed to inline renders.
 import { test } from "node:test";

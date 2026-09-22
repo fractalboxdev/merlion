@@ -1,5 +1,5 @@
 // Markdown → HTML through unified: first with a fake renderer, then over the real
-// @fractalboxdev/merlion-wasm module (the plugin's default renderer).
+// @fractalbox/merlion-wasm module (the plugin's default renderer).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

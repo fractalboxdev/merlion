@@ -9,7 +9,7 @@ Merlion ships no third-party code to users. Every published artifact has zero ru
 | `merlion-render` | 0 | `[dependencies]` must be empty; CI fails otherwise |
 | `merlion-cli` | 0 besides the core | Same check; arguments are parsed with `std::env::args` |
 | `merlion-wasm` | 0 besides the core | No `wasm-bindgen`, `js-sys` or `web-sys` |
-| `@fractalboxdev/merlion-wasm`, `@fractalboxdev/merlion-rehype`, `@fractalboxdev/merlion-astro`, `@fractalboxdev/merlion-view` | 0 | `"dependencies": {}` is checked in CI; `peerDependencies` only where the host framework is already present (`astro` for `@fractalboxdev/merlion-astro`) |
+| `@fractalbox/merlion-wasm`, `@fractalbox/merlion-rehype`, `@fractalbox/merlion-astro`, `@fractalbox/merlion-view` | 0 | `"dependencies": {}` is checked in CI; `peerDependencies` only where the host framework is already present (`astro` for `@fractalbox/merlion-astro`) |
 
 Development dependencies (the test runner, fuzzer, benchmark harness, `wasm-opt`, and the release tooling) are allowed. They are pinned by lockfile, and none reach a published artifact.
 

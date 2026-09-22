@@ -1,5 +1,5 @@
 /*
- * @fractalboxdev/merlion-themes: theme tokens for Merlion SVG diagrams.
+ * @fractalbox/merlion-themes: theme tokens for Merlion SVG diagrams.
  *
  * Every Merlion SVG reads --merlion-* custom properties with literal fallbacks
  * (specs/svg-output.md#theming). The mixed roles (--merlion-muted, -line, -surface,

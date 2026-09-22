@@ -1,5 +1,5 @@
 {
-  "name": "@fractalboxdev/merlion-themes",
+  "name": "@fractalbox/merlion-themes",
   "version": "0.1.0",
   "description": "Light, dark and named themes, semantic-zoom rules and the Inter font stylesheet for Merlion SVG diagrams.",
   "license": "MIT AND OFL-1.1",

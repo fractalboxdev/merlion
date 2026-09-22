@@ -1,4 +1,4 @@
-// Layout-hint cache for the rehype plugin (specs/integrations.md#fractalboxdevmerlion-rehype).
+// Layout-hint cache for the rehype plugin (specs/integrations.md#fractalboxmerlion-rehype).
 //
 // Entries are untrusted input (specs/security.md): anyone who can write the
 // cache directory controls them. Reads skip anything that is not a regular

@@ -27,4 +27,4 @@ Output identical across targets, build-time rendering without Node or Chromium, 
 
 - Easier: CI and static-site generators that don't use Node (Hugo, Zola) call one binary.
 - Harder: layout debugging needs its own visual tooling (a debug SVG overlay drawn by the core). WASM file size is unmeasured and must be tracked from M1.
-- Expensive to reverse: the core's public API and the WASM ABI, once `@fractalboxdev/merlion-wasm` 1.0 ships.
+- Expensive to reverse: the core's public API and the WASM ABI, once `@fractalbox/merlion-wasm` 1.0 ships.

@@ -1,4 +1,4 @@
-// Sequence support for @fractalboxdev/merlion-view/interact (specs/sequence.md#interaction).
+// Sequence support for @fractalbox/merlion-view/interact (specs/sequence.md#interaction).
 // `interact` imports this on demand, for an SVG carrying `merlion-sequence` only, so a page of
 // flowcharts never fetches it (specs/viewer.md#constraints).
 //

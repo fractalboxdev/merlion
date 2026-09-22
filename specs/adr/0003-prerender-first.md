@@ -9,7 +9,7 @@ Most Mermaid lives in documentation and content sites whose source is known at b
 
 ## Decision
 
-Build-time rendering to inline SVG is the primary path: the CLI and `@fractalboxdev/merlion-rehype`. The browser WASM build serves only content that doesn't exist at build time: live editors, previews, and diagrams written at runtime.
+Build-time rendering to inline SVG is the primary path: the CLI and `@fractalbox/merlion-rehype`. The browser WASM build serves only content that doesn't exist at build time: live editors, previews, and diagrams written at runtime.
 
 ## Options considered
 

@@ -183,7 +183,7 @@ test("deep trees are walked without recursion", async () => {
 });
 
 test("without `render`, a missing WASM package fails with an install hint", async () => {
-  await assert.rejects(loadWasmRender("@fractalboxdev/merlion-wasm-absent"), /merlion-wasm-absent is not installed/);
+  await assert.rejects(loadWasmRender("@fractalbox/merlion-wasm-absent"), /merlion-wasm-absent is not installed/);
 });
 
 test("rejects invalid options", () => {

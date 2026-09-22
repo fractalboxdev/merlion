@@ -2,7 +2,7 @@
 import { defineConfig } from "astro/config";
 import { satteri } from "@astrojs/markdown-satteri";
 import starlight from "@astrojs/starlight";
-import merlion from "@fractalboxdev/merlion-astro";
+import merlion from "@fractalbox/merlion-astro";
 import starlightLinksValidator from "starlight-links-validator";
 import { specLinks } from "./src/lib/specs.mjs";
 

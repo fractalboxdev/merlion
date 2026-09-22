@@ -18,7 +18,7 @@ export const mermaidBlock = (source, line = 1) => ({
 export const root = (...children) => ({ type: "root", children });
 
 /**
- * A fake `render(source, options)` following the @fractalboxdev/merlion-wasm
+ * A fake `render(source, options)` following the @fractalbox/merlion-wasm
  * contract (its index.d.ts). A source containing `BROKEN` fails to parse with E002 on line 2;
  * `WARN` succeeds with a W010 warning.
  */

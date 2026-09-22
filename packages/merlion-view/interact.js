@@ -1,4 +1,4 @@
-// @fractalboxdev/merlion-view/interact: click to highlight, collapse and hide, a detail popover
+// @fractalbox/merlion-view/interact: click to highlight, collapse and hide, a detail popover
 // and keyboard traversal for Merlion flowcharts in <merlion-view> (specs/interaction.md).
 // The logic lives in interact-model.js; this layer reads the SVG and toggles classes. It never
 // re-renders or touches the SVG's <style>, and clearing restores the SVG's markup exactly.

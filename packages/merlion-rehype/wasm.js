@@ -1,10 +1,10 @@
-// Default renderer: @fractalboxdev/merlion-wasm, initialised synchronously from
+// Default renderer: @fractalbox/merlion-wasm, initialised synchronously from
 // the `.wasm` file next to its entry point (specs/integrations.md).
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const PKG = "@fractalboxdev/merlion-wasm";
+const PKG = "@fractalbox/merlion-wasm";
 
 /**
  * Import the WASM package, run `initSync`, and return its `render`. `pkg` names the

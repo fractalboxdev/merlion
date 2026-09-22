@@ -1,5 +1,5 @@
-// Types for the hand-written glue (specs/integrations.md#fractalboxdevmerlion-wasm).
-// This file is the JavaScript contract of Merlion: @fractalboxdev/merlion-rehype, the
+// Types for the hand-written glue (specs/integrations.md#fractalboxmerlion-wasm).
+// This file is the JavaScript contract of Merlion: @fractalbox/merlion-rehype, the
 // docs playground and every other JS caller use these names and shapes. Option names are
 // camelCase; the core's snake_case names (`target_width`, `id_prefix`, `edge_style`,
 // `auto_tone`) throw a TypeError naming the camelCase one, and every other unknown key

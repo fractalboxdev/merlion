@@ -1,4 +1,4 @@
-// Pure sequence logic behind @fractalboxdev/merlion-view/interact (specs/sequence.md#interaction), no DOM.
+// Pure sequence logic behind @fractalbox/merlion-view/interact (specs/sequence.md#interaction), no DOM.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { messageLines, lineOf, messageTargets, barOwners, spanSet } from "../interact-seq.js";

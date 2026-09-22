@@ -7,12 +7,12 @@ import type {
   RenderOptions,
   RenderResult,
   StylesheetOptions,
-} from "@fractalboxdev/merlion-wasm";
+} from "@fractalbox/merlion-wasm";
 
-/** The renderer contract is @fractalboxdev/merlion-wasm's; its index.d.ts is authoritative. */
+/** The renderer contract is @fractalbox/merlion-wasm's; its index.d.ts is authoritative. */
 export type { CompiledStylesheet, Diagnostic, RenderOptions, RenderResult, StylesheetOptions };
 
-/** A compiler with the signature of @fractalboxdev/merlion-wasm's `compileStylesheet`. */
+/** A compiler with the signature of @fractalbox/merlion-wasm's `compileStylesheet`. */
 export type CompileStylesheet = (
   css: string,
   options: Pick<StylesheetOptions, "strict">,
@@ -33,7 +33,7 @@ export type PluginRenderOptions = Required<Pick<RenderOptions, "width" | "strict
   Pick<RenderOptions, "hint">;
 
 /**
- * A renderer with the signature of @fractalboxdev/merlion-wasm's `render`. Only `svg`,
+ * A renderer with the signature of @fractalbox/merlion-wasm's `render`. Only `svg`,
  * `outline` and `diagnostics` of the result are read.
  */
 export type Render = (
@@ -67,7 +67,7 @@ export interface Options {
   fontCss?: boolean;
   /** Project root for relative paths and `cacheDir`. Default: the file's `cwd`. */
   root?: string;
-  /** Renderer; default: @fractalboxdev/merlion-wasm via `initSync`. */
+  /** Renderer; default: @fractalbox/merlion-wasm via `initSync`. */
   render?: Render;
   /** Receives each rendered diagram's plain-text outline. */
   outline?: (info: OutlineInfo) => void;
@@ -79,7 +79,7 @@ export interface Options {
    * compiled CSS and its cascade themes them.
    */
   stylesheet?: string;
-  /** Stylesheet compiler; default: @fractalboxdev/merlion-wasm's `compileStylesheet`. */
+  /** Stylesheet compiler; default: @fractalbox/merlion-wasm's `compileStylesheet`. */
   compileStylesheet?: CompileStylesheet;
 }
 

@@ -57,7 +57,7 @@ Two foundation tokens drive the rest. The other roles default to mixes of those 
 | `--merlion-dash` | Unset. Per-element dash pattern, same grammar as `stroke-dasharray` |
 | `--merlion-c-{name}-fill` / `-stroke` / `-color` | Unset. Replaces the literal of `classDef {name}` for that property ([Source styles](#source-styles-classdef-style-linkstyle)) |
 
-`@fractalboxdev/merlion-themes` ships `merlion-themes.css`: light and dark defaults plus named themes, each defining the foundations, the accent, the four role tones (`--merlion-ok`, `--merlion-warn`, `--merlion-danger`, `--merlion-store`) and the series palette. The store tone is `#127a84` in light, `#3fb8c2` in dark, `#2b7a78` in `harbour` and `#6cc9c4` in `lantern`. Every named theme is an original palette or one whose licence is recorded in [licensing.md](licensing.md).
+`@fractalbox/merlion-themes` ships `merlion-themes.css`: light and dark defaults plus named themes, each defining the foundations, the accent, the four role tones (`--merlion-ok`, `--merlion-warn`, `--merlion-danger`, `--merlion-store`) and the series palette. The store tone is `#127a84` in light, `#3fb8c2` in dark, `#2b7a78` in `harbour` and `#6cc9c4` in `lantern`. Every named theme is an original palette or one whose licence is recorded in [licensing.md](licensing.md).
 
 ### Source styles: `classDef`, `style`, `linkStyle`
 
@@ -238,7 +238,7 @@ Hooks for maths, extended label formatting and icons ([ADR-0002](adr/0002-zero-r
 
 ## Ids and data attributes
 
-- `{id}` is the `id_prefix` render option when given; it must match `[a-z][a-z0-9-]{0,31}`. Otherwise it is `m` + the first 8 hex characters of FNV-1a 64 over (source, options, palette digest when a palette is given, hint). The options key ends in `|auto_tone=false` when automatic tones are off and carries nothing for them otherwise. The palette digest hashes its canonical serialisation, so a formatting-only change to the stylesheet leaves the id unchanged. The hash alone cannot separate two renders of identical input, and FNV is not collision-resistant, so any host placing more than one diagram on a page passes `id_prefix`; the rehype plugin does ([integrations.md](integrations.md#fractalboxdevmerlion-rehype)).
+- `{id}` is the `id_prefix` render option when given; it must match `[a-z][a-z0-9-]{0,31}`. Otherwise it is `m` + the first 8 hex characters of FNV-1a 64 over (source, options, palette digest when a palette is given, hint). The options key ends in `|auto_tone=false` when automatic tones are off and carries nothing for them otherwise. The palette digest hashes its canonical serialisation, so a formatting-only change to the stylesheet leaves the id unchanged. The hash alone cannot separate two renders of identical input, and FNV is not collision-resistant, so any host placing more than one diagram on a page passes `id_prefix`; the rehype plugin does ([integrations.md](integrations.md#fractalboxmerlion-rehype)).
 - Every internal id (markers, clip paths, gradients) is `{id}-…`.
 - Node groups: `<g class="merlion-node" data-merlion-id="{source id}" data-merlion-rank="{0..15}">`. The rank is dominator depth for flowcharts and degree order otherwise, clamped to 15; it drives semantic zoom ([viewer.md](viewer.md)).
 - Clusters: `<g class="merlion-cluster" data-merlion-id="…">` with members nested inside.

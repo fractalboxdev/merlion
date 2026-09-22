@@ -6,7 +6,7 @@ Two layers deliver it ([ADR-0010](adr/0010-hover-interaction.md)):
 
 | Layer | Where it lives | What it does |
 |---|---|---|
-| **Viewer layer** | `@fractalboxdev/merlion-view/interact`, loaded by `<merlion-view>` for every Merlion SVG | Click to pin a highlight (neighbourhood or transitive path), click to collapse clusters and hide nodes, a detail popover, keyboard traversal with screen-reader announcements, a hover preview. Reads only the `data-merlion-*` attributes and text the SVG already carries |
+| **Viewer layer** | `@fractalbox/merlion-view/interact`, loaded by `<merlion-view>` for every Merlion SVG | Click to pin a highlight (neighbourhood or transitive path), click to collapse clusters and hide nodes, a detail popover, keyboard traversal with screen-reader announcements, a hover preview. Reads only the `data-merlion-*` attributes and text the SVG already carries |
 | **CSS layer** (Proposed, core) | Rules in the SVG's embedded `<style>`, for diagrams of at most 128 nodes plus edges | Hover preview with JavaScript off: dims the rest and keeps the hovered element's neighbourhood at full opacity. No pinning, popover or keyboard |
 
 Both layers compute the same highlight set; the acceptance tests hold them to it ([Testing](#testing)). This spec extends [svg-output.md](svg-output.md) (data attributes, embedded rules) and [viewer.md](viewer.md) (gestures, extension hook). It reads "node" and "edge" as the classes an element carries, so a sequence diagram's participants and messages are interactive under exactly these rules ([sequence.md](sequence.md#interaction)).
@@ -113,7 +113,7 @@ Rules cost about 125 raw bytes and 17 gzip bytes per element, linear in V + E; r
 
 ### Loading
 
-- `<merlion-view>` imports `./interact.js` the first time it adopts an SVG with class `merlion`, so every Merlion diagram on a page is interactive with no extra script. `<merlion-view interactive="off">` runs no extension and loads nothing. Pages that wrap other renderers' SVGs never fetch the module. `import "@fractalboxdev/merlion-view/interact"` loads it eagerly.
+- `<merlion-view>` imports `./interact.js` the first time it adopts an SVG with class `merlion`, so every Merlion diagram on a page is interactive with no extra script. `<merlion-view interactive="off">` runs no extension and loads nothing. Pages that wrap other renderers' SVGs never fetch the module. `import "@fractalbox/merlion-view/interact"` loads it eagerly.
 - `interact.js` imports `./interact-seq.js` for an SVG that also carries `merlion-sequence`, and repaints when it arrives. That module fills in the model `interact` has already read — the activation bars each participant lights, each message's outline line, the messages at the end of the keyboard's walk, and a lit set for every fragment and box ([sequence.md](sequence.md#interaction)) — so the interaction module holds the extension points and no sequence rule, and a page of flowcharts fetches neither the rules nor their bytes.
 - The module registers through the base element's extension hook, `MerlionView.extend(fn)`: `fn(host, svg)` runs whenever a host adopts an SVG and returns a cleanup function, called when the SVG changes, the host disconnects or `interactive` becomes `"off"`. A `view` method on the returned function runs after every view change.
 - The base element provides the viewer chrome that extensions share ([viewer.md](viewer.md#extension-hook)): `tip(el, build)` (the popover), `say(text)` (the live region), `tap(e)` (click qualification) and `MerlionView.style(css)` (rules for the slotted SVG).
@@ -266,7 +266,7 @@ The popover never overlaps `E`. Every view change (zoom, pan, fullscreen, resize
 
 | Item | Budget |
 |---|---|
-| `@fractalboxdev/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,237 B), enforced by `scripts/size.mjs` |
+| `@fractalbox/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,237 B), enforced by `scripts/size.mjs` |
 | Its sequence module, loaded only for a sequence diagram | ≤ 1 KB (986 B), enforced by the same script |
 | Base `<merlion-view>` with the hook and the shared chrome | ≤ 6 KB (4,953 B), enforced by the same script |
 | Model and text | Built once per adopted SVG, O(V + E); popover text is rebuilt per pin from the target only |

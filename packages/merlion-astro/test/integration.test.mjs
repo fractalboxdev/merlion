@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, write
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import rehypeMerlion from "@fractalboxdev/merlion-rehype";
+import rehypeMerlion from "@fractalbox/merlion-rehype";
 import merlion from "../index.js";
 
 // Runs the integration's config hook against a recording stand-in for Astro.
@@ -22,7 +22,7 @@ const setup = (options, markdown = {}) => {
 
 test("registers the rehype plugin with the project root and the given options", () => {
   const { integration, updates } = setup({ width: 640, cacheDir: ".merlion", fontCss: true });
-  assert.equal(integration.name, "@fractalboxdev/merlion-astro");
+  assert.equal(integration.name, "@fractalbox/merlion-astro");
   const plugins = updates.flatMap((u) => u.markdown?.rehypePlugins ?? []);
   assert.equal(plugins.length, 1);
   const [plugin, opts] = plugins[0];
@@ -41,7 +41,7 @@ test("loads merlion-font.css by default and tells the plugin the page has the fo
   const [, opts] = updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0];
   assert.equal(opts.fontCss, true);
   const css = scripts.filter((s) => s.stage === "page-ssr").map((s) => s.content);
-  assert.ok(css.includes('import "@fractalboxdev/merlion-themes/merlion-font.css";'), css);
+  assert.ok(css.includes('import "@fractalbox/merlion-themes/merlion-font.css";'), css);
   const off = setup({ fontCss: false });
   assert.equal(off.updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0][1].fontCss, false);
   assert.ok(!off.scripts.some((s) => s.content.includes("merlion-font")));
@@ -68,10 +68,10 @@ test("excludes mermaid from syntax highlighting so the plugin sees the code bloc
 test("injects the theme stylesheet and a viewer loader that imports only when a diagram is on the page", () => {
   const { scripts } = setup({});
   const css = scripts.filter((s) => s.stage === "page-ssr").map((s) => s.content);
-  assert.ok(css.includes('import "@fractalboxdev/merlion-themes/merlion-themes.css";'), css);
+  assert.ok(css.includes('import "@fractalbox/merlion-themes/merlion-themes.css";'), css);
   const page = scripts.find((s) => s.stage === "page");
   assert.match(page.content, /document\.querySelector\("merlion-view"\)/);
-  assert.match(page.content, /import\("@fractalboxdev\/merlion-view"\)/);
+  assert.match(page.content, /import\("@fractalbox\/merlion-view"\)/);
 });
 
 test("themesCss and viewer: false skip the injections", () => {
@@ -120,7 +120,7 @@ test("stylesheet: compiled once through the WASM module, written as an asset and
   const css = scripts.filter((s) => s.stage === "page-ssr").map((s) => s.content);
   // Theme tokens first, then the compiled stylesheet, so its rules win.
   assert.deepEqual(css.slice(-1), [`import ${JSON.stringify(asset)};`]);
-  assert.ok(css.indexOf('import "@fractalboxdev/merlion-themes/merlion-themes.css";') < css.length - 1);
+  assert.ok(css.indexOf('import "@fractalbox/merlion-themes/merlion-themes.css";') < css.length - 1);
   // The plugin does not compile it again.
   const [, opts] = updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0];
   assert.equal(opts.stylesheet, undefined);
@@ -163,7 +163,7 @@ test("Sätteri processor: a hast plugin factory first in processor.options.hastP
   const factory = processor.options.hastPlugins[0];
   assert.equal(typeof factory, "function");
   const plugin = factory({ fileURL: new URL("file:///site/src/content/docs/a.md"), sourceFormat: "markdown", source: "", data: {} });
-  assert.equal(plugin.name, "@fractalboxdev/merlion-rehype");
+  assert.equal(plugin.name, "@fractalbox/merlion-rehype");
   assert.deepEqual(plugin.element.filter, ["pre"]);
   assert.ok(!updates.some((u) => u.markdown?.rehypePlugins), "no deprecated markdown.rehypePlugins");
 });
@@ -184,7 +184,7 @@ test("an unknown markdown processor fails the build instead of skipping every di
 });
 
 // --- End to end: the plugin the integration registers renders a diagram through the real
-// @fractalboxdev/merlion-wasm. The hast tree and the vfile stand in for Astro's Markdown
+// @fractalbox/merlion-wasm. The hast tree and the vfile stand in for Astro's Markdown
 // pipeline, which is what hands the plugin those two arguments.
 
 const SEQ = [

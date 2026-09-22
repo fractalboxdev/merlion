@@ -1,4 +1,4 @@
-// Sätteri adapter (specs/integrations.md#fractalboxdevmerlion-rehype): the rehype
+// Sätteri adapter (specs/integrations.md#fractalboxmerlion-rehype): the rehype
 // plugin's rendering as a Sätteri hast plugin, for Astro 7's default Markdown
 // processor. Sätteri has no vfile, so diagnostics go to `onMessage` (default:
 // console.warn) and a fatal one throws, which fails the document.
@@ -7,7 +7,7 @@
 import { fileURLToPath } from "node:url";
 import { createSession } from "./session.js";
 
-const NAME = "@fractalboxdev/merlion-rehype";
+const NAME = "@fractalbox/merlion-rehype";
 
 const isMermaid = (node) => {
   const kids = (node.children ?? []).filter((c) => c.type === "element");

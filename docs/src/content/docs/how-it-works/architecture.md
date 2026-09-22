@@ -15,7 +15,7 @@ flowchart RL
     cli["**merlion-cli**<br/>the merlion command"]
     wasmcrate["**merlion-wasm**<br/>extern C exports, not published"]
   end
-  subgraph npm["npm @fractalboxdev"]
+  subgraph npm["npm @fractalbox"]
     wasm["**merlion-wasm**<br/>.wasm + hand-written glue"]
     rehype["**merlion-rehype**<br/>rehype and Sätteri plugin"]
     astro["**merlion-astro**<br/>Astro integration"]
@@ -44,11 +44,11 @@ Arrows point from a package to what it builds on. Solid arrows are code dependen
 | `merlion-render` | Parse, measure, layout, draw; the stylesheet compiler. No I/O | 0 |
 | `merlion-cli` (`merlion`) | Argument parsing, file and stdin I/O, layout hints read from existing output | `merlion-render` only |
 | `merlion-wasm` (crate) | Raw `extern "C"` exports; ships only inside the npm package | `merlion-render` only |
-| `@fractalboxdev/merlion-wasm` | The `.wasm` file, JavaScript glue, `index.d.ts` (the JavaScript contract) | 0 |
-| `@fractalboxdev/merlion-rehype` | Build-time rendering of ```` ```mermaid ```` blocks, for unified and Sätteri | 0 (the WASM package is a peer) |
-| `@fractalboxdev/merlion-astro` | Registers the plugin with Astro's Markdown processor, adds theme CSS, the compiled stylesheet and the viewer | 0 (peers) |
-| `@fractalboxdev/merlion-view` | `<merlion-view>`, ≤ 6 KB gzipped | 0 |
-| `@fractalboxdev/merlion-themes` | `merlion-themes.css`, `merlion-font.css` and the Inter subset | 0 |
+| `@fractalbox/merlion-wasm` | The `.wasm` file, JavaScript glue, `index.d.ts` (the JavaScript contract) | 0 |
+| `@fractalbox/merlion-rehype` | Build-time rendering of ```` ```mermaid ```` blocks, for unified and Sätteri | 0 (the WASM package is a peer) |
+| `@fractalbox/merlion-astro` | Registers the plugin with Astro's Markdown processor, adds theme CSS, the compiled stylesheet and the viewer | 0 (peers) |
+| `@fractalbox/merlion-view` | `<merlion-view>`, ≤ 6 KB gzipped | 0 |
+| `@fractalbox/merlion-themes` | `merlion-themes.css`, `merlion-font.css` and the Inter subset | 0 |
 
 CI fails any `Cargo.toml` or `package.json` that adds a runtime dependency ([ADR-0002](/reference/specs/adr/0002-zero-runtime-dependencies/)).
 
@@ -88,7 +88,7 @@ The full sequence with its limits and fuel is on [Render pipeline](/how-it-works
 ## Targets
 
 - **Build time** is the primary target: the CLI or the rehype plugin renders during the site build, and pages ship SVG with no renderer ([ADR-0003](/reference/specs/adr/0003-prerender-first/)).
-- **Browser** is the secondary target: `@fractalboxdev/merlion-wasm` serves live editors, previews and diagrams written at runtime, such as a model's answer in a chat. The [playground](/playground/) runs it.
+- **Browser** is the secondary target: `@fractalbox/merlion-wasm` serves live editors, previews and diagrams written at runtime, such as a model's answer in a chat. The [playground](/playground/) runs it.
 
 ## Determinism
 
