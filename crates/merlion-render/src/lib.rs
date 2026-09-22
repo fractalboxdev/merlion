@@ -21,6 +21,7 @@ pub mod model;
 pub mod numfmt;
 pub mod options;
 pub mod parse;
+pub mod stylesheet;
 pub mod svg;
 pub mod text;
 
@@ -124,9 +125,10 @@ fn map_parse_error(e: parse::ParseError) -> RenderError {
 }
 
 /// The SVG root id: the `id_prefix` when valid, else `m` + 8 hex of FNV-1a 64 over
-/// (source, options, layout). `layout` is the drawn layout's hint string, not the input
-/// hint: re-rendering in place with the previous SVG as the hint then reproduces the same
-/// bytes, because the same layout gives the same id.
+/// (source, options, palette digest when a palette is given, layout). `layout` is the
+/// drawn layout's hint string, not the input hint: re-rendering in place with the
+/// previous SVG as the hint then reproduces the same bytes, because the same layout gives
+/// the same id. With no palette nothing is hashed for it, so ids stay as they were.
 pub fn diagram_id(source: &str, opts: &RenderOptions, layout: &str) -> String {
     if let Some(p) = &opts.id_prefix {
         if ids::is_valid_id_prefix(p) {
@@ -148,11 +150,23 @@ pub fn diagram_id(source: &str, opts: &RenderOptions, layout: &str) -> String {
         opts.wrap_width,
         opts.background
     );
-    ids::default_id(ids::fnv1a64_parts(&[
-        source.as_bytes(),
-        opt_key.as_bytes(),
-        layout.as_bytes(),
-    ]))
+    let digest = opts
+        .palette
+        .as_ref()
+        .map(|p| alloc::format!("{:016x}", p.digest()));
+    match &digest {
+        Some(d) => ids::default_id(ids::fnv1a64_parts(&[
+            source.as_bytes(),
+            opt_key.as_bytes(),
+            d.as_bytes(),
+            layout.as_bytes(),
+        ])),
+        None => ids::default_id(ids::fnv1a64_parts(&[
+            source.as_bytes(),
+            opt_key.as_bytes(),
+            layout.as_bytes(),
+        ])),
+    }
 }
 
 /// Renders one diagram. Never panics; failures are reported in `error` and `diagnostics`.

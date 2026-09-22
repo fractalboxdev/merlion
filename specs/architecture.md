@@ -80,7 +80,7 @@ Byte-identical output on x86-64, arm64 and wasm32 rests on these rules:
 | Layered graph: nodes plus dummy nodes, after layer assignment | 20,000 | `TooLarge` |
 | Layer count | 500 | `TooLarge` |
 | Nesting depth: subgraphs / front matter / `%%{init}%%` | 64 | `Error` `E010` / `E011` / `E012` ([parser.md](parser.md#codes)) |
-| Stylesheet size / rules / declarations per rule | 64 KiB / 512 / 32 | `Error` `E013` |
+| Stylesheet size / rules / declarations per rule / compiled output | 64 KiB / 512 / 32 / 64 KiB | `Error` `E013` |
 | Stylesheet theme names / role selectors / block depth | 16 / 256 / 2 | `Error` `E013` |
 | Stylesheet `var()` resolution depth | 8 | `Warning` `W019` |
 | Embedded style added by a palette, per diagram | 16 KiB | Unused roles never embedded; roles over the cap dropped with `W017` |

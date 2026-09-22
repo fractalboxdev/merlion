@@ -19,7 +19,7 @@ use alloc::vec::Vec;
 use crate::color::{oklab_mix, Rgba8};
 
 use super::style::RoleRule;
-use super::theme::Role;
+use super::theme::{Role, Table};
 
 /// Mix ratios of the per-element tone (specs/svg-output.md#roles).
 pub const TONE_FILL: u8 = 14;
@@ -109,11 +109,21 @@ pub struct Tone {
 
 impl Tone {
     /// The tone of a built-in role: `var(--merlion-tone, var(--merlion-{role}, …))`.
-    pub fn of_role(role: Role) -> Tone {
+    pub fn of_role(t: &Table, role: Role) -> Tone {
         Tone {
-            plain: format!("var(--merlion-tone, {})", role.var(false)),
-            mixed: format!("var(--merlion-tone, {})", role.var(true)),
-            lit: String::from(role.default_value()),
+            plain: format!("var(--merlion-tone, {})", t.var(role, false)),
+            mixed: format!("var(--merlion-tone, {})", t.var(role, true)),
+            lit: t.lit(role),
+        }
+    }
+
+    /// A palette tone: `var(--merlion-tone, <literal>)`.
+    pub fn literal(hex: String) -> Tone {
+        let plain = format!("var(--merlion-tone, {})", hex);
+        Tone {
+            mixed: plain.clone(),
+            plain,
+            lit: hex,
         }
     }
 }
@@ -142,12 +152,12 @@ fn mixed_stroke(out: &mut String, prop: &str, tone: &Tone) {
     }
 }
 
-fn mixed_fill(tone: &Tone, pct: u8, base: Role) -> String {
+fn mixed_fill(t: &Table, tone: &Tone, pct: u8, base: Role) -> String {
     format!(
         "fill:color-mix(in oklab, {} {}%, {});",
         tone.mixed,
         pct,
-        base.var(true)
+        t.var(base, true)
     )
 }
 
@@ -160,18 +170,18 @@ fn rule(selector: String, plain: String, mixed: String) -> RoleRule {
 }
 
 /// Rules for node role `name` (`merlion-c-{name}` on node groups).
-pub fn node_rules(name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<RoleRule> {
+pub fn node_rules(t: &Table, name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<RoleRule> {
     let mut out = Vec::new();
     let mut plain = String::new();
     let mut mixed = String::new();
-    if let Some(t) = tone {
+    if let Some(tn) = tone {
         plain.push_str(&format!(
             "fill:{};stroke:{};",
-            mix_lit(&t.lit, Role::NodeBg.default_value(), TONE_FILL),
-            t.plain
+            mix_lit(&tn.lit, &t.lit(Role::NodeBg), TONE_FILL),
+            tn.plain
         ));
-        mixed.push_str(&mixed_fill(t, TONE_FILL, Role::NodeBg));
-        mixed_stroke(&mut mixed, "stroke", t);
+        mixed.push_str(&mixed_fill(t, tn, TONE_FILL, Role::NodeBg));
+        mixed_stroke(&mut mixed, "stroke", tn);
     }
     dash_decl(&mut plain, dash);
     out.push(rule(
@@ -179,14 +189,14 @@ pub fn node_rules(name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<Ro
         plain,
         mixed,
     ));
-    if let Some(t) = tone {
+    if let Some(tn) = tone {
         out.push(rule(
             format!(".merlion-c-{}>:where(.merlion-label)", name),
             format!(
                 "fill:{};",
-                mix_lit(&t.lit, Role::NodeText.default_value(), TONE_TEXT)
+                mix_lit(&tn.lit, &t.lit(Role::NodeText), TONE_TEXT)
             ),
-            mixed_fill(t, TONE_TEXT, Role::NodeText),
+            mixed_fill(t, tn, TONE_TEXT, Role::NodeText),
         ));
     }
     out.retain(|r| !r.plain.is_empty() || !r.mixed.is_empty());
@@ -194,13 +204,13 @@ pub fn node_rules(name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<Ro
 }
 
 /// Rules for edge role `name` (`merlion-c-{name}` on edge groups and their markers).
-pub fn edge_rules(name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<RoleRule> {
+pub fn edge_rules(t: &Table, name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<RoleRule> {
     let mut out = Vec::new();
     let mut plain = String::new();
     let mut mixed = String::new();
-    if let Some(t) = tone {
-        plain.push_str(&format!("stroke:{};", t.plain));
-        mixed_stroke(&mut mixed, "stroke", t);
+    if let Some(tn) = tone {
+        plain.push_str(&format!("stroke:{};", tn.plain));
+        mixed_stroke(&mut mixed, "stroke", tn);
     }
     dash_decl(&mut plain, dash);
     out.push(rule(
@@ -208,28 +218,25 @@ pub fn edge_rules(name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<Ro
         plain,
         mixed,
     ));
-    if let Some(t) = tone {
+    if let Some(tn) = tone {
         let mut m = String::new();
-        mixed_stroke(&mut m, "fill", t);
+        mixed_stroke(&mut m, "fill", tn);
         out.push(rule(
             format!(".merlion-c-{}>.merlion-marker-fill", name),
-            format!("fill:{};", t.plain),
+            format!("fill:{};", tn.plain),
             m,
         ));
         let mut m = String::new();
-        mixed_stroke(&mut m, "stroke", t);
+        mixed_stroke(&mut m, "stroke", tn);
         out.push(rule(
             format!(".merlion-c-{}>.merlion-marker-stroke", name),
-            format!("stroke:{};", t.plain),
+            format!("stroke:{};", tn.plain),
             m,
         ));
         out.push(rule(
             format!(".merlion-c-{} :where(.merlion-edge-text)", name),
-            format!(
-                "fill:{};",
-                mix_lit(&t.lit, Role::Fg.default_value(), TONE_TEXT)
-            ),
-            mixed_fill(t, TONE_TEXT, Role::Fg),
+            format!("fill:{};", mix_lit(&tn.lit, &t.lit(Role::Fg), TONE_TEXT)),
+            mixed_fill(t, tn, TONE_TEXT, Role::Fg),
         ));
     }
     out.retain(|r| !r.plain.is_empty() || !r.mixed.is_empty());
@@ -237,18 +244,23 @@ pub fn edge_rules(name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<Ro
 }
 
 /// Rules for cluster role `name` (`merlion-cc-{name}` on cluster groups).
-pub fn cluster_rules(name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec<RoleRule> {
+pub fn cluster_rules(
+    t: &Table,
+    name: &str,
+    tone: Option<&Tone>,
+    dash: Option<&str>,
+) -> Vec<RoleRule> {
     let mut out = Vec::new();
     let mut plain = String::new();
     let mut mixed = String::new();
-    if let Some(t) = tone {
+    if let Some(tn) = tone {
         plain.push_str(&format!(
             "fill:{};stroke:{};",
-            mix_lit(&t.lit, Role::ClusterBg.default_value(), TONE_CLUSTER_FILL),
-            t.plain
+            mix_lit(&tn.lit, &t.lit(Role::ClusterBg), TONE_CLUSTER_FILL),
+            tn.plain
         ));
-        mixed.push_str(&mixed_fill(t, TONE_CLUSTER_FILL, Role::ClusterBg));
-        mixed_stroke(&mut mixed, "stroke", t);
+        mixed.push_str(&mixed_fill(t, tn, TONE_CLUSTER_FILL, Role::ClusterBg));
+        mixed_stroke(&mut mixed, "stroke", tn);
     }
     dash_decl(&mut plain, dash);
     out.push(rule(
@@ -256,14 +268,11 @@ pub fn cluster_rules(name: &str, tone: Option<&Tone>, dash: Option<&str>) -> Vec
         plain,
         mixed,
     ));
-    if let Some(t) = tone {
+    if let Some(tn) = tone {
         out.push(rule(
             format!(".merlion-cc-{}>:where(.merlion-cluster-title)", name),
-            format!(
-                "fill:{};",
-                mix_lit(&t.lit, Role::Fg.default_value(), TONE_TEXT)
-            ),
-            mixed_fill(t, TONE_TEXT, Role::Fg),
+            format!("fill:{};", mix_lit(&tn.lit, &t.lit(Role::Fg), TONE_TEXT)),
+            mixed_fill(t, tn, TONE_TEXT, Role::Fg),
         ));
     }
     out.retain(|r| !r.plain.is_empty() || !r.mixed.is_empty());
@@ -289,8 +298,9 @@ mod tests {
 
     #[test]
     fn danger_node_rules() {
-        let t = Tone::of_role(Role::Danger);
-        let r = node_rules("danger", Some(&t), None);
+        let tb = Table::default();
+        let t = Tone::of_role(&tb, Role::Danger);
+        let r = node_rules(&tb, "danger", Some(&t), None);
         assert_eq!(r[0].selector, ".merlion-c-danger>.merlion-shape");
         assert_eq!(
             r[0].plain,
@@ -308,9 +318,10 @@ mod tests {
 
     #[test]
     fn muted_tone_differs_inside_supports() {
-        let t = Tone::of_role(Role::Muted);
+        let tb = Table::default();
+        let t = Tone::of_role(&tb, Role::Muted);
         assert_ne!(t.plain, t.mixed);
-        let r = node_rules("muted", Some(&t), None);
+        let r = node_rules(&tb, "muted", Some(&t), None);
         assert!(r[0]
             .mixed
             .contains("stroke:var(--merlion-tone, var(--merlion-muted, color-mix("));
@@ -318,11 +329,12 @@ mod tests {
 
     #[test]
     fn dash_only_roles_have_no_colour() {
-        let r = edge_rules("async", None, Some(ROLE_DASH));
+        let tb = Table::default();
+        let r = edge_rules(&tb, "async", None, Some(ROLE_DASH));
         assert_eq!(r.len(), 1);
         assert_eq!(r[0].plain, "stroke-dasharray:var(--merlion-dash, 6 4);");
         assert!(r[0].mixed.is_empty());
-        let r = cluster_rules("group", None, Some(ROLE_DASH));
+        let r = cluster_rules(&tb, "group", None, Some(ROLE_DASH));
         assert_eq!(r[0].selector, ".merlion-cc-group>.merlion-cluster-box");
         assert_eq!(r.len(), 1);
     }

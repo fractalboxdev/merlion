@@ -1,0 +1,241 @@
+/* Test fixture: merlion-themes.css with the built-in role tones in every theme
+ * (specs/svg-output.md#built-in-roles). Tone values are placeholders for the compiler tests. */
+/*
+ * @fractalboxdev/merlion-themes: theme tokens for Merlion SVG diagrams.
+ *
+ * Every Merlion SVG reads --merlion-* custom properties with literal fallbacks
+ * (specs/svg-output.md#theming). The mixed roles (--merlion-muted, -line, -surface,
+ * -border, -node-*, -edge-*, -cluster-*) derive from --merlion-bg and --merlion-fg
+ * inside each SVG, so a theme sets the two foundations, the accent and the series
+ * palette; any role can still be overridden on its own.
+ *
+ * Selection: light by default; dark under prefers-color-scheme unless the page sets
+ * data-theme; data-theme="light" | "dark" | "harbour" | "lantern" on :root or any
+ * ancestor of a diagram forces a theme. All palettes are original.
+ */
+
+
+:root,
+[data-theme="light"] {
+  --merlion-bg: #ffffff;
+  --merlion-fg: #1f2328;
+  --merlion-accent: #0969da;
+  --merlion-ok: #1a7f37;
+  --merlion-warn: #9a6700;
+  --merlion-danger: #cf222e;
+  --merlion-series-1: #0969da;
+  --merlion-series-2: #d4762c;
+  --merlion-series-3: #2e8b57;
+  --merlion-series-4: #b8408f;
+  --merlion-series-5: #6f5bd6;
+  --merlion-series-6: #1b98a6;
+  --merlion-series-7: #b59a16;
+  --merlion-series-8: #c4453d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --merlion-bg: #16191d;
+    --merlion-fg: #e3e6ea;
+    --merlion-accent: #5aa2f0;
+    --merlion-ok: #56c271;
+    --merlion-warn: #d8a93a;
+    --merlion-danger: #f0736b;
+    --merlion-series-1: #5aa2f0;
+    --merlion-series-2: #f0a060;
+    --merlion-series-3: #5fc48a;
+    --merlion-series-4: #e07ac0;
+    --merlion-series-5: #a595f5;
+    --merlion-series-6: #4fc6d3;
+    --merlion-series-7: #e0c84a;
+    --merlion-series-8: #f07a70;
+  }
+}
+
+[data-theme="dark"] {
+  --merlion-bg: #16191d;
+  --merlion-fg: #e3e6ea;
+  --merlion-accent: #5aa2f0;
+  --merlion-ok: #56c271;
+  --merlion-warn: #d8a93a;
+  --merlion-danger: #f0736b;
+  --merlion-series-1: #5aa2f0;
+  --merlion-series-2: #f0a060;
+  --merlion-series-3: #5fc48a;
+  --merlion-series-4: #e07ac0;
+  --merlion-series-5: #a595f5;
+  --merlion-series-6: #4fc6d3;
+  --merlion-series-7: #e0c84a;
+  --merlion-series-8: #f07a70;
+}
+
+/* Harbour: warm paper with navy ink and a brick accent. */
+[data-theme="harbour"] {
+  --merlion-bg: #f6f2ea;
+  --merlion-fg: #1d3440;
+  --merlion-accent: #c8553d;
+  --merlion-ok: #3f7d4c;
+  --merlion-warn: #a8621c;
+  --merlion-danger: #b3362a;
+  --merlion-series-1: #1d6f8c;
+  --merlion-series-2: #c8553d;
+  --merlion-series-3: #4f8a5b;
+  --merlion-series-4: #d99a2b;
+  --merlion-series-5: #7a5c99;
+  --merlion-series-6: #2f9c95;
+  --merlion-series-7: #a8623a;
+  --merlion-series-8: #5b6f8c;
+}
+
+/* Lantern: plum night with parchment text and an amber accent. */
+[data-theme="lantern"] {
+  --merlion-bg: #1c1622;
+  --merlion-fg: #f2e8d5;
+  --merlion-accent: #f4a259;
+  --merlion-ok: #8fcf7a;
+  --merlion-warn: #e9c25a;
+  --merlion-danger: #ef7d7d;
+  --merlion-series-1: #f4a259;
+  --merlion-series-2: #7fb8a4;
+  --merlion-series-3: #e76f6f;
+  --merlion-series-4: #c9a0dc;
+  --merlion-series-5: #e9d57a;
+  --merlion-series-6: #6fa8dc;
+  --merlion-series-7: #f28fb0;
+  --merlion-series-8: #9ccc65;
+}
+
+/*
+ * Semantic zoom (specs/viewer.md#semantic-zoom). <merlion-view> sets the class
+ * merlion-zoomed-out and data-merlion-rank-limit="{0..15}" on its host when labels
+ * would render below 9 px. One selector per (limit, rank) pair with rank > limit,
+ * 120 in all, hides the labels of nodes ranked above the limit; clusters collapse
+ * to their box and title.
+ */
+.merlion-zoomed-out .merlion-cluster .merlion-node,
+.merlion-zoomed-out .merlion-cluster .merlion-edge {
+  visibility: hidden;
+}
+
+[data-merlion-rank-limit="0"] [data-merlion-rank="1"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="2"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="3"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="4"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="5"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="6"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="7"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="8"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="0"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="2"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="3"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="4"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="5"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="6"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="7"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="8"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="1"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="3"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="4"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="5"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="6"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="7"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="8"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="2"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="4"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="5"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="6"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="7"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="8"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="3"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="5"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="6"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="7"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="8"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="4"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="6"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="7"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="8"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="5"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="7"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="8"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="6"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="7"] [data-merlion-rank="8"] text,
+[data-merlion-rank-limit="7"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="7"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="7"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="7"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="7"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="7"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="7"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="8"] [data-merlion-rank="9"] text,
+[data-merlion-rank-limit="8"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="8"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="8"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="8"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="8"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="8"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="9"] [data-merlion-rank="10"] text,
+[data-merlion-rank-limit="9"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="9"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="9"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="9"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="9"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="10"] [data-merlion-rank="11"] text,
+[data-merlion-rank-limit="10"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="10"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="10"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="10"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="11"] [data-merlion-rank="12"] text,
+[data-merlion-rank-limit="11"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="11"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="11"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="12"] [data-merlion-rank="13"] text,
+[data-merlion-rank-limit="12"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="12"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="13"] [data-merlion-rank="14"] text,
+[data-merlion-rank-limit="13"] [data-merlion-rank="15"] text,
+[data-merlion-rank-limit="14"] [data-merlion-rank="15"] text {
+  visibility: hidden;
+}

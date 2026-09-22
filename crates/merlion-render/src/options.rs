@@ -91,6 +91,9 @@ pub struct RenderOptions {
     pub id_prefix: Option<String>,
     pub background: bool,
     pub limits: Limits,
+    /// Literals resolved from a stylesheet for one theme (specs/svg-output.md#palette).
+    /// `None` draws the built-in defaults. It never affects measurement or layout.
+    pub palette: Option<crate::stylesheet::Palette>,
 }
 
 impl Default for RenderOptions {
@@ -112,6 +115,7 @@ impl Default for RenderOptions {
             id_prefix: None,
             background: false,
             limits: Limits::default(),
+            palette: None,
         }
     }
 }

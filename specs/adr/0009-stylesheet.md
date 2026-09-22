@@ -125,7 +125,7 @@ The core adds `color::oklab_mix` in software: sRGB→linear through a 256-entry 
 
 | Surface | Addition |
 |---|---|
-| Core | `stylesheet::compile(&str, &StylesheetLimits) -> (Option<Stylesheet>, Diagnostics)`; `Stylesheet::to_css() -> String`; `Stylesheet::palette(theme: Option<&str>, auto_dark: Option<&str>) -> (Palette, Diagnostics)`; `RenderOptions.palette: Option<Palette>` |
+| Core | `stylesheet::compile(&str, &StylesheetLimits) -> (Option<Stylesheet>, Diagnostics)`; `Stylesheet::to_css() -> String`; `Stylesheet::palette(theme: Option<&str>, auto_dark: Option<&str>) -> Option<Palette>` (`None` for a theme name the stylesheet does not define); `RenderOptions.palette: Option<Palette>` |
 | CLI | `merlion css <in.css> [-o <out.css>] [--strict]` compiles; `merlion render --css <file> [--theme <t>] [--auto-dark <t>]` bakes. `--theme` defaults to `:root`; an unknown name is a usage error (exit 2). `--theme` never reads the media block |
 | WASM | `compileStylesheet(css, { theme?, autoDark?, strict? }) -> { css, palette, diagnostics }`; `render(source, { palette })`, with `palette` validated by the glue and the core against the same grammars; an unknown option key throws `TypeError` |
 | rehype / Astro | Option `stylesheet: "<path>"`: read under the CLI's file-handling rules, compiled once per build, exposed as `file.data.merlion.css`; the Astro integration writes it as an asset and links it on pages with a diagram. Inline renders never receive a palette |

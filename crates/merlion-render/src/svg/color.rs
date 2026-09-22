@@ -85,19 +85,48 @@ fn decl_num(out: &mut String, prop: &str, v: f64, lo: f64, hi: f64, unit: &str) 
     }
 }
 
+/// The `classDef` whose colours read their overridable tokens, with the palette's
+/// literal for each token it sets (specs/svg-output.md#palette).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ClassToken<'a> {
+    pub name: &'a str,
+    pub fill: Option<&'a str>,
+    pub stroke: Option<&'a str>,
+    pub color: Option<&'a str>,
+}
+
+impl<'a> ClassToken<'a> {
+    #[cfg(test)]
+    pub fn plain(name: &'a str) -> Self {
+        ClassToken {
+            name,
+            ..ClassToken::default()
+        }
+    }
+
+    fn get(&self, prop: &str) -> Option<&'a str> {
+        match prop {
+            "fill" => self.fill,
+            "stroke" => self.stroke,
+            _ => self.color,
+        }
+    }
+}
+
 /// A colour value: the literal, or with `class` (a validated `classDef` name) the
 /// per-class token with the literal as fallback, `var(--merlion-c-{class}-{prop}, lit)`
-/// (specs/svg-output.md#source-styles-classdef-style-linkstyle).
-fn colour_value(c: &Color, class: Option<&str>, prop: &str) -> Option<String> {
+/// (specs/svg-output.md#source-styles-classdef-style-linkstyle). A palette value for the
+/// token replaces the literal.
+fn colour_value(c: &Color, class: Option<&ClassToken>, prop: &str) -> Option<String> {
     let lit = color_css(c)?;
     Some(match class {
-        Some(name) if is_valid_class_name(name) => {
+        Some(t) if is_valid_class_name(t.name) => {
             let mut s = String::from("var(--merlion-c-");
-            s.push_str(name);
+            s.push_str(t.name);
             s.push('-');
             s.push_str(prop);
             s.push_str(", ");
-            s.push_str(&lit);
+            s.push_str(t.get(prop).unwrap_or(&lit));
             s.push(')');
             s
         }
@@ -108,7 +137,7 @@ fn colour_value(c: &Color, class: Option<&str>, prop: &str) -> Option<String> {
 /// Declarations for a shape (node shape or edge path): `fill`, `stroke`, stroke width,
 /// dash array and the opacities. `with_fill` is false for edge paths, which stay unfilled.
 /// `class` names the `classDef` whose colours read their overridable tokens.
-pub fn shape_decls(style: &Style, with_fill: bool, class: Option<&str>) -> String {
+pub fn shape_decls(style: &Style, with_fill: bool, class: Option<&ClassToken>) -> String {
     let mut out = String::new();
     if with_fill {
         if let Some(v) = style
@@ -160,7 +189,7 @@ pub fn dash_css(d: &[f64]) -> Option<String> {
 
 /// Declarations for the `text` inside a styled element: `color` becomes the text fill,
 /// through `--merlion-c-{class}-color` for a `classDef`.
-pub fn text_decls(style: &Style, class: Option<&str>) -> String {
+pub fn text_decls(style: &Style, class: Option<&ClassToken>) -> String {
     let mut out = String::new();
     if let Some(v) = style
         .color
@@ -355,16 +384,16 @@ mod tests {
             ..Style::default()
         };
         assert_eq!(
-            shape_decls(&s, true, Some("hot")),
+            shape_decls(&s, true, Some(&ClassToken::plain("hot"))),
             "fill:var(--merlion-c-hot-fill, red);stroke:var(--merlion-c-hot-stroke, none);stroke-width:2px;"
         );
         assert_eq!(
-            text_decls(&s, Some("hot")),
+            text_decls(&s, Some(&ClassToken::plain("hot"))),
             "fill:var(--merlion-c-hot-color, #000000);"
         );
         // An invalid class name never reaches a token name.
         assert_eq!(
-            shape_decls(&s, false, Some("a;b")),
+            shape_decls(&s, false, Some(&ClassToken::plain("a;b"))),
             "stroke:none;stroke-width:2px;"
         );
     }

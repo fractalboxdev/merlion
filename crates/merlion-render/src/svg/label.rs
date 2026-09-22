@@ -12,7 +12,6 @@ use crate::numfmt::push_num;
 use crate::text::{LabelLayout, Run, Weight};
 
 use super::escape::push_escaped;
-use super::theme::Role;
 
 fn attr_num(out: &mut String, name: &str, v: f64) {
     out.push(' ');
@@ -38,7 +37,7 @@ fn run_format(out: &mut String, run: &Run) {
 /// Classes and presentation attributes of a line or run `<tspan>`: `detail` carries the
 /// size of a detail line (`merlion-detail`, `font-size` and the muted fill), `run` the
 /// formatting of the line's only run.
-fn format_attrs(out: &mut String, detail: Option<f64>, run: Option<&Run>) {
+fn format_attrs(out: &mut String, detail: Option<(f64, &str)>, run: Option<&Run>) {
     let bold = run.is_some_and(|r| r.weight == Weight::SemiBold);
     let italic = run.is_some_and(|r| r.italic);
     let code = run.is_some_and(|r| r.code);
@@ -73,10 +72,10 @@ fn format_attrs(out: &mut String, detail: Option<f64>, run: Option<&Run>) {
         out.push_str(super::theme::FONT_MONO);
         out.push('"');
     }
-    if let Some(size) = detail {
+    if let Some((size, detail_fill)) = detail {
         attr_num(out, "font-size", safe(size));
         out.push_str(" fill=\"");
-        out.push_str(Role::NodeDetail.default_value());
+        out.push_str(detail_fill);
         out.push('"');
     }
 }
@@ -90,6 +89,7 @@ pub fn push_label(
     cy: f64,
     class: &str,
     fill: &str,
+    detail_fill: &str,
 ) {
     if label
         .lines
@@ -120,7 +120,7 @@ pub fn push_label(
         out.push_str("<tspan");
         attr_num(out, "x", x0);
         attr_num(out, "y", y);
-        let detail = line.detail.then_some(line.size);
+        let detail = line.detail.then_some((line.size, detail_fill));
         match line.runs.as_slice() {
             [run] => {
                 format_attrs(out, detail, Some(run));
@@ -201,7 +201,7 @@ mod tests {
             ])
         };
         let mut s = String::new();
-        push_label(&mut s, &l, 50.0, 27.0, "merlion-label", "#000");
+        push_label(&mut s, &l, 50.0, 27.0, "merlion-label", "#000", "#7b7d81");
         // Top at 0: title baseline 15, first detail 22 + 12, second 38 + 12.
         assert!(s.contains("<tspan x=\"45\" y=\"15\">T</tspan>"), "{}", s);
         assert!(
@@ -229,7 +229,7 @@ mod tests {
         i.italic = true;
         let l = layout(vec![line(vec![run("T", 5.0)], 5.0), detail(vec![i], 10.0)]);
         let mut s = String::new();
-        push_label(&mut s, &l, 0.0, 0.0, "c", "f");
+        push_label(&mut s, &l, 0.0, 0.0, "c", "f", "#7b7d81");
         assert!(
             s.contains(
                 "class=\"merlion-detail merlion-i\" font-style=\"italic\" font-size=\"11.2\" \
@@ -256,7 +256,7 @@ mod tests {
     fn single_line_is_centred() {
         let l = layout(vec![line(vec![run("Hello", 40.0)], 40.0)]);
         let mut s = String::new();
-        push_label(&mut s, &l, 100.0, 50.0, "merlion-label", "#000");
+        push_label(&mut s, &l, 100.0, 50.0, "merlion-label", "#000", "#7b7d81");
         assert_eq!(
             s,
             "<text class=\"merlion-label\" fill=\"#000\"><tspan x=\"80\" y=\"55\">Hello</tspan></text>"
@@ -270,7 +270,7 @@ mod tests {
             line(vec![run("three", 50.0)], 50.0),
         ]);
         let mut s = String::new();
-        push_label(&mut s, &l, 100.0, 50.0, "c", "f");
+        push_label(&mut s, &l, 100.0, 50.0, "c", "f", "#7b7d81");
         assert!(s.contains("<tspan x=\"85\" y=\"45\">one</tspan>"), "{}", s);
         assert!(
             s.contains("<tspan x=\"75\" y=\"65\">three</tspan>"),
@@ -289,7 +289,7 @@ mod tests {
         c.code = true;
         let l = layout(vec![line(vec![run("a ", 10.0), b, i, c], 70.0)]);
         let mut s = String::new();
-        push_label(&mut s, &l, 35.0, 10.0, "c", "f");
+        push_label(&mut s, &l, 35.0, 10.0, "c", "f", "#7b7d81");
         assert!(
             s.contains("<tspan x=\"0\" y=\"15\"><tspan>a </tspan>"),
             "{}",
@@ -319,7 +319,7 @@ mod tests {
             10.0,
         )]);
         let mut s = String::new();
-        push_label(&mut s, &l, 0.0, 0.0, "c", "f");
+        push_label(&mut s, &l, 0.0, 0.0, "c", "f", "#7b7d81");
         assert!(!s.contains("<script"));
         assert!(s.contains("&lt;/text&gt;&lt;script&gt;"));
     }
@@ -327,7 +327,15 @@ mod tests {
     #[test]
     fn empty_label_writes_nothing() {
         let mut s = String::new();
-        push_label(&mut s, &LabelLayout::default(), 0.0, 0.0, "c", "f");
+        push_label(
+            &mut s,
+            &LabelLayout::default(),
+            0.0,
+            0.0,
+            "c",
+            "f",
+            "#7b7d81",
+        );
         assert!(s.is_empty());
     }
 }

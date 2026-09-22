@@ -13,6 +13,9 @@
 
 use alloc::format;
 use alloc::string::String;
+use alloc::vec::Vec;
+
+use crate::color::{oklab_mix, Rgba8};
 
 pub const BG: &str = "#ffffff";
 pub const FG: &str = "#1f2328";
@@ -66,7 +69,7 @@ enum Def {
 }
 
 /// The colour roles of the token table in specs/svg-output.md#theming.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Role {
     Bg,
     Fg,
@@ -90,6 +93,33 @@ pub enum Role {
 }
 
 impl Role {
+    /// Every role, in token-table order.
+    pub const ALL: [Role; 18] = [
+        Role::Bg,
+        Role::Fg,
+        Role::Muted,
+        Role::Line,
+        Role::Surface,
+        Role::Border,
+        Role::Accent,
+        Role::Ok,
+        Role::Warn,
+        Role::Danger,
+        Role::NodeBg,
+        Role::NodeBorder,
+        Role::NodeText,
+        Role::NodeDetail,
+        Role::Edge,
+        Role::EdgeLabelBg,
+        Role::ClusterBg,
+        Role::ClusterBorder,
+    ];
+
+    /// The role whose token is `--merlion-{name}`.
+    pub fn from_name(name: &str) -> Option<Role> {
+        Role::ALL.iter().copied().find(|r| r.name() == name)
+    }
+
     pub fn name(self) -> &'static str {
         match self {
             Role::Bg => "bg",
@@ -151,41 +181,125 @@ impl Role {
 
     /// Whether the fallback chain contains a mixed role, i.e. differs inside `@supports`.
     pub fn is_mixed(self) -> bool {
-        match self.def() {
+        Table::default().is_mixed(self)
+    }
+
+    /// `var(--merlion-{role}, …)` with the fallback chain of the built-in table. With
+    /// `mix`, mixed roles fall back to their `color-mix` expression; without, to their
+    /// literal default.
+    pub fn var(self, mix: bool) -> String {
+        Table::default().var(self, mix)
+    }
+}
+
+/// The literal table a render draws with (specs/svg-output.md#palette): the built-in
+/// defaults, or a palette's values. A role the palette sets is a literal; an unset mixed
+/// role is the `oklab_mix` of the table's foundations, and an alias follows its target.
+/// With no palette every literal is the stored constant, so the output is unchanged.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Table {
+    set: Vec<(Role, Rgba8)>,
+    /// `--merlion-stroke` in px, when the palette sets it.
+    pub stroke: Option<f64>,
+}
+
+impl Table {
+    /// The built-in defaults.
+    pub const fn builtin() -> Self {
+        Table {
+            set: Vec::new(),
+            stroke: None,
+        }
+    }
+
+    /// A table with `set` roles fixed to their colours.
+    pub fn new(set: Vec<(Role, Rgba8)>, stroke: Option<f64>) -> Self {
+        let stroke = stroke
+            .filter(|s| s.is_finite())
+            .map(|s| crate::math::clamp(s, 0.0, 20.0));
+        Table { set, stroke }
+    }
+
+    fn explicit(&self, r: Role) -> Option<Rgba8> {
+        self.set
+            .iter()
+            .rev()
+            .find(|(x, _)| *x == r)
+            .map(|(_, c)| *c)
+    }
+
+    /// The stroke width in px.
+    pub fn stroke_px(&self) -> f64 {
+        self.stroke.unwrap_or(STROKE)
+    }
+
+    /// The colour `r` draws with.
+    pub fn rgba(&self, r: Role) -> Rgba8 {
+        self.rgba_depth(r, 0)
+    }
+
+    fn rgba_depth(&self, r: Role, depth: u8) -> Rgba8 {
+        if let Some(c) = self.explicit(r) {
+            return c;
+        }
+        let lit = |v: &str| Rgba8::from_hex(v).unwrap_or(Rgba8::new(0, 0, 0, 255));
+        match r.def() {
+            Def::Literal(v) => lit(v),
+            Def::Mix(pct, v) => {
+                if self.explicit(Role::Fg).is_some() || self.explicit(Role::Bg).is_some() {
+                    oklab_mix(self.rgba(Role::Fg), self.rgba(Role::Bg), pct as f64)
+                } else {
+                    lit(v)
+                }
+            }
+            Def::Alias(next) if depth < 4 => self.rgba_depth(next, depth + 1),
+            Def::Alias(_) => lit(FG),
+        }
+    }
+
+    /// The literal of `r`: the presentation attribute and the innermost fallback.
+    pub fn lit(&self, r: Role) -> String {
+        self.rgba(r).to_hex()
+    }
+
+    /// Whether `r` falls back to `color-mix` inside `@supports`.
+    pub fn is_mixed(&self, r: Role) -> bool {
+        if self.explicit(r).is_some() {
+            return false;
+        }
+        match r.def() {
             Def::Mix(..) => true,
-            Def::Alias(next) => matches!(next.def(), Def::Mix(..)),
+            Def::Alias(next) => self.explicit(next).is_none() && matches!(next.def(), Def::Mix(..)),
             Def::Literal(_) => false,
         }
     }
 
-    /// `var(--merlion-{role}, …)` with the fallback chain. With `mix`, mixed roles fall
-    /// back to their `color-mix` expression; without, to their literal default.
-    pub fn var(self, mix: bool) -> String {
-        let fallback = match self.def() {
-            Def::Literal(v) => String::from(v),
-            Def::Mix(pct, v) => {
-                if mix {
-                    format!(
-                        "color-mix(in oklab, {} {}%, {})",
-                        Role::Fg.var(false),
-                        pct,
-                        Role::Bg.var(false)
-                    )
-                } else {
-                    String::from(v)
+    /// `var(--merlion-{role}, …)`. A role the table sets falls back to its literal alone.
+    pub fn var(&self, r: Role, mix: bool) -> String {
+        let fallback = if self.explicit(r).is_some() {
+            self.lit(r)
+        } else {
+            match r.def() {
+                Def::Literal(_) => self.lit(r),
+                Def::Mix(pct, _) => {
+                    if mix {
+                        format!(
+                            "color-mix(in oklab, {} {}%, {})",
+                            self.var(Role::Fg, false),
+                            pct,
+                            self.var(Role::Bg, false)
+                        )
+                    } else {
+                        self.lit(r)
+                    }
                 }
+                Def::Alias(next) => match next.def() {
+                    Def::Alias(_) => format!("var(--merlion-{}, {})", next.name(), self.lit(next)),
+                    _ => self.var(next, mix),
+                },
             }
-            Def::Alias(next) => next.var_shallow(mix),
         };
-        format!("var(--merlion-{}, {})", self.name(), fallback)
-    }
-
-    /// Like [`Role::var`] for a role reached through an alias; aliases never chain further.
-    fn var_shallow(self, mix: bool) -> String {
-        match self.def() {
-            Def::Alias(_) => format!("var(--merlion-{}, {})", self.name(), self.default_value()),
-            _ => self.var(mix),
-        }
+        format!("var(--merlion-{}, {})", r.name(), fallback)
     }
 }
 

@@ -83,7 +83,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `E010` NestingTooDeep | Error | Subgraphs nested beyond 64 |
 | `E011` FrontMatterUnsupported | Error | YAML outside the accepted subset, or nested beyond 64 |
 | `E012` DirectiveTooLarge | Error | `%%{init}%%` JSON nested beyond 64 or with a string over 4,096 bytes |
-| `E013` StylesheetTooLarge | Error | Stylesheet over 64 KiB, 512 rules, 32 declarations per rule, 16 theme names, 256 role selectors or block depth 2 ([svg-output.md](svg-output.md#stylesheet)) |
+| `E013` StylesheetTooLarge | Error | Stylesheet over 64 KiB, 512 rules, 32 declarations per rule, 8 selectors per token rule, 16 theme names, 256 role selectors or block depth 2, or compiled output over 64 KiB ([svg-output.md](svg-output.md#stylesheet)) |
 | `W010` StyleRejected | Warning | Style property or value outside the accepted set |
 | `W011` ClassNameRejected | Warning | `classDef` name outside `[A-Za-z_][A-Za-z0-9_-]{0,63}` |
 | `W012` LabelTruncated | Warning | Label longer than 4,096 bytes |
