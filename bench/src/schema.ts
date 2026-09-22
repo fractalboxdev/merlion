@@ -11,7 +11,7 @@ export class ManifestEntry extends Schema.Class<ManifestEntry>("ManifestEntry")(
   name: Schema.String,
   /** Repository path of the file the diagram was extracted from. */
   source: Schema.String,
-  /** 1-based index of the diagram among the flowcharts in `source`. */
+  /** 1-based index of the diagram among the corpus's diagrams in `source`. */
   block: Schema.Number,
   /** Git blob sha of `source` at `commit`. */
   sourceBlob: Schema.String,
@@ -20,7 +20,7 @@ export class ManifestEntry extends Schema.Class<ManifestEntry>("ManifestEntry")(
 }) {}
 
 export class Manifest extends Schema.Class<Manifest>("Manifest")({
-  corpus: Schema.Literal("compat"),
+  corpus: Schema.Literal("compat", "compat-sequence"),
   repo: Schema.String,
   tag: Schema.String,
   commit: Schema.String,

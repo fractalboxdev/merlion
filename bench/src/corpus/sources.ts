@@ -28,26 +28,52 @@ export const dedent = (s: string): string => {
   return lines.map((l) => (l.trim() === "" ? "" : l.slice(cut).trimEnd())).join("\n");
 };
 
+/** The corpora this module extracts: one per diagram type Merlion draws. */
+export type DiagramKind = "flowchart" | "sequence";
+
+/** The header keyword of each kind. Mermaid's lexer reads the keyword case-insensitively. */
+const HEADER: Record<DiagramKind, RegExp> = {
+  flowchart: /^(graph|flowchart|flowchart-elk)(\s|;|$)/,
+  sequence: /^sequenceDiagram(\s|;|$)/i,
+};
+
 /**
- * True when the diagram's header is `graph`, `flowchart` or `flowchart-elk`,
- * after optional YAML front matter, `%%{init}%%` directives, `%%` comments and
- * blank lines.
+ * The diagram's header line, after optional YAML front matter, `%%{init}%%`
+ * directives, `%%` comments and blank lines. `null` when the front matter never
+ * closes or the source holds no statement line.
  */
-export const isFlowchart = (src: string): boolean => {
+const header = (src: string): string | null => {
   const lines = dedent(src).split("\n");
   let k = 0;
   if (lines[0]?.trim() === "---") {
     k = 1;
     while (k < lines.length && lines[k]!.trim() !== "---") k++;
-    if (k >= lines.length) return false;
+    if (k >= lines.length) return null;
     k++;
   }
   for (; k < lines.length; k++) {
     const l = lines[k]!.trim();
     if (l === "" || l.startsWith("%%")) continue;
-    return /^(graph|flowchart|flowchart-elk)(\s|;|$)/.test(l);
+    return l;
   }
-  return false;
+  return null;
+};
+
+/** True when the diagram's header is `graph`, `flowchart` or `flowchart-elk`. */
+export const isFlowchart = (src: string): boolean => {
+  const h = header(src);
+  return h !== null && HEADER.flowchart.test(h);
+};
+
+/** True when the diagram's header is `sequenceDiagram`. */
+export const isSequence = (src: string): boolean => {
+  const h = header(src);
+  return h !== null && HEADER.sequence.test(h);
+};
+
+const isKind: Record<DiagramKind, (src: string) => boolean> = {
+  flowchart: isFlowchart,
+  sequence: isSequence,
 };
 
 /** Contents of every `<pre class="… mermaid …">` block, entity-decoded and dedented. */
@@ -184,6 +210,9 @@ export const sourceSlug = (path: string): string => {
     [/^demos\//, "demos-"],
     [/^e2e\/rendering\/flowchart\/(flowchart-)?/, "e2e-flowchart-"],
     [/^e2e\/diagrams\/flowchart\//, "e2e-"],
+    [/^e2e\/rendering\/sequence\/sequence[dD]iagram-?/, "e2e-sequence-"],
+    [/^e2e\/rendering\/sequence\//, "e2e-sequence-"],
+    [/^e2e\/diagrams\/sequence\//, "e2e-"],
   ];
   let s = path;
   for (const [re, prefix] of known) {
@@ -200,31 +229,34 @@ export const sourceSlug = (path: string): string => {
 };
 
 /**
- * Repository paths the `compat` corpus is drawn from: demo pages, the
- * flowchart syntax documentation, and the flowchart end-to-end tests (their
- * spec files and their `.mmd` fixtures). The `handdrawn/` fixtures repeat other
- * fixtures with a different `look` and are left out. Sorted.
+ * Repository paths a corpus is drawn from: every demo page, the kind's syntax
+ * documentation, and the kind's end-to-end tests (their spec files and their
+ * `.mmd` fixtures). The flowchart `handdrawn/` fixtures repeat other fixtures
+ * with a different `look` and are left out. Sorted.
  */
-export const selectSourcePaths = (paths: readonly string[]): string[] =>
+export const selectSourcePaths = (paths: readonly string[], kind: DiagramKind = "flowchart"): string[] =>
   paths
-    .filter(
-      (p) =>
-        /^demos\/[^/]+\.html$/.test(p) ||
-        p === "packages/mermaid/src/docs/syntax/flowchart.md" ||
-        /^e2e\/rendering\/flowchart\/[^/]+\.spec\.(js|ts)$/.test(p) ||
-        (/^e2e\/diagrams\/flowchart\/.+\.mmd$/.test(p) && !p.includes("/handdrawn/")),
-    )
+    .filter((p) => {
+      if (/^demos\/[^/]+\.html$/.test(p)) return true;
+      return kind === "flowchart"
+        ? p === "packages/mermaid/src/docs/syntax/flowchart.md" ||
+            /^e2e\/rendering\/flowchart\/[^/]+\.spec\.(js|ts)$/.test(p) ||
+            (/^e2e\/diagrams\/flowchart\/.+\.mmd$/.test(p) && !p.includes("/handdrawn/"))
+        : p === "packages/mermaid/src/docs/syntax/sequenceDiagram.md" ||
+            /^e2e\/rendering\/sequence\/[^/]+\.spec\.(js|ts)$/.test(p) ||
+            /^e2e\/diagrams\/sequence\/.+\.mmd$/.test(p);
+    })
     .sort();
 
-/** Flowchart diagrams in one source file, in document order. */
-export const extractDiagrams = (path: string, content: string): string[] => {
+/** Diagrams of one kind in one source file, in document order. */
+export const extractDiagrams = (path: string, content: string, kind: DiagramKind = "flowchart"): string[] => {
   let blocks: string[];
   if (path.endsWith(".html")) blocks = extractHtmlPreBlocks(content);
   else if (path.endsWith(".md")) blocks = extractMarkdownFences(content);
   else if (/\.(js|ts)$/.test(path)) blocks = extractTemplateLiterals(content);
   else if (path.endsWith(".mmd")) blocks = [dedent(content)];
   else blocks = [];
-  return blocks.filter((b) => isFlowchart(b) && hasStatements(b));
+  return blocks.filter((b) => isKind[kind](b) && hasStatements(b));
 };
 
 /** True when a line other than front matter, directives, comments and the header remains. */

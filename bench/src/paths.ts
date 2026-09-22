@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 export const BENCH_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const REPO_DIR = resolve(BENCH_DIR, "..");
 export const COMPAT_DIR = join(BENCH_DIR, "corpus", "compat");
+export const COMPAT_SEQUENCE_DIR = join(BENCH_DIR, "corpus", "compat-sequence");
 export const EDITS_DIR = join(BENCH_DIR, "corpus", "edits");
 export const RESULTS_DIR = join(BENCH_DIR, "results");
 export const MERLION_BIN = join(REPO_DIR, "target", "release", "merlion");

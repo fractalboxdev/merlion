@@ -1,15 +1,15 @@
 /**
- * `bench fetch`: downloads the `compat` corpus from the mermaid repository at
- * the pinned commit and derives the `edits` corpus from it
- * (specs/benchmark.md#corpora, specs/licensing.md rule 5).
+ * `bench fetch`: downloads the `compat` and `compat-sequence` corpora from the
+ * mermaid repository at the pinned commit and derives the `edits` corpus from the
+ * flowcharts (specs/benchmark.md#corpora, specs/licensing.md rule 5).
  */
 import { FileSystem, HttpClient, HttpClientRequest, Path } from "@effect/platform";
 import { createHash } from "node:crypto";
 import { Config, Console, Effect, Option, Redacted, Schema } from "effect";
-import { COMPAT_DIR, EDITS_DIR } from "../paths.ts";
+import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, EDITS_DIR } from "../paths.ts";
 import { EditPairFile, Manifest, ManifestEntry, MERMAID_COMMIT, MERMAID_REPO, MERMAID_TAG } from "../schema.ts";
 import { makeEdits } from "./edits.ts";
-import { extractDiagrams, selectSourcePaths, sourceSlug } from "./sources.ts";
+import { type DiagramKind, extractDiagrams, selectSourcePaths, sourceSlug } from "./sources.ts";
 
 /** Diagrams the `edits` corpus is derived from: the first eligible compat diagrams by name. */
 export const EDIT_SOURCES = 30;
@@ -38,58 +38,69 @@ export const fetchCorpus = Effect.gen(function* () {
   const tree = yield* Schema.decodeUnknown(GitTree)(treeJson);
   if (tree.truncated) return yield* new FetchError({ message: "GitHub returned a truncated tree listing" });
   const blobs = new Map(tree.tree.filter((t) => t.type === "blob").map((t) => [t.path, t.sha]));
-  const sources = selectSourcePaths([...blobs.keys()]);
-  yield* Console.log(`${sources.length} source files at ${MERMAID_TAG} (${MERMAID_COMMIT.slice(0, 12)})`);
 
-  const contents = yield* Effect.forEach(
-    sources,
-    (src) =>
-      client
-        .get(`https://raw.githubusercontent.com/${MERMAID_REPO}/${MERMAID_COMMIT}/${src}`)
-        .pipe(
-          Effect.flatMap((r) => r.text),
-          Effect.map((text) => [src, text] as const),
-        ),
-    { concurrency: 8 },
-  );
+  const fetchText = (src: string) =>
+    client
+      .get(`https://raw.githubusercontent.com/${MERMAID_REPO}/${MERMAID_COMMIT}/${src}`)
+      .pipe(
+        Effect.flatMap((r) => r.text),
+        Effect.map((text) => [src, text] as const),
+      );
 
-  // Extract, de-duplicate by content (first occurrence wins, sources in sorted order), name.
-  const seen = new Set<string>();
-  const names = new Set<string>();
-  const entries: Array<{ entry: ManifestEntry; text: string }> = [];
-  for (const [src, content] of contents) {
-    const blocks = extractDiagrams(src, content);
-    blocks.forEach((text, k) => {
-      const hash = sha256(text);
-      if (seen.has(hash)) return;
-      seen.add(hash);
-      const base = src.endsWith(".mmd") ? sourceSlug(src) : `${sourceSlug(src)}-${String(k + 1).padStart(2, "0")}`;
-      let name = base;
-      for (let n = 2; names.has(name); n++) name = `${base}-${n}`;
-      names.add(name);
-      entries.push({
-        entry: new ManifestEntry({ name, source: src, block: k + 1, sourceBlob: blobs.get(src) ?? "", sha256: hash }),
-        text,
+  /** Extracts one kind, de-duplicated by content (first occurrence wins, sources sorted), named. */
+  const collect = (kind: DiagramKind, contents: ReadonlyArray<readonly [string, string]>) => {
+    const seen = new Set<string>();
+    const names = new Set<string>();
+    const out: Array<{ entry: ManifestEntry; text: string }> = [];
+    for (const [src, content] of contents) {
+      extractDiagrams(src, content, kind).forEach((text, k) => {
+        const hash = sha256(text);
+        if (seen.has(hash)) return;
+        seen.add(hash);
+        const base = src.endsWith(".mmd") ? sourceSlug(src) : `${sourceSlug(src)}-${String(k + 1).padStart(2, "0")}`;
+        let name = base;
+        for (let n = 2; names.has(name); n++) name = `${base}-${n}`;
+        names.add(name);
+        out.push({
+          entry: new ManifestEntry({ name, source: src, block: k + 1, sourceBlob: blobs.get(src) ?? "", sha256: hash }),
+          text,
+        });
       });
-    });
-  }
-  entries.sort((a, b) => (a.entry.name < b.entry.name ? -1 : a.entry.name > b.entry.name ? 1 : 0));
+    }
+    out.sort((a, b) => (a.entry.name < b.entry.name ? -1 : a.entry.name > b.entry.name ? 1 : 0));
+    return out;
+  };
 
-  // Rewrite the corpus directories from scratch so removed diagrams do not linger.
-  yield* fs.remove(COMPAT_DIR, { recursive: true }).pipe(Effect.ignore);
-  yield* fs.makeDirectory(COMPAT_DIR, { recursive: true });
-  for (const { entry, text } of entries) yield* fs.writeFileString(path.join(COMPAT_DIR, `${entry.name}.mmd`), `${text}\n`);
-  const manifest = new Manifest({
-    corpus: "compat",
-    repo: `https://github.com/${MERMAID_REPO}`,
-    tag: MERMAID_TAG,
-    commit: MERMAID_COMMIT,
-    licence: "MIT (c) 2014 - 2022 Knut Sveidqvist; see bench/NOTICES.md",
-    diagrams: entries.map((e) => e.entry),
-  });
-  const encoded = yield* Schema.encode(Manifest)(manifest);
-  yield* fs.writeFileString(path.join(COMPAT_DIR, "manifest.json"), `${JSON.stringify(encoded, null, 2)}\n`);
-  yield* Console.log(`compat: ${entries.length} flowcharts written to ${path.relative(process.cwd(), COMPAT_DIR) || "."}`);
+  /** Rewrites a corpus directory from scratch so removed diagrams do not linger. */
+  const write = (corpus: "compat" | "compat-sequence", dir: string, es: ReadonlyArray<{ entry: ManifestEntry; text: string }>) =>
+    Effect.gen(function* () {
+      yield* fs.remove(dir, { recursive: true }).pipe(Effect.ignore);
+      yield* fs.makeDirectory(dir, { recursive: true });
+      for (const { entry, text } of es) yield* fs.writeFileString(path.join(dir, `${entry.name}.mmd`), `${text}\n`);
+      const manifest = new Manifest({
+        corpus,
+        repo: `https://github.com/${MERMAID_REPO}`,
+        tag: MERMAID_TAG,
+        commit: MERMAID_COMMIT,
+        licence: "MIT (c) 2014 - 2022 Knut Sveidqvist; see bench/NOTICES.md",
+        diagrams: es.map((e) => e.entry),
+      });
+      const encoded = yield* Schema.encode(Manifest)(manifest);
+      yield* fs.writeFileString(path.join(dir, "manifest.json"), `${JSON.stringify(encoded, null, 2)}\n`);
+      yield* Console.log(`${corpus}: ${es.length} diagrams written to ${path.relative(process.cwd(), dir) || "."}`);
+    });
+
+  const sources = selectSourcePaths([...blobs.keys()]);
+  yield* Console.log(`${sources.length} flowchart source files at ${MERMAID_TAG} (${MERMAID_COMMIT.slice(0, 12)})`);
+  const contents = yield* Effect.forEach(sources, fetchText, { concurrency: 8 });
+  const entries = collect("flowchart", contents);
+  yield* write("compat", COMPAT_DIR, entries);
+
+  const seqSources = selectSourcePaths([...blobs.keys()], "sequence");
+  yield* Console.log(`${seqSources.length} sequence source files`);
+  const seqContents = yield* Effect.forEach(seqSources, fetchText, { concurrency: 8 });
+  const seqEntries = collect("sequence", seqContents);
+  yield* write("compat-sequence", COMPAT_SEQUENCE_DIR, seqEntries);
 
   // Edits: pairs from the first EDIT_SOURCES diagrams that yield at least three edit kinds.
   yield* fs.remove(EDITS_DIR, { recursive: true }).pipe(Effect.ignore);
@@ -108,5 +119,5 @@ export const fetchCorpus = Effect.gen(function* () {
     }
   }
   yield* Console.log(`edits: ${pairs} pairs from ${used} diagrams`);
-  return { diagrams: entries.length, editPairs: pairs };
+  return { diagrams: entries.length, sequenceDiagrams: seqEntries.length, editPairs: pairs };
 });

@@ -1,0 +1,1521 @@
+{
+  "corpus": "compat-sequence",
+  "repo": "https://github.com/mermaid-js/mermaid",
+  "tag": "mermaid@12.0.0",
+  "commit": "98a0945418c76238f15df2afaddbba4272656c3b",
+  "licence": "MIT (c) 2014 - 2022 Knut Sveidqvist; see bench/NOTICES.md",
+  "diagrams": [
+    {
+      "name": "demos-sequence-01",
+      "source": "demos/sequence.html",
+      "block": 1,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "8cbc584685dcc8e3ae5d540d7f8a3ce196de834b094a347b58c8bddff18a84b0"
+    },
+    {
+      "name": "demos-sequence-02",
+      "source": "demos/sequence.html",
+      "block": 2,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "26b546310d1daaac537baf21da70a6bc652c95ecf4157bbce24a6f76723ad2ee"
+    },
+    {
+      "name": "demos-sequence-03",
+      "source": "demos/sequence.html",
+      "block": 3,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "3cbbe6768c514f460ccf5324e632117869181e9d79620d8537d9e59bc3f04920"
+    },
+    {
+      "name": "demos-sequence-04",
+      "source": "demos/sequence.html",
+      "block": 4,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "f8fec60a18abc1f2dedee377ef146da8e0b8ec0da7e4c5855dd47d13eeabef83"
+    },
+    {
+      "name": "demos-sequence-05",
+      "source": "demos/sequence.html",
+      "block": 5,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "0999bf0352821c4b5f748a78eb59fed485543ae52cc7b20d42e3d7e2d9897ca5"
+    },
+    {
+      "name": "demos-sequence-06",
+      "source": "demos/sequence.html",
+      "block": 6,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "dcfa8f127b7e8baa074391cdcd7a3d9d8d413b54bad70143fe2ee5bdfa6700e1"
+    },
+    {
+      "name": "demos-sequence-07",
+      "source": "demos/sequence.html",
+      "block": 7,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "6244ba8a85b4d965b5ef8c2ffedb1d324d35583128013165a97ef2e7d31996e5"
+    },
+    {
+      "name": "demos-sequence-08",
+      "source": "demos/sequence.html",
+      "block": 8,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "db0522a31bef340ec1da38c532688318e885e5329c218fe398b7c1c2e29c718f"
+    },
+    {
+      "name": "demos-sequence-10",
+      "source": "demos/sequence.html",
+      "block": 10,
+      "sourceBlob": "eca935ff5b85bd440edae7600980c0e7c39e9ecb",
+      "sha256": "95cf36dc0ad1610f552bd71a3aa62b44354d17f2d807efad4ce5d33c674a4973"
+    },
+    {
+      "name": "docs-sequencediagram-01",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 1,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "f90c7aae4da84e3f18509717ad1af14178bbe699622f6a0c94d5fa8244b4fc12"
+    },
+    {
+      "name": "docs-sequencediagram-02",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 2,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "b66bd4f77a945ae0da9c2e61bdcc9d7446ad23f823da2ac0888c89924e021e2f"
+    },
+    {
+      "name": "docs-sequencediagram-03",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 3,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "d8bc8797bb5c356531cd0f07032cdbfcffc80bc394904339545f82ec94c1976f"
+    },
+    {
+      "name": "docs-sequencediagram-04",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 4,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "62377e17329268de1fdc64c36445f28633f32e8731ca2594c357501d8af1ff22"
+    },
+    {
+      "name": "docs-sequencediagram-05",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 5,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "b02d71d25a734f4698341c52928edeec6f1dfb9686bff84e6f509d25e30a0bc7"
+    },
+    {
+      "name": "docs-sequencediagram-06",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 6,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "57dfb1644db91845e1a50f55595a00b6f85043500479430acc1090b183dda85e"
+    },
+    {
+      "name": "docs-sequencediagram-07",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 7,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "4ba3f2e3e68c0f2af1d7c079e62166fc7340527cfb8a769d2926d6dfe4f7634c"
+    },
+    {
+      "name": "docs-sequencediagram-08",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 8,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "b5fe81dc0c8b18f5243fc2206e11b11279f534df9ca59c6d15e9240fa5b6f725"
+    },
+    {
+      "name": "docs-sequencediagram-09",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 9,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "f077beb18749cda9a131431aa76a2aa0cacf4ddf9c108c23e0191e2ed4bc1f2a"
+    },
+    {
+      "name": "docs-sequencediagram-10",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 10,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "1ad386cbc57a625b53c1e694cc3af78f768380974b7b7c3a1ddf8eb8294d8baa"
+    },
+    {
+      "name": "docs-sequencediagram-11",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 11,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "fe4bb54b7566df845e3c15bac04118197fee554e1599559a6f548379b002c8be"
+    },
+    {
+      "name": "docs-sequencediagram-12",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 12,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "5e088831aa64a70e1916fc0b34e2c96ecc84fcccf1db596340b581068cdaa509"
+    },
+    {
+      "name": "docs-sequencediagram-13",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 13,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "5fb487492a980a2f1ff1aee15395a64454bcd632a0f1142d95926eb46cae91e1"
+    },
+    {
+      "name": "docs-sequencediagram-14",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 14,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "be8f3244783a32f97d4734c721ff957556603357fc9c630d0615c3dfe655fcf4"
+    },
+    {
+      "name": "docs-sequencediagram-15",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 15,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "ad8fa797822a3a7cb18b8e06d841c97aa1564aafd01fc0a4a9f781b7e74e3bd0"
+    },
+    {
+      "name": "docs-sequencediagram-17",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 17,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "71e7e1d57149faf86cd4b59f1eb7f5bc1d1537e7ca9bdde5aaadd0746116f6f2"
+    },
+    {
+      "name": "docs-sequencediagram-18",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 18,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "a5295c5db7ad2a231dd436e0f7a73476f8dd4873dfefea034ad6026126bd4bbb"
+    },
+    {
+      "name": "docs-sequencediagram-19",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 19,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "6fc4694327f2765f92ea3f1b7ed496f12c1974b7065189d6cb9e13a924fef778"
+    },
+    {
+      "name": "docs-sequencediagram-20",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 20,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "07cc77daaf28b36a707c1cc50d748ff1ab0b8c617b5f42a8894e4912e366a3ee"
+    },
+    {
+      "name": "docs-sequencediagram-21",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 21,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "1dfa81da42f2732645d71b2e6bbca93636c2e6a2dc199e35eac278bc64bd11d5"
+    },
+    {
+      "name": "docs-sequencediagram-22",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 22,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "05052b83e8e3715b1b58afe7fda60525c9e8436542b4084190c1cb64fdbf9caa"
+    },
+    {
+      "name": "docs-sequencediagram-23",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 23,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "7a05f08b650b7e97ab7f442a22c2c8fd3adc0b490e7979194d18e1f5d029c64f"
+    },
+    {
+      "name": "docs-sequencediagram-24",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 24,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "929fe185857902970e0606c98e3f1693cee2b2553a06b5bc7e8b5c9c7ce26503"
+    },
+    {
+      "name": "docs-sequencediagram-25",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 25,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "9d54a5741b3e2b1a99db5995685e46c419dfedf56ea58fb3fd8000c0c7e37d2d"
+    },
+    {
+      "name": "docs-sequencediagram-26",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 26,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "5ce8c96f48e83662c70eeee49de1baf333ad8e2ae245ecb6efd265e25b93cfe9"
+    },
+    {
+      "name": "docs-sequencediagram-27",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 27,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "48b01399584a5f52e0c299720dc2399ab3c28f3f96f0fa48e60c949cff57d83c"
+    },
+    {
+      "name": "docs-sequencediagram-28",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 28,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "c478c65be4f5b43492e3100ec85eb7acdbefe112331a2102a1f56c9193a4561c"
+    },
+    {
+      "name": "docs-sequencediagram-29",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 29,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "5a29c7dfbb5f81c92071426923172036b882a57a4b30e3a6cc4d3f65dd91f471"
+    },
+    {
+      "name": "docs-sequencediagram-30",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 30,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "1fdb51e8b364a74b247f35448e963043ccd9a50a18219c53f81bb9da4ef36321"
+    },
+    {
+      "name": "docs-sequencediagram-31",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 31,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "a472905214f5b87c5a933eb75300fd314f788e4b7c279bc825f8238a04975ffc"
+    },
+    {
+      "name": "docs-sequencediagram-32",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 32,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "b5901eb08b0673729d46ea90e9eb9da6f5910fd9de8aa8e439725f98f9db9c2a"
+    },
+    {
+      "name": "docs-sequencediagram-33",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 33,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "378f6cd0709ec2eed228119c0b6258394318532989ab63ba9cfb7cd342937037"
+    },
+    {
+      "name": "docs-sequencediagram-34",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 34,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "7f11151957fd199f3a18c2dd6c2d5a40d6a9fdcae0092337ea19cbd25ed43edb"
+    },
+    {
+      "name": "docs-sequencediagram-35",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 35,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "ced8a74dd0817622ed02eabad5c943aff615fd366eacb16334822de41af0e20b"
+    },
+    {
+      "name": "docs-sequencediagram-36",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 36,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "3afa46fba91dbdd980e65425a1ae655b401f0e721471711e3293c1deda2f2218"
+    },
+    {
+      "name": "docs-sequencediagram-37",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 37,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "790e66b351173f0f5e5db2d53ec2d4b9033c82317353eb601ea0f81a30f17b00"
+    },
+    {
+      "name": "docs-sequencediagram-38",
+      "source": "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
+      "block": 38,
+      "sourceBlob": "ba4f569dfd94afe51fa01c7ca094e4509c13d3fa",
+      "sha256": "56756317c6f9aac968d45dedd68489091c668f3f39534358e106bd26a273fc6e"
+    },
+    {
+      "name": "e2e-sequence-01",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 1,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "c18ff3a378bd6e3e397b143823a93d96015bb6f4f2ef602052c4a59380648b97"
+    },
+    {
+      "name": "e2e-sequence-02",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 2,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "d5d0fc62fe86cac301fc46c191fe5ff49fffe0341eecf7647dee7b23cbf299dc"
+    },
+    {
+      "name": "e2e-sequence-03",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 3,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "8aa14a9502dc79d42c26c5042975309d59606bd2deb72d9ff8b4f41f22328778"
+    },
+    {
+      "name": "e2e-sequence-04",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 4,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "d3e967859b33d777287fdc74ef06836aa20caba6bcf72484a48c985a21ff6b9a"
+    },
+    {
+      "name": "e2e-sequence-05",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 5,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "365bd0313b6928f37b3bc208a9d1c3a273f563fae0351913f6ed7cfe46a7febe"
+    },
+    {
+      "name": "e2e-sequence-06",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 6,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "80a91b94b13a7b4335faa790ad3e7a6cca8e999466c2b2baccac7dede71293f4"
+    },
+    {
+      "name": "e2e-sequence-07",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 7,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "c17be92889865cff46adabe6c97f1da9dd35a6fb7efc52aefa044dbaf62758b9"
+    },
+    {
+      "name": "e2e-sequence-08",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 8,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "23933f4ddf497a9057c5222794270a307eb5fae15536869cd4202febda805241"
+    },
+    {
+      "name": "e2e-sequence-09",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 9,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "2e838a708a368b6755862721238d9a3fb83bed7c8cba1d1c1d7312de8bc00bd7"
+    },
+    {
+      "name": "e2e-sequence-11",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 11,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "3d61bc954cdbf53ef80b94cc27a65a004853a7f5da70821e7665fa73c6fac838"
+    },
+    {
+      "name": "e2e-sequence-12",
+      "source": "e2e/rendering/sequence/sequencediagram.spec.js",
+      "block": 12,
+      "sourceBlob": "59d90b677bce6a3cb637807367f5ce2bc9d4d3c2",
+      "sha256": "014c40db1d9ec68011ff68bf89357c63667853ba79c7fd6341379b69b6db4a74"
+    },
+    {
+      "name": "e2e-sequence-redux-themes-01",
+      "source": "e2e/rendering/sequence/sequenceDiagram-redux-themes.spec.ts",
+      "block": 1,
+      "sourceBlob": "27553eb424e3c6a89e97000d0f253a89563ed50a",
+      "sha256": "e0b7e4782560784e4cc2c02d64d6c27d3dd947c70fde57500930d18781b9dbd1"
+    },
+    {
+      "name": "e2e-sequence-redux-themes-02",
+      "source": "e2e/rendering/sequence/sequenceDiagram-redux-themes.spec.ts",
+      "block": 2,
+      "sourceBlob": "27553eb424e3c6a89e97000d0f253a89563ed50a",
+      "sha256": "01216970140d1315586cf3ec853fe3b3dd028ef5830e3fa56fe37c36d71e8a7f"
+    },
+    {
+      "name": "e2e-sequence-redux-themes-03",
+      "source": "e2e/rendering/sequence/sequenceDiagram-redux-themes.spec.ts",
+      "block": 3,
+      "sourceBlob": "27553eb424e3c6a89e97000d0f253a89563ed50a",
+      "sha256": "e494db46aa339ef2f14289ec305d37c526bc39bb689a4052ecf5b2eacc35789f"
+    },
+    {
+      "name": "e2e-sequence-redux-themes-04",
+      "source": "e2e/rendering/sequence/sequenceDiagram-redux-themes.spec.ts",
+      "block": 4,
+      "sourceBlob": "27553eb424e3c6a89e97000d0f253a89563ed50a",
+      "sha256": "4b157e171f1b7dfa4fd73a3288f9814157798606f17264bfea79892ac5037d1e"
+    },
+    {
+      "name": "e2e-sequence-redux-themes-05",
+      "source": "e2e/rendering/sequence/sequenceDiagram-redux-themes.spec.ts",
+      "block": 5,
+      "sourceBlob": "27553eb424e3c6a89e97000d0f253a89563ed50a",
+      "sha256": "85efbb3c5a941f079a676fb8e57cf3172dd82aca4b65a2ef00514ba9eb19998e"
+    },
+    {
+      "name": "e2e-sequence-v2-01",
+      "source": "e2e/rendering/sequence/sequencediagram-v2.spec.js",
+      "block": 1,
+      "sourceBlob": "4034f303c3bf75c9b0656c8f85198085b07ff7b3",
+      "sha256": "25ec5ea708a72422fd6bd4f6ec2e82282cc11379e59edc9f730ce519ccffcc91"
+    },
+    {
+      "name": "e2e-sequence-v2-02",
+      "source": "e2e/rendering/sequence/sequencediagram-v2.spec.js",
+      "block": 2,
+      "sourceBlob": "4034f303c3bf75c9b0656c8f85198085b07ff7b3",
+      "sha256": "00cfa2d07899d94a2623c09aa88c268d1501b8232b6ea28a0d2f7e15f36b4986"
+    },
+    {
+      "name": "e2e-sequence-v2-03",
+      "source": "e2e/rendering/sequence/sequencediagram-v2.spec.js",
+      "block": 3,
+      "sourceBlob": "4034f303c3bf75c9b0656c8f85198085b07ff7b3",
+      "sha256": "1aaba4b48cef1f18210566bf15f891638949f0d179fee96a7dcacc016c854839"
+    },
+    {
+      "name": "e2e-should-align-multiline-actor-labels-on-the-datum-neo",
+      "source": "e2e/diagrams/sequence/should-align-multiline-actor-labels-on-the-datum-neo.mmd",
+      "block": 1,
+      "sourceBlob": "76dcfa643b50e2ed1cb28e8ee090fa37b5f421de",
+      "sha256": "a243590e76d828154ee1bd24b763245ed8081f8a44e0cb6bb1d978a451f51514"
+    },
+    {
+      "name": "e2e-should-be-possible-to-use-actor-symbols-instead-of-boxes",
+      "source": "e2e/diagrams/sequence/should-be-possible-to-use-actor-symbols-instead-of-boxes.mmd",
+      "block": 1,
+      "sourceBlob": "e6e8829b3ff53266b87bd381efb9573be5b946ce",
+      "sha256": "797dc65c2d197ce78ffc1a3abc1d1302b4d9f41a65610ac3a027a21d8989c9dd"
+    },
+    {
+      "name": "e2e-should-handle-bidirectional-arrows-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-handle-bidirectional-arrows-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "ac542d7cc3c8766fd9b3b2f850777cea8be7bb4f",
+      "sha256": "51e4513cd8070aafabc5c6de42a71e634af62d07c8c16dc8e69e6f40a8a76540"
+    },
+    {
+      "name": "e2e-should-handle-complex-interactions-between-different-participant-types",
+      "source": "e2e/diagrams/sequence/should-handle-complex-interactions-between-different-participant-types.mmd",
+      "block": 1,
+      "sourceBlob": "9ebc29c09fda2ac1a3609788e92db145d96a2a2b",
+      "sha256": "312a439069a61de0af683a455904e2c40e0a1fdac892ed63916d3aebfa80e05e"
+    },
+    {
+      "name": "e2e-should-handle-different-line-breaks",
+      "source": "e2e/diagrams/sequence/should-handle-different-line-breaks.mmd",
+      "block": 1,
+      "sourceBlob": "dc708cfa5690671367c2413776757b21bf405ee8",
+      "sha256": "e3908a0a76247e6867a0cb380563b491833b358946000a2c6ca589b1618d8cc7"
+    },
+    {
+      "name": "e2e-should-handle-empty-lines",
+      "source": "e2e/diagrams/sequence/should-handle-empty-lines.mmd",
+      "block": 1,
+      "sourceBlob": "1eac359bb8d41f80f53ed90d9e678875c9b1849b",
+      "sha256": "4740d325220f38758d9c55107378d8b7ff43fd48160a8aaf924240ab3b767a11"
+    },
+    {
+      "name": "e2e-should-handle-line-breaks-and-wrap-annotations",
+      "source": "e2e/diagrams/sequence/should-handle-line-breaks-and-wrap-annotations.mmd",
+      "block": 1,
+      "sourceBlob": "a9cdd4238ba56f88a5cc5179708989b9fe80b363",
+      "sha256": "333c1a2689e4fbad19e47905365830b9c7146a030f049ee4e9fc5f52abaa0c59"
+    },
+    {
+      "name": "e2e-should-handle-mixed-inline-and-external-alias-syntax",
+      "source": "e2e/diagrams/sequence/should-handle-mixed-inline-and-external-alias-syntax.mmd",
+      "block": 1,
+      "sourceBlob": "6950560a323b2f2086d63b970c29469c1f4c5399",
+      "sha256": "de93c2ecab87c3a038f517fb0bcdaed944f6900c57b53dde9549d32600a456ee"
+    },
+    {
+      "name": "e2e-should-prioritize-external-alias-over-inline-alias",
+      "source": "e2e/diagrams/sequence/should-prioritize-external-alias-over-inline-alias.mmd",
+      "block": 1,
+      "sourceBlob": "99135a1c3736da6dcfc85d53df4cffcd4ccdeaf8",
+      "sha256": "a4ecce2c82b2e0782a653d22d81792a2b2e956abfb94b98ed35f19381b870b91"
+    },
+    {
+      "name": "e2e-should-render-a-sequence-diagram-with-actor-creation-and-destruction-coupled-with-backgrounds-loops-and-notes",
+      "source": "e2e/diagrams/sequence/should-render-a-sequence-diagram-with-actor-creation-and-destruction-coupled-with-backgrounds-loops-and-notes.mmd",
+      "block": 1,
+      "sourceBlob": "4c490ed1df959e5cd979327b335f4e97e5c56ef2",
+      "sha256": "5f954e2644024b922ba466b5186f0337e8b43d3142f329d45fb6ffac208c0637"
+    },
+    {
+      "name": "e2e-should-render-a-sequence-diagram-with-basic-actor-creation-and-destruction",
+      "source": "e2e/diagrams/sequence/should-render-a-sequence-diagram-with-basic-actor-creation-and-destruction.mmd",
+      "block": 1,
+      "sourceBlob": "a4249fdee3c89cb44eee3d3b92c50a9dc0e47a90",
+      "sha256": "3851308cbba605ce568de3687211fdb388c8227fcee3b97196389d51dcdc3afa"
+    },
+    {
+      "name": "e2e-should-render-a-sequence-diagram-with-par-over",
+      "source": "e2e/diagrams/sequence/should-render-a-sequence-diagram-with-par-over.mmd",
+      "block": 1,
+      "sourceBlob": "f68d06fce1b5ea930ace24d3f55241cf12b0715c",
+      "sha256": "b74c1ca52a41755bb33a4ddf89af35da8b579af0809f60cb9ad15229942c0830"
+    },
+    {
+      "name": "e2e-should-render-a-sequence-diagram-with-sequence-numbers-that-are-decimals-and-increase-by-a-decimal-value",
+      "source": "e2e/diagrams/sequence/should-render-a-sequence-diagram-with-sequence-numbers-that-are-decimals-and-increase-by-a-decimal-value.mmd",
+      "block": 1,
+      "sourceBlob": "4e95623720c3f4eed1bf7d111e8831bc50fb3d23",
+      "sha256": "0e7bf393175f419e847b90259c6606e1d281b2e8f5fd88a2096a6073533fff77"
+    },
+    {
+      "name": "e2e-should-render-a-sequence-diagram-with-various-participant-types",
+      "source": "e2e/diagrams/sequence/should-render-a-sequence-diagram-with-various-participant-types.mmd",
+      "block": 1,
+      "sourceBlob": "36288a677a98364e05bb6c56372d4d8bbd425272",
+      "sha256": "2ef1bd848b8515b91be7ead338c88a1861f6263c1278f60fbe7d2560644057fa"
+    },
+    {
+      "name": "e2e-should-render-a-simple-sequence-diagram",
+      "source": "e2e/diagrams/sequence/should-render-a-simple-sequence-diagram.mmd",
+      "block": 1,
+      "sourceBlob": "b07fe77950213177fc1e439988244660875ae2e9",
+      "sha256": "d63932e8cfbf967ad27776baf49cd39c451584dc5f44b1dc702b612d6caca3c4"
+    },
+    {
+      "name": "e2e-should-render-a-single-and-nested-opt-with-long-test-overflowing",
+      "source": "e2e/diagrams/sequence/should-render-a-single-and-nested-opt-with-long-test-overflowing.mmd",
+      "block": 1,
+      "sourceBlob": "5c0d01cb0cbd3983f6544348c6c142501cb04516",
+      "sha256": "65765719aa2d883b095b02be139a6bbdb3a317be978ab33939262c0366b89597"
+    },
+    {
+      "name": "e2e-should-render-a-single-and-nested-opt-with-long-test-wrapping",
+      "source": "e2e/diagrams/sequence/should-render-a-single-and-nested-opt-with-long-test-wrapping.mmd",
+      "block": 1,
+      "sourceBlob": "2254711a52dfb9ea9300a7c3b58155403fc2f909",
+      "sha256": "7eec7542b0347bccd7529f64d6a16731e93d8285a50fe1a75a7fe72cccac2f43"
+    },
+    {
+      "name": "e2e-should-render-a-single-and-nested-rects",
+      "source": "e2e/diagrams/sequence/should-render-a-single-and-nested-rects.mmd",
+      "block": 1,
+      "sourceBlob": "e30fed876bc20df8d1f1318e5300af04485637b5",
+      "sha256": "c7a11e5e0a48aa3ea08fbbe743b0d35b835af093eb218e041c89e9ee2113e252"
+    },
+    {
+      "name": "e2e-should-render-actor-and-database-aligned-on-neo",
+      "source": "e2e/diagrams/sequence/should-render-actor-and-database-aligned-on-neo.mmd",
+      "block": 1,
+      "sourceBlob": "4bc63f852fb145e22d9890769c120dde47f1e194",
+      "sha256": "06c6ab5a7e20f8fdf4eb5e747e46a5d3ed7daf69a6b2db717dbb9ea96fb1f47c"
+    },
+    {
+      "name": "e2e-should-render-actors-with-inline-alias-in-config-object",
+      "source": "e2e/diagrams/sequence/should-render-actors-with-inline-alias-in-config-object.mmd",
+      "block": 1,
+      "sourceBlob": "f7b5e946ccd794c295210f6bc6e2f175cb6b379d",
+      "sha256": "400f50d5c31520f53c03e3a0782ece6db493d327832b48140fa1b875b0ed9b17"
+    },
+    {
+      "name": "e2e-should-render-actors-with-stereotypes-and-aliases",
+      "source": "e2e/diagrams/sequence/should-render-actors-with-stereotypes-and-aliases.mmd",
+      "block": 1,
+      "sourceBlob": "8dd47623c3946757f04c6558595732bfea503800",
+      "sha256": "da95ffb14bef007146cb083e3314c361ef915c83a39c728a3c94a35c09c2a396"
+    },
+    {
+      "name": "e2e-should-render-all-arrow-types-with-autonumbering",
+      "source": "e2e/diagrams/sequence/should-render-all-arrow-types-with-autonumbering.mmd",
+      "block": 1,
+      "sourceBlob": "954c5e6ad6eae441ad67795d9b418ae0252896a2",
+      "sha256": "e32ecf07818db4e05e396ef5772f3f193320b9521552f48109f90cfb44568088"
+    },
+    {
+      "name": "e2e-should-render-all-arrow-types-with-autonumbering-left-to-right-only",
+      "source": "e2e/diagrams/sequence/should-render-all-arrow-types-with-autonumbering-left-to-right-only.mmd",
+      "block": 1,
+      "sourceBlob": "82f5ea19bc01e40f064a7f5bdddb5c1a857a3c11",
+      "sha256": "9b5dd5072ca2d848d29634678eb648464ebb15af35b6d80b442c9cf1a4baedd0"
+    },
+    {
+      "name": "e2e-should-render-all-message-types-and-arrow-types-in-a-single-comprehensive-test",
+      "source": "e2e/diagrams/sequence/should-render-all-message-types-and-arrow-types-in-a-single-comprehensive-test.mmd",
+      "block": 1,
+      "sourceBlob": "f98695263bedaeef58cafc62ad684d9b5a9cc9ae",
+      "sha256": "8511702e183d85b61e8debd65f2d825c54abf2c88542e9b6169072f87bbb4627"
+    },
+    {
+      "name": "e2e-should-render-alt-else-section-titles-with-label-box-backgrounds",
+      "source": "e2e/diagrams/sequence/should-render-alt-else-section-titles-with-label-box-backgrounds.mmd",
+      "block": 1,
+      "sourceBlob": "7fade9c7e081d8001d8db25d7ac4ed571b32178d",
+      "sha256": "77632515468942956610357f47d75de6aa9649bee95267d9339e39af5c442057"
+    },
+    {
+      "name": "e2e-should-render-autonumber-when-autonumber-keyword-is-used",
+      "source": "e2e/diagrams/sequence/should-render-autonumber-when-autonumber-keyword-is-used.mmd",
+      "block": 1,
+      "sourceBlob": "fc619fdfe182af50774e0e0d26070e102f4bc920",
+      "sha256": "771a9d401f0f1c3bd07e54ac631d15eace05d397740a4cf9931eb2a286e6b5c6"
+    },
+    {
+      "name": "e2e-should-render-autonumber-when-configured-with-such",
+      "source": "e2e/diagrams/sequence/should-render-autonumber-when-configured-with-such.mmd",
+      "block": 1,
+      "sourceBlob": "f61cc5ab02bbfdd69107a2c61bc43887a34a4f7e",
+      "sha256": "e50e93b797c487ed8abcee00678bb00325ed1e8e10056281a96dd6981c634e57"
+    },
+    {
+      "name": "e2e-should-render-autonumber-with-different-line-breaks",
+      "source": "e2e/diagrams/sequence/should-render-autonumber-with-different-line-breaks.mmd",
+      "block": 1,
+      "sourceBlob": "0316d25a5f8c74bfa8858d53b10ed5e85aa54a73",
+      "sha256": "9d7ea8ed2f46d5aa7c0712b19b820f3700aad15cdf08a70ef12b3d853321ec24"
+    },
+    {
+      "name": "e2e-should-render-bidirectional-arrows",
+      "source": "e2e/diagrams/sequence/should-render-bidirectional-arrows.mmd",
+      "block": 1,
+      "sourceBlob": "4fa888363e1f207b38b374d2f989a1f5b9f02403",
+      "sha256": "45048258711a4b3bab6d411fdcbca80fec6bfc6b529fcab51021b2459d891c32"
+    },
+    {
+      "name": "e2e-should-render-bidirectional-arrows-with-autonumbering",
+      "source": "e2e/diagrams/sequence/should-render-bidirectional-arrows-with-autonumbering.mmd",
+      "block": 1,
+      "sourceBlob": "e03eaa8852185ec140ae07eb786ff4ddc907a6dd",
+      "sha256": "c227220aaf156d5b9140d49d5c8fef6135ddcfb999b14a94e97307884369e226"
+    },
+    {
+      "name": "e2e-should-render-central-connection-circles-on-actor-vertical-lines",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-circles-on-actor-vertical-lines.mmd",
+      "block": 1,
+      "sourceBlob": "81a3b1cfae1e91b93428660880b435d8e282a796",
+      "sha256": "d477552b0facb44fb6f4bca3d4981394a98d1277a5fa55dc04c1d8adf37ca0e4"
+    },
+    {
+      "name": "e2e-should-render-central-connection-dual-normal-ltr",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-dual-normal-ltr.mmd",
+      "block": 1,
+      "sourceBlob": "692ebe0689405dcb2b345ad2bb77873100b86991",
+      "sha256": "243406078cf85c1cbcba896e7839ab6d85c55df977972a69f4e7fa4893761d7f"
+    },
+    {
+      "name": "e2e-should-render-central-connection-dual-normal-rtl",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-dual-normal-rtl.mmd",
+      "block": 1,
+      "sourceBlob": "906622cd253a576b05068e58ac8dcafb63f81760",
+      "sha256": "a2716d50fe5e15d792f99b5e0f780ce7f49b0b9631757e2e97c774d29302a23e"
+    },
+    {
+      "name": "e2e-should-render-central-connection-dual-reverse-ltr",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-dual-reverse-ltr.mmd",
+      "block": 1,
+      "sourceBlob": "14de5429bace84d40ee28af2dc78fd7571beaaca",
+      "sha256": "bce1f7086356bd154ec761870cd2739cbc91ced447755a31e95825432b0333be"
+    },
+    {
+      "name": "e2e-should-render-central-connection-dual-reverse-rtl",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-dual-reverse-rtl.mmd",
+      "block": 1,
+      "sourceBlob": "842ac4040b33e11a515b987246b2f7822eb54ff9",
+      "sha256": "da7f308930cb315e444646f45eb90e283b2ef861b1dcbdb72fa73b9eebddd6c6"
+    },
+    {
+      "name": "e2e-should-render-central-connection-reverse-normal-ltr",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-reverse-normal-ltr.mmd",
+      "block": 1,
+      "sourceBlob": "68190743fc6437bc80c17cd2bf8845b3ba8cff6e",
+      "sha256": "fc93ef7207eaf00def851f776691b49109437cc7425b124d7e13af85d7fa170d"
+    },
+    {
+      "name": "e2e-should-render-central-connection-reverse-normal-rtl",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-reverse-normal-rtl.mmd",
+      "block": 1,
+      "sourceBlob": "cc03ae571c7cac1fba091e405d597ac828112c8b",
+      "sha256": "471f15c4f7d85b9e82c467da3f23e9ad071d7db63df447e65daccbddc3e7b609"
+    },
+    {
+      "name": "e2e-should-render-central-connection-reverse-reverse-ltr",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-reverse-reverse-ltr.mmd",
+      "block": 1,
+      "sourceBlob": "a2ead267d4285e7f63ad4e6a499844c648a9e338",
+      "sha256": "e134045e2fc510845770b0ffb0fe606b82413529f38ddbaf603a2dcef18475f0"
+    },
+    {
+      "name": "e2e-should-render-central-connection-reverse-reverse-rtl",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-reverse-reverse-rtl.mmd",
+      "block": 1,
+      "sourceBlob": "93b5826cbf5185fe8c13a870675daed497a4281f",
+      "sha256": "34ab2a4ddd947c1f4b1c2ee1e796f1e90ee2bd7db67da7ee50cf1cf4b71d6a9a"
+    },
+    {
+      "name": "e2e-should-render-central-connection-with-normal-arrows-left-to-right",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-with-normal-arrows-left-to-right.mmd",
+      "block": 1,
+      "sourceBlob": "e6c3ad89c95e87a00a241d55a2250445feacb6e9",
+      "sha256": "4473affbd3c57715cf6f90db57b9d75b9b5ec994b828d184e0f55ca77c830347"
+    },
+    {
+      "name": "e2e-should-render-central-connection-with-normal-arrows-right-to-left",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-with-normal-arrows-right-to-left.mmd",
+      "block": 1,
+      "sourceBlob": "ec68b01a86fbdff3b17b5c8b2d23ba2dcd03b3fd",
+      "sha256": "2da8403aecb66e8bdb2fb126aa0570b7df896e6fd617fd676e895a0d7361b6fd"
+    },
+    {
+      "name": "e2e-should-render-central-connection-with-reverse-arrows-left-to-right",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-with-reverse-arrows-left-to-right.mmd",
+      "block": 1,
+      "sourceBlob": "cc50939db9ee880785e759b7a2d3b80535e2fbfc",
+      "sha256": "638133d37619489b407978d3d71a1ee2773b77d4d6efb7e63779307180c912cd"
+    },
+    {
+      "name": "e2e-should-render-central-connection-with-reverse-arrows-right-to-left",
+      "source": "e2e/diagrams/sequence/should-render-central-connection-with-reverse-arrows-right-to-left.mmd",
+      "block": 1,
+      "sourceBlob": "39a78abc17cd43d1281727606ba7fa22d51ed7e6",
+      "sha256": "4ead715bdc27f5a6d18b13e068f88a5735036581ef6b9cd46c8c409006684112"
+    },
+    {
+      "name": "e2e-should-render-central-connections-mixed-with-normal-messages",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-mixed-with-normal-messages.mmd",
+      "block": 1,
+      "sourceBlob": "b767224e49064526339a0c592d4511c0b5ca99a1",
+      "sha256": "cf28ed89e8c84c0be99a3307960177bf4851d377db9a2110934a7ff824dae07d"
+    },
+    {
+      "name": "e2e-should-render-central-connections-with-activations",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-with-activations.mmd",
+      "block": 1,
+      "sourceBlob": "68ea2867ab185d2431891be4f8cb50b8e27abf81",
+      "sha256": "69fa609199129943d4374bc73e6936ceac46cb078c29fc4a255f8cddd1f7b2e5"
+    },
+    {
+      "name": "e2e-should-render-central-connections-with-autonumbering",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-with-autonumbering.mmd",
+      "block": 1,
+      "sourceBlob": "f8704db4ded38f75a97fb83c44da9602921fc885",
+      "sha256": "122d15cecbaf1258221d684db460c6b0f1db82abed6e7bbadf5b6eb284a8c7ac"
+    },
+    {
+      "name": "e2e-should-render-central-connections-with-bidirectional-arrows",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-with-bidirectional-arrows.mmd",
+      "block": 1,
+      "sourceBlob": "3f38a5ab7efd5edbaf177371efe27bcbba593492",
+      "sha256": "9268e8c1b6a9b56b642768fa5881ee9623ddb53736a34fc26fcaab2c772f062c"
+    },
+    {
+      "name": "e2e-should-render-central-connections-with-bidirectional-arrows-and-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-with-bidirectional-arrows-and-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "13089b4e9f16d0268293c1e2dcd8a4d7f0f77adf",
+      "sha256": "eadb59090406eca45a0307217cf2b70505f358a0daed1cabb48b8b0091a0d630"
+    },
+    {
+      "name": "e2e-should-render-central-connections-with-different-arrow-types",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-with-different-arrow-types.mmd",
+      "block": 1,
+      "sourceBlob": "fc968d3e79310a646e9f0e1d0f9b0d94c1ce8e39",
+      "sha256": "4c017c73886fdd5c50112a14f94551504638b3d9257e83bb5a52750e1fa94b73"
+    },
+    {
+      "name": "e2e-should-render-central-connections-with-different-participant-types",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-with-different-participant-types.mmd",
+      "block": 1,
+      "sourceBlob": "3c87bd1a1eccc16f7ba67693e97a6bea2cf839cf",
+      "sha256": "9a7d53984553fd4e7293283e7479bc06ceaf8cf8e0d8112b4540190151cc62bc"
+    },
+    {
+      "name": "e2e-should-render-central-connections-with-loops-and-alternatives",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-with-loops-and-alternatives.mmd",
+      "block": 1,
+      "sourceBlob": "c92306ee2b9f528a3cba4b29711f80228896adfc",
+      "sha256": "be1049a8bbd528b33229d8e36c19295a2901ebd204091e70081d1a722ec102fc"
+    },
+    {
+      "name": "e2e-should-render-central-connections-with-notes",
+      "source": "e2e/diagrams/sequence/should-render-central-connections-with-notes.mmd",
+      "block": 1,
+      "sourceBlob": "359fb94ddf40520f52b5c7a9122d3cd876166170",
+      "sha256": "03b293f5601a8dc0ffc4a3c08932fe921dd3500b6054a1483fac8496f2724ae0"
+    },
+    {
+      "name": "e2e-should-render-comprehensive-self-reference-scenario-all-arrow-types-mixed",
+      "source": "e2e/diagrams/sequence/should-render-comprehensive-self-reference-scenario-all-arrow-types-mixed.mmd",
+      "block": 1,
+      "sourceBlob": "e7f57b54e95445cc871d4c4d87db642dabd4a75e",
+      "sha256": "f30e4b6c852d314491604019927a00994fa28663a03e359e1e6f2b7f40072adb"
+    },
+    {
+      "name": "e2e-should-render-comprehensive-self-reference-scenario-all-arrow-types-mixed-with-central-connections",
+      "source": "e2e/diagrams/sequence/should-render-comprehensive-self-reference-scenario-all-arrow-types-mixed-with-central-connections.mmd",
+      "block": 1,
+      "sourceBlob": "b508d2d354a031729bd3d84eaa8cbefc01b9bdc5",
+      "sha256": "725c6760975be0461f228ec640087910d1df9c55087d1fc0b7910bcd50345f11"
+    },
+    {
+      "name": "e2e-should-render-dark-theme-from-init-directive-and-configure-font-size-24-font",
+      "source": "e2e/diagrams/sequence/should-render-dark-theme-from-init-directive-and-configure-font-size-24-font.mmd",
+      "block": 1,
+      "sourceBlob": "4f595686f89fc5d1a5fdc3c261fd9f68665362de",
+      "sha256": "7f43e577220a29a40f46a457d82bdce9d3edf02f1167923893228076e10ca35b"
+    },
+    {
+      "name": "e2e-should-render-different-actor-fonts-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-different-actor-fonts-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "f3f46c32989f89f70209a6ba2214ef122379371e",
+      "sha256": "95a7143534b8c5938d7661f70a3a1d8132bc5fd561097e91fadba49f8481149c"
+    },
+    {
+      "name": "e2e-should-render-different-message-fonts-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-different-message-fonts-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "2c309b0eea13059da93c83f8212e2ea27eb527e3",
+      "sha256": "317ea679014b353d571e8edf0aaf31a075f5be71ea6f3296abae85bfe9121adb"
+    },
+    {
+      "name": "e2e-should-render-different-note-fonts-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-different-note-fonts-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "b7cdc3fa3be5643bce66e266f09351eeafd53481",
+      "sha256": "959f76f3d5905755cd0c7d7a6e737c9a2364134705a3f8bcfe5d90ac71360a55"
+    },
+    {
+      "name": "e2e-should-render-different-participant-types-with-alternative-flows",
+      "source": "e2e/diagrams/sequence/should-render-different-participant-types-with-alternative-flows.mmd",
+      "block": 1,
+      "sourceBlob": "7c48e935511a4940938f9c280e2dcfa217181da1",
+      "sha256": "d177584f8f705b17ee61435b99475d74ddb56f77dbf75c6d79d1a8f9702d5c8f"
+    },
+    {
+      "name": "e2e-should-render-different-participant-types-with-notes-and-loops",
+      "source": "e2e/diagrams/sequence/should-render-different-participant-types-with-notes-and-loops.mmd",
+      "block": 1,
+      "sourceBlob": "bb8924db207f15dd481fcca5d6d4c0c12307f7d8",
+      "sha256": "41738f2451e8b22d7f503bf12d73b267538da94d5c0a47c24b6977eee614ade1"
+    },
+    {
+      "name": "e2e-should-render-different-participant-types-with-wrapping-text",
+      "source": "e2e/diagrams/sequence/should-render-different-participant-types-with-wrapping-text.mmd",
+      "block": 1,
+      "sourceBlob": "a347232ea453edaa0c7be0f7f154f204b935e9fb",
+      "sha256": "30c8e4d6cb0affef78ccdd4e2ab6b263179030c74f8dde1f0344f3de2b46c577"
+    },
+    {
+      "name": "e2e-should-render-inline-alias-with-only-alias-field-no-type",
+      "source": "e2e/diagrams/sequence/should-render-inline-alias-with-only-alias-field-no-type.mmd",
+      "block": 1,
+      "sourceBlob": "3d38ceb4a0fcfd22ce05fb2c126b53dbcc4bb118",
+      "sha256": "72ebc9c85b6f1ad3811f132dd47ab0929cb48ba1cc0e9e150ccf31cec4ba8ade"
+    },
+    {
+      "name": "e2e-should-render-long-actor-descriptions",
+      "source": "e2e/diagrams/sequence/should-render-long-actor-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "96d2a3280cbec96c6de6d48b3be14cf45258e138",
+      "sha256": "d5d4256a986629e07d61fb3acef04e484fefa772572fb176bd63fdc7a1e70dac"
+    },
+    {
+      "name": "e2e-should-render-long-messages-from-an-actor-to-the-left-to-one-to-the-right",
+      "source": "e2e/diagrams/sequence/should-render-long-messages-from-an-actor-to-the-left-to-one-to-the-right.mmd",
+      "block": 1,
+      "sourceBlob": "c6418cf33f49047c4bd943e2d0ae93dd5e5d463d",
+      "sha256": "7b1d77ce9115c80582d215b643dee152eb022e655470d79005c42899f938d879"
+    },
+    {
+      "name": "e2e-should-render-long-messages-from-an-actor-to-the-right-to-one-to-the-left",
+      "source": "e2e/diagrams/sequence/should-render-long-messages-from-an-actor-to-the-right-to-one-to-the-left.mmd",
+      "block": 1,
+      "sourceBlob": "fbb41778f2498bcbfa11cc4c01bde1caaf76ce2c",
+      "sha256": "af8e56735a9bed3e9292f656ea3c599fdf83e0c40afbb931b5e9edc60d9d2494"
+    },
+    {
+      "name": "e2e-should-render-long-messages-from-database-to-collections",
+      "source": "e2e/diagrams/sequence/should-render-long-messages-from-database-to-collections.mmd",
+      "block": 1,
+      "sourceBlob": "31516ba7232446fd2c3861e6bfdf83fe25a474d3",
+      "sha256": "244e5a6515bae41c33a11f6db28c2de332361b1f1e9489575266521d27cd3a7c"
+    },
+    {
+      "name": "e2e-should-render-long-messages-from-queue-to-boundary",
+      "source": "e2e/diagrams/sequence/should-render-long-messages-from-queue-to-boundary.mmd",
+      "block": 1,
+      "sourceBlob": "1f360e464796444f514b6a4b609c20d5012e2a81",
+      "sha256": "7b464f240c1851e5181b9869f9fc99bcbff5cfcc4e96217cdada8c679dccb591"
+    },
+    {
+      "name": "e2e-should-render-long-messages-wrapped-inline-from-an-actor-to-the-left-to-one-to-the-right",
+      "source": "e2e/diagrams/sequence/should-render-long-messages-wrapped-inline-from-an-actor-to-the-left-to-one-to-the-right.mmd",
+      "block": 1,
+      "sourceBlob": "22fffb99c3c1bd81e34bbaa4441b05c7d26bc94f",
+      "sha256": "17221538d1dc5b1d0f34c221839c8b66ebfaf1d21248f6ac9bc984eb1217abdc"
+    },
+    {
+      "name": "e2e-should-render-long-messages-wrapped-inline-from-an-actor-to-the-right-to-one-to-the-left",
+      "source": "e2e/diagrams/sequence/should-render-long-messages-wrapped-inline-from-an-actor-to-the-right-to-one-to-the-left.mmd",
+      "block": 1,
+      "sourceBlob": "043d63ade84515085feea0c6c3af900e5f4984c6",
+      "sha256": "fd0146f648427ee392e46356db08e792abf302e27dc9da83ca9ba798ac62eb8e"
+    },
+    {
+      "name": "e2e-should-render-long-notes-left-of-actor",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-left-of-actor.mmd",
+      "block": 1,
+      "sourceBlob": "8d5de82d01b6bde5e39e3a3eaa18aa4a70ac8adb",
+      "sha256": "41a4c816eca813042bd41bb70c3da7a58224d23a7accbf250149d972eecd2451"
+    },
+    {
+      "name": "e2e-should-render-long-notes-left-of-boundary",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-left-of-boundary.mmd",
+      "block": 1,
+      "sourceBlob": "4a6decbedf215aa26ccc9c1cedcc6a90edc59e75",
+      "sha256": "69fb4ec7e267f7964cae2c3ea3cf3519a2ba8cf86bbec64a7c0ac605ed84d71e"
+    },
+    {
+      "name": "e2e-should-render-long-notes-over-actor",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-over-actor.mmd",
+      "block": 1,
+      "sourceBlob": "1e6bb2078a50412ba63f3d26b142c6a319a4cb38",
+      "sha256": "d5b01605bd81541bab8ad0562a5a686231dc9f6821a9a39a690fec108c1fc005"
+    },
+    {
+      "name": "e2e-should-render-long-notes-over-collections",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-over-collections.mmd",
+      "block": 1,
+      "sourceBlob": "c9abcb66f5c9b12d77515435f57ebd4a4f7a835d",
+      "sha256": "396dc3fca03d5f20f9289228dae83e255cd8cbe0415cb6c1bb83c6d60107b859"
+    },
+    {
+      "name": "e2e-should-render-long-notes-right-of-actor",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-right-of-actor.mmd",
+      "block": 1,
+      "sourceBlob": "bd55c6ef208379cfbd4a0082f39b101b06b25bba",
+      "sha256": "6a9ec026d070bd4e6376c2567fb2e6542076c0c5309402dfef6c3077ebaad95f"
+    },
+    {
+      "name": "e2e-should-render-long-notes-right-of-entity",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-right-of-entity.mmd",
+      "block": 1,
+      "sourceBlob": "580b2a62d062cc3ba4663dd12865c548b6c08b11",
+      "sha256": "3246f8eeac4b81798b97128b51e89c10f46d90318fdef004b70d058e97635212"
+    },
+    {
+      "name": "e2e-should-render-long-notes-wrapped-inline-left-of-actor",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-wrapped-inline-left-of-actor.mmd",
+      "block": 1,
+      "sourceBlob": "01da5897db0a3ca76e6d7787298b00bbed5e792a",
+      "sha256": "65c18202cd96db3a29bbc38e9bf1bebdbf8679275f2b38f146c77f7b1c8c1cd1"
+    },
+    {
+      "name": "e2e-should-render-long-notes-wrapped-inline-over-actor",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-wrapped-inline-over-actor.mmd",
+      "block": 1,
+      "sourceBlob": "aedaebad7934931bcbe53e5fd23cbc80a33a32a0",
+      "sha256": "0392c2934580aa4cb8d3e70972b56c85c5454fc10812fe59336be1fac863942c"
+    },
+    {
+      "name": "e2e-should-render-long-notes-wrapped-inline-right-of-actor",
+      "source": "e2e/diagrams/sequence/should-render-long-notes-wrapped-inline-right-of-actor.mmd",
+      "block": 1,
+      "sourceBlob": "f66c909e3a09a657c2866df61f4942517268e563",
+      "sha256": "b2afb06cbd67bd8d0abda5fc36adbf19cc2682be64e301a49b8a92f2ecbb5334"
+    },
+    {
+      "name": "e2e-should-render-loops-with-a-slight-margin",
+      "source": "e2e/diagrams/sequence/should-render-loops-with-a-slight-margin.mmd",
+      "block": 1,
+      "sourceBlob": "6adfba2ff17aea9bef09d3c513967b064bea97cb",
+      "sha256": "52b5a595f9889b659589955fc9d7b0f18f4332fccf310ff14ef1cfd7ccfc4058"
+    },
+    {
+      "name": "e2e-should-render-mixed-central-connections-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-mixed-central-connections-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "4b1567c7bcba915bda99d0a748dd3e33baadd50c",
+      "sha256": "d753236d25524f59de6fab3fa2abec2a4b731f5dd7b961645e388f4a3f1f5eff"
+    },
+    {
+      "name": "e2e-should-render-mixed-participants-and-actors-with-stereotypes-and-aliases",
+      "source": "e2e/diagrams/sequence/should-render-mixed-participants-and-actors-with-stereotypes-and-aliases.mmd",
+      "block": 1,
+      "sourceBlob": "a00c2cda6b28ccec692c2269b0a70f5d4c057482",
+      "sha256": "926f1a7570f7bb6f4a9999b1e1475c93a56a46a0d09fc1f19c45c5329a8dad64"
+    },
+    {
+      "name": "e2e-should-render-multi-line-messages-aligned-to-the-left-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-multi-line-messages-aligned-to-the-left-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "bf2148da933dc705b2b797f524b11314676a96b5",
+      "sha256": "007d5f8e1b5c237fca1d61fca7c4b48d3f9eff64249e90b0380c77cf42fa6243"
+    },
+    {
+      "name": "e2e-should-render-multi-line-messages-aligned-to-the-right-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-multi-line-messages-aligned-to-the-right-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "1fc9105f0827c0c4b834fd35eee456cdc8c70fea",
+      "sha256": "d10d99ec4435c8a19699912424acd47e6bb0a4404ad7303d0e2801657ab1445b"
+    },
+    {
+      "name": "e2e-should-render-multi-line-notes-aligned-to-the-left-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-multi-line-notes-aligned-to-the-left-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "4f1c8fc2f4014d97d703b8979a0e8bb34d002978",
+      "sha256": "093fdfd26aa962acd27ce34d0ec4d9ed2cdb71aa2988c39c9e0470a7a73b5dd9"
+    },
+    {
+      "name": "e2e-should-render-multi-line-notes-aligned-to-the-right-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-multi-line-notes-aligned-to-the-right-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "be15708c6ef561df45f639bba02260e10bcdb61e",
+      "sha256": "ee385ad8a2301f4d6af85008d7195fa8df7e52a5a0842451236d54ce8f1ef32e"
+    },
+    {
+      "name": "e2e-should-render-notes-aligned-to-the-left-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-notes-aligned-to-the-left-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "af9d1eb54ec24788cdeec8dd14bede72fd378d76",
+      "sha256": "15ea27b269f6ae88cd1529efd338a47ccc98cc96b1621a0aa01bd9de70989be7"
+    },
+    {
+      "name": "e2e-should-render-notes-aligned-to-the-right-when-configured",
+      "source": "e2e/diagrams/sequence/should-render-notes-aligned-to-the-right-when-configured.mmd",
+      "block": 1,
+      "sourceBlob": "ae722e148afa167c9bf889b5c9fc7a1deb4266c9",
+      "sha256": "5657db0226dcd30dd8e18469fb7c5e98da8e26c07670a7bef71cb3eed288aa5a"
+    },
+    {
+      "name": "e2e-should-render-notes-over-actor-and-boundary",
+      "source": "e2e/diagrams/sequence/should-render-notes-over-actor-and-boundary.mmd",
+      "block": 1,
+      "sourceBlob": "e307aa4f85735c1ee5285ad375fa6f91d014dfaa",
+      "sha256": "d42e4f416376311bd27a834331ee826d21f04c53df431c13c61b334521446d6c"
+    },
+    {
+      "name": "e2e-should-render-notes-over-actors-and-participant",
+      "source": "e2e/diagrams/sequence/should-render-notes-over-actors-and-participant.mmd",
+      "block": 1,
+      "sourceBlob": "f2155b4bfd1228fbb7f19e614f505a37f6d19118",
+      "sha256": "94511148fba0e2883beaefa186171175c63f4f8306541be47a145e6be510d337"
+    },
+    {
+      "name": "e2e-should-render-parallel-processes-with-different-participant-types",
+      "source": "e2e/diagrams/sequence/should-render-parallel-processes-with-different-participant-types.mmd",
+      "block": 1,
+      "sourceBlob": "ea1bab17a4a88740c36be5aeed8da7d7e88dee75",
+      "sha256": "e15794d8a7ae2b9707b4cbfaf9cabd2d945315dd23f77dde4995c82cd676bbeb"
+    },
+    {
+      "name": "e2e-should-render-participant-creation-and-destruction-with-different-types",
+      "source": "e2e/diagrams/sequence/should-render-participant-creation-and-destruction-with-different-types.mmd",
+      "block": 1,
+      "sourceBlob": "dd9780f7d7b8aec589aa3b5b5c1d2b05fc0c8eba",
+      "sha256": "faddf75a54ebe00d7e00ce6d4339311ad907ea1d187d4abbef2ac0297fd433af"
+    },
+    {
+      "name": "e2e-should-render-participants-with-inline-alias-in-config-object",
+      "source": "e2e/diagrams/sequence/should-render-participants-with-inline-alias-in-config-object.mmd",
+      "block": 1,
+      "sourceBlob": "ac54f8749ca818b0c4d9ee5f847af1da5a5e7f8e",
+      "sha256": "a126130b85070bfa6f4714cf28e31f7337fbab20aefb90f0b3007a3190ae89d8"
+    },
+    {
+      "name": "e2e-should-render-participants-with-stereotypes-and-aliases",
+      "source": "e2e/diagrams/sequence/should-render-participants-with-stereotypes-and-aliases.mmd",
+      "block": 1,
+      "sourceBlob": "a0c5c0f15bb721f0ea82a454b519592810e36712",
+      "sha256": "d3ff16907b390ab91b5d932e8e30f16f0119f44bd9dcb82d8e95d08adf6cd829"
+    },
+    {
+      "name": "e2e-should-render-rect-around-and-inside-alts",
+      "source": "e2e/diagrams/sequence/should-render-rect-around-and-inside-alts.mmd",
+      "block": 1,
+      "sourceBlob": "693af5b2c7fb5b0175766360576e6b2d95a885ec",
+      "sha256": "2bf365e087bf0d74e9b9bf43d2b56ff441db2651458bb0800ca05052b478baf3"
+    },
+    {
+      "name": "e2e-should-render-rect-around-and-inside-breaks",
+      "source": "e2e/diagrams/sequence/should-render-rect-around-and-inside-breaks.mmd",
+      "block": 1,
+      "sourceBlob": "d310862b1dcc0cad4f0cc0cb9f1af5bdca6b9e86",
+      "sha256": "302aec7ac9ade621a74c3427ed451813359fefb13821c38ee310f5421436c58f"
+    },
+    {
+      "name": "e2e-should-render-rect-around-and-inside-criticals",
+      "source": "e2e/diagrams/sequence/should-render-rect-around-and-inside-criticals.mmd",
+      "block": 1,
+      "sourceBlob": "79032166abc15ab9c36b5304c43cf37c6f81432c",
+      "sha256": "00a125d4bef37259b956419a24d9a83b0dbfbf411490b41c271c71699c44f3b1"
+    },
+    {
+      "name": "e2e-should-render-rect-around-and-inside-loops",
+      "source": "e2e/diagrams/sequence/should-render-rect-around-and-inside-loops.mmd",
+      "block": 1,
+      "sourceBlob": "022aa3c83f1a4285675f79ef0f5f4e125d14f677",
+      "sha256": "51163022eaf199c23f47d7367b162a826f901f0e5f5b1aebd89acde06f08f7cd"
+    },
+    {
+      "name": "e2e-should-render-rect-around-and-inside-opts",
+      "source": "e2e/diagrams/sequence/should-render-rect-around-and-inside-opts.mmd",
+      "block": 1,
+      "sourceBlob": "0eef10baecae321a980a6875b125e5eaa7edc854",
+      "sha256": "680792cefdb496eae141466e301a2561f4945bb0c6849da60a4db8adbb158556"
+    },
+    {
+      "name": "e2e-should-render-reverse-arrows-with-autonumbering",
+      "source": "e2e/diagrams/sequence/should-render-reverse-arrows-with-autonumbering.mmd",
+      "block": 1,
+      "sourceBlob": "3fd531b193f36faa47f90a39be548f5495820f7e",
+      "sha256": "82021f5730cd905a19175b9bec57aa07a2e8b48b751cb43071345583d991ce5b"
+    },
+    {
+      "name": "e2e-should-render-self-ref-reverse-central-connection-dual-no-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-ref-reverse-central-connection-dual-no-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "e5602909d8836c9a329a31ad1add0220d1a7d46b",
+      "sha256": "bf00bd443e9e324af6036e15c5e084e3ece7cb69b2cdd64a29ef11b603c0fc00"
+    },
+    {
+      "name": "e2e-should-render-self-ref-reverse-central-connection-reverse-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-ref-reverse-central-connection-reverse-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "860bc021a52f6285ad608a46fb122ae462f9e360",
+      "sha256": "273a00b7637e707632227aafb3cf5addd3420d5105057b4365d0ec68a606a827"
+    },
+    {
+      "name": "e2e-should-render-self-ref-reverse-central-connection-reverse-no-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-ref-reverse-central-connection-reverse-no-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "c242a392a92dba1147860e77d5d5b123e466215b",
+      "sha256": "85d5ce48c754339feb734bab572c40a3a3a77d9cbf863d29b1ab2ea28e35a9c5"
+    },
+    {
+      "name": "e2e-should-render-self-reference-mixed-with-regular-messages-and-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-mixed-with-regular-messages-and-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "aaeb6f721ea4ad274efbac9d7f926d29d1d778be",
+      "sha256": "642acac608659fdf14fa76eab3a7ed521c686451cc5eb6c179ee797515d2564b"
+    },
+    {
+      "name": "e2e-should-render-self-reference-mixed-with-regular-messages-central-connections-and-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-mixed-with-regular-messages-central-connections-and-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "41a4624766ea30d90f85829fe8c3f96418bb90cf",
+      "sha256": "a0fe47beb4323f7a355e5ab91ddaea734d747175050a7a395e569ee23f53e2a1"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-bidirectional-and-central-connections-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-bidirectional-and-central-connections-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "c3322ad04198f7efd923e38d4c50b85f8fd04f3e",
+      "sha256": "19f52e0cae6472153bb6e135372c51283ffafb4cc1146b76f697d6306daca8de"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-bidirectional-arrows-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-bidirectional-arrows-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "6cd2f9532ace19c7f948faab1b518586840115bb",
+      "sha256": "36dbcf798bdd2e1c1f2aaec68d9777398fcb5dc000155352f2f068b8bd32210c"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-bidirectional-arrows-without-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-bidirectional-arrows-without-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "eb0d1143c22579bc57f12b28a31d349a2f77618d",
+      "sha256": "ca0cf3d0fe513fb464209a143bd0855bf9d58f54833e072531be6acf16577fff"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-central-connection-dual-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-central-connection-dual-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "8f285eb86dd1bd1defea7a529ca1b5f2ce830757",
+      "sha256": "acd90bfd65456047e8b9317f921017a25fc00f46625e3608608ec077222558e4"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-central-connection-dual-without-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-central-connection-dual-without-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "23b9a2a60b7c9f2005e54e059925733c81295ad4",
+      "sha256": "c3ed5d700fc5ef6e64bed8c5b65edd516b43af8571080cc2cdc7f75eea17d785"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-central-connection-reverse-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-central-connection-reverse-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "d26847137a203778cf2a9bea005263167fdb0cbe",
+      "sha256": "5f9d31dc844d184ff0e8adb0fd48b60272ab536bbdd2b5e786bcf02ea3359e51"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-central-connection-reverse-without-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-central-connection-reverse-without-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "3e1f5644e2330de2758c89164ead7b116ddee0e3",
+      "sha256": "46254f7cce0c8d2783f6298676862a6f2407c516500d4e732be8d5ed15aaa30e"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-central-connection-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-central-connection-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "f0ffad59b9ba16736c932f2ec1d03a638b849271",
+      "sha256": "640ef55d6a06bf3cf985a081e57a7dfa060a9d2742f0b390e978bd57ac26bd31"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-central-connection-without-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-central-connection-without-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "7d0d5bf80a6507cb13d7f986d3bb5e1f99d6284c",
+      "sha256": "06a6c3e7cc4323d6571509c15dc4b24101547141c6faff3edef63af7b9a1ed66"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-normal-arrows-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-normal-arrows-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "a20774d50cb9e8dfb3d8f41ac43448616ad01341",
+      "sha256": "dc8f24e5f5991d038086a68b881fa8e2caf0034eaa138147fbc1b1625e86146e"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-normal-arrows-without-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-normal-arrows-without-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "1b51e13258915ea537bee49d684cf0d395711dd7",
+      "sha256": "b255c2baae4e4eb87a8bfa3543b188387f7cd52e45f9a202d1e97070a8a0c97e"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-reverse-arrows-and-central-connection",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-reverse-arrows-and-central-connection.mmd",
+      "block": 1,
+      "sourceBlob": "3e2ec5db2118d3724eb9b2dd926e0475439f0303",
+      "sha256": "a2b09fb9ed14af6f49623c31207f188589b0a3d41530c28774e1086d5de237cf"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-reverse-arrows-and-central-connection-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-reverse-arrows-and-central-connection-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "bc2ab949948074373cecc2245cca2a0612f3da23",
+      "sha256": "7debfa109c481d4646cf2cbb126f6475840bc3f726bbf6df02df1d1791fc1fee"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-reverse-arrows-with-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-reverse-arrows-with-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "6172f4939b5feb4204ad33fd4fcdeb4e58741e23",
+      "sha256": "1a1aab896e52187511bc3e988186cc493e2d2b6ebb78dfa2b771bd54c8edaa37"
+    },
+    {
+      "name": "e2e-should-render-self-reference-with-reverse-arrows-without-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-reference-with-reverse-arrows-without-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "1ccd4dce57c6ef5e21745294bad28a55ce7aa464",
+      "sha256": "ce383a3534660800216d71f16a9a882d957ec94153120f2e68995c7b4ae8f8a4"
+    },
+    {
+      "name": "e2e-should-render-self-references-reverse-arrows-dual-central-connection-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-references-reverse-arrows-dual-central-connection-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "286dab0f272f288c24efaf78bcf9b170832afe57",
+      "sha256": "7588fe891186f0eb6ab0aebb730675eb6a63373dbe8fbc68c6a3e647e606db65"
+    },
+    {
+      "name": "e2e-should-render-self-references-with-bidirectional-central-connections-no-autonumber",
+      "source": "e2e/diagrams/sequence/should-render-self-references-with-bidirectional-central-connections-no-autonumber.mmd",
+      "block": 1,
+      "sourceBlob": "a73a86ebb40ea6c14b2391875f75781bb1871eca",
+      "sha256": "56d25d1cf24b8b78a1cc813466fcad52b4ff52ac06061215503989bfddb94b23"
+    },
+    {
+      "name": "e2e-should-render-sequence-rect-with-theme-aware-default-background",
+      "source": "e2e/diagrams/sequence/should-render-sequence-rect-with-theme-aware-default-background.mmd",
+      "block": 1,
+      "sourceBlob": "4df2bb2de724aa1c7506ee7603463e4a998dac7f",
+      "sha256": "c8316ae27749242b7d43146bca2fe9ef02c490b3bf264aeed74beb6ffaf3a9fb"
+    },
+    {
+      "name": "e2e-should-render-sequence-rect-with-theme-aware-default-background-base-theme",
+      "source": "e2e/diagrams/sequence/should-render-sequence-rect-with-theme-aware-default-background-base-theme.mmd",
+      "block": 1,
+      "sourceBlob": "c47170c14ae5d8d2d70ab51e258ac3aa1d209628",
+      "sha256": "f2609f05e5ab0f2b003f852083c35d55a68109a00007f3bfa33a677e55b84494"
+    },
+    {
+      "name": "e2e-should-render-sequence-rect-with-theme-aware-default-background-dark-theme",
+      "source": "e2e/diagrams/sequence/should-render-sequence-rect-with-theme-aware-default-background-dark-theme.mmd",
+      "block": 1,
+      "sourceBlob": "2320d0d558447ee39c6fdb660a092e547fef6e96",
+      "sha256": "fd7e8b3ec35b9920aeab5296ff1b8de1b0cc83dd358a7d4168caacff908b81e2"
+    },
+    {
+      "name": "e2e-should-render-solid-half-arrow-bottom",
+      "source": "e2e/diagrams/sequence/should-render-solid-half-arrow-bottom.mmd",
+      "block": 1,
+      "sourceBlob": "7f0bbf49c51961615220ea118a4cd41d2d0a3bd4",
+      "sha256": "8ea1b616dc8d8e26c8ec0f04f9d4c8247870f1903445304d022a3fa916e1b109"
+    },
+    {
+      "name": "e2e-should-render-solid-half-arrow-bottom-dotted",
+      "source": "e2e/diagrams/sequence/should-render-solid-half-arrow-bottom-dotted.mmd",
+      "block": 1,
+      "sourceBlob": "ce2e3fccc7bff411962f09b99a31878688129a1b",
+      "sha256": "0d63e27a1a1176dd5d6697cd599da921cebc1d5f341f6cc63470fdb8f1bbc7a0"
+    },
+    {
+      "name": "e2e-should-render-solid-half-arrow-bottom-reverse",
+      "source": "e2e/diagrams/sequence/should-render-solid-half-arrow-bottom-reverse.mmd",
+      "block": 1,
+      "sourceBlob": "ad24a8dfc0e0c5eefa533527116867cc398942c1",
+      "sha256": "e66d31acb3d360e9dbd7674cc984d36c4fa49e92d93a2d818b9a773bcc42e183"
+    },
+    {
+      "name": "e2e-should-render-solid-half-arrow-bottom-reverse-dotted",
+      "source": "e2e/diagrams/sequence/should-render-solid-half-arrow-bottom-reverse-dotted.mmd",
+      "block": 1,
+      "sourceBlob": "b6e12418f917842553245d99d0a22d4b668ec128",
+      "sha256": "e9693b38a9ea29edbcda24aba3ac4e7b7c8a9d193537218e03fd923e42fd9547"
+    },
+    {
+      "name": "e2e-should-render-solid-half-arrow-top",
+      "source": "e2e/diagrams/sequence/should-render-solid-half-arrow-top.mmd",
+      "block": 1,
+      "sourceBlob": "7b300f2370e6132a6c80faab42429496a115068a",
+      "sha256": "bbb08f52b911aac9ab2c64f134038eb5047aecace74413f9e69f598a5d47a7de"
+    },
+    {
+      "name": "e2e-should-render-solid-half-arrow-top-dotted",
+      "source": "e2e/diagrams/sequence/should-render-solid-half-arrow-top-dotted.mmd",
+      "block": 1,
+      "sourceBlob": "accce1d23a100ac1d6082b0c868257cbdb447054",
+      "sha256": "4e88649870344c80634aca9c818fbd07ccca2fb3ff27aed95fccd38f429b57fd"
+    },
+    {
+      "name": "e2e-should-render-solid-half-arrow-top-reverse",
+      "source": "e2e/diagrams/sequence/should-render-solid-half-arrow-top-reverse.mmd",
+      "block": 1,
+      "sourceBlob": "22877ad7bed1e016d26671ae0278f759e01600e6",
+      "sha256": "0b8d3a5e95d4367d908cec02b8fa9dc1a0529a869972c2add108bb328ea28949"
+    },
+    {
+      "name": "e2e-should-render-solid-half-arrow-top-reverse-dotted",
+      "source": "e2e/diagrams/sequence/should-render-solid-half-arrow-top-reverse-dotted.mmd",
+      "block": 1,
+      "sourceBlob": "853d265deac4c480800e83b5d63695b2b356ae89",
+      "sha256": "972a2765c8263ac0cbb5ff54757731a2c3b8733110f0e1366653c65e52e3e428"
+    },
+    {
+      "name": "e2e-should-render-stereotypes-with-aliases-and-complex-interactions",
+      "source": "e2e/diagrams/sequence/should-render-stereotypes-with-aliases-and-complex-interactions.mmd",
+      "block": 1,
+      "sourceBlob": "023de99f51f43a033a2de656067995a17a14cc05",
+      "sha256": "d7b8d3a4220342607b2711c4a4a78a3427d2c41cb68d3bd6aa54af4e6195eb68"
+    },
+    {
+      "name": "e2e-should-render-stereotypes-with-aliases-in-boxes",
+      "source": "e2e/diagrams/sequence/should-render-stereotypes-with-aliases-in-boxes.mmd",
+      "block": 1,
+      "sourceBlob": "c9da9b290648b942bcb436bc43cadc6f79090570",
+      "sha256": "eb8eb228c850a95676a12b57ddad28ab5dcdb7c9dc4869d8f230906b577d3fdf"
+    },
+    {
+      "name": "e2e-should-render-stick-half-arrow-bottom",
+      "source": "e2e/diagrams/sequence/should-render-stick-half-arrow-bottom.mmd",
+      "block": 1,
+      "sourceBlob": "46bd1d9fbbf5b0de47c1462f40736e0db07c37f7",
+      "sha256": "41ab2d2b9e381a38d8c34a081af8806c2a15ea5d0fa872d87b8286a6257dac8d"
+    },
+    {
+      "name": "e2e-should-render-stick-half-arrow-bottom-dotted",
+      "source": "e2e/diagrams/sequence/should-render-stick-half-arrow-bottom-dotted.mmd",
+      "block": 1,
+      "sourceBlob": "ab20638f7bd216e11964e6ac809f416064b90332",
+      "sha256": "62a94f052c0339aba7d5b0d614fdb89bf03dafeaed930ff47c6cf80f7a5f5df5"
+    },
+    {
+      "name": "e2e-should-render-stick-half-arrow-bottom-reverse",
+      "source": "e2e/diagrams/sequence/should-render-stick-half-arrow-bottom-reverse.mmd",
+      "block": 1,
+      "sourceBlob": "bf0d0b907edbd09544e775e63e1d33486469d560",
+      "sha256": "7efd93153dbefd594413b90ed5a6dbf0902c0156111e17fb8a25ece287533748"
+    },
+    {
+      "name": "e2e-should-render-stick-half-arrow-bottom-reverse-dotted",
+      "source": "e2e/diagrams/sequence/should-render-stick-half-arrow-bottom-reverse-dotted.mmd",
+      "block": 1,
+      "sourceBlob": "3f3bc83befd05cae2b65a8abeef456f0f5269bdb",
+      "sha256": "4fc9b2338c914b37fdd70ae3f21941b228608ee332704b9e6b1fd200adc9ca7b"
+    },
+    {
+      "name": "e2e-should-render-stick-half-arrow-top",
+      "source": "e2e/diagrams/sequence/should-render-stick-half-arrow-top.mmd",
+      "block": 1,
+      "sourceBlob": "9940a21a2796ded490915ca8f35a6beb13275d52",
+      "sha256": "8f617290953a2de8a33549aa21ea4fb7e4a03a4f83640b5d9595013e47cddb8a"
+    },
+    {
+      "name": "e2e-should-render-stick-half-arrow-top-dotted",
+      "source": "e2e/diagrams/sequence/should-render-stick-half-arrow-top-dotted.mmd",
+      "block": 1,
+      "sourceBlob": "eb4844600d60ad206a923fd95fcea5c27dfc0c7c",
+      "sha256": "ce39fd91aa9fad371a5d35fa50046726c84fd642db5faeb46c85fdc4d72c8c49"
+    },
+    {
+      "name": "e2e-should-render-stick-half-arrow-top-reverse",
+      "source": "e2e/diagrams/sequence/should-render-stick-half-arrow-top-reverse.mmd",
+      "block": 1,
+      "sourceBlob": "528be259f5c965b3c67e4e7c2f5be51603f35f1e",
+      "sha256": "dc2cf6b803cdbf771c14b5235a6aad17a40c746d4dc364e7d9e2a676c029f6d0"
+    },
+    {
+      "name": "e2e-should-render-stick-half-arrow-top-reverse-dotted",
+      "source": "e2e/diagrams/sequence/should-render-stick-half-arrow-top-reverse-dotted.mmd",
+      "block": 1,
+      "sourceBlob": "2ce066a69f5287a638e21cf7014ab80c6cdd797a",
+      "sha256": "b22cb3fa39ce4f19e570734a84eab7cdbe9eaad9349c63f16f1f679f9f33b308"
+    },
+    {
+      "name": "e2e-should-render-with-an-init-directive",
+      "source": "e2e/diagrams/sequence/should-render-with-an-init-directive.mmd",
+      "block": 1,
+      "sourceBlob": "bf69ba116e46c9e517514d550a7afd9c62c5668e",
+      "sha256": "6c815c294b77fc7a22dfbb6b52f306195cdb59dbf135dda3d1e9006ca25bd250"
+    },
+    {
+      "name": "e2e-should-render-with-wrapping-enabled",
+      "source": "e2e/diagrams/sequence/should-render-with-wrapping-enabled.mmd",
+      "block": 1,
+      "sourceBlob": "83e9be67b85930a610361efc475319c26c2f7292",
+      "sha256": "f0cb36e947dbbf7d4a9b26de660a136aca4b2f6c6b46d36e3b82910b3a87130c"
+    },
+    {
+      "name": "e2e-should-render-wrapped-long-messages-from-actor-to-database",
+      "source": "e2e/diagrams/sequence/should-render-wrapped-long-messages-from-actor-to-database.mmd",
+      "block": 1,
+      "sourceBlob": "0f5dfe7d2ed9b02c0c032a0465db9a4340d611cb",
+      "sha256": "722e69a103ea23b0ddb58aff36eb696acd793e4acddbb8d4e9180daeac1ee026"
+    },
+    {
+      "name": "e2e-should-render-wrapped-long-messages-from-control-to-entity",
+      "source": "e2e/diagrams/sequence/should-render-wrapped-long-messages-from-control-to-entity.mmd",
+      "block": 1,
+      "sourceBlob": "f8ae587e6a583c8b001793496f0af9971d1d2240",
+      "sha256": "84c2497e51fb705bf1d972eabad90ee9029c70282769160924229c79af6fe327"
+    },
+    {
+      "name": "e2e-should-render-wrapped-long-notes-left-of-control",
+      "source": "e2e/diagrams/sequence/should-render-wrapped-long-notes-left-of-control.mmd",
+      "block": 1,
+      "sourceBlob": "92edaf9844682fc3105dfbbd090d3715c95224d2",
+      "sha256": "0e80584a79f82c3a1f75cd9d1c36537661df4cf01a138bb3d53f1e46cc532dd5"
+    },
+    {
+      "name": "e2e-should-render-wrapped-long-notes-over-queue",
+      "source": "e2e/diagrams/sequence/should-render-wrapped-long-notes-over-queue.mmd",
+      "block": 1,
+      "sourceBlob": "318cd3e0cab9b0d87ed7a159d9fb8074cfbfc00c",
+      "sha256": "b4a2ae4a91090b13ea4d412906d30ca95e3ffb83d092bd77b826b2dfb1a398c5"
+    },
+    {
+      "name": "e2e-should-render-wrapped-long-notes-right-of-database",
+      "source": "e2e/diagrams/sequence/should-render-wrapped-long-notes-right-of-database.mmd",
+      "block": 1,
+      "sourceBlob": "e8d97b0296604746c671f10e952dc0e2a9c5dd82",
+      "sha256": "79a1f2083c27999de839f865f210affbd938f93192c4094b2ad28377ccf74899"
+    },
+    {
+      "name": "e2e-should-wrap-directive-long-actor-descriptions",
+      "source": "e2e/diagrams/sequence/should-wrap-directive-long-actor-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "86e77f999f77595ae608471f1df84b95f324208a",
+      "sha256": "53cb8d50d5ab5da893832a0a4ff8a02d37d6784e3c224d561a323cbd2b56fe16"
+    },
+    {
+      "name": "e2e-should-wrap-inline-long-actor-descriptions",
+      "source": "e2e/diagrams/sequence/should-wrap-inline-long-actor-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "cfe19c365cae6363d3c69c72fa053049f64d5d31",
+      "sha256": "310d4d27a8eb98e7b03b126163dd7886cad0255aacdf7ba4327a1e167b4194f8"
+    }
+  ]
+}
