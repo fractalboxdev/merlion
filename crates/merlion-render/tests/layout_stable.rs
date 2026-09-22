@@ -214,3 +214,34 @@ fn stable_layout_is_deterministic() {
     let c = run_with(&b2.c, &with_hint(&h)).0.unwrap();
     assert_eq!(a, c);
 }
+
+#[test]
+fn packed_components_report_hint_survival_once() {
+    // Three components; a new node in one leaves one I021 for the whole diagram, and
+    // the untouched components keep their places.
+    let build = |extra: bool| {
+        let mut b = B::new();
+        let v = b.nodes(&["a", "b", "c", "d", "e", "f"]);
+        b.edge(v[0], v[1]);
+        b.edge(v[2], v[3]);
+        b.edge(v[4], v[5]);
+        if extra {
+            let x = b.node("x");
+            b.edge(v[5], x);
+        }
+        b.c
+    };
+    let (c1, c2) = (build(false), build(true));
+    let g1 = run(&c1);
+    let (g2, d) = run_with(&c2, &with_hint(&hint_of(&c1, &g1)));
+    let g2 = g2.unwrap();
+    assert_eq!(codes(&d), vec!["I021"]);
+    for i in 0..4 {
+        assert_eq!(
+            (g1.nodes[i].x, g1.nodes[i].y),
+            (g2.nodes[i].x, g2.nodes[i].y)
+        );
+    }
+    let (_, d) = run_with(&c1, &with_hint("not a hint"));
+    assert_eq!(codes(&d), vec!["I022"]);
+}

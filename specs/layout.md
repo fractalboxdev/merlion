@@ -45,6 +45,8 @@ Brandes–Köpf horizontal alignment (four alignments, balanced), followed by a 
 
 ### 5. Container fit
 
+A diagram with more than one weakly connected component is laid out one component at a time, and the drawings are packed. A cluster joins the component of its nodes, so a cluster whose nodes lie in several components merges them; a diagram with a cluster that holds no node is laid out as one graph. Each component goes through phases 1–7 and the steps below on its own; the drawings are then packed in declaration order (by each component's first node) along the order axis: `TB`/`BT` components stand in rows `node_spacing` apart, aligned on their layer-0 side, and a component that would pass `target_width` starts a new row `rank_spacing` below; `LR`/`RL` components stack in one column `node_spacing` apart, aligned on their layer-0 side. An edit then moves only its own component and the components after it in the same row. With `direction: auto`, both directions are packed and step 1 chooses between them.
+
 After coordinates are assigned, if the drawing's width exceeds `target_width`, the engine applies these steps in order and stops at the first that fits:
 
 1. With `direction: auto`, lay out in the other direction and keep whichever fits; if both fit, keep the smaller area; if neither fits, continue the steps below with the narrower one.
@@ -75,7 +77,7 @@ Formulated as the Constrained Incremental Graph Drawing Problem (C-IGDP; Charyti
 - **Surviving nodes.** Nodes present in both the hint and the new source whose layer is unchanged. A node whose layer changed (for example because its dominators changed) is treated as new.
 - **Constraint.** Surviving nodes keep their relative order within each layer, and each moves at most `stability` positions. New nodes are inserted wherever crossings are lowest, subject to that constraint.
 - **Procedure.** Phase 3 runs with the survivors' order fixed and only the new nodes free, then lets survivors move within the `stability` limit if that lowers crossings.
-- **Fallback.** When fewer than 50% of the nodes survive, the hint is discarded and the result is a fresh layout plus `I020 LayoutHintDiscarded`. When some but not all nodes survive, the render adds `I021 LayoutHintPartial` with the count of nodes treated as new.
+- **Fallback.** When fewer than 50% of the nodes survive, the hint is discarded (per component when components are packed, with `I020`/`I021` reporting the totals once) and the result is a fresh layout plus `I020 LayoutHintDiscarded`. When some but not all nodes survive, the render adds `I021 LayoutHintPartial` with the count of nodes treated as new.
 - **Measure.** The benchmark reports the mean displacement of surviving nodes after a one-line edit ([benchmark.md](benchmark.md)).
 
 ## Fixed-geometry diagram types

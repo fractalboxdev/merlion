@@ -17,6 +17,7 @@ use super::hint;
 use super::lgraph::{self, BuildError, BuildIn, Clusters, EdgeIn, Extent, Kind, LGraph};
 use super::measure;
 use super::order::{self, Stable};
+use super::pack;
 use super::route::{self, NodeShape, RouteIn, WrapFrame};
 use super::{acyclic, layering, LayoutError};
 use crate::diag::{Diagnostics, Severity, Span};
@@ -1428,10 +1429,15 @@ fn read_hint(
     opts: &RenderOptions,
     layer: &[usize],
     diags: &mut Diagnostics,
+    stats: Option<&mut HintStats>,
 ) -> Option<(Vec<Option<usize>>, Direction)> {
     let text = opts.hint.as_deref()?;
     let lim = opts.limits;
     let Some(h) = hint::parse(text, lim.nodes, lim.layers, lim.input_bytes) else {
+        if let Some(s) = stats {
+            s.malformed = true;
+            return None;
+        }
         diags.emit(
             Severity::Info,
             "I022",
@@ -1453,6 +1459,11 @@ fn read_hint(
         .collect();
     let n = chart.nodes.len();
     let survivors = ranks.iter().filter(|r| r.is_some()).count();
+    if let Some(s) = stats {
+        s.nodes += n;
+        s.survivors += survivors;
+        return (survivors * 2 >= n).then_some((ranks, h.direction));
+    }
     if survivors * 2 < n {
         diags.emit(
             Severity::Info,
@@ -1480,6 +1491,15 @@ fn read_hint(
     Some((ranks, h.direction))
 }
 
+/// Hint survival summed over the components of a packed layout; the diagnostics are
+/// emitted once for the whole diagram.
+#[derive(Default)]
+struct HintStats {
+    malformed: bool,
+    nodes: usize,
+    survivors: usize,
+}
+
 pub fn run(
     chart: &Flowchart,
     opts: &RenderOptions,
@@ -1493,6 +1513,117 @@ pub fn run(
     if chart.edges.len() > lim.edges {
         return Err(LayoutError::TooLarge { what: "edges" });
     }
+    match pack::components(chart) {
+        Some(comps) => run_packed(chart, opts, &comps, fuel, diags),
+        None => run_one(chart, opts, fuel, diags, None),
+    }
+}
+
+/// Component packing: every component is laid out on its own (container fit included)
+/// and the drawings are packed. With `direction: auto` both directions are packed and
+/// step 1 of container fit chooses between them.
+fn run_packed(
+    chart: &Flowchart,
+    opts: &RenderOptions,
+    comps: &[pack::Component],
+    fuel: &mut Fuel,
+    diags: &mut Diagnostics,
+) -> Result<Geometry, LayoutError> {
+    let o = Opts::new(opts);
+    let sub_opts = RenderOptions {
+        direction: DirectionOption::FromSource,
+        ..opts.clone()
+    };
+    let lim = opts.limits;
+    let hint_dir = opts
+        .hint
+        .as_deref()
+        .and_then(|t| hint::parse(t, lim.nodes, lim.layers, lim.input_bytes))
+        .map(|h| h.direction);
+    let first_dir = match hint_dir {
+        Some(d) if o.auto => d,
+        _ => chart.direction,
+    };
+    let lay_out = |dir: Direction,
+                   fuel: &mut Fuel,
+                   diags: &mut Diagnostics|
+     -> Result<(Geometry, HintStats), LayoutError> {
+        let mut stats = HintStats::default();
+        let mut geoms = Vec::with_capacity(comps.len());
+        for c in comps {
+            let sub = pack::sub_chart(chart, c, dir);
+            geoms.push(run_one(&sub, &sub_opts, fuel, diags, Some(&mut stats))?);
+        }
+        let g = pack::merge(
+            chart,
+            comps,
+            &geoms,
+            dir,
+            o.target_width,
+            o.node_spacing,
+            o.rank_spacing,
+        );
+        Ok((g, stats))
+    };
+    let (mut geom, mut stats) = lay_out(first_dir, fuel, diags)?;
+    if o.auto && !fits(&geom, &o) {
+        let other = if first_dir.is_horizontal() {
+            Direction::TB
+        } else {
+            Direction::LR
+        };
+        let mut scratch = Diagnostics::new(false);
+        if let Ok((g, s)) = lay_out(other, fuel, &mut scratch) {
+            if fits(&g, &o) || g.width < geom.width {
+                (geom, stats) = (g, s);
+            }
+        }
+    }
+    if stats.malformed {
+        diags.emit(
+            Severity::Info,
+            "I022",
+            Span::default(),
+            "layout hint is malformed, of an unknown version, or too large; laid out afresh",
+        );
+    } else if opts.hint.is_some() {
+        let (n, survivors) = (stats.nodes, stats.survivors);
+        if survivors * 2 < n {
+            diags.emit(
+                Severity::Info,
+                "I020",
+                Span::default(),
+                format!(
+                    "layout hint discarded: {} of {} nodes survive, fewer than half",
+                    survivors, n
+                ),
+            );
+        } else if survivors < n {
+            diags.emit(
+                Severity::Info,
+                "I021",
+                Span::default(),
+                format!(
+                    "layout hint partial: {} of {} nodes treated as new",
+                    n - survivors,
+                    n
+                ),
+            );
+        }
+    }
+    geom.fuel_used = fuel.used();
+    Ok(geom)
+}
+
+/// Phases 1–7 and container fit for one connected drawing.
+fn run_one(
+    chart: &Flowchart,
+    opts: &RenderOptions,
+    fuel: &mut Fuel,
+    diags: &mut Diagnostics,
+    stats: Option<&mut HintStats>,
+) -> Result<Geometry, LayoutError> {
+    let lim = opts.limits;
     let o = Opts::new(opts);
     let n = chart.nodes.len();
     let meas = measure_all(chart, &o, o.wrap_width, diags);
@@ -1539,7 +1670,7 @@ pub fn run(
         return Err(LayoutError::TooLarge { what: "layers" });
     }
 
-    let hinted = read_hint(chart, opts, &layer, diags);
+    let hinted = read_hint(chart, opts, &layer, diags, stats);
     let base_dir = match (&hinted, o.auto) {
         (Some((_, d)), true) => *d,
         _ => chart.direction,

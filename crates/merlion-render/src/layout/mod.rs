@@ -8,7 +8,7 @@
 //! | 2. Layer assignment, dummies, clusters | [`layering`], [`lgraph`] |
 //! | 3. Crossing minimisation | [`order`] |
 //! | 4. Coordinate assignment | [`coords`] |
-//! | 5. Container fit | [`fit`], [`pipeline`] |
+//! | 5. Container fit | [`pack`], [`fit`], [`pipeline`] |
 //! | 6. Edge routing | [`route`] |
 //! | 7. Clusters | [`lgraph`], [`coords`], [`pipeline`] |
 //! | Stable layout | [`hint`], [`order`] |
@@ -22,6 +22,7 @@ mod lgraph;
 pub mod measure;
 pub mod metrics;
 mod order;
+mod pack;
 mod pipeline;
 mod route;
 

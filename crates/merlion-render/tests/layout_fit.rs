@@ -266,3 +266,73 @@ fn tb_split_measures_a_layer_with_its_cluster_boxes() {
     check(&b.c, &g);
     assert!(g.width <= 720.0, "width {}", g.width);
 }
+
+#[test]
+fn widening_one_component_leaves_the_others_in_place() {
+    // Two LR components: a wider label in the first moves only its own nodes.
+    let build = |label: &str| {
+        let mut b = B::new().dir(Direction::LR);
+        let a = b.shape("a", label, merlion_render::model::Shape::Rect);
+        let v = b.nodes(&["b", "c", "d"]);
+        b.edge(a, v[0]);
+        b.edge(v[1], v[2]);
+        b.c
+    };
+    let (c1, c2) = (build("a"), build("a much wider label"));
+    let (g1, g2) = (run(&c1), run(&c2));
+    check(&c1, &g1);
+    check(&c2, &g2);
+    for i in [2, 3] {
+        assert_eq!(
+            (g1.nodes[i].x, g1.nodes[i].y),
+            (g2.nodes[i].x, g2.nodes[i].y),
+            "node {} moved",
+            i
+        );
+    }
+    // The hint still records every node in its phase-2 layer.
+    assert_eq!(g2.layers, vec![vec![0, 2], vec![1, 3]]);
+}
+
+#[test]
+fn many_small_components_pack_into_rows_without_bends() {
+    // Fourteen two-node TB components: packed in rows, each edge stays straight.
+    let mut b = B::new();
+    for i in 0..14 {
+        let u = b.node(&format!("source node {}", i));
+        let v = b.node(&format!("target {}", i));
+        b.edge(u, v);
+    }
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert!(g.width <= 720.0, "width {}", g.width);
+    assert_eq!(merlion_render::layout::metrics::bends(&g), 0);
+    // Declaration order runs left to right, then down.
+    assert!(g.nodes[0].x < g.nodes[2].x && g.nodes[0].y == g.nodes[2].y);
+    assert!(g.nodes[26].y > g.nodes[0].y);
+}
+
+#[test]
+fn auto_direction_packs_components_in_the_direction_that_fits() {
+    // Two wide fans side by side: TB rows cannot hold either, LR stacks them.
+    let mut b = wide_fan(14);
+    let n = b.c.nodes.len();
+    let root = b.node("second root");
+    for i in 0..14 {
+        let leaf = b.node(&format!("second leaf {}", i));
+        b.edge(root, leaf);
+    }
+    assert!(b.c.nodes.len() > n);
+    let g = run_with(
+        &b.c,
+        &RenderOptions {
+            direction: DirectionOption::Auto,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    check(&b.c, &g);
+    assert_eq!(g.direction, Direction::LR);
+    assert!(g.width <= 720.0);
+}
