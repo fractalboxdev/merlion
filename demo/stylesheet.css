@@ -6,7 +6,8 @@
  *
  * Roles `queue` (nodes) and `senders` (clusters) have no classDef; the stylesheet gives
  * them a tone per theme through the private tokens --plum and --teal, which the
- * compiler resolves in each rule's theme and never emits. Built-in roles (accent, ok, warn, danger, muted, group,
+ * compiler resolves in each rule's theme and never emits. The media block repeats the
+ * dark tones for pages that follow the OS colour scheme with no data-theme. Built-in roles (accent, ok, warn, danger, muted, group,
  * failure, async) need no rule here: merlion-themes.css sets their tones.
  */
 
@@ -35,4 +36,19 @@
 
 [data-theme="dark"] .merlion-cc-senders {
   --merlion-tone: var(--teal);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --plum: #b79cf0;
+    --teal: #5cc8cc;
+  }
+
+  :root:not([data-theme]) .merlion-c-queue {
+    --merlion-tone: var(--plum);
+  }
+
+  :root:not([data-theme]) .merlion-cc-senders {
+    --merlion-tone: var(--teal);
+  }
 }

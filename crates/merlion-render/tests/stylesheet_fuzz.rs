@@ -21,7 +21,8 @@ const SEEDS: [&str; 5] = [
     r#":root { --brand: #0f766e; --merlion-accent: var(--brand); --merlion-stroke: 2px;
   --merlion-c-store-fill: oklch(0.7 0.1 180); --merlion-c-store-color: hsl(10 50% 20%); }
 [data-theme="dark"] { --merlion-bg: #000; --merlion-fg: rgb(250 250 250 / 90%); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --merlion-bg: #111; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --merlion-bg: #111; }
+  :root:not([data-theme]) .merlion-c-store { --merlion-tone: var(--brand); } }
 .merlion-c-store, .merlion-cc-zone { --merlion-tone: var(--brand); --merlion-dash: 4 2; }
 [data-theme="dark"] .merlion-c-danger { --merlion-tone: #ff0000; --merlion-dash: none; }"#,
     "</style><script>x</script>:root{--merlion-bg:url(javascript:x)}@import 'a';\

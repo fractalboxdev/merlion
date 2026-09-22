@@ -346,3 +346,37 @@ fn a_full_palette_on_a_role_heavy_diagram_emits_used_tones_and_charges_fuel() {
     assert!(r.diagnostics.iter().any(|d| d.code == "W017"));
     assert!(elapsed.as_secs() < 5, "{:?}", elapsed);
 }
+
+#[test]
+fn page_css_tones_custom_roles_under_the_automatic_dark_theme() {
+    let css = r#"
+:root { --teal: #1b8a8f; }
+[data-theme="dark"] { --teal: #5cc8cc; }
+.merlion-c-queue { --merlion-tone: var(--teal); }
+[data-theme="dark"] .merlion-c-queue { --merlion-tone: var(--teal); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { --teal: #5cc8cc; }
+  :root:not([data-theme]) .merlion-c-queue { --merlion-tone: var(--teal); }
+}
+"#;
+    let page = compile(css, &StylesheetLimits::default())
+        .0
+        .unwrap()
+        .to_css();
+    let (plain, _) = render_with("flowchart LR\nq[Queue]:::queue --> b[B]", None);
+    let stroke = |host: &[(&str, &str)], dark: bool| {
+        let e = Engine::new(&plain, host, &[&page], true, dark);
+        let g = (0..e.els.len())
+            .find(|&i| e.els[i].attr("data-merlion-id") == Some("q"))
+            .unwrap();
+        let shape = (0..e.els.len())
+            .find(|&i| e.els[i].parent == Some(g) && e.els[i].has_class("merlion-shape"))
+            .unwrap();
+        e.computed(shape, "stroke").unwrap()
+    };
+    // OS dark with no page theme: the media block's tone, not the light one.
+    assert_eq!(stroke(&[], true), "#5cc8cc");
+    assert_eq!(stroke(&[], false), "#1b8a8f");
+    assert_eq!(stroke(&[("data-theme", "dark")], false), "#5cc8cc");
+    assert_eq!(stroke(&[("data-theme", "light")], true), "#1b8a8f");
+}

@@ -81,6 +81,9 @@ pub struct ThemeBlock {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RoleRule {
     pub theme: Option<String>,
+    /// Under the automatic dark theme (`:root:not([data-theme])` inside the dark media
+    /// block); `theme` is `None`. Page CSS only: palettes never read it.
+    pub auto_dark: bool,
     pub cluster: bool,
     pub name: String,
     pub tone: Option<Rgba8>,
@@ -201,6 +204,7 @@ impl RawThemes {
 
 struct RawRole {
     theme: Option<String>,
+    auto_dark: bool,
     cluster: bool,
     name: String,
     tone: Option<RawDecl>,
@@ -399,12 +403,14 @@ impl<'a> Parser<'a> {
                     .extend(theme_decls.iter().cloned()),
                 Selector::Role {
                     theme,
+                    auto_dark,
                     cluster,
                     name,
                 } => {
                     if tone.is_some() || dash.is_some() {
                         self.roles.push(RawRole {
                             theme,
+                            auto_dark,
                             cluster,
                             name,
                             tone: tone.clone(),
@@ -629,10 +635,13 @@ pub fn compile(css: &str, limits: &StylesheetLimits) -> (Option<Stylesheet>, Dia
     out.themes.sort_by_key(|b| theme_order(&b.key, &first_use));
     out.themes.retain(|b| !b.decls.is_empty());
     for r in roles {
-        let key = r
-            .theme
-            .as_ref()
-            .map_or(ThemeKey::Root, |t| ThemeKey::Named(t.clone()));
+        // A role rule resolves `var()` in its own theme: `:root` overlaid by the named
+        // theme, or by the automatic dark block.
+        let key = match (&r.theme, r.auto_dark) {
+            (Some(t), _) => ThemeKey::Named(t.clone()),
+            (None, true) => ThemeKey::AutoDark,
+            (None, false) => ThemeKey::Root,
+        };
         let env = env_for(&mut envs, &themes, &key);
         let mut get = |rd: &Option<RawDecl>, kind: Kind, d: &mut Diags| -> Option<Value> {
             let rd = rd.as_ref()?;
@@ -659,6 +668,7 @@ pub fn compile(css: &str, limits: &StylesheetLimits) -> (Option<Stylesheet>, Dia
         if tone.is_some() || dash.is_some() {
             out.roles.push(RoleRule {
                 theme: r.theme,
+                auto_dark: r.auto_dark,
                 cluster: r.cluster,
                 name: r.name,
                 tone,
@@ -734,7 +744,22 @@ impl Stylesheet {
             }
             out.push_str(close);
         }
+        // Roles in source order; consecutive automatic-dark roles share one media block.
+        let mut in_media = false;
         for r in &self.roles {
+            if r.auto_dark != in_media {
+                out.push_str(if r.auto_dark {
+                    "@media (prefers-color-scheme: dark) {\n"
+                } else {
+                    "}\n"
+                });
+                in_media = r.auto_dark;
+            }
+            let pad = if in_media { "  " } else { "" };
+            out.push_str(pad);
+            if in_media {
+                out.push_str(":root:not([data-theme]) ");
+            }
             if let Some(t) = &r.theme {
                 let _ = write!(out, "[data-theme=\"{}\"] ", t);
             }
@@ -745,11 +770,15 @@ impl Stylesheet {
                 r.name
             );
             if let Some(c) = r.tone {
-                let _ = writeln!(out, "  --merlion-tone: {};", c.to_hex());
+                let _ = writeln!(out, "{}  --merlion-tone: {};", pad, c.to_hex());
             }
             if let Some(d) = &r.dash {
-                let _ = writeln!(out, "  --merlion-dash: {};", dash_css(d));
+                let _ = writeln!(out, "{}  --merlion-dash: {};", pad, dash_css(d));
             }
+            out.push_str(pad);
+            out.push_str("}\n");
+        }
+        if in_media {
             out.push_str("}\n");
         }
         out
@@ -790,7 +819,7 @@ impl Stylesheet {
         }
         // Per role and property: a themed rule beats an unthemed one, then source order.
         let mut keys: Vec<(bool, &str)> = Vec::new();
-        for r in &self.roles {
+        for r in self.roles.iter().filter(|r| !r.auto_dark) {
             if !keys.contains(&(r.cluster, r.name.as_str())) {
                 keys.push((r.cluster, r.name.as_str()));
             }
@@ -800,7 +829,7 @@ impl Stylesheet {
             let mut tone: Option<(bool, usize, Rgba8)> = None;
             let mut dash: Option<(bool, usize, Dash)> = None;
             for (i, r) in self.roles.iter().enumerate() {
-                if r.cluster != cluster || r.name != name {
+                if r.cluster != cluster || r.name != name || r.auto_dark {
                     continue;
                 }
                 let themed = match (&r.theme, theme) {

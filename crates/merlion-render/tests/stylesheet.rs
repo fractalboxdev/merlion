@@ -633,3 +633,48 @@ fn compiling_a_root_heavy_stylesheet_stays_linear() {
     // Quadratic resolution took seconds in release builds; linear takes milliseconds.
     assert!(elapsed.as_millis() < 1500, "{:?}", elapsed);
 }
+
+const AUTO_DARK_ROLES: &str = r#"
+:root { --teal: #1b8a8f; }
+[data-theme="dark"] { --teal: #5cc8cc; }
+.merlion-c-queue { --merlion-tone: var(--teal); }
+[data-theme="dark"] .merlion-c-queue { --merlion-tone: var(--teal); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { --teal: #5cc8cc; --merlion-bg: #101010; }
+  :root:not([data-theme]) .merlion-c-queue { --merlion-tone: var(--teal); }
+  :root:not([data-theme]) .merlion .merlion-cc-zone { --merlion-dash: 2 2; }
+}
+"#;
+
+#[test]
+fn roles_take_their_own_tones_under_the_automatic_dark_theme() {
+    let out = ok(AUTO_DARK_ROLES);
+    assert!(out.contains(
+        "@media (prefers-color-scheme: dark) {\n  :root:not([data-theme]) .merlion .merlion-c-queue {\n    --merlion-tone: #5cc8cc;\n  }\n  :root:not([data-theme]) .merlion .merlion-cc-zone {\n    --merlion-dash: 2 2;\n  }\n}\n"
+    ), "{}", out);
+    // The private token resolves in the rule's own theme: light outside the media block.
+    assert!(out.contains(".merlion .merlion-c-queue {\n  --merlion-tone: #1b8a8f;\n}\n"));
+    assert_page_css_safe(&out);
+    let (twice, d) = run(&out);
+    assert_eq!(twice.as_deref(), Some(out.as_str()));
+    assert!(d.is_empty(), "{:?}", d);
+    // `--theme` and `--auto-dark` read named blocks only, never the media block.
+    let s = compile(AUTO_DARK_ROLES, &StylesheetLimits::default())
+        .0
+        .unwrap();
+    let p = s.palette(None, None).unwrap();
+    assert_eq!(
+        p.light.tone("queue", false).unwrap().tone,
+        Some(hex("#1b8a8f"))
+    );
+    assert!(p.light.tone("zone", true).is_none());
+    let p = s.palette(Some("dark"), None).unwrap();
+    assert_eq!(
+        p.light.tone("queue", false).unwrap().tone,
+        Some(hex("#5cc8cc"))
+    );
+    // A bare role selector inside the media block stays outside the subset.
+    let (_, c) =
+        run("@media (prefers-color-scheme: dark) { .merlion-c-x { --merlion-tone: #000; } }");
+    assert_eq!(codes(&c), ["W017"]);
+}

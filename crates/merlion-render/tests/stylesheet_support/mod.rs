@@ -156,8 +156,16 @@ pub fn assert_page_css_safe(css: &str) {
                 .strip_prefix("  ")
                 .and_then(|l| l.strip_suffix(" {"))
                 .unwrap_or_else(|| panic!("media line {:?}", line));
-            assert_eq!(sel, ":root:not([data-theme])");
-            in_rule = Some(false);
+            // The automatic dark theme, or a role under it (no named theme inside).
+            let role = sel
+                .strip_prefix(":root:not([data-theme]) ")
+                .is_some_and(|r| r.starts_with(".merlion ") && role_selector(r));
+            assert!(
+                sel == ":root:not([data-theme])" || role,
+                "media selector {:?}",
+                sel
+            );
+            in_rule = Some(role);
             continue;
         }
         if line == "@media (prefers-color-scheme: dark) {" {

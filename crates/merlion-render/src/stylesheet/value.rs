@@ -324,6 +324,8 @@ pub enum Selector {
     AutoDark,
     Role {
         theme: Option<String>,
+        /// `:root:not([data-theme]) .merlion-c-{name}` inside the dark media block.
+        auto_dark: bool,
         cluster: bool,
         name: String,
     },
@@ -353,7 +355,21 @@ pub fn parse_selector(s: &str, in_media: bool) -> Option<Selector> {
         return None;
     }
     if in_media {
-        return (s == ":root:not([data-theme])").then_some(Selector::AutoDark);
+        if s == ":root:not([data-theme])" {
+            return Some(Selector::AutoDark);
+        }
+        let rest = s.strip_prefix(":root:not([data-theme]) ")?;
+        let class = match rest.split(' ').collect::<Vec<_>>().as_slice() {
+            [c] | [".merlion", c] => *c,
+            _ => return None,
+        };
+        let (cluster, name) = role_class(class)?;
+        return Some(Selector::Role {
+            theme: None,
+            auto_dark: true,
+            cluster,
+            name,
+        });
     }
     if s == ":root" {
         return Some(Selector::Root);
@@ -373,6 +389,7 @@ pub fn parse_selector(s: &str, in_media: bool) -> Option<Selector> {
     let (cluster, name) = role_class(class)?;
     Some(Selector::Role {
         theme,
+        auto_dark: false,
         cluster,
         name,
     })
@@ -416,9 +433,33 @@ mod tests {
             parse_selector("[data-theme=\"d\"] .merlion .merlion-cc-x", false),
             Some(Selector::Role {
                 theme: Some("d".into()),
+                auto_dark: false,
                 cluster: true,
                 name: "x".into()
             })
+        );
+        for s in [
+            ":root:not([data-theme]) .merlion-c-x",
+            ":root:not([data-theme]) .merlion .merlion-c-x",
+        ] {
+            assert_eq!(
+                parse_selector(s, true),
+                Some(Selector::Role {
+                    theme: None,
+                    auto_dark: true,
+                    cluster: false,
+                    name: "x".into()
+                })
+            );
+            assert_eq!(parse_selector(s, false), None);
+        }
+        assert_eq!(parse_selector(".merlion-c-x", true), None);
+        assert_eq!(
+            parse_selector(
+                ":root:not([data-theme]) [data-theme=\"d\"] .merlion-c-x",
+                true
+            ),
+            None
         );
         assert_eq!(
             parse_selector(".merlion .merlion .merlion-c-x", false),

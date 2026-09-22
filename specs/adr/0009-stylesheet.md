@@ -52,6 +52,7 @@ A value is a literal or `var(--<name>)` / `var(--<name>, <literal>)` naming a to
 | `.merlion-c-<name>` | Nodes and edges carrying role `<name>` |
 | `.merlion-cc-<name>` | Clusters carrying role `<name>` |
 | `[data-theme="<t>"] .merlion-c-<name>`, `[data-theme="<t>"] .merlion-cc-<name>` | Role under theme `<t>` |
+| `:root:not([data-theme]) .merlion-c-<name>`, `:root:not([data-theme]) .merlion-cc-<name>` inside `@media (prefers-color-scheme: dark)` | Role under the automatic dark theme |
 
 `<name>` follows the `classDef` grammar `[A-Za-z_][A-Za-z0-9_-]{0,63}`. Selector lists of these forms are accepted. Selectors are ASCII. The only at-rule is `@media (prefers-color-scheme: dark)`; nesting, `@import`, `@font-face`, `@layer`, `@container`, `@namespace`, `@supports` and every other at-rule are dropped with `W017`. A rule outside the subset that declares a `--merlion-*` token gets `W017`; a rule declaring no such token (the viewer rules in `merlion-themes.css`) is dropped with one `I032` summary count per stylesheet.
 
@@ -111,7 +112,7 @@ A built-in role's use-site rules read `var(--merlion-tone, var(--merlion-<tone>,
 
 ### Web path
 
-`compileStylesheet` re-serialises the typed model to page CSS: literal values only, selectors rewritten to the fixed shapes `:root`, `[data-theme="<t>"]`, `:root:not([data-theme])` inside the one media query, `.merlion .merlion-c-<name>`, `.merlion .merlion-cc-<name>`, `[data-theme="<t>"] .merlion .merlion-c-<name>` and `[data-theme="<t>"] .merlion .merlion-cc-<name>`. The `.merlion ` prefix adds (0,1,0) to every role selector, so specificity order between rules is the source's. Compilation is a fixed point: compiling its own output yields the same bytes. A page never links an uncompiled Merlion stylesheet; `merlion-themes.css` is Merlion's own file and is linked as shipped. Inline SVGs on the web are rendered with no palette, so the page's cascade themes them and theme switching never re-renders.
+`compileStylesheet` re-serialises the typed model to page CSS: literal values only, selectors rewritten to the fixed shapes `:root`, `[data-theme="<t>"]`, `:root:not([data-theme])` inside the one media query, `.merlion .merlion-c-<name>`, `.merlion .merlion-cc-<name>`, `[data-theme="<t>"] .merlion .merlion-c-<name>`, `[data-theme="<t>"] .merlion .merlion-cc-<name>`, and `:root:not([data-theme]) .merlion .merlion-c-<name>` / `.merlion-cc-<name>` inside the media query. The `.merlion ` prefix adds (0,1,0) to every role selector, so specificity order between rules is the source's. Compilation is a fixed point: compiling its own output yields the same bytes. A page never links an uncompiled Merlion stylesheet; `merlion-themes.css` is Merlion's own file and is linked as shipped. Inline SVGs on the web are rendered with no palette, so the page's cascade themes them and theme switching never re-renders.
 
 ### Standalone path
 
