@@ -2,11 +2,14 @@
 
 mod acyclic;
 mod coords;
+mod fit;
 pub mod hint;
 mod layering;
 mod lgraph;
-mod measure;
+pub mod measure;
+pub mod metrics;
 mod order;
+mod route;
 
 use crate::diag::Diagnostics;
 use crate::fuel::Fuel;
