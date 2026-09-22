@@ -1,0 +1,27 @@
+flowchart LR
+  user((User)) --> cdn[CDN]
+  cdn --> gw[API gateway]
+  subgraph edge [Edge]
+    cdn
+    gw
+  end
+  subgraph services [Services]
+    direction TB
+    auth[Auth service]
+    orders[Order service]
+    payments[Payment service]
+    inventory[Inventory service]
+  end
+  subgraph data [Data]
+    pg[(PostgreSQL)]
+    redis[(Redis)]
+    kafka[[Kafka]]
+  end
+  gw --> auth & orders
+  orders --> payments
+  orders --> inventory
+  orders --> kafka
+  payments --> pg
+  inventory --> pg
+  auth --> redis
+  kafka -.-> inventory

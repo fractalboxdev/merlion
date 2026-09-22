@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-05--rename-label",
+  "source": "demos-flowchart-05",
+  "kind": "rename-label",
+  "before": "graph TD\nA[/Christmas\\]\nA -->|Get money| B[\\Go shopping/]\nB --> C{Let me thinksssss<br/>ssssssssssssssssssssss<br/>sssssssssssssssssssssssssss}\nC -->|One| D[/Laptop/]\nC -->|Two| E[\\iPhone\\]\nC -->|Three| F[Car]",
+  "after": "graph TD\nA[/Christmas\\ renamed]\nA -->|Get money| B[\\Go shopping/]\nB --> C{Let me thinksssss<br/>ssssssssssssssssssssss<br/>sssssssssssssssssssssssssss}\nC -->|One| D[/Laptop/]\nC -->|Two| E[\\iPhone\\]\nC -->|Three| F[Car]"
+}

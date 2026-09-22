@@ -1,0 +1,21 @@
+[
+  {
+    "title": "Viewer fixture: a wide pipeline",
+    "options": {
+      "width": 1600
+    },
+    "source": "flowchart LR\n  accTitle: Release pipeline\n  commit[Commit] --> lint[Lint] --> test[Unit tests] --> build[Build wasm] --> opt[wasm-opt] --> hash[Hash check] --> sign[Sign tag] --> attest[Attest] --> npm[Publish npm] --> crates[Publish crates] --> announce[Announce]\n"
+  },
+  {
+    "title": "Build pipeline",
+    "source": "flowchart LR\n  accTitle: Build pipeline\n  src[Source .md] --> has{Has mermaid?}\n  has -->|yes| render[Render SVG]\n  has -->|no| pass[Pass through]\n  render --> cache[(Cache)]\n"
+  },
+  {
+    "title": "Release with subgraphs",
+    "source": "flowchart TB\n  subgraph ci[CI]\n    lint --> test --> build\n  end\n  subgraph release[Release]\n    tag --> verify[Verify signature] --> publish\n  end\n  build --> tag\n  publish --> npm[(npm)]\n  publish --> crates[(crates.io)]\n"
+  },
+  {
+    "title": "Request lifecycle",
+    "source": "---\ntitle: Request lifecycle\n---\nflowchart LR\n  client([Client]) --> edge[Edge cache]\n  edge -->|hit| client\n  edge -->|miss| app[App server]\n  app --> db[(Database)]\n  app --> queue[[Queue]]\n  queue --> worker[Worker]\n  worker --> db\n  app --> edge\n"
+  }
+]

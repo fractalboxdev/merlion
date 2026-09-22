@@ -22,12 +22,13 @@ MIT (`LICENSE` at the repository root; SPDX `MIT` in every `Cargo.toml` and `pac
 |---|---|---|---|
 | [mermaid](https://github.com/mermaid-js/mermaid) 12.0.0 | MIT (© Knut Sveidqvist) | Syntax implemented from the documentation; demo and test diagrams vendored as the `compat` corpus; benchmark baseline | Vendored diagrams keep the notice in `THIRD_PARTY_NOTICES.md` |
 | [MSAGL.js](https://github.com/microsoft/msagljs) (`@msagl/core` 1.1.24) | MIT (© Microsoft Corporation) | Source of the layered layout port ([ADR-0004](adr/0004-layout-implementation.md), Proposed); layout-only benchmark baseline | Each ported file carries "Portions © Microsoft Corporation, MIT"; the notice goes in `THIRD_PARTY_NOTICES.md` |
-| [Inter](https://github.com/rsms/inter) | OFL-1.1 (© The Inter Project Authors), no Reserved Font Name | Metric tables and a WOFF2 subset ([text-measurement.md](text-measurement.md)) | Each shipped with the OFL text; not sold on its own |
+| [Inter](https://github.com/rsms/inter) | OFL-1.1 (© The Inter Project Authors), no Reserved Font Name | Metric tables and a WOFF2 subset ([text-measurement.md](text-measurement.md)), shipped in the core and in `@fractalboxdev/merlion-themes` for `merlion-font.css` | Each shipped with the OFL text; not sold on its own |
 | [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid) 1.1.3 | MIT (© 2026 Craft Docs) | Benchmark baseline. The idea of deriving colours from `bg`/`fg` with `color-mix` (an idea, not code) | Run only; no code copied |
 | [mermaid-rs-renderer (mmdr)](https://github.com/1jehuang/mermaid-rs-renderer) | MIT (© 2026 mermaid-rs-renderer contributors) | Benchmark baseline | Run only |
 | [merman](https://github.com/Latias94/merman) 0.8.0-alpha.6 | MIT OR Apache-2.0; its optional ELK feature is EPL-2.0 | Benchmark baseline, built with default features | Run only; the ELK feature is never enabled |
 | [elkjs](https://github.com/kieler/elkjs) | `EPL-2.0 OR GPL-3.0-or-later` | Runs inside the mermaid-ELK baseline | Run only (rule 3). Contributors don't read ELK source while implementing layout; the algorithms come from the papers ELK itself cites |
 | [dagre](https://github.com/dagrejs/dagre) | MIT (© Chris Pettitt) | Runs inside the mermaid-dagre baseline (`layout: dagre`) | Run only |
+| [librsvg](https://gitlab.gnome.org/GNOME/librsvg) | LGPL-2.1-or-later | Runs as `rsvg-convert` in the stylesheet parity gate ([benchmark.md](benchmark.md)) | Run only (rule 3); never linked, vendored or read |
 | [@types/hast](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/hast) | MIT | Development dependency of `@fractalboxdev/merlion-rehype` | Never a runtime dependency ([supply-chain.md](supply-chain.md)) |
 
 ## Datasets

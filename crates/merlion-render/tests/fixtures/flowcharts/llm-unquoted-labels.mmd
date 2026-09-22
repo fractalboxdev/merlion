@@ -1,0 +1,6 @@
+graph LR
+    Client[Client (browser)] --> API[API: v2]
+    API --> Cache{Cache hit?}
+    Cache -->|yes| Resp[Return cached]
+    Cache -->|no| DB[(Database [primary])]
+    DB --> Resp

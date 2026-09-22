@@ -12,6 +12,7 @@ Merlion claims to beat an existing renderer only where this benchmark shows it, 
 | mermaid-rs-renderer (mmdr) | pinned commit | Native binary |
 | merman | 0.8.0-alpha.6, default features (no ELK) | Native, through its Rust API |
 | MSAGL.js layered layout | `@msagl/core` 1.1.24 | Node, for layout-only comparison |
+| librsvg (`rsvg-convert`) | pinned version | Native binary; parity target for baked SVGs, not a compared renderer |
 
 Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 
@@ -40,6 +41,7 @@ Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 | Weight | Gzip size per published artifact, including `merlion-themes.css`; runtime dependency count; packages in the install tree | |
 | Accessibility / SEO | axe violations on the inlined SVG; share of label text extractable by `curl` + HTML-to-text; `<title>`/`<desc>` present | |
 | Theme switch | Cost of a light→dark switch: re-render vs CSS change | |
+| Stylesheet parity | Per corpus diagram, theme and element: the plain SVG inlined in Chrome with the compiled CSS linked is the reference; the baked SVG in Chrome with no host CSS, the baked SVG with its `<style>` removed, and the baked SVG through rsvg-convert must each match it | Colours normalised to 8-bit sRGB through a canvas `fillStyle` round trip; ±1 per channel; rsvg-convert compared by pixels sampled inside each shape, on each stroke and inside each marker, against a screenshot of the reference; a sample counts only where the reference shows the element's own opaque paint, and stroke samples stay 1 px inside a dash. Glyph outlines differ between Chromium's and librsvg's font stacks, so text is compared by ink: inside each text run's box, a pixel within ±8 per channel of the run's computed fill must appear in the rsvg-convert raster whenever it appears in the reference screenshot (runs with no fully covered glyph pixel in the reference are counted and skipped). Inputs are the `compat` corpus plus role fixtures; the gate's stylesheet compiles under `--strict` and covers every built-in role and a re-themed `classDef`. Every named theme of `merlion-themes.css` bakes with no warning. Runs as `pnpm bench parity` ([bench/README.md](../bench/README.md#stylesheet-parity)). Must be 100% |
 
 ## Reader preference
 
@@ -51,4 +53,4 @@ TODO(owner): approve the panel ([ADR-0007](adr/0007-reader-panel.md), Proposed).
 
 ## Output
 
-Each run writes `bench/results/<date>-<commit>.json` and a Markdown summary, and CI publishes the summary. Graph extraction from SVGs uses `<text>` positions and edge endpoints; a renderer whose labels are HTML inside `<foreignObject>` is parsed through its DOM in the headless browser instead.
+Each run writes `bench/results/<date>-<commit>.json` and a Markdown summary, and CI publishes the summary. Graph extraction from SVGs uses `<text>` positions and edge endpoints; labels that are HTML inside `<foreignObject>` (mermaid diagrams whose own config turns `htmlLabels` back on) are read from that element's text, with a space at every `<br>` and block boundary. Compatibility compares labels with whitespace removed, because renderers wrap long labels at different points.

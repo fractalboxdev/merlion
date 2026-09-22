@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-23--add-edge",
+  "source": "demos-flowchart-23",
+  "kind": "add-edge",
+  "before": "graph LR\nA[(cylindrical<br />shape<br />test)]\nA -->|Get money| B1[(Go shopping 1)]\nA -->|Get money| B2[(Go shopping 2)]\nA -->|Get money| B3[(Go shopping 3)]\nC[(Let me think...<br />Do I want something for work,<br />something to spend every free second with,<br />or something to get around?)]\nB1 --> C\nB2 --> C\nB3 --> C\nC -->|One| D[(Laptop)]\nC -->|Two| E[(iPhone)]\nC -->|Three| F[(Car)]\nclick A \"flowchart.html#link-clicked\" \"link test\"\nclick B testClick \"click test\"\nclassDef someclass fill:#f96;\nclass A someclass;",
+  "after": "graph LR\nA[(cylindrical<br />shape<br />test)]\nA -->|Get money| B1[(Go shopping 1)]\nA -->|Get money| B2[(Go shopping 2)]\nA -->|Get money| B3[(Go shopping 3)]\nC[(Let me think...<br />Do I want something for work,<br />something to spend every free second with,<br />or something to get around?)]\nB1 --> C\nB2 --> C\nB3 --> C\nC -->|One| D[(Laptop)]\nC -->|Two| E[(iPhone)]\nC -->|Three| F[(Car)]\nclick A \"flowchart.html#link-clicked\" \"link test\"\nclick B testClick \"click test\"\nclassDef someclass fill:#f96;\nclass A someclass;\nA --> F"
+}

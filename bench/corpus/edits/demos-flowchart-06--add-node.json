@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-06--add-node",
+  "source": "demos-flowchart-06",
+  "kind": "add-node",
+  "before": "flowchart TD\nA[/Christmas\\]\nA -->|Get money| B[\\Go shopping/]\nB --> C{Let me thinksssss<br/>ssssssssssssssssssssss<br/>sssssssssssssssssssssssssss}\nC -->|One| D[/Laptop/]\nC -->|Two| E[\\iPhone\\]\nC -->|Three| F[Car]",
+  "after": "flowchart TD\nA[/Christmas\\]\nA -->|Get money| B[\\Go shopping/]\nB --> C{Let me thinksssss<br/>ssssssssssssssssssssss<br/>sssssssssssssssssssssssssss}\nC -->|One| D[/Laptop/]\nC -->|Two| E[\\iPhone\\]\nC -->|Three| F[Car]\nbenchNewNode[New node]"
+}

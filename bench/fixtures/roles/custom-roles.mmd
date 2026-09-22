@@ -1,0 +1,26 @@
+flowchart LR
+  accTitle: Stylesheet roles on nodes, clusters and edges
+  subgraph z [Zone]
+    a["**Store**<br/>detail"]:::store --> b[B]:::danger
+    subgraph inner [Inner]
+      q[(Queue)]:::queue
+    end
+  end
+  subgraph g [Group]
+    c[C]:::ok
+  end
+  b e1@-->|fails| c
+  c e2@-.-> d[D]:::hot
+  d e3@--x e[E]:::late
+  e --> f[F]:::muted
+  a --> f
+  q e4@--o f
+  f e5@<--> a
+  class z zone
+  class g group
+  class e1 failure
+  class e2 async
+  class e3 late
+  class e4 late,failure
+  class e5 async
+  classDef hot fill:#ff0000,color:#ffffff

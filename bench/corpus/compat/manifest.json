@@ -1,0 +1,2739 @@
+{
+  "corpus": "compat",
+  "repo": "https://github.com/mermaid-js/mermaid",
+  "tag": "mermaid@12.0.0",
+  "commit": "98a0945418c76238f15df2afaddbba4272656c3b",
+  "licence": "MIT (c) 2014 - 2022 Knut Sveidqvist; see bench/NOTICES.md",
+  "diagrams": [
+    {
+      "name": "demos-block-01",
+      "source": "demos/block.html",
+      "block": 1,
+      "sourceBlob": "5296126e047640857cc3558d11d9c15c5a3c2b23",
+      "sha256": "0387ddd6fc5ac565a48a2584db2896399c3ef70de06dbfd9bf70d26a659badd2"
+    },
+    {
+      "name": "demos-dataflowchart-01",
+      "source": "demos/dataflowchart.html",
+      "block": 1,
+      "sourceBlob": "ea129e817e0801b512b83352ed96b427d76afde8",
+      "sha256": "73584e3b3ceee53cbc896d41cd938a135cfca248ee4826ba40f89a86082b5757"
+    },
+    {
+      "name": "demos-error-01",
+      "source": "demos/error.html",
+      "block": 1,
+      "sourceBlob": "aec051ac547c7cc1de6b1002f8c108010f7c5280",
+      "sha256": "26d5a83aafc1e11713bcfb62e01b346e4a35c8588fa6d614b8e1de9228aeb81b"
+    },
+    {
+      "name": "demos-error-02",
+      "source": "demos/error.html",
+      "block": 2,
+      "sourceBlob": "aec051ac547c7cc1de6b1002f8c108010f7c5280",
+      "sha256": "282cd58574bcaaa6d1bca33bc085dd4b1dabab24a18d3bd64f0fa1792eede284"
+    },
+    {
+      "name": "demos-flowchart-01",
+      "source": "demos/flowchart.html",
+      "block": 1,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "338dcfe69859d6faba3cb75bbe76cc457ac7e9b1097ea6b3e6fadbeb49b7c886"
+    },
+    {
+      "name": "demos-flowchart-02",
+      "source": "demos/flowchart.html",
+      "block": 2,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "c665e215d956798a1363eecc19226edee5ecda2ed5fded3b20c87cf748da3b1f"
+    },
+    {
+      "name": "demos-flowchart-03",
+      "source": "demos/flowchart.html",
+      "block": 3,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "cf3fa3c888ec8fd8bdeb3b8bdf098db956aa006b2c847b4e4cbb543fb70e63fb"
+    },
+    {
+      "name": "demos-flowchart-04",
+      "source": "demos/flowchart.html",
+      "block": 4,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "5f10c3798f375cac6bb38bb1c1a4ccf97166a6a7507ce9f17a90045530bd70d8"
+    },
+    {
+      "name": "demos-flowchart-05",
+      "source": "demos/flowchart.html",
+      "block": 5,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "a35c3e29c92fc0e0b329c8f46a1ae408a42883b91fc4522fd496f0c6390a13f5"
+    },
+    {
+      "name": "demos-flowchart-06",
+      "source": "demos/flowchart.html",
+      "block": 6,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "4609abcf0e53871f924409c29e13cf63f5593fb1fbfc8507bccb12f040dad84a"
+    },
+    {
+      "name": "demos-flowchart-07",
+      "source": "demos/flowchart.html",
+      "block": 7,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "68b3d7308a561a6ba762dc969d580c66d36acb9d2d40659069e65417a694c1e7"
+    },
+    {
+      "name": "demos-flowchart-08",
+      "source": "demos/flowchart.html",
+      "block": 8,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "719b28e80dbd4dd593b54e1d3014923e7aa36e56c34b4c1cfedcc2d5b0f62e26"
+    },
+    {
+      "name": "demos-flowchart-09",
+      "source": "demos/flowchart.html",
+      "block": 9,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "158c95f788fd7a23a3ba16a9ae693913ab42c7321e1b176c97eed10e0954b9a8"
+    },
+    {
+      "name": "demos-flowchart-10",
+      "source": "demos/flowchart.html",
+      "block": 10,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "f77899ee06becac728689d5840d929206268629c8141dd0ececd95ce2a5a78d2"
+    },
+    {
+      "name": "demos-flowchart-11",
+      "source": "demos/flowchart.html",
+      "block": 11,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "52941cceab34832cd23add2a87ce84b616ab5638bd86f051a4ee255de95e25f0"
+    },
+    {
+      "name": "demos-flowchart-12",
+      "source": "demos/flowchart.html",
+      "block": 12,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "a976cb9cd2c137024c060d79d160c6dc71b5a201ec7dfdca70e444e0e6046c6d"
+    },
+    {
+      "name": "demos-flowchart-13",
+      "source": "demos/flowchart.html",
+      "block": 13,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "b5282161bc468a6f301ad8e156a3a351baa7c0b6f47b30179a89d7c57b13e5e2"
+    },
+    {
+      "name": "demos-flowchart-14",
+      "source": "demos/flowchart.html",
+      "block": 14,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "215b7daa2364dbe16b75c7dbaf33ac67e66fed0cbb3b6c394f7717b6fa25095b"
+    },
+    {
+      "name": "demos-flowchart-15",
+      "source": "demos/flowchart.html",
+      "block": 15,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "a61c48189d9a47f05a79b71fc86bddffd21d421e18f2bb28da69687a581279c1"
+    },
+    {
+      "name": "demos-flowchart-16",
+      "source": "demos/flowchart.html",
+      "block": 16,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "2abb2428b58d04eb145b4799c76d79aafb5693300438b4d5e383ee7cfea16ad3"
+    },
+    {
+      "name": "demos-flowchart-17",
+      "source": "demos/flowchart.html",
+      "block": 17,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "a29b232569189be82c645b6e2bc8afe2a91d4dfaaaaeb269bd3a358bf3fec3fe"
+    },
+    {
+      "name": "demos-flowchart-18",
+      "source": "demos/flowchart.html",
+      "block": 18,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "bfc76d4c7c284c9130a24c7bf16bff15277b4890fd282a10a5c1eb9b3e15eb05"
+    },
+    {
+      "name": "demos-flowchart-19",
+      "source": "demos/flowchart.html",
+      "block": 19,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "aa9efa96b032d5af0e73afb74131a26578f2d53a1eb882023bd6697dbe2f3eb6"
+    },
+    {
+      "name": "demos-flowchart-20",
+      "source": "demos/flowchart.html",
+      "block": 20,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "ca216700263a447edd2642e3a097d1b82a2b1abceed9744ff0bfca7fc05a2251"
+    },
+    {
+      "name": "demos-flowchart-21",
+      "source": "demos/flowchart.html",
+      "block": 21,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "11c1f1f0b7172b59b18cb512a65c7a6a8f3cc3ff5e560fbcaf2e59e88c0c7d7b"
+    },
+    {
+      "name": "demos-flowchart-22",
+      "source": "demos/flowchart.html",
+      "block": 22,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "e7e1bade355968eec68850e66f6b185de4c59e62b19986b3562b00d038a34b46"
+    },
+    {
+      "name": "demos-flowchart-23",
+      "source": "demos/flowchart.html",
+      "block": 23,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "0ad034d606fc41c587a0f8d6681676287e960d2bb43bc3d6a2344fec84abab3b"
+    },
+    {
+      "name": "demos-flowchart-24",
+      "source": "demos/flowchart.html",
+      "block": 24,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "473aeb35374cfb3f18b32e00ec4be288917f2b345262ca58450688881834ac74"
+    },
+    {
+      "name": "demos-flowchart-25",
+      "source": "demos/flowchart.html",
+      "block": 25,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "ad86786d6a72190d0bda894685631bda602c847a9c84197f6a9bd1c25561958e"
+    },
+    {
+      "name": "demos-flowchart-26",
+      "source": "demos/flowchart.html",
+      "block": 26,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "146e2b6695fc3637751be9be5e0833d42fd34f14f068d0591152d9dd140b01cc"
+    },
+    {
+      "name": "demos-flowchart-27",
+      "source": "demos/flowchart.html",
+      "block": 27,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "a74ac2cd2ac691f82d25c8319bdf4fb630a42ce6f5bfdd279e77439a1795b345"
+    },
+    {
+      "name": "demos-flowchart-28",
+      "source": "demos/flowchart.html",
+      "block": 28,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "0ce8c7b737a585692f533068b5eaee705be1c3becd18372bf0a3ce84f2d5a7d8"
+    },
+    {
+      "name": "demos-flowchart-29",
+      "source": "demos/flowchart.html",
+      "block": 29,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "e2970eb30a6266aea0e53bdc9611197a1d7f543531882ce092dd370a1437d229"
+    },
+    {
+      "name": "demos-flowchart-30",
+      "source": "demos/flowchart.html",
+      "block": 30,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "913aab12623f0f60b1c19709f66f133de3e4e9f52c70ef62ea91a79ba7957735"
+    },
+    {
+      "name": "demos-flowchart-31",
+      "source": "demos/flowchart.html",
+      "block": 31,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "4cc08181c53736422e7948d68d8011cc5e12b0856f63685713c0886eb37d5540"
+    },
+    {
+      "name": "demos-flowchart-32",
+      "source": "demos/flowchart.html",
+      "block": 32,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "7be6fa28d4bdce8c15692d53506f572542f21e5513e83ea980d5fe1a8fe578ef"
+    },
+    {
+      "name": "demos-flowchart-33",
+      "source": "demos/flowchart.html",
+      "block": 33,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "55aa3f6d76c790b28078a30a504d70efd4ce8a907d2ecd948f2b264c8b67673e"
+    },
+    {
+      "name": "demos-flowchart-34",
+      "source": "demos/flowchart.html",
+      "block": 34,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "a860f5966fbd4baedc401cb55f7192507c42af37e3ffe97499ec05e16641dbdf"
+    },
+    {
+      "name": "demos-flowchart-35",
+      "source": "demos/flowchart.html",
+      "block": 35,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "8b212ee43f87e35bedd4662b2f75928b043e3d4ca76b6cfd5bf8f3bf11d2b3b1"
+    },
+    {
+      "name": "demos-flowchart-36",
+      "source": "demos/flowchart.html",
+      "block": 36,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "79cda5bd9ea512278a4277a63dd3a3ef9cfece00c78663721788839185e64a2f"
+    },
+    {
+      "name": "demos-flowchart-37",
+      "source": "demos/flowchart.html",
+      "block": 37,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "765d073b2e93e6d7464d3c599e807d9046443ea5ed2c471a82bd02202c78a29e"
+    },
+    {
+      "name": "demos-flowchart-38",
+      "source": "demos/flowchart.html",
+      "block": 38,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "7607ea547353d868641225b2cab732f1245bd2d26f000e5f084223ac02a55adc"
+    },
+    {
+      "name": "demos-flowchart-39",
+      "source": "demos/flowchart.html",
+      "block": 39,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "df7582db3d3d30fb80ab6182a8935fd3c3eb14c92cbda3c27482ba1a1b372495"
+    },
+    {
+      "name": "demos-flowchart-40",
+      "source": "demos/flowchart.html",
+      "block": 40,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "7fa78fdf9f3ce01444108d68dce2bc667dbf4f4045fc758ca982d0016f1cbb33"
+    },
+    {
+      "name": "demos-flowchart-41",
+      "source": "demos/flowchart.html",
+      "block": 41,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "06b5149fd6abee56a38c7a56a03f6ce73c48e5a34ee1faf419f255b6218c885f"
+    },
+    {
+      "name": "demos-flowchart-43",
+      "source": "demos/flowchart.html",
+      "block": 43,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "8c54c819c71870c084fb52e0dd893fe938ddcc8b82f47c735afcadf102918166"
+    },
+    {
+      "name": "demos-flowchart-45",
+      "source": "demos/flowchart.html",
+      "block": 45,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "2a5d26c87d79e6ff2843ada09dfc6d3438dc19167a74364b61a31d72aabacdc3"
+    },
+    {
+      "name": "demos-flowchart-46",
+      "source": "demos/flowchart.html",
+      "block": 46,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "d183f97cdc78fc624a07f8aaaebd9d12b691b526aa4057152aab6722503ddbe2"
+    },
+    {
+      "name": "demos-flowchart-47",
+      "source": "demos/flowchart.html",
+      "block": 47,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "1c1a7c379c2873f29d23dc97f0b01a910b1fdaf899dd1b3d753c94515c1774d3"
+    },
+    {
+      "name": "demos-flowchart-50",
+      "source": "demos/flowchart.html",
+      "block": 50,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "362cc83da1b099ddef71fab25951879d3afe0451496928dfd71801ee3bedf470"
+    },
+    {
+      "name": "demos-flowchart-51",
+      "source": "demos/flowchart.html",
+      "block": 51,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "109ac0d2af78b45dc8c8e8908991cfba6b2c975eb4159abd2181ad9feda4bc3e"
+    },
+    {
+      "name": "demos-flowchart-53",
+      "source": "demos/flowchart.html",
+      "block": 53,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "c5925091ce1f17b75a3a7b3080f71c3b195c1274751ae503542d7187435e8ce2"
+    },
+    {
+      "name": "demos-flowchart-54",
+      "source": "demos/flowchart.html",
+      "block": 54,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "0b6fc1ad3b9a3f3024633592fa1ca3a79ab259c24fe9ff68c110701d59c06606"
+    },
+    {
+      "name": "demos-flowchart-55",
+      "source": "demos/flowchart.html",
+      "block": 55,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "25bb9b26e91a8458c0f40e8361c82f64f9ba85cb97082cc31a2392fea7796460"
+    },
+    {
+      "name": "demos-flowchart-56",
+      "source": "demos/flowchart.html",
+      "block": 56,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "0cadac059e0368837dd61c03969304898aa3494af7f83ad20f08eb42263ce45c"
+    },
+    {
+      "name": "demos-flowchart-57",
+      "source": "demos/flowchart.html",
+      "block": 57,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "09612f19024de102df41ad8b785a3f458c3c017ec6678f86de1f03e10dbf927c"
+    },
+    {
+      "name": "demos-flowchart-60",
+      "source": "demos/flowchart.html",
+      "block": 60,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "a6e62aa8a44549790ea494bbd76eaa0732a525cc76d742b7e551a71069482a77"
+    },
+    {
+      "name": "demos-flowchart-62",
+      "source": "demos/flowchart.html",
+      "block": 62,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "ca9be800e7dfa32344e0f0996bc3792763d45a746d8494881a58e1ee53ac7d63"
+    },
+    {
+      "name": "demos-flowchart-63",
+      "source": "demos/flowchart.html",
+      "block": 63,
+      "sourceBlob": "0c71a2bf84ab669c1af4778e2acf43e1c7fa41a2",
+      "sha256": "4301e540032d35e75569fe513618172abc8c6ced45c8a6c254f90f5319dc4612"
+    },
+    {
+      "name": "demos-flowchart-elk-01",
+      "source": "demos/flowchart-elk.html",
+      "block": 1,
+      "sourceBlob": "6b3bd94bb131960b86bd380191ec3a0d66c3afb6",
+      "sha256": "1e04f13d96c9a97b6d0f215b80c6ca60348771ef5dc76cd949d2ac0dd3354686"
+    },
+    {
+      "name": "demos-flowchart-expanded-node-shapes-01",
+      "source": "demos/flowchart_expanded_node_shapes.html",
+      "block": 1,
+      "sourceBlob": "31adbcf25cdb4aad412be73c550f84a350665379",
+      "sha256": "f6ecf76131edacc5d5c0d111376c5a360873f1e50cda8c4345e48ec9d91c88cf"
+    },
+    {
+      "name": "demos-flowchart-expanded-node-shapes-02",
+      "source": "demos/flowchart_expanded_node_shapes.html",
+      "block": 2,
+      "sourceBlob": "31adbcf25cdb4aad412be73c550f84a350665379",
+      "sha256": "2ddad192b52adb1298ce704b7c8e089b7bcbb8f0f378c079ae93d3172576db0f"
+    },
+    {
+      "name": "docs-flowchart-01",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 1,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "2405fb25bdb99e32415c72f3c60b35a0efa67313cbd36371137edc603f6d00d8"
+    },
+    {
+      "name": "docs-flowchart-02",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 2,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "dd87a03a83e2f8a245f174ed2898543ea9dd0d19cedb03f4b01ee2b0af538d22"
+    },
+    {
+      "name": "docs-flowchart-03",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 3,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "4136c64ad75ad4065704c33d67077f21af3b7d5cda0c6a83f8cb7cec1fea4531"
+    },
+    {
+      "name": "docs-flowchart-04",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 4,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "daac50b5c752c92fdc0f3e67094d8d0f972143e794d52955c5111f3a3fc3fcef"
+    },
+    {
+      "name": "docs-flowchart-05",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 5,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "eae1ffc4406a90702cb15033f0507d506d62d8830ed46c7723ce76d0e1479a19"
+    },
+    {
+      "name": "docs-flowchart-06",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 6,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "9d2c436d08e0939f7ff64f2a6870baf4188e6994ef19c7bdf82a5e4681e195ce"
+    },
+    {
+      "name": "docs-flowchart-07",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 7,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "30c1a1eaea1644b4e2f07d03509e093cd05f2149d3e177ac4af7382e3e4429d2"
+    },
+    {
+      "name": "docs-flowchart-08",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 8,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "0ed3cf88d0500d32000397eeb5298bf1409a1730291dc94a4c0b120e03beaf58"
+    },
+    {
+      "name": "docs-flowchart-09",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 9,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "f8efb601709f483b6e35403a52dd8f02c7bbf0b2f467d5fd7780baabc58e48dc"
+    },
+    {
+      "name": "docs-flowchart-10",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 10,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "dbfb892a6ea2c160b5f7ad3f778721833e3bf76cc62835a0a5ce47c657847d21"
+    },
+    {
+      "name": "docs-flowchart-100",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 100,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "d3371d0dcf0ae4aac684f14d6e3d77d7eafa1495101ac0d7c040cd7e1ba73e8c"
+    },
+    {
+      "name": "docs-flowchart-101",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 101,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "a0845be3b244dbe439438bd9643cc64bface0fbdd20fdc9ddd75114f380b8c82"
+    },
+    {
+      "name": "docs-flowchart-102",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 102,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "3bc8b3a67511ca66d30eef892434448d98b4e2840ec13348d0f1034fa0bd6a31"
+    },
+    {
+      "name": "docs-flowchart-103",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 103,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "4d6d1670ea102c602209d89c4402de79f7aa41bd369182f5cf1876bbb191ed97"
+    },
+    {
+      "name": "docs-flowchart-104",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 104,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "607de05a31c98e678503bb097ed5d7b79fe375d18c1ac49593b7dfb2dfbcd20f"
+    },
+    {
+      "name": "docs-flowchart-105",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 105,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "06b4bf0b6af86c8ab2edfe80141b53944154aeeca14874c27b59446c2adbdc37"
+    },
+    {
+      "name": "docs-flowchart-106",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 106,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "ff5978e80aefb9fb03a6123d4c86ada06b0c156d22be2b03995bf633ebff08aa"
+    },
+    {
+      "name": "docs-flowchart-107",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 107,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "8c354b52deacd6c8a3dc0d9134ee8a54520fae9eb44b687d6bb6c0c37b862686"
+    },
+    {
+      "name": "docs-flowchart-108",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 108,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "8c0e6404a41b4d204971a3725069490126fc1ba435e3d9dcdb8e89be3bc7905d"
+    },
+    {
+      "name": "docs-flowchart-109",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 109,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "6155d1ff036ec3b5bf73d6c7e365f9dc3c4bb68ccce639cbaddc94b668491dc9"
+    },
+    {
+      "name": "docs-flowchart-11",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 11,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "db86d220244ac8283395415f5bee9190e1ada4fada307c3c70c5c2d2b93dab6a"
+    },
+    {
+      "name": "docs-flowchart-110",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 110,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "6d729834059d4bea587298b681dca2a7abce801a8d85ff394328d43b186a672c"
+    },
+    {
+      "name": "docs-flowchart-111",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 111,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "18174e959c16946fbdc0a3d36378976d88f46e5baf8cefaae90e2d6b0172bf2d"
+    },
+    {
+      "name": "docs-flowchart-112",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 112,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "742d4d6aa445cc4936f904a698204761aac19193e864e750a880ab7f477e67cc"
+    },
+    {
+      "name": "docs-flowchart-113",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 113,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "5353528a0b0f354f7a0d8930b1688b4a9832e0c097c20ccb0ffe1be1d2601f76"
+    },
+    {
+      "name": "docs-flowchart-114",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 114,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "34528d6862734735196018a8c295be7a6a95ba6d9fc96a0c1320c8752c22a28d"
+    },
+    {
+      "name": "docs-flowchart-12",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 12,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "e57d7f2a97a74681c37312c8f35530b3dcf981f1d9dae61d11117433f4350c5c"
+    },
+    {
+      "name": "docs-flowchart-13",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 13,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "c7aa48dd63f8585b5400441a3e9963ec8534422dedbd640f2a0d63c1e264323b"
+    },
+    {
+      "name": "docs-flowchart-14",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 14,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "3bdd09cdb6b3438d6d61827227477e73c97e298461462ad69c4dea704aa1a86f"
+    },
+    {
+      "name": "docs-flowchart-15",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 15,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "04a4c1c3c64f436011fcb64246598ea7651bdba236994fa7a91450de7a0add3e"
+    },
+    {
+      "name": "docs-flowchart-16",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 16,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "ca94ff56f8233d7500ed55e06777e0e933dce522da6018806b2beff5024868b7"
+    },
+    {
+      "name": "docs-flowchart-17",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 17,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "0e10d7b86fa67d1992baed686103a03eeba9bd9b28f5f4d43797498766e36e25"
+    },
+    {
+      "name": "docs-flowchart-18",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 18,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "2e9d0d32578fbb7fa6c883951c9d016a29074f8e4640a11b297875a841423786"
+    },
+    {
+      "name": "docs-flowchart-19",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 19,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "c3b883ba0eb995c17283b5f0c5b75136002bb8ed7e1fb16d12fed2e0f9ca67d6"
+    },
+    {
+      "name": "docs-flowchart-20",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 20,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "60180b6dc6232806ae68383e099c3018e514d1b8c5b69dfb8b58bfcdba471e30"
+    },
+    {
+      "name": "docs-flowchart-21",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 21,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "6760995730364e1c3135733105e797c6a44735b9b705238a610ca8e603dbe879"
+    },
+    {
+      "name": "docs-flowchart-22",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 22,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "5c327f411efde9b85d8dad143f4000cf0d0bb9d646e43ce378520a1927b19c81"
+    },
+    {
+      "name": "docs-flowchart-23",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 23,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "0112eebb6055525d3f99e914bf9326bec8bc56ceb0932c5c7618bce4cdeb9a1b"
+    },
+    {
+      "name": "docs-flowchart-24",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 24,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "3a71a055c7f886e7a7731fd88afa7aa6bf1e05f2ac04abd7e394adc02a5d081a"
+    },
+    {
+      "name": "docs-flowchart-25",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 25,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "4a067b9eb65143e41a80c262c1ead98d2725ac45fcc6d3f45e7d2c615ab91b8b"
+    },
+    {
+      "name": "docs-flowchart-26",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 26,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "b3577765d4bf3fa5fce3bd6143344ab736120ad7ea64698627e06266bf53ba93"
+    },
+    {
+      "name": "docs-flowchart-27",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 27,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "ac55a6e0e155d25115630a982f8ebc5b74ffb8b29c3b4b676aa21f00856d6d9d"
+    },
+    {
+      "name": "docs-flowchart-28",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 28,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "d7c39b8747ee4033760a3dcf9ba1a3afb240fce43ddbe1861714a583cf073a4a"
+    },
+    {
+      "name": "docs-flowchart-29",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 29,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "329ee5b8220e7cb670401242912f5cb31eb6195af3de24b17f62b5e7072cfaab"
+    },
+    {
+      "name": "docs-flowchart-30",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 30,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "0b60c52e79d5ad3f177d8eacc4461a70a49668d8590910e544147ebbd6dd41a1"
+    },
+    {
+      "name": "docs-flowchart-31",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 31,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "3893c62391d9d74392a1b2d6345ab0dc963157f49540c52d2c9b47d61c03b61a"
+    },
+    {
+      "name": "docs-flowchart-32",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 32,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "e15a1737a869aed769da0e4a33ebc8f9216ac74edff8caf71dba704bbe6085ad"
+    },
+    {
+      "name": "docs-flowchart-33",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 33,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "a4d975378da48beaacf6378e9b4a07f5b87d5b914f6b435d7cb234666559aafc"
+    },
+    {
+      "name": "docs-flowchart-34",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 34,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "d29faf32c8bd3dac14bcab97d2560c511451f44f6bd4639e37afe8a65d9d91a5"
+    },
+    {
+      "name": "docs-flowchart-35",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 35,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "de8b104e5bc4fe2523c670322dcceacb3ff26029528bfa547414c1f0dc352b1e"
+    },
+    {
+      "name": "docs-flowchart-36",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 36,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "bebcc7913a09b7a36ae006968830d5c267648c8d7d8fd39f2d213ed17b075b71"
+    },
+    {
+      "name": "docs-flowchart-37",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 37,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "bfaaf069e3059e103cd5af46bffede9f9373d9d979cc88ecc8334ec0e19ae013"
+    },
+    {
+      "name": "docs-flowchart-38",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 38,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "c252738f8a8ef8796c96ea1cb937e61c24c4a45726975f2f9ed173a042077029"
+    },
+    {
+      "name": "docs-flowchart-39",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 39,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "600c93ca92dd98512a9053b7048e5a6cce7718e0b3f6c47e9a37287cf45b3b61"
+    },
+    {
+      "name": "docs-flowchart-40",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 40,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "df187dc0a97c2f4a11d838f887e94e5de044000080b30143d7cb8222f3eea6cb"
+    },
+    {
+      "name": "docs-flowchart-41",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 41,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "ab4be51df6b6a3dcb7b80fe711f31655e0362cdadee149fdbe5e83578d742d6d"
+    },
+    {
+      "name": "docs-flowchart-42",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 42,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "415c23f8ef7d6ee6bd82a23b3370c34be220ca919aa5bb0eb0b5dab27f954950"
+    },
+    {
+      "name": "docs-flowchart-43",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 43,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "5b4fe340ba748cdfea36b906440aa7eff40f62389338d1f7be4c5695b302389a"
+    },
+    {
+      "name": "docs-flowchart-44",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 44,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "b8629465c768eb1009d5b7034fa00b41119df2129c7078ccf9b56da256de53a7"
+    },
+    {
+      "name": "docs-flowchart-45",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 45,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "c78b99e4d5f29c1608e403e51a291c23985ca35bbdc86c7762fa133183d4202b"
+    },
+    {
+      "name": "docs-flowchart-46",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 46,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "c27199280e93688453b8c77d71b9a34f7536681d5758c8fc3db22b4e3da231a2"
+    },
+    {
+      "name": "docs-flowchart-47",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 47,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "8c9314012a5c63866ab84f33059b3560992428cf7b0dd8492d61939aa44d78d5"
+    },
+    {
+      "name": "docs-flowchart-48",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 48,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "98f4e16871e548c12ef9cff245bb7a557e33eb5231b15d8e56ba562bb505a9cd"
+    },
+    {
+      "name": "docs-flowchart-49",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 49,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "a54e169af030b38d5f17dcac04eb72114f3242f7b204c66f66e57ca536c83e76"
+    },
+    {
+      "name": "docs-flowchart-50",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 50,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "5de56a1453291c52d3ef75bf5b6e848667d58f3e7c1a2c6c53bf4c016527445b"
+    },
+    {
+      "name": "docs-flowchart-51",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 51,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "75d1757721efc9c51d831b11dc64f239f2450f60c5d9d2817a26f7fa61c2c096"
+    },
+    {
+      "name": "docs-flowchart-52",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 52,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "536d40390dfc702147abd8089cf8f050e016e10b62b3b554b680eb3652174a06"
+    },
+    {
+      "name": "docs-flowchart-53",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 53,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "57999bfbf80fdd70d350070c0698ff91635e5139b76290ae10dcc2a9a917e70b"
+    },
+    {
+      "name": "docs-flowchart-54",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 54,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "57ccdf97f0a51b970fb5ffe2b9082759ea2747003b9afd6a2c66fc102789de3b"
+    },
+    {
+      "name": "docs-flowchart-55",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 55,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "4510e5c665847536439388ebd9e165e6910248c6071dc9125f076a86edffb821"
+    },
+    {
+      "name": "docs-flowchart-56",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 56,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "b391d69ba84f8b46bf553bd07274620109a17df64057b56cdcfcc51649971876"
+    },
+    {
+      "name": "docs-flowchart-57",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 57,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "c570fe851035b8d384396f474fbec2c0f7c37825e14d33441501d20349aba4ba"
+    },
+    {
+      "name": "docs-flowchart-58",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 58,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "6d8ca7f67c2c94ca3c304401fbc16a3b53a108dc6f7fd2a08711e995f2344496"
+    },
+    {
+      "name": "docs-flowchart-59",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 59,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "6857a70cf5b2deac9d78a5d8a1708cace2dae2e82903774b41cc58ceb488b0f4"
+    },
+    {
+      "name": "docs-flowchart-60",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 60,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "27cf12e5d58976084fbee2424eb2da33b57a1e74f31a753737328988ee221114"
+    },
+    {
+      "name": "docs-flowchart-61",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 61,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "6cb8440120e9be5e18991a6b6923adb6c0724f30ef14ac34398d27f626b035d1"
+    },
+    {
+      "name": "docs-flowchart-62",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 62,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "2c776c0e0a9c64a8455ef0d4fdcce5a99dc54e51e720f8d78e1fe8091aaf9573"
+    },
+    {
+      "name": "docs-flowchart-63",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 63,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "32ce25d35e10b0a3d2638e2a58cc1fa6c30d8ecfddfdbeb520089e241a8f162e"
+    },
+    {
+      "name": "docs-flowchart-64",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 64,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "a9958d8066a20ff40a5b29709dfa6309abfef31eb939ab2f0a9636e3d5ffac02"
+    },
+    {
+      "name": "docs-flowchart-65",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 65,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "4c04da5598da3c870d540c7a43ef28d95db6a61b2806ef73fc003967f943630d"
+    },
+    {
+      "name": "docs-flowchart-66",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 66,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "367c5c3ba0969a08cd834f323bbab8455a5e45b850b4fb7269ca5734aa5a2a7e"
+    },
+    {
+      "name": "docs-flowchart-67",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 67,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "e5d398138a16048e1a9cf3efdb46fa181dd9e143aaf9e01fd8a917c85ec81a51"
+    },
+    {
+      "name": "docs-flowchart-68",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 68,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "d1dab3127bad181e6ec68b1c240ae7227a190f072b7cccf1526dddba77232cec"
+    },
+    {
+      "name": "docs-flowchart-69",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 69,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "7a00327313be8d81dfb5f5797655355cfdfc265022c27353d12a50de2767938d"
+    },
+    {
+      "name": "docs-flowchart-70",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 70,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "67174e83a217520f962a3834803d6c1fa7b986c1ca0499efde7611b919797a61"
+    },
+    {
+      "name": "docs-flowchart-71",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 71,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "4f8b037dc17262b5dac0568c45e19885db0934e006f0056862af247c7bb9737a"
+    },
+    {
+      "name": "docs-flowchart-72",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 72,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "c3fe09596d4ce94c6b60c2238f6dedd12214aa406bb6975de117177068512215"
+    },
+    {
+      "name": "docs-flowchart-73",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 73,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "102f5e8b7b87ebafab221fb67e17d191f93723faa7bf481e6461994f00878323"
+    },
+    {
+      "name": "docs-flowchart-74",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 74,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "dc317e726a01163b0cce0533e9c40dbcba9903bf42176739771ca91893fa6c17"
+    },
+    {
+      "name": "docs-flowchart-75",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 75,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "91bb31146e3b93488a9d31b3838f473ba0116c6f9221d60c016f666b4306e796"
+    },
+    {
+      "name": "docs-flowchart-76",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 76,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "f95399fe549b33b5c76d76701a58b346525899268aa8ce05a97fb05612473eee"
+    },
+    {
+      "name": "docs-flowchart-77",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 77,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "0766c01e251f8c6a168117de1b7ae0abb9aa41bd84bbcfbae95f77e09d808d11"
+    },
+    {
+      "name": "docs-flowchart-78",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 78,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "de517ae8fad4d82d920a0ea8282a7f63cbc4a859a4ab6b266ef063854ab5004d"
+    },
+    {
+      "name": "docs-flowchart-79",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 79,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "f667d542348c0a5d3005d7bb49efb4075a5185a7416dbd7844c87457102bba4f"
+    },
+    {
+      "name": "docs-flowchart-80",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 80,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "49b7cc521db04b33a35252a5d617b4b1f634b06e0546292057c2615b2c1a4783"
+    },
+    {
+      "name": "docs-flowchart-81",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 81,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "f50d1228da71016d60063d065e308e57f538bb762c1efbc3fe0206096485ae3f"
+    },
+    {
+      "name": "docs-flowchart-82",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 82,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "e7cd5d979ebd75c36e4604bb42e8af775e20fe5d9f750f5fa901980734e8b80d"
+    },
+    {
+      "name": "docs-flowchart-83",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 83,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "87dff42e26d6c13a5c3f63ba5f5266be3e8719f1bbae5f68edfaf074f4873d2c"
+    },
+    {
+      "name": "docs-flowchart-84",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 84,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "b49ad2527d7a966f6228fc14a7af310f4715c1549afa6da6ebb2bc71bdd7fc6b"
+    },
+    {
+      "name": "docs-flowchart-85",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 85,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "b916010561e29edd4311182ec56cd8c204ca76f6a0d472aa4e02d31ee5c9f147"
+    },
+    {
+      "name": "docs-flowchart-86",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 86,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "2180ab4c833fa87f51e3a862b60bfa4f3a2223da8871c2a1a3f6a7350f0f4aee"
+    },
+    {
+      "name": "docs-flowchart-87",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 87,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "36037b67bd470e0d1b924dc38a92a8cabb0b8c7486971ce9ec6424be1d843b10"
+    },
+    {
+      "name": "docs-flowchart-88",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 88,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "61c5641f3f9a8f8dc9cb5b5f7615a29eab6729995c40f296ed67f35a86efed5a"
+    },
+    {
+      "name": "docs-flowchart-89",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 89,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "83d8c5605524cb519d6bdbc9fc47088a30c7fe93a1936c009838213ebff0ca7b"
+    },
+    {
+      "name": "docs-flowchart-90",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 90,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "db9a21e3b86bf0c8f632346dcf7e3fe55961ba2b49e5270a49d5b8911fca9345"
+    },
+    {
+      "name": "docs-flowchart-91",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 91,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "043dc973b839b609f745a0d3c043d62e2a16275dc18e78e8d8193bf908c42185"
+    },
+    {
+      "name": "docs-flowchart-92",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 92,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "cdc29fd0648d264d4ee35121fbb337d24601498303d51c4904d940aa29b75db0"
+    },
+    {
+      "name": "docs-flowchart-93",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 93,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "dece7fdc70e8be99c81d26e07c204c5c6136dafe39f99443bffbabeb20785f51"
+    },
+    {
+      "name": "docs-flowchart-94",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 94,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "030ba5fed4d1cab7c69836540cdfdb967387accdcb6375b42380bcd5ce5a0461"
+    },
+    {
+      "name": "docs-flowchart-95",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 95,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "4f6e93a3e6ac9a3ac8221a78b227ff3593b54bced692b9dc1ccde971c40de0d7"
+    },
+    {
+      "name": "docs-flowchart-96",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 96,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "7f63bc529a68b8d3110087f1628f93ea5cbc0fae0ac9000c41d2b75a6e562996"
+    },
+    {
+      "name": "docs-flowchart-97",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 97,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "55c040cf6534769e515b098f416b364d5f36bd785b8ce0b1e7179e010a976152"
+    },
+    {
+      "name": "docs-flowchart-98",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 98,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "bca09f08939c420c728618f443d09a72a7ba6818dcabafdeafb7b7498735189f"
+    },
+    {
+      "name": "docs-flowchart-99",
+      "source": "packages/mermaid/src/docs/syntax/flowchart.md",
+      "block": 99,
+      "sourceBlob": "af435803d96b9a84d867dae77c5e64f6fd8f7ad4",
+      "sha256": "113e61bdcfa10f65c993f56676a225a8114d1c559e313f674e95642a9f578035"
+    },
+    {
+      "name": "e2e-1-should-render-a-simple-flowchart",
+      "source": "e2e/diagrams/flowchart/1-should-render-a-simple-flowchart.mmd",
+      "block": 1,
+      "sourceBlob": "f8b8dd5c94e8b94ab5b6547b2697682a7054b623",
+      "sha256": "1e61f159aab1f7bf3e1497cf500ab11b18ac11b1134047b35081a86399ddd0ff"
+    },
+    {
+      "name": "e2e-1-should-render-a-simple-flowchart-no-htmllabels",
+      "source": "e2e/diagrams/flowchart/1-should-render-a-simple-flowchart-no-htmllabels.mmd",
+      "block": 1,
+      "sourceBlob": "6c476d2e5a068c3fb3a84fdf50a684de80a9a0a0",
+      "sha256": "482a034e52e878f449e2fc25f9a0ef8a6e123b22d65efa2b4ec5a7860f603150"
+    },
+    {
+      "name": "e2e-10-should-render-subgraphs-with-a-title-starting-with-a-digit",
+      "source": "e2e/diagrams/flowchart/10-should-render-subgraphs-with-a-title-starting-with-a-digit.mmd",
+      "block": 1,
+      "sourceBlob": "4e158cd6d9de70fbe37145ddadb15647cc05119b",
+      "sha256": "04609cf903d7daf024794077ebf70c210e339cb1545780242999925634981de2"
+    },
+    {
+      "name": "e2e-11-should-render-styled-subgraphs",
+      "source": "e2e/diagrams/flowchart/11-should-render-styled-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "38b54e248bf75cba5055f54a46d675c09f290709",
+      "sha256": "7b19c8ae39ca250304c12e3139656fcbac4bd634da8a3121de7fc3877039b472"
+    },
+    {
+      "name": "e2e-12-should-render-a-flowchart-with-long-names-and-class-definitions",
+      "source": "e2e/diagrams/flowchart/12-should-render-a-flowchart-with-long-names-and-class-definitions.mmd",
+      "block": 1,
+      "sourceBlob": "27dcb084ec2ca3384ee8e6d76a0fb6d3bc52b163",
+      "sha256": "2c4e4c57721c7b42db3ca13e8462e6c7dfe768c4ff6cbd33ef227b8693b420a2"
+    },
+    {
+      "name": "e2e-13-should-render-color-of-styled-nodes",
+      "source": "e2e/diagrams/flowchart/13-should-render-color-of-styled-nodes.mmd",
+      "block": 1,
+      "sourceBlob": "a9c5fcd39e4ca47162a61f541c121255fa3c9857",
+      "sha256": "1d21377cefc325bf1a18bca02f0d44dac7339fc0ad92f32c80e44929f4926a4d"
+    },
+    {
+      "name": "e2e-14-should-render-hexagons",
+      "source": "e2e/diagrams/flowchart/14-should-render-hexagons.mmd",
+      "block": 1,
+      "sourceBlob": "bf6408343dd790c3e129915f65e8831dd0edd22f",
+      "sha256": "fa30f19eee6ff21ef0eca3b3c3b5ca0841f54bd005dd690a9232d8be59648b8e"
+    },
+    {
+      "name": "e2e-1433-should-render-a-titled-flowchart-with-titletopmargin-set-to-0",
+      "source": "e2e/diagrams/flowchart/1433-should-render-a-titled-flowchart-with-titletopmargin-set-to-0.mmd",
+      "block": 1,
+      "sourceBlob": "c8f69b27ae1b47606f881675257c2338bfb8a2f7",
+      "sha256": "54967eced3bd64e159593a0d50a435e461fd9476402892f331b7de3f7792dfb4"
+    },
+    {
+      "name": "e2e-15-should-render-a-simple-flowchart-with-comments",
+      "source": "e2e/diagrams/flowchart/15-should-render-a-simple-flowchart-with-comments.mmd",
+      "block": 1,
+      "sourceBlob": "57c3108631684a367218ce76d14a0f146bfbdb78",
+      "sha256": "e83c8b870cd4677e1cacf31175678db6dc2214f2979b40c5a6d62bbdfdfe5ab3"
+    },
+    {
+      "name": "e2e-16-render-stadium-shape",
+      "source": "e2e/diagrams/flowchart/16-render-stadium-shape.mmd",
+      "block": 1,
+      "sourceBlob": "d3b7f85f6268402d15dfe0e87fb713d713463ce0",
+      "sha256": "fd44f9e49d58abc8ac8256ecb8681fcc50348f7f3c33ce18411f168d665f73b6"
+    },
+    {
+      "name": "e2e-17-render-multiline-texts",
+      "source": "e2e/diagrams/flowchart/17-render-multiline-texts.mmd",
+      "block": 1,
+      "sourceBlob": "84375277937474e0dfad6d657789438678c97388",
+      "sha256": "75b806e60e9fcc4111fa26834df398c12aba5f74b28402a1f3473c10c056ddcf"
+    },
+    {
+      "name": "e2e-18-chaining-of-nodes",
+      "source": "e2e/diagrams/flowchart/18-chaining-of-nodes.mmd",
+      "block": 1,
+      "sourceBlob": "fbccfe98c941714ca0c132a278163feb67f3d080",
+      "sha256": "017cf40e03847f3628233410eb1556d6d17a5080ba3bdbc1d6dbf8449030d0cd"
+    },
+    {
+      "name": "e2e-19-multiple-nodes-and-chaining-in-one-statement",
+      "source": "e2e/diagrams/flowchart/19-multiple-nodes-and-chaining-in-one-statement.mmd",
+      "block": 1,
+      "sourceBlob": "5d04d1cc8acf3dcc4a89c9cc6343b05635a0d18a",
+      "sha256": "c243c3483eedd80c5a738f6150d953ce035882d1fec00a8ae565ca2fbacb3c87"
+    },
+    {
+      "name": "e2e-2-should-render-a-simple-flowchart-with-diagrampadding-set-to-0",
+      "source": "e2e/diagrams/flowchart/2-should-render-a-simple-flowchart-with-diagrampadding-set-to-0.mmd",
+      "block": 1,
+      "sourceBlob": "7b19b1e71c297c6ee96a1c8910d3b15a088fdc7f",
+      "sha256": "949e53c44a63c471693c02fc09ec7fd0628dbb4cffe4f5bcc311039517538332"
+    },
+    {
+      "name": "e2e-2-should-render-a-simple-flowchart-with-htmllabels",
+      "source": "e2e/diagrams/flowchart/2-should-render-a-simple-flowchart-with-htmllabels.mmd",
+      "block": 1,
+      "sourceBlob": "1418ed71c13cd8b11f08f5ec57bccdbd5bdaab89",
+      "sha256": "43ad63f2df3e9081fb400f66cacb33d6312fa6bcac424683c72712fde1b986b9"
+    },
+    {
+      "name": "e2e-20-multiple-nodes-and-chaining-in-one-statement",
+      "source": "e2e/diagrams/flowchart/20-multiple-nodes-and-chaining-in-one-statement.mmd",
+      "block": 1,
+      "sourceBlob": "53119a88019449792f014dbc7d0741b85b84146e",
+      "sha256": "5124f48629b3a2484556ee89550bf706dd76225256843a5a8d852716be18af68"
+    },
+    {
+      "name": "e2e-2050-handling-of-different-rendering-direction-in-subgraphs",
+      "source": "e2e/diagrams/flowchart/2050-handling-of-different-rendering-direction-in-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "0c6b7ccde128d10dc28a7d27cbd0ef9c8b18cb88",
+      "sha256": "d1082c491deceabb8674431195d9141760a93d1aed7559ed664ff87cf02d07f3"
+    },
+    {
+      "name": "e2e-21-render-cylindrical-shape",
+      "source": "e2e/diagrams/flowchart/21-render-cylindrical-shape.mmd",
+      "block": 1,
+      "sourceBlob": "986598e10f29da1d23d42f3f65397f516ecb6c6c",
+      "sha256": "c7218fef51846d645cba8630924fee4ad4b2a0cfb2bddc12ae60cd496e0c8989"
+    },
+    {
+      "name": "e2e-22-render-a-simple-flowchart-with-nodespacing-set-to-100",
+      "source": "e2e/diagrams/flowchart/22-render-a-simple-flowchart-with-nodespacing-set-to-100.mmd",
+      "block": 1,
+      "sourceBlob": "437a0a9af6c78d978583011d2621ade1a770b98d",
+      "sha256": "08c1ad8a5e983cf51204b02b7536dbb76391f2fb3c91770e0f2e9aa34beecc74"
+    },
+    {
+      "name": "e2e-23-render-a-simple-flowchart-with-rankspacing-set-to-100",
+      "source": "e2e/diagrams/flowchart/23-render-a-simple-flowchart-with-rankspacing-set-to-100.mmd",
+      "block": 1,
+      "sourceBlob": "97ef0dfbe85777e548e90daddf1f8f332740ba67",
+      "sha256": "3e74fad24ca5a7e0917f8ceea75000cfe42d7706092c1228ad3ee8059cd25c4e"
+    },
+    {
+      "name": "e2e-2388-handling-default-in-the-node-name",
+      "source": "e2e/diagrams/flowchart/2388-handling-default-in-the-node-name.mmd",
+      "block": 1,
+      "sourceBlob": "d7281188dad24e4933020c273ffe22bf00cd3178",
+      "sha256": "9fbeb982831fef2f056ed2271c34dc321daef8bab57ee8f8cd906045c9d9ae51"
+    },
+    {
+      "name": "e2e-24-keep-node-label-text-if-already-defined-when-a-style-is-applied",
+      "source": "e2e/diagrams/flowchart/24-keep-node-label-text-if-already-defined-when-a-style-is-applied.mmd",
+      "block": 1,
+      "sourceBlob": "83eea026bad00fe1e67c6780f7172c94e38fa067",
+      "sha256": "9b9bab46d7ea14012f963360b61fe05baeaadd47dbef406d580566e87bcffccf"
+    },
+    {
+      "name": "e2e-25-handle-link-click-events-link-anchor-mailto-other-protocol-script",
+      "source": "e2e/diagrams/flowchart/25-handle-link-click-events-link-anchor-mailto-other-protocol-script.mmd",
+      "block": 1,
+      "sourceBlob": "c1a2fd367d5e7db65c780c0265862805c4e8bbc8",
+      "sha256": "f789c3b6ee6b7a611f03ba884cd50bdb66cb689dd03e013433ed2329acb03d08"
+    },
+    {
+      "name": "e2e-26-set-text-color-of-nodes-and-links-according-to-styles-when-html-labels-are-enabled",
+      "source": "e2e/diagrams/flowchart/26-set-text-color-of-nodes-and-links-according-to-styles-when-html-labels-are-enabled.mmd",
+      "block": 1,
+      "sourceBlob": "d4afd94772bad254fd65ed9e0e014b075542289d",
+      "sha256": "6cf634c2e24f2f3d6a729f3f7951c65effbc6fe47395af65540cc350784bc1b7"
+    },
+    {
+      "name": "e2e-27-set-text-color-of-nodes-and-links-according-to-styles-when-html-labels-are-disabled",
+      "source": "e2e/diagrams/flowchart/27-set-text-color-of-nodes-and-links-according-to-styles-when-html-labels-are-disabled.mmd",
+      "block": 1,
+      "sourceBlob": "aeb6b213e381f533a92f606c3824af9c00a33d12",
+      "sha256": "a877f11ec469d82c50d4ffe5c3e7178176dfd6498562963572b2f4b73e207119"
+    },
+    {
+      "name": "e2e-28-apply-default-class-to-all-nodes-which-do-not-have-another-class-assigned-htmllabels-enabled",
+      "source": "e2e/diagrams/flowchart/28-apply-default-class-to-all-nodes-which-do-not-have-another-class-assigned-htmllabels-enabled.mmd",
+      "block": 1,
+      "sourceBlob": "d6cc6dbd388f078f92404bc1bad9ba460b19d474",
+      "sha256": "e699739658af86cb2740c0c28ea662425862ba8819323c223fba9e3564d687db"
+    },
+    {
+      "name": "e2e-2824-clipping-of-edges",
+      "source": "e2e/diagrams/flowchart/2824-clipping-of-edges.mmd",
+      "block": 1,
+      "sourceBlob": "8a812a39ec13b6114a4df5b6f72fdccd7a43d06f",
+      "sha256": "decc68fb37960a02c76613ecbfdcaa64f795462006b2e5cdcbcdea67514cc4b8"
+    },
+    {
+      "name": "e2e-29-apply-default-class-to-all-nodes-which-do-not-have-another-class-assigned-htmllabels-disabled",
+      "source": "e2e/diagrams/flowchart/29-apply-default-class-to-all-nodes-which-do-not-have-another-class-assigned-htmllabels-disabled.mmd",
+      "block": 1,
+      "sourceBlob": "f591143b627a9438d952546aa3ec021f4bf6da2c",
+      "sha256": "b36bb5b6b457df67c27bfbe3bf4281c0953352b2cd32f8ffefbfe032b32ccc00"
+    },
+    {
+      "name": "e2e-3-a-link-with-correct-arrowhead-to-a-subgraph",
+      "source": "e2e/diagrams/flowchart/3-a-link-with-correct-arrowhead-to-a-subgraph.mmd",
+      "block": 1,
+      "sourceBlob": "b6bd5616d716b91f4d13d2bd21db64992231dd3d",
+      "sha256": "4f055e05d43983d19d2dcde095d1f92051c86ef625c5176353f9dbe07160250f"
+    },
+    {
+      "name": "e2e-3-should-render-a-simple-flowchart-with-line-breaks",
+      "source": "e2e/diagrams/flowchart/3-should-render-a-simple-flowchart-with-line-breaks.mmd",
+      "block": 1,
+      "sourceBlob": "0df746773804b96625218dcc0a13e04177196dcc",
+      "sha256": "f4cb1b689ffc5cf575ecb7fe0a423efe921b3ce91350e6581ad7f94b655413ce"
+    },
+    {
+      "name": "e2e-30-possibility-to-style-text-color-of-nodes-and-subgraphs-as-well-as-apply-classes-to-subgraphs",
+      "source": "e2e/diagrams/flowchart/30-possibility-to-style-text-color-of-nodes-and-subgraphs-as-well-as-apply-classes-to-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "815e702d2d88bc8122563a6795918e7439d469c3",
+      "sha256": "17dbef53220e8c74c312aa65366ea8af73a16ccac57b87d3751068ff7dbf48de"
+    },
+    {
+      "name": "e2e-31-should-not-slice-off-edges-that-are-to-the-left-of-the-left-most-vertex",
+      "source": "e2e/diagrams/flowchart/31-should-not-slice-off-edges-that-are-to-the-left-of-the-left-most-vertex.mmd",
+      "block": 1,
+      "sourceBlob": "5296c785851028160a784ce9477a6cf521fcffdf",
+      "sha256": "158b0c20777559b36f22308009aaee75f5034eeb0ebaef299fdca9e0e6590b48"
+    },
+    {
+      "name": "e2e-3192-it-should-be-possible-to-render-flowcharts-with-invisible-edges",
+      "source": "e2e/diagrams/flowchart/3192-it-should-be-possible-to-render-flowcharts-with-invisible-edges.mmd",
+      "block": 1,
+      "sourceBlob": "99a0bd92cb6f393b8c570c8af3c79d8a2e493aae",
+      "sha256": "f2d0972221a05dce11a8f48ab3ea49ec2c5207fb294d9b9ae400dcb7c2d7d939"
+    },
+    {
+      "name": "e2e-32-render-subroutine-shape",
+      "source": "e2e/diagrams/flowchart/32-render-subroutine-shape.mmd",
+      "block": 1,
+      "sourceBlob": "56478979c08121d874bf0d6f94506c79bd197ddf",
+      "sha256": "3a4af642f3c4d0c2715186e7a6fd7329cd4e984b62c3313578d72374457206dd"
+    },
+    {
+      "name": "e2e-3258-should-render-subgraphs-with-large-nodespacing-and-rankspacing",
+      "source": "e2e/diagrams/flowchart/3258-should-render-subgraphs-with-large-nodespacing-and-rankspacing.mmd",
+      "block": 1,
+      "sourceBlob": "02edd32570007f66e6198544e209bf378898e429",
+      "sha256": "0855191606879775e385842984784bbbf6e024ef466f1b246bb35029e41411e1"
+    },
+    {
+      "name": "e2e-3258-should-render-subgraphs-with-main-graph-nodespacing-and-rankspacing",
+      "source": "e2e/diagrams/flowchart/3258-should-render-subgraphs-with-main-graph-nodespacing-and-rankspacing.mmd",
+      "block": 1,
+      "sourceBlob": "57c159c3704685aacf41c4bca96bfd3064b70592",
+      "sha256": "805e29b4ce2b001af0510399e6613f0d2ed3b583d06e04466e347e90c6756783"
+    },
+    {
+      "name": "e2e-33-should-render-a-simple-flowchart-with-diagrampadding-set-to-0",
+      "source": "e2e/diagrams/flowchart/33-should-render-a-simple-flowchart-with-diagrampadding-set-to-0.mmd",
+      "block": 1,
+      "sourceBlob": "69067340e38f8519e11a15ca1e9e3471681f6998",
+      "sha256": "a09feceb967ab099007df16c5b9eba81fb0934964050c297ba8b7e1e7cbfb698"
+    },
+    {
+      "name": "e2e-34-testing-the-label-width-in-percy",
+      "source": "e2e/diagrams/flowchart/34-testing-the-label-width-in-percy.mmd",
+      "block": 1,
+      "sourceBlob": "e542e3e8b368a2a15b04f449e7cad88aa43e077f",
+      "sha256": "c8acba99c16fc9a32f61d89e67f2d74ee9c333e6b2e3a65c1c2334b3d67fcc96"
+    },
+    {
+      "name": "e2e-35-should-honor-minimum-edge-length-as-specified-by-the-user",
+      "source": "e2e/diagrams/flowchart/35-should-honor-minimum-edge-length-as-specified-by-the-user.mmd",
+      "block": 1,
+      "sourceBlob": "d8823e90e264f0f6635fa7efb78471bda6603964",
+      "sha256": "e8872bdb458b501e2287ecd091c169df4494131ff6f1b5a5d69a2d2b949bf908"
+    },
+    {
+      "name": "e2e-36-should-render-escaped-without-html-labels",
+      "source": "e2e/diagrams/flowchart/36-should-render-escaped-without-html-labels.mmd",
+      "block": 1,
+      "sourceBlob": "59c970f6becea72db1ac384e9d54cdf63ae339f8",
+      "sha256": "e5063579309378b7361060555fc531a2b74c02963257139967e797c41014ba7d"
+    },
+    {
+      "name": "e2e-37-should-render-non-escaped-with-html-labels",
+      "source": "e2e/diagrams/flowchart/37-should-render-non-escaped-with-html-labels.mmd",
+      "block": 1,
+      "sourceBlob": "58e6dec9ef508369bbb1a967672569d22972578f",
+      "sha256": "1a365d0c556ce152329fd484c759d0a10d573bb6766bf2dda83e591903921bf5"
+    },
+    {
+      "name": "e2e-4-length-of-edges",
+      "source": "e2e/diagrams/flowchart/4-length-of-edges.mmd",
+      "block": 1,
+      "sourceBlob": "36b56a10803c5964d1496285b49c5e3e4dccfe16",
+      "sha256": "f4b1818c8aa93e50a5b9cdf99367c47fc6a9a87b6f872832ec9b25e0fb1c4510"
+    },
+    {
+      "name": "e2e-4-should-render-a-simple-flowchart-with-trapezoid-and-inverse-trapezoid-vertex-options",
+      "source": "e2e/diagrams/flowchart/4-should-render-a-simple-flowchart-with-trapezoid-and-inverse-trapezoid-vertex-options.mmd",
+      "block": 1,
+      "sourceBlob": "7fc2ef845993368f7c1845260548b466bf42f90c",
+      "sha256": "95fcf64704824dd9e704652ab2bfc6c784ae4acaca6ec3e3cc7b8f423292fa20"
+    },
+    {
+      "name": "e2e-4023-should-render-html-labels-with-images-and-or-text-correctly",
+      "source": "e2e/diagrams/flowchart/4023-should-render-html-labels-with-images-and-or-text-correctly.mmd",
+      "block": 1,
+      "sourceBlob": "ce5f23e41c09d952521912f69ca299f55915d04c",
+      "sha256": "30b6bef11a64ff0da1826c86d7adc848ee6f215e620a7e1f0ae3ca7eef6dfeac"
+    },
+    {
+      "name": "e2e-4439-should-render-the-graph-even-if-some-images-are-missing",
+      "source": "e2e/diagrams/flowchart/4439-should-render-the-graph-even-if-some-images-are-missing.mmd",
+      "block": 1,
+      "sourceBlob": "5a354bb7e289fb1b77c46e13077f295bf83896ee",
+      "sha256": "5697026adf3a122a227b095761af6f49e00e607c4b09b04931b48b37599854cc"
+    },
+    {
+      "name": "e2e-4b-labeled-open-edges-should-not-have-arrowheads",
+      "source": "e2e/diagrams/flowchart/4b-labeled-open-edges-should-not-have-arrowheads.mmd",
+      "block": 1,
+      "sourceBlob": "560b82d33d27d2ec8df74dc3592d14501a65f7e7",
+      "sha256": "6b890ff80f836f9de261f5321d2d6cab7fa4082f51d20672595380dc2e452cda"
+    },
+    {
+      "name": "e2e-5-should-render-escaped-without-html-labels",
+      "source": "e2e/diagrams/flowchart/5-should-render-escaped-without-html-labels.mmd",
+      "block": 1,
+      "sourceBlob": "7019102db2bbef1446fb4b46f415fa14419406f1",
+      "sha256": "b47196682e5d0716529731f5b243ad425c1da33639fd8d71cd990a29a3cd31ba"
+    },
+    {
+      "name": "e2e-5-should-style-nodes-via-a-class",
+      "source": "e2e/diagrams/flowchart/5-should-style-nodes-via-a-class.mmd",
+      "block": 1,
+      "sourceBlob": "821cb207c335bbd010550fa758c0f818efd3ac8a",
+      "sha256": "274bbc51f3f5aac17897bab71216ed3b46907a47ae0464c3c0800d3b2f50d835"
+    },
+    {
+      "name": "e2e-50-handle-nested-subgraphs-in-reverse-order",
+      "source": "e2e/diagrams/flowchart/50-handle-nested-subgraphs-in-reverse-order.mmd",
+      "block": 1,
+      "sourceBlob": "2736a4ee368d3dd52dfe39e4fd7d5eb60fbb9dc3",
+      "sha256": "7b9ddc27203d780606bb072b1c4c1bf129383f38c264a29699bf6cb97e1ed78a"
+    },
+    {
+      "name": "e2e-5059-should-render-when-subgraph-contains-only-subgraphs-has-link-to-outside-and-itself-is-part-of-a-link",
+      "source": "e2e/diagrams/flowchart/5059-should-render-when-subgraph-contains-only-subgraphs-has-link-to-outside-and-itself-is-part-of-a-link.mmd",
+      "block": 1,
+      "sourceBlob": "a5d7ec9374b12819dbe2497257fbdaf72ca00bfe",
+      "sha256": "0fc24fc7cb13a4f532adc47a3423b6aff10db8aeb443beab9e9a4aee5e0d387b"
+    },
+    {
+      "name": "e2e-5064-should-render-when-subgraph-child-has-links-to-outside-node-and-subgraph",
+      "source": "e2e/diagrams/flowchart/5064-should-render-when-subgraph-child-has-links-to-outside-node-and-subgraph.mmd",
+      "block": 1,
+      "sourceBlob": "042e2a1c0b6fc4676225c5ff787f75ba4a3e7d84",
+      "sha256": "ad077fa2238e70b2a98a40574bd695b1d44788d842cca4f5f88f33a3d0306ca2"
+    },
+    {
+      "name": "e2e-52-handle-nested-subgraphs-in-several-levels",
+      "source": "e2e/diagrams/flowchart/52-handle-nested-subgraphs-in-several-levels.mmd",
+      "block": 1,
+      "sourceBlob": "9bfb2fac549dae2756aa6419ece352db486c034e",
+      "sha256": "eb07f74c81c2c381828896e3ab4d49399c273eb88867766c2ecebf8cfdc6122b"
+    },
+    {
+      "name": "e2e-53-handle-nested-subgraphs-with-edges-in-and-out",
+      "source": "e2e/diagrams/flowchart/53-handle-nested-subgraphs-with-edges-in-and-out.mmd",
+      "block": 1,
+      "sourceBlob": "822221e53c238e1e02e33b50ab01782634b2b035",
+      "sha256": "b56fb3f9657e794d8da8352519922b61f6dc8b6cfd648c0bb0a8be9c2accc913"
+    },
+    {
+      "name": "e2e-54-handle-nested-subgraphs-with-outgoing-links",
+      "source": "e2e/diagrams/flowchart/54-handle-nested-subgraphs-with-outgoing-links.mmd",
+      "block": 1,
+      "sourceBlob": "2a52ee1ff5df8a6e765f7847d171d3805685b4e3",
+      "sha256": "895a7539a4d95cacb777711db91f6324d01b224c98623e009e613006abf97762"
+    },
+    {
+      "name": "e2e-55-handle-nested-subgraphs-with-outgoing-links-2",
+      "source": "e2e/diagrams/flowchart/55-handle-nested-subgraphs-with-outgoing-links-2.mmd",
+      "block": 1,
+      "sourceBlob": "e52551e32c49aae4cabe2af6343c4602f9847190",
+      "sha256": "f90eddbd94fb867fce9332033b85d9f489c6b9316018bc90e7b01f06564c0e0f"
+    },
+    {
+      "name": "e2e-56-handle-nested-subgraphs-with-outgoing-links-3",
+      "source": "e2e/diagrams/flowchart/56-handle-nested-subgraphs-with-outgoing-links-3.mmd",
+      "block": 1,
+      "sourceBlob": "82634b0f66cde53931fd4d429ecbfcd04a32583e",
+      "sha256": "063bc51a3c96d6a4822dbfef22084c070421ffe1e89df4158da0d3a98893b13a"
+    },
+    {
+      "name": "e2e-57-handle-nested-subgraphs-with-outgoing-links-2",
+      "source": "e2e/diagrams/flowchart/57-handle-nested-subgraphs-with-outgoing-links-2.mmd",
+      "block": 1,
+      "sourceBlob": "2f77baf4a61ee65196f17651823f977f590bf45b",
+      "sha256": "a16dfcd4df184f2249621694b2fd5fb012f25c0c3d731fb7e901b6ca9624cfba"
+    },
+    {
+      "name": "e2e-57-handle-nested-subgraphs-with-outgoing-links-4",
+      "source": "e2e/diagrams/flowchart/57-handle-nested-subgraphs-with-outgoing-links-4.mmd",
+      "block": 1,
+      "sourceBlob": "8d45fe923bc48e909b3c000afc0daf021978f0c6",
+      "sha256": "7f861f222eaa9631f50d8ae0e3b00e70fd470b171370ee7b9ae47654cb0d6df0"
+    },
+    {
+      "name": "e2e-57-x-handle-nested-subgraphs-with-outgoing-links-5",
+      "source": "e2e/diagrams/flowchart/57-x-handle-nested-subgraphs-with-outgoing-links-5.mmd",
+      "block": 1,
+      "sourceBlob": "d6d07c821c8fc5f01c50592c60e7cad51711b4c8",
+      "sha256": "20838d12b71de9d5d156265bdf4c82581ecada8d6597b5f3644bc8fe1c8d4a0d"
+    },
+    {
+      "name": "e2e-58-handle-styling-with-style-expressions",
+      "source": "e2e/diagrams/flowchart/58-handle-styling-with-style-expressions.mmd",
+      "block": 1,
+      "sourceBlob": "0c5c4f5f657ad5f6b95469e6b525a4c5cdb71062",
+      "sha256": "dd40a6eea255e1342db4916d3a8637e142abeb3970541e3dccd669a416ec519d"
+    },
+    {
+      "name": "e2e-58-handle-styling-with-style-expressions-2",
+      "source": "e2e/diagrams/flowchart/58-handle-styling-with-style-expressions-2.mmd",
+      "block": 1,
+      "sourceBlob": "f5596a9916ad6158bced35c71a0334e727843daa",
+      "sha256": "20d8c4145c2bc9a6ae75cde32bdf3f30e9550181bdb6c04d944f7e464d802386"
+    },
+    {
+      "name": "e2e-5824-should-be-able-to-render-string-and-markdown-labels",
+      "source": "e2e/diagrams/flowchart/5824-should-be-able-to-render-string-and-markdown-labels.mmd",
+      "block": 1,
+      "sourceBlob": "b080429d6f8620e2dff11444a18822ded1f15f19",
+      "sha256": "ed9d315b64149388303f8d1d26bc6210a0b584c350e727ec67f678d357241bae"
+    },
+    {
+      "name": "e2e-59-handle-styling-of-subgraphs-and-links",
+      "source": "e2e/diagrams/flowchart/59-handle-styling-of-subgraphs-and-links.mmd",
+      "block": 1,
+      "sourceBlob": "f429e2e432bbd6da2ae373e256a896ddb22a2b4c",
+      "sha256": "989648625d2b52d5a2e6282f81a22602c21bd244c1fc8b7fd6db32cd88d2942d"
+    },
+    {
+      "name": "e2e-5a-should-render-flowchart-with-edge-labels-centered-when-htmllabels-is-false",
+      "source": "e2e/diagrams/flowchart/5a-should-render-flowchart-with-edge-labels-centered-when-htmllabels-is-false.mmd",
+      "block": 1,
+      "sourceBlob": "6e997c5cf86963499edb0d010cb4a4c0f64fa5b8",
+      "sha256": "3d72d32447cdf4c36c9cdb0c4b64e6adb24f2b1d15b303be118f088bc921da19"
+    },
+    {
+      "name": "e2e-5b-angle-brackets-should-be-work-without-html-labels",
+      "source": "e2e/diagrams/flowchart/5b-angle-brackets-should-be-work-without-html-labels.mmd",
+      "block": 1,
+      "sourceBlob": "3a2cd02861bcc8dc8e3f33a705063ef296d511b0",
+      "sha256": "42c4f9bf7da536176c7521dba60daee0eb6db960c7f2b8c2bbcbc705de94bdc8"
+    },
+    {
+      "name": "e2e-6-should-render-a-flowchart-full-of-circles",
+      "source": "e2e/diagrams/flowchart/6-should-render-a-flowchart-full-of-circles.mmd",
+      "block": 1,
+      "sourceBlob": "3eed9e78057acf606ada049ab0a8460f9613bd4b",
+      "sha256": "1f30027aead0074d23f062dee5f2ff065a847a44f69fa4327b947bc516a878b6"
+    },
+    {
+      "name": "e2e-6-should-render-non-escaped-with-html-labels",
+      "source": "e2e/diagrams/flowchart/6-should-render-non-escaped-with-html-labels.mmd",
+      "block": 1,
+      "sourceBlob": "9dcc113efb105f79af1a715120d89113465d8736",
+      "sha256": "8a55256708b4914d9d75a24716d424f76719009e330583435908a45f36537801"
+    },
+    {
+      "name": "e2e-60-handle-styling-for-all-node-shapes",
+      "source": "e2e/diagrams/flowchart/60-handle-styling-for-all-node-shapes.mmd",
+      "block": 1,
+      "sourceBlob": "3c6d49e620faa6d82c9f0cca2d7e36b52fea1d6d",
+      "sha256": "a7b28330ea80107ee724bb597d71985a8839bd32329b599a3f87fa72d9d9c6d3"
+    },
+    {
+      "name": "e2e-60-handle-styling-for-all-node-shapes-v2",
+      "source": "e2e/diagrams/flowchart/60-handle-styling-for-all-node-shapes-v2.mmd",
+      "block": 1,
+      "sourceBlob": "252f9ce3a41c614f9ef4016ffb653b74df7cd7ee",
+      "sha256": "75cbea4fd9d936dfd704bc3b326d3342820dc4404dbebb98fe2b39b3763b7054"
+    },
+    {
+      "name": "e2e-61-fontawesome-icons-in-edge-labels",
+      "source": "e2e/diagrams/flowchart/61-fontawesome-icons-in-edge-labels.mmd",
+      "block": 1,
+      "sourceBlob": "6008545ac97d265bfd161592f196e923eb826616",
+      "sha256": "fa44cd8d2ae9e8b1317cfc62fad646da3856e6f112c70ab13d598d85cda196fd"
+    },
+    {
+      "name": "e2e-61-fontawesome-icons-in-edge-labels-2",
+      "source": "e2e/diagrams/flowchart/61-fontawesome-icons-in-edge-labels-2.mmd",
+      "block": 1,
+      "sourceBlob": "eb1c6f2fb0e30da135f877b3b152f9339c1c1aa6",
+      "sha256": "1c74b104b2f8429b2e46c963bcb2de7ff76c68b08165becc7c08da2428c8260e"
+    },
+    {
+      "name": "e2e-62-fontawesome-icons-in-edge-labels",
+      "source": "e2e/diagrams/flowchart/62-fontawesome-icons-in-edge-labels.mmd",
+      "block": 1,
+      "sourceBlob": "6cd9880aa11af1c5b546d5109fb25ff557c220c6",
+      "sha256": "a6e7637718de92e3534b25726c42e05e2d1851c59330d4d1836a2dae51903fef"
+    },
+    {
+      "name": "e2e-62-should-render-styled-subgraphs",
+      "source": "e2e/diagrams/flowchart/62-should-render-styled-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "5c49c3b7110149458edf4fcaf834739a4e24d672",
+      "sha256": "7766dc36c449ed67c04c9148f333c52574c19cb679b5ace06d39322508a23359"
+    },
+    {
+      "name": "e2e-63-fontawesome-icons-in-edge-labels",
+      "source": "e2e/diagrams/flowchart/63-fontawesome-icons-in-edge-labels.mmd",
+      "block": 1,
+      "sourceBlob": "3c55c416b79e1116847fd0d0ca286c89b8d9386c",
+      "sha256": "f5d357d37b4db6ceb1e42e157e5456c491721f7f26e6e0be2519642deca0f464"
+    },
+    {
+      "name": "e2e-63-title-on-subgraphs-should-be-themeable",
+      "source": "e2e/diagrams/flowchart/63-title-on-subgraphs-should-be-themeable.mmd",
+      "block": 1,
+      "sourceBlob": "873e0fb5a48671b4e57edb94b8ffc1e06f298d29",
+      "sha256": "3480a3039a05d87bd1197e5acc5bdcb167fca2f08ff38c2c36a96b41b53a5cf3"
+    },
+    {
+      "name": "e2e-6369-edge-color-should-affect-arrow-head",
+      "source": "e2e/diagrams/flowchart/6369-edge-color-should-affect-arrow-head.mmd",
+      "block": 1,
+      "sourceBlob": "9f30adedd98b59c1d642b5b4fa1070672a382fa9",
+      "sha256": "c7ecc1d74d58527a13310849855a76c35bc0d1075a921dc7a77161bada385063"
+    },
+    {
+      "name": "e2e-65-1-text-color-from-classes",
+      "source": "e2e/diagrams/flowchart/65-1-text-color-from-classes.mmd",
+      "block": 1,
+      "sourceBlob": "51129f30d8210b1c7df2b2e7b0d08e6040113b54",
+      "sha256": "6d24b42abd95ee5fc61281dfb4896f55b87d63404c29dead14d1dd1798c5ba0d"
+    },
+    {
+      "name": "e2e-65-2-bold-text-from-classes",
+      "source": "e2e/diagrams/flowchart/65-2-bold-text-from-classes.mmd",
+      "block": 1,
+      "sourceBlob": "16a3a0cf35e9c7d5a6beb518c42feae560bf785a",
+      "sha256": "842a8059167fb41f16dd92eb91a0fda5f690d4ff57c965254b8b598fdaa01b08"
+    },
+    {
+      "name": "e2e-65-3-bigger-font-from-classes",
+      "source": "e2e/diagrams/flowchart/65-3-bigger-font-from-classes.mmd",
+      "block": 1,
+      "sourceBlob": "b8a4a3489514de9b894f5650fc381f16e9277bb6",
+      "sha256": "ce3e6f30a4c1cf947663a0fc808f57ea9e9c12e15320f967fa5bbf272dcceb56"
+    },
+    {
+      "name": "e2e-66-apply-class-called-default-on-node-called-default",
+      "source": "e2e/diagrams/flowchart/66-apply-class-called-default-on-node-called-default.mmd",
+      "block": 1,
+      "sourceBlob": "eb497399742b5dd0ab798643ec4500a401271a24",
+      "sha256": "37f40b8999aa584d4be03334f5eb758caa2e19d0b3dea70fdd260aab194ff9a0"
+    },
+    {
+      "name": "e2e-66-more-nested-subgraph-cases-tb",
+      "source": "e2e/diagrams/flowchart/66-more-nested-subgraph-cases-tb.mmd",
+      "block": 1,
+      "sourceBlob": "e2d8b436e514002855ee6a5829e1ca049d0ed82d",
+      "sha256": "d4493a633c03510735edcf0e82bde6f258a32ac8f064a5014b4d6056af6d28e7"
+    },
+    {
+      "name": "e2e-6617-per-link-curve-styling-using-edge-ids",
+      "source": "e2e/diagrams/flowchart/6617-per-link-curve-styling-using-edge-ids.mmd",
+      "block": 1,
+      "sourceBlob": "9ed921cde83550c7829aa65e431d967ed5744b83",
+      "sha256": "f264c946676dc96aecf3939da3425b78d83fb59ef7b44ab7df6825811591db7f"
+    },
+    {
+      "name": "e2e-67-more-nested-subgraph-cases-rl",
+      "source": "e2e/diagrams/flowchart/67-more-nested-subgraph-cases-rl.mmd",
+      "block": 1,
+      "sourceBlob": "4632c02f2d384c913fefdaa46dc789a2c895aaa3",
+      "sha256": "8f39d87c1852368d6c58a0678e596fd600131c48aeb7a1c4a62c3cb67c6af54a"
+    },
+    {
+      "name": "e2e-67-should-be-able-to-style-default-node-independently",
+      "source": "e2e/diagrams/flowchart/67-should-be-able-to-style-default-node-independently.mmd",
+      "block": 1,
+      "sourceBlob": "a9eab76567801609f2e3a38e7d652e731352a78a",
+      "sha256": "c4744ffb896e6c7c12feaded06aa1fec5691c852c5b0a655096fd5c229474b5e"
+    },
+    {
+      "name": "e2e-68-more-nested-subgraph-cases-bt",
+      "source": "e2e/diagrams/flowchart/68-more-nested-subgraph-cases-bt.mmd",
+      "block": 1,
+      "sourceBlob": "0aa417fb42e43de80ef122e3f834a6c54daa8b54",
+      "sha256": "9dcba2c71209666b5220f41c2baaf56fcd03e358c55efb4917f927978ab3c6cd"
+    },
+    {
+      "name": "e2e-68-should-honor-subgraph-direction-when-inheritdir-is-false",
+      "source": "e2e/diagrams/flowchart/68-should-honor-subgraph-direction-when-inheritdir-is-false.mmd",
+      "block": 1,
+      "sourceBlob": "614762bcff64b77217990e7abdee955209547033",
+      "sha256": "9f8485f6a96376c39d375250090f8f3ea0650743e51ef054269177dbe9aa2948"
+    },
+    {
+      "name": "e2e-69-more-nested-subgraph-cases-lr",
+      "source": "e2e/diagrams/flowchart/69-more-nested-subgraph-cases-lr.mmd",
+      "block": 1,
+      "sourceBlob": "bbce4624bf3e451469aabf51d040b14036b9ea06",
+      "sha256": "ea31482b1d14fc43043f3e919abaa723fa4e346dbfe0f7240c0be38c4e973a46"
+    },
+    {
+      "name": "e2e-69-should-inherit-global-direction-when-inheritdir-is-true",
+      "source": "e2e/diagrams/flowchart/69-should-inherit-global-direction-when-inheritdir-is-true.mmd",
+      "block": 1,
+      "sourceBlob": "b5ac3d774c0a2b86db3a5c7cdc6832ada5d4bced",
+      "sha256": "822abb4abf1c51901e3036cf66e619e8cd5aebe726791c25ef0288d007793fb6"
+    },
+    {
+      "name": "e2e-69-should-render-subgraphs-with-adhoc-list-headings",
+      "source": "e2e/diagrams/flowchart/69-should-render-subgraphs-with-adhoc-list-headings.mmd",
+      "block": 1,
+      "sourceBlob": "954cad240985c33162f8918edb82295ba8e44ee9",
+      "sha256": "08c5776eb4dcc12da7543b1da66929b8c8e4271266b91cf8e380126f3a85cfa2"
+    },
+    {
+      "name": "e2e-6a-should-render-complex-html-in-labels-with-sandbox-security",
+      "source": "e2e/diagrams/flowchart/6a-should-render-complex-html-in-labels-with-sandbox-security.mmd",
+      "block": 1,
+      "sourceBlob": "974ef6cd8db919c2da6f5946f98e4f6e620b5d8d",
+      "sha256": "39bcd4887956d08c155c4b5addcafae72c9787b75d44b4776273be50c13b5432"
+    },
+    {
+      "name": "e2e-7-should-render-a-flowchart-full-of-icons",
+      "source": "e2e/diagrams/flowchart/7-should-render-a-flowchart-full-of-icons.mmd",
+      "block": 1,
+      "sourceBlob": "bb4ae4a4235834a60f78985d47bf9f9ec0826e08",
+      "sha256": "00fa5e80ebf614b9180bcdce5adf24ce394ade6ecfcdcc780ab75762d89fca04"
+    },
+    {
+      "name": "e2e-70-handle-nested-subgraph-cases-tb-link-out-and-link-between-subgraphs",
+      "source": "e2e/diagrams/flowchart/70-handle-nested-subgraph-cases-tb-link-out-and-link-between-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "3df04a8afbabb9ee685e9c35deef6c2d182519d6",
+      "sha256": "bc776e3888f3942003c163d4e6dc6c46b870504782ca463f17cfa1bd26aeabcf"
+    },
+    {
+      "name": "e2e-70-should-render-a-subgraph-with-direction-td",
+      "source": "e2e/diagrams/flowchart/70-should-render-a-subgraph-with-direction-td.mmd",
+      "block": 1,
+      "sourceBlob": "0c3d32069aabbcfe2af4485426cc592b1256b27a",
+      "sha256": "d3ab526e8ed5b84b34a979fcd30072cb4075218d614ee41367f4282e6dafb869"
+    },
+    {
+      "name": "e2e-70-should-render-subgraphs-with-markdown-headings",
+      "source": "e2e/diagrams/flowchart/70-should-render-subgraphs-with-markdown-headings.mmd",
+      "block": 1,
+      "sourceBlob": "6c99e950d9e44cd6fe1a63b87cb0e98e7568ae2e",
+      "sha256": "ed83a34e31f9095e474c97aaad86eac40b0a274e7908bd88574737f7438cc7b2"
+    },
+    {
+      "name": "e2e-71-handle-nested-subgraph-cases-rl-link-out-and-link-between-subgraphs",
+      "source": "e2e/diagrams/flowchart/71-handle-nested-subgraph-cases-rl-link-out-and-link-between-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "a87544337d6677ea07ab449900b4bac26171a131",
+      "sha256": "1881cea2cb283ac7bf01d7ae2d6fee8f4a2eca7e2b23e7e18665a349a99d2d85"
+    },
+    {
+      "name": "e2e-72-handle-nested-subgraph-cases-bt-link-out-and-link-between-subgraphs",
+      "source": "e2e/diagrams/flowchart/72-handle-nested-subgraph-cases-bt-link-out-and-link-between-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "5c87dd55317b2ad102f902dd7e122b85d3565532",
+      "sha256": "7735dcb1a6ead7532b7c3dc0ab6ce0663b5cf46715d9b4ebd96e19d43c7d46d1"
+    },
+    {
+      "name": "e2e-7213-should-render-edges-with-rounded-curve-right-angles-with-rounded-corners",
+      "source": "e2e/diagrams/flowchart/7213-should-render-edges-with-rounded-curve-right-angles-with-rounded-corners.mmd",
+      "block": 1,
+      "sourceBlob": "7deaecfd1620b96bdce40a7449ba7e9932ae2203",
+      "sha256": "c6ee8305e8b12b70a7ea9e79a68c2a296a7396ba7f76bba9199f3bcb7facccf6"
+    },
+    {
+      "name": "e2e-74-handle-labels-for-multiple-edges-from-and-to-the-same-couple-of-nodes",
+      "source": "e2e/diagrams/flowchart/74-handle-labels-for-multiple-edges-from-and-to-the-same-couple-of-nodes.mmd",
+      "block": 1,
+      "sourceBlob": "64fe4744c0ece9e1bac163baf9a3ca0c39f8412d",
+      "sha256": "503be62f0a01b649e00b0b4942c07d834a32d121e445f1f7040f492587831f7e"
+    },
+    {
+      "name": "e2e-76-handle-unicode-encoded-character-with-html-labels-true",
+      "source": "e2e/diagrams/flowchart/76-handle-unicode-encoded-character-with-html-labels-true.mmd",
+      "block": 1,
+      "sourceBlob": "c76fcba8e37498bce6a630a6d37c4ffcfaefd9e0",
+      "sha256": "646e22078865d3ce8309f916bef7afce9c9074bc0fd459bd614eee2cdd667308"
+    },
+    {
+      "name": "e2e-8-should-render-labels-with-numbers-at-the-start",
+      "source": "e2e/diagrams/flowchart/8-should-render-labels-with-numbers-at-the-start.mmd",
+      "block": 1,
+      "sourceBlob": "3f8051b8731c7aaa68c18e6de84636bdd334e1e8",
+      "sha256": "3d2ca6299fc0a66aa34c2dc3058f24b8c03a31928c805a6eb0742af06b1b8d41"
+    },
+    {
+      "name": "e2e-9-should-render-subgraphs",
+      "source": "e2e/diagrams/flowchart/9-should-render-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "695cbebe566a5d8a261bdf037fe8c109ce8650b0",
+      "sha256": "7c1453d32bb07c306c9266818da130be93aa55859124695ba1d7a3eaf44e875e"
+    },
+    {
+      "name": "e2e-dagre-1433-dagre-should-render-a-titled-flowchart-with-titletopmargin-set-to-0",
+      "source": "e2e/diagrams/flowchart/dagre/1433-dagre-should-render-a-titled-flowchart-with-titletopmargin-set-to-0.mmd",
+      "block": 1,
+      "sourceBlob": "34f598856c3c4bded691e43653ba42eacf0f4c26",
+      "sha256": "17f95ff4a8714ed97ecfe6aac132c53d1bc1dce86b58c451f86080024adc938f"
+    },
+    {
+      "name": "e2e-dagre-2-dagre-should-render-a-simple-flowchart-with-diagrampadding-set-to-0",
+      "source": "e2e/diagrams/flowchart/dagre/2-dagre-should-render-a-simple-flowchart-with-diagrampadding-set-to-0.mmd",
+      "block": 1,
+      "sourceBlob": "ac1b744c09d31da81005874c7efcff4c36eb675c",
+      "sha256": "630f60d9d9d84c7fc47b47428bad5844825d7a64a17fb348b467e40d5479f7b5"
+    },
+    {
+      "name": "e2e-dagre-2050-dagre-handling-of-different-rendering-direction-in-subgraphs",
+      "source": "e2e/diagrams/flowchart/dagre/2050-dagre-handling-of-different-rendering-direction-in-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "b85aa217864c62d0400806111680910bdd2d25fb",
+      "sha256": "566dbae68957f9ebf5d593b2c8b60efc69ec1d9984891022d7d2dbee63ca7f14"
+    },
+    {
+      "name": "e2e-dagre-2388-dagre-handling-default-in-the-node-name",
+      "source": "e2e/diagrams/flowchart/dagre/2388-dagre-handling-default-in-the-node-name.mmd",
+      "block": 1,
+      "sourceBlob": "2b8195ecfe2bb6337beed5248e815221f29e2ed0",
+      "sha256": "713282801ba16376871f70e544b31f9b6cd447a39e2b31f8400ea05ace99a14f"
+    },
+    {
+      "name": "e2e-dagre-2824-dagre-clipping-of-edges",
+      "source": "e2e/diagrams/flowchart/dagre/2824-dagre-clipping-of-edges.mmd",
+      "block": 1,
+      "sourceBlob": "f6b14ebe3a71a05a52705119c461749a0aff5630",
+      "sha256": "a48f65cce4928e8fb12c566212bc91fc2ee2253ac6346bdc19fd9ceaaed1cd53"
+    },
+    {
+      "name": "e2e-dagre-3-dagre-a-link-with-correct-arrowhead-to-a-subgraph",
+      "source": "e2e/diagrams/flowchart/dagre/3-dagre-a-link-with-correct-arrowhead-to-a-subgraph.mmd",
+      "block": 1,
+      "sourceBlob": "4c7a7efb612df57eb93527839b60e795da3cfe3c",
+      "sha256": "c40c302de67ef9b207c1b1b5ffe882a7d4c02081ddaa82590c6a610acc298bef"
+    },
+    {
+      "name": "e2e-dagre-4-dagre-length-of-edges",
+      "source": "e2e/diagrams/flowchart/dagre/4-dagre-length-of-edges.mmd",
+      "block": 1,
+      "sourceBlob": "dca7c70aad9461a09ef1944a1d8a4512835a6ad3",
+      "sha256": "e3ab2fe1d0dee3985b078b838d5c916faa20ac7057b8ce1634c6eaf3c5c46ada"
+    },
+    {
+      "name": "e2e-dagre-5-dagre-should-render-escaped-without-html-labels",
+      "source": "e2e/diagrams/flowchart/dagre/5-dagre-should-render-escaped-without-html-labels.mmd",
+      "block": 1,
+      "sourceBlob": "ce10a715a37ed5cd650a7f01c74f219a81a1a071",
+      "sha256": "1d3559b6c15871f6a8b4b2e8410dd972f3a802814540fb79b0b1349d893e43e0"
+    },
+    {
+      "name": "e2e-dagre-50-dagre-handle-nested-subgraphs-in-reverse-order",
+      "source": "e2e/diagrams/flowchart/dagre/50-dagre-handle-nested-subgraphs-in-reverse-order.mmd",
+      "block": 1,
+      "sourceBlob": "3c9a03dda849d68c990ea631f0acd2f1ec6afa80",
+      "sha256": "f88442baa534523b8fc657a9503dc4ef3c8074b2b5702b42bff3fe1c764a1ece"
+    },
+    {
+      "name": "e2e-dagre-52-dagre-handle-nested-subgraphs-in-several-levels",
+      "source": "e2e/diagrams/flowchart/dagre/52-dagre-handle-nested-subgraphs-in-several-levels.mmd",
+      "block": 1,
+      "sourceBlob": "d8748b7f5194bf582c07bd4a8703afb80f486660",
+      "sha256": "1a53b6ef3c184d0e8480284c750a395629967a1324a746714391975838d706af"
+    },
+    {
+      "name": "e2e-dagre-53-dagre-handle-nested-subgraphs-with-edges-in-and-out",
+      "source": "e2e/diagrams/flowchart/dagre/53-dagre-handle-nested-subgraphs-with-edges-in-and-out.mmd",
+      "block": 1,
+      "sourceBlob": "b1e9339231bbcf661331f0b5f14e58248504f598",
+      "sha256": "c3aa80a050b29e2080647c1785724e6b3e3ddeb3554e67917a05697df01c9c6d"
+    },
+    {
+      "name": "e2e-dagre-54-dagre-handle-nested-subgraphs-with-outgoing-links",
+      "source": "e2e/diagrams/flowchart/dagre/54-dagre-handle-nested-subgraphs-with-outgoing-links.mmd",
+      "block": 1,
+      "sourceBlob": "54eff4cdeb3d0a5778e9f91a716788dac8ee09d0",
+      "sha256": "87a272b09e246f776bcf8d6fe9179f3511b4e6249874ae0caf3f59e57759f6a9"
+    },
+    {
+      "name": "e2e-dagre-55-dagre-handle-nested-subgraphs-with-outgoing-links-2",
+      "source": "e2e/diagrams/flowchart/dagre/55-dagre-handle-nested-subgraphs-with-outgoing-links-2.mmd",
+      "block": 1,
+      "sourceBlob": "a13858b22df83673a33ead84b517a6b9df2af3ea",
+      "sha256": "74dbf8ffe5e7dcd265279c565e733b9788141406d2df245dc3cef3672dbc780f"
+    },
+    {
+      "name": "e2e-dagre-56-dagre-handle-nested-subgraphs-with-outgoing-links-3",
+      "source": "e2e/diagrams/flowchart/dagre/56-dagre-handle-nested-subgraphs-with-outgoing-links-3.mmd",
+      "block": 1,
+      "sourceBlob": "699e42eecb8ad8f3514c7b53aee5d80b2c38b00e",
+      "sha256": "e83f61e85108a07afd8e14c7177d473b3c43926cc68e20f477a8b0b141470dc7"
+    },
+    {
+      "name": "e2e-dagre-57-dagre-handle-nested-subgraphs-with-outgoing-links-2",
+      "source": "e2e/diagrams/flowchart/dagre/57-dagre-handle-nested-subgraphs-with-outgoing-links-2.mmd",
+      "block": 1,
+      "sourceBlob": "981da0034a8971bb57bc7505ed18960968e68563",
+      "sha256": "d8908ba0cdbe3d0d5709589151343417f57ae9a143fa6a30e43d69c637d71529"
+    },
+    {
+      "name": "e2e-dagre-57-dagre-handle-nested-subgraphs-with-outgoing-links-4",
+      "source": "e2e/diagrams/flowchart/dagre/57-dagre-handle-nested-subgraphs-with-outgoing-links-4.mmd",
+      "block": 1,
+      "sourceBlob": "4817b0833eb87fd25d4c7401e9cd46cd93fa615d",
+      "sha256": "0a515026a712a8aced7d996a96fadcc3d5a64e6111c322d621299ba15ba3e05a"
+    },
+    {
+      "name": "e2e-dagre-57-x-handle-nested-subgraphs-with-outgoing-links-5",
+      "source": "e2e/diagrams/flowchart/dagre/57-x-handle-nested-subgraphs-with-outgoing-links-5.mmd",
+      "block": 1,
+      "sourceBlob": "8cbfd3a9ed16e167d1435e91b40726cb37a69e2c",
+      "sha256": "a8adee997ba226cf68a25b7b078c21cd73d06ae1ac5e95d78d00e3787a63a29d"
+    },
+    {
+      "name": "e2e-dagre-58-dagre-handle-styling-with-style-expressions",
+      "source": "e2e/diagrams/flowchart/dagre/58-dagre-handle-styling-with-style-expressions.mmd",
+      "block": 1,
+      "sourceBlob": "5197dc3a0bac11f477423672257dd47a962e79b5",
+      "sha256": "8a5f46f297a2eceba3bd5902c4d86b3201cdc54d481547977c0565daa1a22257"
+    },
+    {
+      "name": "e2e-dagre-59-dagre-handle-styling-of-subgraphs-and-links",
+      "source": "e2e/diagrams/flowchart/dagre/59-dagre-handle-styling-of-subgraphs-and-links.mmd",
+      "block": 1,
+      "sourceBlob": "2a25a59b021065f6256dc30f0b9c194425b41bc4",
+      "sha256": "2afd7988997541870b969cb70b224bad18c601a6432c4b14da062ef18b7157d3"
+    },
+    {
+      "name": "e2e-dagre-6-dagre-should-render-non-escaped-with-html-labels",
+      "source": "e2e/diagrams/flowchart/dagre/6-dagre-should-render-non-escaped-with-html-labels.mmd",
+      "block": 1,
+      "sourceBlob": "ac7492aabaec88c51f5f127e8df76f54a3552ea5",
+      "sha256": "6768a499a2044b2517816eb0820251d252431a1f2b1bd074d7f182d122259e40"
+    },
+    {
+      "name": "e2e-dagre-60-dagre-handle-styling-for-all-node-shapes-v2",
+      "source": "e2e/diagrams/flowchart/dagre/60-dagre-handle-styling-for-all-node-shapes-v2.mmd",
+      "block": 1,
+      "sourceBlob": "e3646f8abcb0337df2f7b4682008d98ff10cefc6",
+      "sha256": "7acf71fe4058aa07b8d9a402eecaabe9d04fc65993d909c8bcb0c5fc9a5bc243"
+    },
+    {
+      "name": "e2e-dagre-6080-should-handle-diamond-shape-intersections",
+      "source": "e2e/diagrams/flowchart/dagre/6080-should-handle-diamond-shape-intersections.mmd",
+      "block": 1,
+      "sourceBlob": "3b0585795921948bb14ecdb5e0a1bd120d612e33",
+      "sha256": "6e33f070ae7115d6989c0b2d04a207dab2f8a385cb8a6b72e61413a88eaa1513"
+    },
+    {
+      "name": "e2e-dagre-6088-1-should-handle-diamond-shape-intersections",
+      "source": "e2e/diagrams/flowchart/dagre/6088-1-should-handle-diamond-shape-intersections.mmd",
+      "block": 1,
+      "sourceBlob": "8ce31d49816263eec8aef449496cd814d8cb88c6",
+      "sha256": "71b5fb6f431e4976d4e799f521574853491655491418cc45a85d804a2f24fbfa"
+    },
+    {
+      "name": "e2e-dagre-6088-2-should-handle-diamond-shape-intersections",
+      "source": "e2e/diagrams/flowchart/dagre/6088-2-should-handle-diamond-shape-intersections.mmd",
+      "block": 1,
+      "sourceBlob": "cc76d1a64beec7cbb0b3ceb25e7b6fdb1ba1e08d",
+      "sha256": "627f61a784dba762b42d156482ed757c0ea782a5032fb715f128051b19329d95"
+    },
+    {
+      "name": "e2e-dagre-6088-3-should-handle-diamond-shape-intersections",
+      "source": "e2e/diagrams/flowchart/dagre/6088-3-should-handle-diamond-shape-intersections.mmd",
+      "block": 1,
+      "sourceBlob": "7539e3c93eb362d0254aef7abf82e3782dc27f7a",
+      "sha256": "d3d008291ff54cdc7a9e0a843b87dc0492477e1e629be115d7cb55bc58f1e0d3"
+    },
+    {
+      "name": "e2e-dagre-6088-5-should-handle-diamond-shape-intersections",
+      "source": "e2e/diagrams/flowchart/dagre/6088-5-should-handle-diamond-shape-intersections.mmd",
+      "block": 1,
+      "sourceBlob": "1ca69a93afdba2e12a5e125e6ccba79b7aff15a1",
+      "sha256": "8fd9f599f9ec990cad116723c5ef59b25ac875fa25314388c53b1d964259bed1"
+    },
+    {
+      "name": "e2e-dagre-6088-6-should-handle-diamond-shape-intersections",
+      "source": "e2e/diagrams/flowchart/dagre/6088-6-should-handle-diamond-shape-intersections.mmd",
+      "block": 1,
+      "sourceBlob": "6862baede01a337d25c3f4ea72229bc30f33167f",
+      "sha256": "249e79b6bdadbad69cc199ca1ee151c8b04ee4713be633fd95283e0ac47c7616"
+    },
+    {
+      "name": "e2e-dagre-61-dagre-fontawesome-icons-in-edge-labels",
+      "source": "e2e/diagrams/flowchart/dagre/61-dagre-fontawesome-icons-in-edge-labels.mmd",
+      "block": 1,
+      "sourceBlob": "6466c861d4fb5e13269f4d9fa4ad27b57c92dc86",
+      "sha256": "df6f8f567f75c914f6afc1fbcc91453607af5decf257c83684f6a5c39526af40"
+    },
+    {
+      "name": "e2e-dagre-62-dagre-should-render-styled-subgraphs",
+      "source": "e2e/diagrams/flowchart/dagre/62-dagre-should-render-styled-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "44fdc55a9a51382f9b805023268cbafa66a504d2",
+      "sha256": "661c5ef11dfac8434fe9d922e81b620e9c55517e2b8bf908cc537fe6116f6177"
+    },
+    {
+      "name": "e2e-dagre-63-dagre-title-on-subgraphs-should-be-themeable",
+      "source": "e2e/diagrams/flowchart/dagre/63-dagre-title-on-subgraphs-should-be-themeable.mmd",
+      "block": 1,
+      "sourceBlob": "36475665f78d3e1500243819697cdc44a3773769",
+      "sha256": "9698af349f95475de1d2b10b20046b6dffebf3c4a211f3020c7b7f682b59453d"
+    },
+    {
+      "name": "e2e-dagre-65-dagre-text-color-from-classes",
+      "source": "e2e/diagrams/flowchart/dagre/65-dagre-text-color-from-classes.mmd",
+      "block": 1,
+      "sourceBlob": "82ab1bb171cb1304b1560ebe9e9fb0e49747886e",
+      "sha256": "b3f75bad60f8b8a23fda2ea02fd3beec2e209b7bbea2a7f54ff996400ce35aeb"
+    },
+    {
+      "name": "e2e-dagre-66-dagre-more-nested-subgraph-cases-tb",
+      "source": "e2e/diagrams/flowchart/dagre/66-dagre-more-nested-subgraph-cases-tb.mmd",
+      "block": 1,
+      "sourceBlob": "a5c70a228c433130a8254bd8858fb65b4b776322",
+      "sha256": "f6fdc8dad85290bc8380c10c98faf6df531c8f88deae1b0019333e1f19a2a7d6"
+    },
+    {
+      "name": "e2e-dagre-6647-dagre-should-keep-node-order-when-using-dagre-layout-unless-it-would-add-crossings",
+      "source": "e2e/diagrams/flowchart/dagre/6647-dagre-should-keep-node-order-when-using-dagre-layout-unless-it-would-add-crossings.mmd",
+      "block": 1,
+      "sourceBlob": "d0e98b6ea38dd5cbb3a43ab98f3bf2e6cb0d1e23",
+      "sha256": "722026893de9eb190f54f7f5707b299e960a3aefe4364d568e02b16a109125a4"
+    },
+    {
+      "name": "e2e-dagre-67-dagre-more-nested-subgraph-cases-rl",
+      "source": "e2e/diagrams/flowchart/dagre/67-dagre-more-nested-subgraph-cases-rl.mmd",
+      "block": 1,
+      "sourceBlob": "696b12543ade358bbf84f87140dffa02ee05b112",
+      "sha256": "01f8fc59addebe055db959802395928db03855d7ab0fa09ce0ac98f30521f8d4"
+    },
+    {
+      "name": "e2e-dagre-68-dagre-more-nested-subgraph-cases-bt",
+      "source": "e2e/diagrams/flowchart/dagre/68-dagre-more-nested-subgraph-cases-bt.mmd",
+      "block": 1,
+      "sourceBlob": "722e13eb74b128bbf0d172d53a9e6531d7ef4395",
+      "sha256": "dc398da260368ed93088021ae2f6e9b3fe573c921d2548080dd7bfb96e4e8d26"
+    },
+    {
+      "name": "e2e-dagre-69-dagre-more-nested-subgraph-cases-lr",
+      "source": "e2e/diagrams/flowchart/dagre/69-dagre-more-nested-subgraph-cases-lr.mmd",
+      "block": 1,
+      "sourceBlob": "b1636579625d9b515073f24a0b82010a3432e61b",
+      "sha256": "92f7cbbdbd886ef33c3b91ce71860a7bd16fc6dec952b69cd1d7c0144d30c716"
+    },
+    {
+      "name": "e2e-dagre-70-dagre-handle-nested-subgraph-cases-tb-link-out-and-link-between-subgraphs",
+      "source": "e2e/diagrams/flowchart/dagre/70-dagre-handle-nested-subgraph-cases-tb-link-out-and-link-between-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "a650cc723b5f48340177ffe77073e49f54e53719",
+      "sha256": "5a8a09d65a62f7ea6aa52bcf8e307db1d16747a5c0c453be6dae8a2cbda7ec42"
+    },
+    {
+      "name": "e2e-dagre-71-dagre-handle-nested-subgraph-cases-rl-link-out-and-link-between-subgraphs",
+      "source": "e2e/diagrams/flowchart/dagre/71-dagre-handle-nested-subgraph-cases-rl-link-out-and-link-between-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "da78088b7f8349039caa00ec1cdf7a7183ff1602",
+      "sha256": "56d5abcf0fd7d4a332f74bca64713accf53b61aade933a940ef710882c68c4e0"
+    },
+    {
+      "name": "e2e-dagre-72-dagre-handle-nested-subgraph-cases-bt-link-out-and-link-between-subgraphs",
+      "source": "e2e/diagrams/flowchart/dagre/72-dagre-handle-nested-subgraph-cases-bt-link-out-and-link-between-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "a8391c670ab659fb06f54c6e3708a9f2c1d1e529",
+      "sha256": "adc3396cd7a2a946c4993d3d2c6be76fbaaa8709423d33bd46c05810304467d8"
+    },
+    {
+      "name": "e2e-dagre-7213-should-render-dagre-edges-with-right-angles-not-curves",
+      "source": "e2e/diagrams/flowchart/dagre/7213-should-render-dagre-edges-with-right-angles-not-curves.mmd",
+      "block": 1,
+      "sourceBlob": "3ae4312992d04c8a528ef4869b95ef6107cf70e9",
+      "sha256": "9c6e809c5fdaaf8147be006bd69d7a180afe1826b2cf67e9109b3ffba22d8a99"
+    },
+    {
+      "name": "e2e-dagre-74-dagre-handle-labels-for-multiple-edges-from-and-to-the-same-couple-of-nodes",
+      "source": "e2e/diagrams/flowchart/dagre/74-dagre-handle-labels-for-multiple-edges-from-and-to-the-same-couple-of-nodes.mmd",
+      "block": 1,
+      "sourceBlob": "1d8b0eaab0ff5ada3859d575c4adadcd8445c880",
+      "sha256": "9292fb42097561b5bb165d79f684777f1a7f4f224e421094b45ffdb92e9a55c4"
+    },
+    {
+      "name": "e2e-dagre-76-dagre-handle-unicode-encoded-character-with-html-labels-true",
+      "source": "e2e/diagrams/flowchart/dagre/76-dagre-handle-unicode-encoded-character-with-html-labels-true.mmd",
+      "block": 1,
+      "sourceBlob": "7e01dc85320052edb59a44fa5baed2aaca8bb00e",
+      "sha256": "3301ff1c65d970985151a420d10288efe7576f1805910de8867c221480384fbd"
+    },
+    {
+      "name": "e2e-dagre-dagre-recursive-flow-with-dagre-keepentrynodeontop-false-keeps-the-default-layout-7827",
+      "source": "e2e/diagrams/flowchart/dagre/dagre-recursive-flow-with-dagre-keepentrynodeontop-false-keeps-the-default-layout-7827.mmd",
+      "block": 1,
+      "sourceBlob": "4d6e0a067caf0aca41b79cb452eadf7f6b993fe3",
+      "sha256": "cea17b62082be0c67f10decb5f921ffac1eef65f91494c3320105ae8c08b00a5"
+    },
+    {
+      "name": "e2e-dagre-dagre-should-keep-the-entry-node-on-top-of-a-recursive-flow-nested-in-a-subgraph-with-dagre-keepentrynodeontop-true-7827",
+      "source": "e2e/diagrams/flowchart/dagre/dagre-should-keep-the-entry-node-on-top-of-a-recursive-flow-nested-in-a-subgraph-with-dagre-keepentrynodeontop-true-7827.mmd",
+      "block": 1,
+      "sourceBlob": "03cf5fe5475d29ee4a7f32eb193bb2f5d126fa65",
+      "sha256": "736b5b469baf992674fe14a5cca5747cba883dea2f5d5ba4c3153bf727dab16b"
+    },
+    {
+      "name": "e2e-dagre-dagre-should-keep-the-true-entry-on-top-when-a-back-edge-feeds-it-79",
+      "source": "e2e/diagrams/flowchart/dagre/dagre-should-keep-the-true-entry-on-top-when-a-back-edge-feeds-it-79.mmd",
+      "block": 1,
+      "sourceBlob": "a6c8572ecad390b7797f017eb5f8188a17488222",
+      "sha256": "b4934c23fae55287f519340813c7c070199cfabbb27b0b7c63e409ee41d393ae"
+    },
+    {
+      "name": "e2e-dagre-dagre-should-merge-edges-within-subgraphs-when-dagre-mergeedges-is-true-7659",
+      "source": "e2e/diagrams/flowchart/dagre/dagre-should-merge-edges-within-subgraphs-when-dagre-mergeedges-is-true-7659.mmd",
+      "block": 1,
+      "sourceBlob": "8d49fc663d8f1ae857c59143cbe79ec744b1b9ed",
+      "sha256": "ab32a49cd4f5d07482f2efbbf684d011bac97cf521ad4f45df10cbc178ced70e"
+    },
+    {
+      "name": "e2e-dagre-new-line-in-node-and-formatted-edge-label",
+      "source": "e2e/diagrams/flowchart/dagre/new-line-in-node-and-formatted-edge-label.mmd",
+      "block": 1,
+      "sourceBlob": "1887675d92d0a129e1af5b813c0f6e0e0bee1e61",
+      "sha256": "29e572b7dbac78f985e59d1b65556dc180cc480dc0bfe05b9cc5fa1e80c818b5"
+    },
+    {
+      "name": "e2e-dagre-new-line-in-node-and-formatted-edge-label-2",
+      "source": "e2e/diagrams/flowchart/dagre/new-line-in-node-and-formatted-edge-label-2.mmd",
+      "block": 1,
+      "sourceBlob": "d778466048bb9168a5414ef3569bab3b9b194177",
+      "sha256": "95850d06ed0beb0e0c9dad00e6d3a17ac34cf5ddbc529b6a3033e55b3b2924c6"
+    },
+    {
+      "name": "e2e-dagre-sub-graphs",
+      "source": "e2e/diagrams/flowchart/dagre/sub-graphs.mmd",
+      "block": 1,
+      "sourceBlob": "d0dd1c76e53b4b1d1687897996e921b7498b2a8e",
+      "sha256": "262ee83181e21e8f8a828656698c4ec709e1fd82a7d40b01d5686714cd31ca4e"
+    },
+    {
+      "name": "e2e-dagre-sub-graphs-and-markdown-strings",
+      "source": "e2e/diagrams/flowchart/dagre/sub-graphs-and-markdown-strings.mmd",
+      "block": 1,
+      "sourceBlob": "cb82c556deeb4727250d72a9be434f43c5d15f2e",
+      "sha256": "c3bd44303c317ad81f2979937052877fe8eb6d0e89f117c6f94bea35182ccf48"
+    },
+    {
+      "name": "e2e-dagre-sub-graphs-and-markdown-strings-2",
+      "source": "e2e/diagrams/flowchart/dagre/sub-graphs-and-markdown-strings-2.mmd",
+      "block": 1,
+      "sourceBlob": "573292bc316e43a55041bc34b089db29c4a32256",
+      "sha256": "862eae0fa01e74888b67d9c3bbafe21f80f2d2a574c0e886426a3b1f84542cfd"
+    },
+    {
+      "name": "e2e-dagre-v2-dagre-16-render-stadium-shape",
+      "source": "e2e/diagrams/flowchart/dagre/v2-dagre-16-render-stadium-shape.mmd",
+      "block": 1,
+      "sourceBlob": "6d4cb9ae69afbe7f5bbaf5991384c2e8299ecaa0",
+      "sha256": "abb0daf4d3fdb437e4b3e3bb6f116ec92c4eea585e9829e04c53bbb30fc2c47c"
+    },
+    {
+      "name": "e2e-dagre-with-formatting-in-a-node",
+      "source": "e2e/diagrams/flowchart/dagre/with-formatting-in-a-node.mmd",
+      "block": 1,
+      "sourceBlob": "1552abae1610292c158eb3d418ef8625e9da713e",
+      "sha256": "7418fb28be1d2a74d1c61a9dd7b52dcbc034f9101fda78415ee6d1ec1222e66c"
+    },
+    {
+      "name": "e2e-dagre-with-formatting-in-a-node-2",
+      "source": "e2e/diagrams/flowchart/dagre/with-formatting-in-a-node-2.mmd",
+      "block": 1,
+      "sourceBlob": "043042a89c1e3b6f12ee9d27781668b6395098e8",
+      "sha256": "9a8cb4b0747fafad2c04f94a17952f8ea0a6a074e56c54e443a986284daebdc1"
+    },
+    {
+      "name": "e2e-dagre-with-styling-and-classes",
+      "source": "e2e/diagrams/flowchart/dagre/with-styling-and-classes.mmd",
+      "block": 1,
+      "sourceBlob": "7eb973cecaecd080a7a838ec0f72715f007e99ec",
+      "sha256": "baa6cce60005c1c434d695d1def5e7cc7c5fe40b5a220b2e457ceee3da4f1ed0"
+    },
+    {
+      "name": "e2e-dagre-with-styling-and-classes-2",
+      "source": "e2e/diagrams/flowchart/dagre/with-styling-and-classes-2.mmd",
+      "block": 1,
+      "sourceBlob": "8763cc648ff2309ce9868f7e0539d984d505d6cc",
+      "sha256": "60339d526ead59f37355c35064ead03b49f555e7207268348efd9639c35b3dae"
+    },
+    {
+      "name": "e2e-dagre-wrapping-long-text-with-a-new-line",
+      "source": "e2e/diagrams/flowchart/dagre/wrapping-long-text-with-a-new-line.mmd",
+      "block": 1,
+      "sourceBlob": "410958a64ae28e3409db4dbb30e212de12372a64",
+      "sha256": "f5f731b62b07772f651b94f493b4668e6b769851dcd499a19960d6be61da169c"
+    },
+    {
+      "name": "e2e-dagre-wrapping-long-text-with-a-new-line-2",
+      "source": "e2e/diagrams/flowchart/dagre/wrapping-long-text-with-a-new-line-2.mmd",
+      "block": 1,
+      "sourceBlob": "f4c36f1803d96f433829a815933bc3e3ae2de804",
+      "sha256": "c22471a5c048161a7bcc98682037b6709208420690977eb294e83cfb94f59ecc"
+    },
+    {
+      "name": "e2e-document-shape-label-clearance",
+      "source": "e2e/diagrams/flowchart/document-shape-label-clearance.mmd",
+      "block": 1,
+      "sourceBlob": "f318099a565b325fcb28bfde1c7d77fbc26ab988",
+      "sha256": "5daa0563de01010c7850da803c3f9e8a00c3609dc26986c32ba2bdee1a1427b5"
+    },
+    {
+      "name": "e2e-elk-container-algorithms-elk-box-layout-with-edges",
+      "source": "e2e/diagrams/flowchart/elk-container-algorithms/elk-box-layout-with-edges.mmd",
+      "block": 1,
+      "sourceBlob": "1352676a1fd61a36f5a1bb02222da49e679a2c16",
+      "sha256": "4b9f62f13af941af874b6aaa2b0132eb0be648fb3230a8dcf611ddfb1a609ea5"
+    },
+    {
+      "name": "e2e-elk-container-algorithms-elk-rectpacking-layout-with-edges",
+      "source": "e2e/diagrams/flowchart/elk-container-algorithms/elk-rectpacking-layout-with-edges.mmd",
+      "block": 1,
+      "sourceBlob": "179ac92b69c04e331f0c9d5b2f006ea0bda2aa4d",
+      "sha256": "d5ed4dc1e416fa75233d771c3656b726ebe2cda4b3542f61f0b650ff75a2cdac"
+    },
+    {
+      "name": "e2e-elk-container-algorithms-elk-subgraph-with-box-algorithm",
+      "source": "e2e/diagrams/flowchart/elk-container-algorithms/elk-subgraph-with-box-algorithm.mmd",
+      "block": 1,
+      "sourceBlob": "21a214638460dcd18fa54bf7247b4a18f1a14ebb",
+      "sha256": "14b7e86f6dfc742644fc2c82cf844d9476a0be4d20e62d470c17a7ef11c09eea"
+    },
+    {
+      "name": "e2e-elk-elk-subgraph-titles-wider-than-children",
+      "source": "e2e/diagrams/flowchart/elk/elk-subgraph-titles-wider-than-children.mmd",
+      "block": 1,
+      "sourceBlob": "9f39b79b5f57bdb913c46de615cb226277a27b3a",
+      "sha256": "d156184520476ea0723455444d41b879019e64682f47d561c468f8bd1a628681"
+    },
+    {
+      "name": "e2e-flowchart-dagre-01",
+      "source": "e2e/rendering/flowchart/flowchart-dagre.spec.js",
+      "block": 1,
+      "sourceBlob": "77d79d8f2e90c91b12c02945af15e682c24fc5d3",
+      "sha256": "4c99f9472fa3e5d92f56cd9722c45ca0c9a8dc92d5a4f9a77f37ef6047658279"
+    },
+    {
+      "name": "e2e-flowchart-dagre-05",
+      "source": "e2e/rendering/flowchart/flowchart-dagre.spec.js",
+      "block": 5,
+      "sourceBlob": "77d79d8f2e90c91b12c02945af15e682c24fc5d3",
+      "sha256": "06022a39bab5c27194a400582a39046bcfc1b638660d86770855f66299d5074b"
+    },
+    {
+      "name": "e2e-flowchart-dagre-06",
+      "source": "e2e/rendering/flowchart/flowchart-dagre.spec.js",
+      "block": 6,
+      "sourceBlob": "77d79d8f2e90c91b12c02945af15e682c24fc5d3",
+      "sha256": "0f02b7a8283c9552b75177bf3d5fa23a3c0a4ca9801088803a8668d46926c185"
+    },
+    {
+      "name": "e2e-flowchart-handdrawn-02",
+      "source": "e2e/rendering/flowchart/flowchart-handDrawn.spec.js",
+      "block": 2,
+      "sourceBlob": "babb933fbd4f505afc7c99b295157853e1f2a617",
+      "sha256": "e85758cfbd83b7ac9bc1ea070e0a488519e958ec2dd918f5e74771021c61b2fc"
+    },
+    {
+      "name": "e2e-flowchart-handdrawn-03",
+      "source": "e2e/rendering/flowchart/flowchart-handDrawn.spec.js",
+      "block": 3,
+      "sourceBlob": "babb933fbd4f505afc7c99b295157853e1f2a617",
+      "sha256": "634bc3bb2e14d8614dd24f7a371628d2f790355d2f3c94beec362c34655c461c"
+    },
+    {
+      "name": "e2e-flowchart-icon-01",
+      "source": "e2e/rendering/flowchart/flowchart-icon.spec.js",
+      "block": 1,
+      "sourceBlob": "adf19ab5bf09c9496de0f5ad7fe126c33dc6ffe8",
+      "sha256": "8b0c2ac4c58f1ca8c4971e1c331ba991bf57d55ed8679cbbd66686793fa385e9"
+    },
+    {
+      "name": "e2e-flowchart-icon-02",
+      "source": "e2e/rendering/flowchart/flowchart-icon.spec.js",
+      "block": 2,
+      "sourceBlob": "adf19ab5bf09c9496de0f5ad7fe126c33dc6ffe8",
+      "sha256": "b991917a229f4bcb9cd1a794ef708065a9292f967e995383ea8f1bf931fb7fea"
+    },
+    {
+      "name": "e2e-flowchart-redux-color-subgraphs-01",
+      "source": "e2e/rendering/flowchart/flowchart-redux-color-subgraphs.spec.ts",
+      "block": 1,
+      "sourceBlob": "8b3f4bd646b94d90a06ced7cbd022b3a08dc2f95",
+      "sha256": "d82ad43cc30463610ae2ec52e54e561f99ca985c58e0050f3280cabf8c1d1589"
+    },
+    {
+      "name": "e2e-flowchart-redux-color-subgraphs-02",
+      "source": "e2e/rendering/flowchart/flowchart-redux-color-subgraphs.spec.ts",
+      "block": 2,
+      "sourceBlob": "8b3f4bd646b94d90a06ced7cbd022b3a08dc2f95",
+      "sha256": "bbefcd56f4122ed5d3c0eaa3bd0cac4eea826ec992f009c42e4fce8dba35278c"
+    },
+    {
+      "name": "e2e-flowchart-redux-color-subgraphs-03",
+      "source": "e2e/rendering/flowchart/flowchart-redux-color-subgraphs.spec.ts",
+      "block": 3,
+      "sourceBlob": "8b3f4bd646b94d90a06ced7cbd022b3a08dc2f95",
+      "sha256": "13d9e89b22d76b9358595eff12cfa35b6e9509897880df6b49197f25ad1a9ff5"
+    },
+    {
+      "name": "e2e-flowchart-redux-color-subgraphs-04",
+      "source": "e2e/rendering/flowchart/flowchart-redux-color-subgraphs.spec.ts",
+      "block": 4,
+      "sourceBlob": "8b3f4bd646b94d90a06ced7cbd022b3a08dc2f95",
+      "sha256": "0000eed125827fa9e77e45856119d035195fb476e567ade6d59d3d2858ddca1d"
+    },
+    {
+      "name": "e2e-flowchart-v2-03",
+      "source": "e2e/rendering/flowchart/flowchart-v2.spec.js",
+      "block": 3,
+      "sourceBlob": "8d9c7dd49b35dc4014e9bea652fa3d9d3b7d3a05",
+      "sha256": "e42d62d9af807ab9a701ef43e76b19fdbcd8d18a787c6255d1759f998d9378cd"
+    },
+    {
+      "name": "e2e-issue-4648-nested-subgraph-with-external-connection",
+      "source": "e2e/diagrams/flowchart/issue-4648-nested-subgraph-with-external-connection.mmd",
+      "block": 1,
+      "sourceBlob": "49b5ed13d44622f612ef65428ab1ea8a5746b5ac",
+      "sha256": "64c257669e015cdedebdc0414d53aa569781f00292e32a7131bf2a9da7d5e117"
+    },
+    {
+      "name": "e2e-issue-4648-sibling-subgraphs-with-different-directions-and-external-connections",
+      "source": "e2e/diagrams/flowchart/issue-4648-sibling-subgraphs-with-different-directions-and-external-connections.mmd",
+      "block": 1,
+      "sourceBlob": "46ac0f70487ac40d99b9fa7734a2db227f4e6d1a",
+      "sha256": "a14b50ce7e9fb9e208d36a3cffbd33b9c4c5c1707f5b10811bea3e8f94151035"
+    },
+    {
+      "name": "e2e-new-line-in-node-and-formatted-edge-label",
+      "source": "e2e/diagrams/flowchart/new-line-in-node-and-formatted-edge-label.mmd",
+      "block": 1,
+      "sourceBlob": "eadbe7f34c8de39041ca1f744472663040b3c00c",
+      "sha256": "c26e29e58e3d6011076234193a8e3e418d420d589d56d15f9b3dab99ffd7ccfc"
+    },
+    {
+      "name": "e2e-new-line-in-node-and-formatted-edge-label-2",
+      "source": "e2e/diagrams/flowchart/new-line-in-node-and-formatted-edge-label-2.mmd",
+      "block": 1,
+      "sourceBlob": "8b874c4e29a647bf7abb5ba1d3064d03ea3cdb6c",
+      "sha256": "a9b7a9a0ad9f7630990fbfa125af50d1912ad1e9e5900f31c163dff104e76e9f"
+    },
+    {
+      "name": "e2e-selected-shape-wrapping",
+      "source": "e2e/diagrams/flowchart/selected-shape-wrapping.mmd",
+      "block": 1,
+      "sourceBlob": "75618b554f7166229d3cd37821b6fef0a1ccd17a",
+      "sha256": "bc9882a17d9f41d0bd67f239de4fb985ef9fff0c9c4e7898c312a678842fe777"
+    },
+    {
+      "name": "e2e-should-be-possible-to-use-syntax-to-add-labels-on-multi-nodes",
+      "source": "e2e/diagrams/flowchart/should-be-possible-to-use-syntax-to-add-labels-on-multi-nodes.mmd",
+      "block": 1,
+      "sourceBlob": "2907434a4b139958f6b9f4498b3807eb4c5d48cc",
+      "sha256": "9a733d0a884acc45dcaf4ab935e3cb35da46a16b0cfb49a563c3404f2706e881"
+    },
+    {
+      "name": "e2e-should-be-possible-to-use-syntax-to-add-labels-with-trail-spaces",
+      "source": "e2e/diagrams/flowchart/should-be-possible-to-use-syntax-to-add-labels-with-trail-spaces.mmd",
+      "block": 1,
+      "sourceBlob": "7248b1812223fd2f0ca7e3b5005f66debbd4ec5d",
+      "sha256": "a66a76095e3a5c4d7b0eba36091d8222b27f6ccf746a1f576a74de2c3ef75d4f"
+    },
+    {
+      "name": "e2e-should-be-possible-to-use-syntax-to-add-labels-with-trail-spaces-and-edge-link",
+      "source": "e2e/diagrams/flowchart/should-be-possible-to-use-syntax-to-add-labels-with-trail-spaces-and-edge-link.mmd",
+      "block": 1,
+      "sourceBlob": "c928063fdac6d5b311f06a5e5fd7d78c0d55a4df",
+      "sha256": "d828120b8f0ec0ac12bbd528940e0790acfe682393a77b7189cf18452d4ff2ef"
+    },
+    {
+      "name": "e2e-should-collapse-nested-subgraphs-to-the-outermost-collapsed-ancestor",
+      "source": "e2e/diagrams/flowchart/should-collapse-nested-subgraphs-to-the-outermost-collapsed-ancestor.mmd",
+      "block": 1,
+      "sourceBlob": "82f3cf3b5e30e77fb0a1e28ff4b24dab5cd42860",
+      "sha256": "94ae4e8cea0ca1358e101bd2a198f6a843b15b9ae185243aa740bf60d67b7bd7"
+    },
+    {
+      "name": "e2e-should-not-auto-wrap-when-markdownautowrap-is-false",
+      "source": "e2e/diagrams/flowchart/should-not-auto-wrap-when-markdownautowrap-is-false.mmd",
+      "block": 1,
+      "sourceBlob": "638800a4d18ce1296f31bf469761a18086ea3aeb",
+      "sha256": "31368f48fd18f864cd1ebfa470202f1171db7dda93e5d3c9cbda9a43593d7688"
+    },
+    {
+      "name": "e2e-should-redirect-an-edge-targeting-a-deeply-nested-node-to-the-outermost-collapsed-subgraph",
+      "source": "e2e/diagrams/flowchart/should-redirect-an-edge-targeting-a-deeply-nested-node-to-the-outermost-collapsed-subgraph.mmd",
+      "block": 1,
+      "sourceBlob": "1dfdc65bd798f0b17ff1291d60ea105c44fe6486",
+      "sha256": "c12ccf08ffca87e31e128f442f9776a72a1d85fafe0d15413b66f16196aa35a8"
+    },
+    {
+      "name": "e2e-should-render-a-collapsed-subgraph-alongside-an-expanded-one",
+      "source": "e2e/diagrams/flowchart/should-render-a-collapsed-subgraph-alongside-an-expanded-one.mmd",
+      "block": 1,
+      "sourceBlob": "948500b2eda5aadaa3bad3e7c89ee4ad817b2100",
+      "sha256": "8489b4ca26bb1cc63a16b7582f57fa3a25f02790f156a03945247b2507f20fbe"
+    },
+    {
+      "name": "e2e-should-render-a-collapsed-subgraph-as-a-single-node-with-edges-redirected-to-it",
+      "source": "e2e/diagrams/flowchart/should-render-a-collapsed-subgraph-as-a-single-node-with-edges-redirected-to-it.mmd",
+      "block": 1,
+      "sourceBlob": "d1d10bca2c51da138c44d80a5833345873a0d21c",
+      "sha256": "bb6568e7feabc24f4069a03cd91e24bd819729c385cb1836dd1cd0194db539b0"
+    },
+    {
+      "name": "e2e-should-render-a-diamond-shaped-node-using-shape-config",
+      "source": "e2e/diagrams/flowchart/should-render-a-diamond-shaped-node-using-shape-config.mmd",
+      "block": 1,
+      "sourceBlob": "805d81c1b816227c0c22b64fdce3826ce18e7d99",
+      "sha256": "8d610fae8f704da35332705cc5160bbb2da5fe27b8f51bfde03ec9f03dc95def"
+    },
+    {
+      "name": "e2e-should-render-a-rounded-rectangle-and-a-normal-rectangle",
+      "source": "e2e/diagrams/flowchart/should-render-a-rounded-rectangle-and-a-normal-rectangle.mmd",
+      "block": 1,
+      "sourceBlob": "c9e641ded5bb641d3c0206c6bfd682b91ad4824b",
+      "sha256": "8112d7896af8342e0e41819a753acd37aff6b1bbe4f4588b29943f0204a4fe4e"
+    },
+    {
+      "name": "e2e-should-render-a-stadium-shaped-node",
+      "source": "e2e/diagrams/flowchart/should-render-a-stadium-shaped-node.mmd",
+      "block": 1,
+      "sourceBlob": "2606624975428b7ab4064a3d5e86748fc2a6a1f7",
+      "sha256": "e02f6991cffa342786c2a77839120f8c12e1153705532de15f08fbed11ade80b"
+    },
+    {
+      "name": "e2e-should-render-aws-icons-with-labels-and-rect-elements",
+      "source": "e2e/diagrams/flowchart/should-render-aws-icons-with-labels-and-rect-elements.mmd",
+      "block": 1,
+      "sourceBlob": "c8f475b013704f9d310d320e09eff228522f30f2",
+      "sha256": "baeed92a4dbcfc4161e4a850f484cf00d99c0d858aa9ec91b341a769961213d5"
+    },
+    {
+      "name": "e2e-should-render-labeled-self-loops",
+      "source": "e2e/diagrams/flowchart/should-render-labeled-self-loops.mmd",
+      "block": 1,
+      "sourceBlob": "3d81be150f270a178c7f3be9e4e01eead6592ad3",
+      "sha256": "d6fee46c6842099fb6c22dca0d59048905913fd258f1eaa915523ecb9a70ff9d"
+    },
+    {
+      "name": "e2e-should-render-multiple-aws-icons-with-rect-elements-in-a-flowchart",
+      "source": "e2e/diagrams/flowchart/should-render-multiple-aws-icons-with-rect-elements-in-a-flowchart.mmd",
+      "block": 1,
+      "sourceBlob": "3e1a701bebb994dac5088a0cefc6c6a21b886bfa",
+      "sha256": "5106d790d9c4b5d6c25c761b6b811983c3e636e5f783db39e404d650619c26b8"
+    },
+    {
+      "name": "e2e-should-render-self-loops",
+      "source": "e2e/diagrams/flowchart/should-render-self-loops.mmd",
+      "block": 1,
+      "sourceBlob": "80bcfe0b81a95f379a39a3c7149d9a0eacdf827c",
+      "sha256": "c18f3ef4e09cc262aa949c2a03ebbf88d1a7afac6e075919a816a7b44c350612"
+    },
+    {
+      "name": "e2e-should-render-self-loops-in-non-tb-directions",
+      "source": "e2e/diagrams/flowchart/should-render-self-loops-in-non-tb-directions.mmd",
+      "block": 1,
+      "sourceBlob": "0a6816403f5e72aa40f9c81876689d479a3632ae",
+      "sha256": "3da2ed17270ad0cca0667676c9ccf6f2eba7351cc11eba12b8074239540fb328"
+    },
+    {
+      "name": "e2e-should-render-single-aws-icon-with-rect-elements-without-unintended-opacity",
+      "source": "e2e/diagrams/flowchart/should-render-single-aws-icon-with-rect-elements-without-unintended-opacity.mmd",
+      "block": 1,
+      "sourceBlob": "79944d689c7ab1907dbada9cee91bac3d942a009",
+      "sha256": "e32257bb2961e1e3248b40e862db324ce3cab394d9d669baf31edf81b297ca15"
+    },
+    {
+      "name": "e2e-should-render-subgraphs-with-title-margins-and-edge-labels",
+      "source": "e2e/diagrams/flowchart/should-render-subgraphs-with-title-margins-and-edge-labels.mmd",
+      "block": 1,
+      "sourceBlob": "770ec5dcdac3b7251d4aa2265f7f0b0dd78842bc",
+      "sha256": "7db2b5126507f0c6292273d7be00ac8238b12dc0efbdfe9782c00bb2ed6bd0fe"
+    },
+    {
+      "name": "e2e-should-render-subgraphs-with-title-margins-set-lr",
+      "source": "e2e/diagrams/flowchart/should-render-subgraphs-with-title-margins-set-lr.mmd",
+      "block": 1,
+      "sourceBlob": "83c0444c80402bbe731c71b8e2e40c6c9d0a5bdb",
+      "sha256": "63d519405dc172231a1fa1ed48a5c33c02fff09d1db10a3033b106e075f87dd8"
+    },
+    {
+      "name": "e2e-should-render-subgraphs-with-title-margins-set-lr-and-htmllabels-set-to-false",
+      "source": "e2e/diagrams/flowchart/should-render-subgraphs-with-title-margins-set-lr-and-htmllabels-set-to-false.mmd",
+      "block": 1,
+      "sourceBlob": "1bd34d2ce6b070e6a78e7251b47cc5596d1b22c2",
+      "sha256": "8294377346396afb1b1269eb7774686359c117ce355b89fcc75324639019ea03"
+    },
+    {
+      "name": "e2e-should-render-subgraphs-with-title-margins-set-td",
+      "source": "e2e/diagrams/flowchart/should-render-subgraphs-with-title-margins-set-td.mmd",
+      "block": 1,
+      "sourceBlob": "85f4156e04c99d3a1a8a4ae8930ded65e8f3fc3e",
+      "sha256": "b1e33c39da7dce3a95e837bb3db1b4e051c0be27243c75283949b290cd099c91"
+    },
+    {
+      "name": "e2e-stadium-tall-labels",
+      "source": "e2e/diagrams/flowchart/stadium-tall-labels.mmd",
+      "block": 1,
+      "sourceBlob": "144868d6735834a8ca7ee9a237c29b3293d5baee",
+      "sha256": "00a0e6f6b4263165ac569276ce6309bfb9bed3433b0a81a2108d4dfb6687747e"
+    },
+    {
+      "name": "e2e-sub-graphs-and-markdown-strings",
+      "source": "e2e/diagrams/flowchart/sub-graphs-and-markdown-strings.mmd",
+      "block": 1,
+      "sourceBlob": "e1594ff4fc993337df56c8a0cc80264167452e33",
+      "sha256": "cc8f1557b54b7a58783ddf6248f07bbc6c90a3382a4781bd79d6a692ee2ccd03"
+    },
+    {
+      "name": "e2e-sub-graphs-and-markdown-strings-2",
+      "source": "e2e/diagrams/flowchart/sub-graphs-and-markdown-strings-2.mmd",
+      "block": 1,
+      "sourceBlob": "4d4acacb225503f51f4e4fc2f02d03f730e56164",
+      "sha256": "9b1eae065e4c15e5acc9efc49a81f2da05bb3ac4b2ad1fe9c561f17b0fceae48"
+    },
+    {
+      "name": "e2e-v2-16-render-stadium-shape",
+      "source": "e2e/diagrams/flowchart/v2-16-render-stadium-shape.mmd",
+      "block": 1,
+      "sourceBlob": "fa5abba37130c4c746fbc6eccbf66e79316835fa",
+      "sha256": "8f7aeaa3630347a694366735e321768001d0ee10e3b9a6377ac5fae7a009d778"
+    },
+    {
+      "name": "e2e-v2-17-should-apply-class-def-colour-to-edge-label",
+      "source": "e2e/diagrams/flowchart/v2-17-should-apply-class-def-colour-to-edge-label.mmd",
+      "block": 1,
+      "sourceBlob": "2b8d215fe93b5ce883e1e4c6cf066445f19821ba",
+      "sha256": "28214ea1ad52cf741b43ad3bafeeaf4d18fb6638d354230a13e55790682723c6"
+    },
+    {
+      "name": "e2e-v2-18-should-render-nested-subgraphs-with-edge-from-cluster-containing-extractable-subgraph",
+      "source": "e2e/diagrams/flowchart/v2-18-should-render-nested-subgraphs-with-edge-from-cluster-containing-extractable-subgraph.mmd",
+      "block": 1,
+      "sourceBlob": "40ab4541f37969b0658d3eee378815cd65d0ad17",
+      "sha256": "1397becdb456a77073e3811b5bbd0d14372b2c27183c39f83b76e0ab1debaeaf"
+    },
+    {
+      "name": "e2e-with-formatting-in-a-node",
+      "source": "e2e/diagrams/flowchart/with-formatting-in-a-node.mmd",
+      "block": 1,
+      "sourceBlob": "04bc560e0fdec75d2b8aceaf56e77ddc7641af68",
+      "sha256": "72639c0be8997d6520e70c8582912a9452287c36fc0c64809560fa8132faf9ab"
+    },
+    {
+      "name": "e2e-with-formatting-in-a-node-2",
+      "source": "e2e/diagrams/flowchart/with-formatting-in-a-node-2.mmd",
+      "block": 1,
+      "sourceBlob": "184a212f3f335bc4584cf09e59524057dc398d0a",
+      "sha256": "ceb6d5fa0149e03d1ed966dd9dd4affea7e046681743e4bbf16ae1f45034e31c"
+    },
+    {
+      "name": "e2e-with-styling-and-classes",
+      "source": "e2e/diagrams/flowchart/with-styling-and-classes.mmd",
+      "block": 1,
+      "sourceBlob": "b8f9f299a51e5b56cb682f723a87ac994248122b",
+      "sha256": "25db5d2b186cca3987ac1b3b7173a2c61b2a6b9200b27110eeca930e7014dfb7"
+    },
+    {
+      "name": "e2e-with-styling-and-classes-2",
+      "source": "e2e/diagrams/flowchart/with-styling-and-classes-2.mmd",
+      "block": 1,
+      "sourceBlob": "8c75a183725251ac573e9510dcb7187d9de76951",
+      "sha256": "692d79eb94e1eb04ef8f8c8fabed96ef4d000aa0b8c25b9bc149b2505757c5b0"
+    },
+    {
+      "name": "e2e-wrapping-long-text-with-a-new-line",
+      "source": "e2e/diagrams/flowchart/wrapping-long-text-with-a-new-line.mmd",
+      "block": 1,
+      "sourceBlob": "014511c0576c52c5bb43f536175cc2d26e4787cf",
+      "sha256": "8a1af51fc7b3f657026743b0fea8a6648fe97d15c6eec2fc79704a3f052832f9"
+    },
+    {
+      "name": "e2e-wrapping-long-text-with-a-new-line-2",
+      "source": "e2e/diagrams/flowchart/wrapping-long-text-with-a-new-line-2.mmd",
+      "block": 1,
+      "sourceBlob": "b702d6f094e0f7eee7af5d51588912ebafd7df98",
+      "sha256": "2bc9afd3e52c954072321040ad6b90adcd2569989767b31f134a8d59200ab872"
+    }
+  ]
+}

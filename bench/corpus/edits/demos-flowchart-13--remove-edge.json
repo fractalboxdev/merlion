@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-13--remove-edge",
+  "source": "demos-flowchart-13",
+  "kind": "remove-edge",
+  "before": "graph TB\nA\nB\nsubgraph foo[Foo SubGraph]\n  C\n  D\nend\nsubgraph bar[Bar SubGraph]\n  E\n  F\nend\nG\n\nA-->B\nB-->C\nC-->D\nB-->D\nD-->E\nE-->A\nE-->F\nF-->D\nF-->G\nB-->G\nG-->D\n\nstyle foo fill:#F99,stroke-width:2px,stroke:#F0F,color:darkred\nstyle bar fill:#999,stroke-width:10px,stroke:#0F0,color:blue",
+  "after": "graph TB\nA\nB\nsubgraph foo[Foo SubGraph]\n  C\n  D\nend\nsubgraph bar[Bar SubGraph]\n  E\n  F\nend\nG\n\nA-->B\nB-->C\nC-->D\nB-->D\nD-->E\nE-->A\nE-->F\nF-->D\nF-->G\nB-->G\n\nstyle foo fill:#F99,stroke-width:2px,stroke:#F0F,color:darkred\nstyle bar fill:#999,stroke-width:10px,stroke:#0F0,color:blue"
+}

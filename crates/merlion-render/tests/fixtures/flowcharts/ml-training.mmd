@@ -1,0 +1,15 @@
+flowchart TB
+  subgraph prep [Data preparation]
+    raw[(Raw data)] --> clean[Clean] --> split{Split}
+    split --> train_set[Train set]
+    split --> val_set[Validation set]
+  end
+  subgraph train [Training]
+    train_set --> model[Model] --> loss[Loss] --> opt[Optimizer]
+    opt -. update weights .-> model
+  end
+  val_set --> eval[Evaluate]
+  model --> eval
+  eval --> better{Better than baseline?}
+  better -->|yes| registry[(Model registry)]
+  better -->|no| tune[Tune hyperparameters] --> model

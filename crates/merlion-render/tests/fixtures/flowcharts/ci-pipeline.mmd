@@ -1,0 +1,11 @@
+flowchart LR
+  push([git push]) --> lint[Lint]
+  push --> test[Unit tests]
+  push --> build[Build]
+  lint & test & build --> gate{All green?}
+  gate -->|yes| deploy_staging[Deploy to staging]
+  gate -->|no| notify[Notify author]
+  deploy_staging --> e2e[E2E suite]
+  e2e --> approve{Manual approval}
+  approve -->|approved| prod[(Production)]
+  approve -. rejected .-> notify

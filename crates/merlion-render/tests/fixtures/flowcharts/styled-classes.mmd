@@ -1,0 +1,11 @@
+flowchart TD
+  classDef ok fill:#e6ffed,stroke:#22863a,stroke-width:2px
+  classDef warn fill:#fff5b1,stroke:#b08800
+  classDef bad fill:#ffeef0,stroke:#cb2431,color:#86181d,font-weight:bold
+  a[Healthy]:::ok --> b[Degraded]:::warn
+  b --> c[Down]:::bad
+  c --> d[Recovered]
+  class d ok
+  style a stroke-dasharray: 5 5
+  linkStyle default stroke:#6a737d
+  linkStyle 1 stroke:#cb2431,stroke-width:3px

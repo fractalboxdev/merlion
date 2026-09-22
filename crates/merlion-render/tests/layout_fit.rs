@@ -1,0 +1,393 @@
+//! Container fit (specs/layout.md#5-container-fit).
+
+#[path = "layout_support.rs"]
+mod support;
+
+use merlion_render::options::{Direction, DirectionOption, RenderOptions};
+use support::*;
+
+#[test]
+fn wide_lr_chain_wraps_to_fit() {
+    let mut c = chain(14);
+    c.direction = Direction::LR;
+    let plain = run_with(
+        &c,
+        &RenderOptions {
+            target_width: 1e9,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    assert!(plain.width > 720.0, "precondition: {}", plain.width);
+    let g = run(&c);
+    check(&c, &g);
+    assert!(g.width <= 720.0, "width {}", g.width);
+    assert!(g.height / g.width <= 1.6);
+    assert!(g.edges.iter().any(|e| e.wrap));
+    assert!(g.edges.iter().filter(|e| !e.wrap).count() >= 10);
+    // The hint layers are the phase-2 layers, unchanged by the wrap.
+    assert_eq!(g.layers, plain.layers);
+    // Orthogonal routes, also around the wrap.
+    for e in &g.edges {
+        for s in e.points.windows(2) {
+            assert!(s[0].x == s[1].x || s[0].y == s[1].y);
+        }
+    }
+}
+
+#[test]
+fn wrap_is_not_applied_beyond_max_aspect() {
+    let mut c = chain(14);
+    c.direction = Direction::LR;
+    let g = run_with(
+        &c,
+        &RenderOptions {
+            max_aspect: 0.05,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    assert!(g.edges.iter().all(|e| !e.wrap));
+    assert!(g.width > 720.0);
+}
+
+fn wide_fan(k: usize) -> B {
+    let mut b = B::new();
+    let root = b.node("root");
+    for i in 0..k {
+        let n = b.node(&format!("child{}", i));
+        b.edge(root, n);
+    }
+    b
+}
+
+#[test]
+fn tb_splits_a_wide_layer_into_rows_that_fit() {
+    // Fourteen unconnected nodes form one wide layer.
+    let mut b = B::new();
+    for i in 0..14 {
+        b.node(&format!("child{}", i));
+    }
+    let plain = run_with(
+        &b.c,
+        &RenderOptions {
+            target_width: 1e9,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    assert!(plain.width > 720.0, "precondition: {}", plain.width);
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert!(g.width <= 720.0, "width {}", g.width);
+    assert!(g.height / g.width <= 1.6);
+    assert_eq!(g.layers, plain.layers);
+}
+
+#[test]
+fn a_tb_split_that_does_not_fit_is_not_kept() {
+    // Under a tight max_aspect, a split into sub-rows narrows the fan but does not reach
+    // 720 px; the unsplit drawing stays and the viewer zooms it.
+    let b = wide_fan(40);
+    let opts = |target_width: f64| RenderOptions {
+        target_width,
+        max_aspect: 0.3,
+        ..RenderOptions::default()
+    };
+    let plain = run_with(&b.c, &opts(1e9)).0.unwrap();
+    assert!(plain.width > 2.0 * 720.0, "precondition: {}", plain.width);
+    let g = run_with(&b.c, &opts(720.0)).0.unwrap();
+    check(&b.c, &g);
+    assert_eq!(g.width, plain.width);
+    assert_eq!(g.height, plain.height);
+    for n in g.nodes.iter().skip(1) {
+        assert_eq!(n.y, g.nodes[1].y, "every child stays in one row");
+    }
+    assert_eq!(g.layers, plain.layers);
+}
+
+#[test]
+fn an_lr_wrap_that_does_not_fit_is_not_kept() {
+    // One wrap passes max_aspect but leaves the chain wider than 720 px, and a second
+    // wrap would pass max_aspect: the unwrapped drawing stays.
+    let mut c = chain(24);
+    c.direction = Direction::LR;
+    let opts = |target_width: f64| RenderOptions {
+        target_width,
+        max_aspect: 0.3,
+        ..RenderOptions::default()
+    };
+    let plain = run_with(&c, &opts(1e9)).0.unwrap();
+    assert!(plain.width > 2.0 * 720.0, "precondition: {}", plain.width);
+    let g = run_with(&c, &opts(720.0)).0.unwrap();
+    check(&c, &g);
+    assert!(g.edges.iter().all(|e| !e.wrap));
+    assert_eq!(g.width, plain.width);
+}
+
+#[test]
+fn auto_direction_picks_lr_for_a_wide_fan() {
+    let b = wide_fan(14);
+    let g = run_with(
+        &b.c,
+        &RenderOptions {
+            direction: DirectionOption::Auto,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    check(&b.c, &g);
+    assert_eq!(g.direction, Direction::LR);
+    assert!(g.width <= 720.0);
+}
+
+#[test]
+fn auto_direction_keeps_tb_for_a_chain() {
+    let c = chain(5);
+    let g = run_with(
+        &c,
+        &RenderOptions {
+            direction: DirectionOption::Auto,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    assert!(g.width <= 720.0);
+    // Both fit: the smaller area wins, and a vertical chain of rects is the same area
+    // either way up to spacing, so only check that the result fits and is valid.
+    check(&c, &g);
+}
+
+#[test]
+fn nothing_fits_leaves_the_drawing_wider() {
+    let b = wide_fan(40);
+    let g = run_with(
+        &b.c,
+        &RenderOptions {
+            max_aspect: 0.01,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    check(&b.c, &g);
+    assert!(g.width > 720.0);
+}
+
+#[test]
+fn wrap_never_splits_a_cluster() {
+    let mut c = chain(14);
+    c.direction = Direction::LR;
+    let mut b = B { c };
+    let members: Vec<usize> = (5..9).collect();
+    let s = b.sub("mid", "Middle", None, &members);
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert!(g.edges.iter().any(|e| e.wrap));
+    let k = &g.clusters[s];
+    for &m in &members {
+        let (x0, y0, x1, y1) = node_box(&g, m);
+        assert!(
+            x0 >= k.x && x1 <= k.x + k.w && y0 >= k.y && y1 <= k.y + k.h,
+            "node {} outside",
+            m
+        );
+    }
+    // No wrapping edge starts or ends inside the cluster's layer span except at its border.
+    for (i, e) in b.c.edges.iter().enumerate() {
+        if g.edges[i].wrap {
+            assert!(!(members.contains(&e.from) && members.contains(&e.to)));
+        }
+    }
+}
+
+#[test]
+fn polyline_wraps_stay_inside_the_drawing() {
+    let mut c = chain(16);
+    c.direction = Direction::RL;
+    let opts = RenderOptions {
+        edge_style: merlion_render::options::EdgeStyle::Polyline,
+        ..RenderOptions::default()
+    };
+    let g = run_with(&c, &opts).0.unwrap();
+    check(&c, &g);
+    assert!(g.width <= 720.0);
+    assert!(g.edges.iter().any(|e| e.wrap));
+}
+
+#[test]
+fn labels_on_wrap_detours_clear_nodes_and_each_other() {
+    // Two tall labelled edges cross the same wrap boundary; their chips sit in the gap
+    // between the parts, which must hold them.
+    let mut b = B::new().dir(Direction::LR);
+    let a = b.shape(
+        "a",
+        "first line<br>second line<br>third line",
+        merlion_render::model::Shape::Rect,
+    );
+    let v = b.nodes(&["b", "c", "d", "e"]);
+    b.edge_l(
+        a,
+        v[0],
+        "a rather long first line<br>two<br>three<br>four<br>five",
+    );
+    b.edge_l(a, v[1], "another long label line<br>six<br>seven");
+    b.edge(v[0], v[2]);
+    b.edge(v[1], v[3]);
+    let plain = run_with(
+        &b.c,
+        &RenderOptions {
+            target_width: 1e9,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    let opts = RenderOptions {
+        target_width: plain.width - 40.0,
+        ..RenderOptions::default()
+    };
+    let g = run_with(&b.c, &opts).0.unwrap();
+    check(&b.c, &g);
+    assert!(
+        g.edges.iter().filter(|e| e.wrap).count() >= 2,
+        "precondition"
+    );
+    assert_eq!(merlion_render::layout::metrics::label_overlaps(&g), 0);
+}
+
+#[test]
+fn tb_split_measures_a_layer_with_its_cluster_boxes() {
+    // Nested clusters make the layer 786 px wide although its nodes span less than
+    // 720 px; the layer is split all the same.
+    let mut b = B::new();
+    let v = b.nodes(&["a", "da", "ga", "abc", "abcd"]);
+    let bsub = b.sub("bsub", "bsub", None, &[]);
+    let csub = b.sub("csub", "csub", Some(bsub), &[]);
+    b.sub("dsub", "dsub", Some(csub), &[v[1]]);
+    let esub = b.sub("esub", "esub", Some(bsub), &[]);
+    let fsub = b.sub("fsub", "fsub", Some(esub), &[]);
+    b.sub("gsub", "gsub", Some(fsub), &[v[2], v[3], v[4]]);
+    b.edge(v[1], v[0]);
+    b.edge(v[1], v[0]);
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert!(g.width <= 720.0, "width {}", g.width);
+}
+
+#[test]
+fn widening_one_component_leaves_the_others_in_place() {
+    // Two LR components: a wider label in the first moves only its own nodes.
+    let build = |label: &str| {
+        let mut b = B::new().dir(Direction::LR);
+        let a = b.shape("a", label, merlion_render::model::Shape::Rect);
+        let v = b.nodes(&["b", "c", "d"]);
+        b.edge(a, v[0]);
+        b.edge(v[1], v[2]);
+        b.c
+    };
+    let (c1, c2) = (build("a"), build("a much wider label"));
+    let (g1, g2) = (run(&c1), run(&c2));
+    check(&c1, &g1);
+    check(&c2, &g2);
+    for i in [2, 3] {
+        assert_eq!(
+            (g1.nodes[i].x, g1.nodes[i].y),
+            (g2.nodes[i].x, g2.nodes[i].y),
+            "node {} moved",
+            i
+        );
+    }
+    // The hint still records every node in its phase-2 layer.
+    assert_eq!(g2.layers, vec![vec![0, 2], vec![1, 3]]);
+}
+
+#[test]
+fn many_small_components_pack_into_rows_without_bends() {
+    // Fourteen two-node TB components: packed in rows, each edge stays straight.
+    let mut b = B::new();
+    for i in 0..14 {
+        let u = b.node(&format!("source node {}", i));
+        let v = b.node(&format!("target {}", i));
+        b.edge(u, v);
+    }
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert!(g.width <= 720.0, "width {}", g.width);
+    assert_eq!(merlion_render::layout::metrics::bends(&g), 0);
+    // Declaration order runs left to right, then down.
+    assert!(g.nodes[0].x < g.nodes[2].x && g.nodes[0].y == g.nodes[2].y);
+    assert!(g.nodes[26].y > g.nodes[0].y);
+}
+
+#[test]
+fn auto_direction_packs_components_in_the_direction_that_fits() {
+    // Two wide fans side by side: TB rows cannot hold either, LR stacks them.
+    let mut b = wide_fan(14);
+    let n = b.c.nodes.len();
+    let root = b.node("second root");
+    for i in 0..14 {
+        let leaf = b.node(&format!("second leaf {}", i));
+        b.edge(root, leaf);
+    }
+    assert!(b.c.nodes.len() > n);
+    let g = run_with(
+        &b.c,
+        &RenderOptions {
+            direction: DirectionOption::Auto,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .unwrap();
+    check(&b.c, &g);
+    assert_eq!(g.direction, Direction::LR);
+    assert!(g.width <= 720.0);
+}
+
+/// An LR chain of `n` nodes whose labels are one `len`-letter word each.
+fn wordy_chain(n: usize, len: usize) -> merlion_render::model::Flowchart {
+    let mut b = B::new().dir(Direction::LR);
+    let word = "W".repeat(len);
+    let mut prev = None;
+    for i in 0..n {
+        let v = b.shape(
+            &format!("y{}", i),
+            &word,
+            merlion_render::model::Shape::Rect,
+        );
+        if let Some(p) = prev {
+            b.edge(p, v);
+        }
+        prev = Some(v);
+    }
+    b.c
+}
+
+#[test]
+fn label_measurement_draws_fuel() {
+    // specs/security.md#resource-bounds: measuring (and container fit's re-measuring)
+    // costs one fuel unit per label byte, so label-heavy input cannot outrun the budget.
+    let c = wordy_chain(12, 2_000);
+    let bytes = 12 * 2_000u64;
+    let unbounded = RenderOptions {
+        target_width: f64::INFINITY,
+        ..RenderOptions::default()
+    };
+    let free = run_with(&c, &unbounded).0.unwrap().fuel_used;
+    assert!(free >= bytes, "{} < {}", free, bytes);
+    let fitted = run(&c).fuel_used;
+    assert!(fitted >= free + bytes, "{} < {} + {}", fitted, free, bytes);
+    // A budget that covers one layout but not the re-measuring still renders.
+    let tight = RenderOptions {
+        fuel: free + bytes / 2,
+        ..RenderOptions::default()
+    };
+    let g = run_with(&c, &tight).0.unwrap();
+    assert!(g.fuel_used <= free + bytes / 2);
+}

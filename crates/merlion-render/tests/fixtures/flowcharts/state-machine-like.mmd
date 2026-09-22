@@ -1,0 +1,8 @@
+flowchart LR
+  idle((Idle)) -->|start| running[Running]
+  running -->|pause| paused[Paused]
+  paused -->|resume| running
+  running -->|finish| done(((Done)))
+  running -->|error| failed[Failed]
+  failed -->|retry| running
+  paused -->|cancel| cancelled[Cancelled]

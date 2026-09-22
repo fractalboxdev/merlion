@@ -1,0 +1,13 @@
+flowchart TB
+  subgraph first[First]
+    A[a] --> B[b]
+  end
+  subgraph second[Second]
+    C[c]
+  end
+  second@{ view: collapsed }
+  subgraph third[Third]
+    D[d]
+  end
+  B --> C
+  C --> D

@@ -27,3 +27,9 @@ blob-report/
 .idea/
 .vscode/
 *.swp
+
+# Font inputs (pinned by SHA-256 in tools/fontgen; fetched, not committed)
+tools/fontgen/input/*.ttf
+
+# Local agent worktrees
+.claude/

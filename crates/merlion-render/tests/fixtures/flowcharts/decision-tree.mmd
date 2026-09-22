@@ -1,0 +1,9 @@
+flowchart TD
+  start((Start)) --> q1{Is it raining?}
+  q1 -->|Yes| q2{Do you have an umbrella?}
+  q1 -->|No| walk[Walk]
+  q2 -->|Yes| walk
+  q2 -->|No| q3{Is it far?}
+  q3 -->|Yes| bus[Take the bus]
+  q3 -->|No| run[Run]
+  walk & bus & run --> done(((Arrive)))

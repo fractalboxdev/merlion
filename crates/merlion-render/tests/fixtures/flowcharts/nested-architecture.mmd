@@ -1,0 +1,25 @@
+flowchart TB
+  subgraph cloud [Cloud account]
+    subgraph vpc [VPC]
+      subgraph public [Public subnet]
+        alb[Load balancer]
+        nat[NAT gateway]
+      end
+      subgraph private [Private subnet]
+        subgraph cluster [Kubernetes cluster]
+          api[API pods]
+          worker[Worker pods]
+        end
+        db[(Primary DB)]
+        replica[(Read replica)]
+      end
+    end
+    s3[(Object storage)]
+  end
+  internet((Internet)) --> alb
+  alb --> api
+  api --> db
+  worker --> db
+  db -. replication .-> replica
+  api --> s3
+  worker --> nat --> internet

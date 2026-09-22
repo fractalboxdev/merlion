@@ -1,0 +1,394 @@
+//! Label markup: character filtering, `<br>` and Markdown emphasis
+//! (specs/svg-output.md#text, specs/text-measurement.md#measuring).
+//!
+//! The parser is a single left-to-right pass per hard line with no recursion, so any
+//! input terminates in linear time (specs/security.md). Emphasis follows the
+//! CommonMark flanking rules in reduced form (CommonMark 0.31 §6.2): a delimiter opens
+//! when followed by a non-space and closes when preceded by one, `_` never opens or
+//! closes inside a word, and a delimiter without a partner stays literal text.
+
+use alloc::vec::Vec;
+
+/// One character with the formatting that applies to it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Styled {
+    pub c: char,
+    pub bold: bool,
+    pub italic: bool,
+    pub code: bool,
+}
+
+/// A label split into hard lines (at `<br>`), with its filtered characters styled.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Parsed {
+    pub lines: Vec<Vec<Styled>>,
+    /// At least one bidirectional formatting character was removed (`W014`).
+    pub bidi_stripped: bool,
+}
+
+/// U+202A–U+202E (embeddings, overrides, PDF) and U+2066–U+2069 (isolates).
+pub fn is_bidi_control(c: char) -> bool {
+    matches!(c as u32, 0x202A..=0x202E | 0x2066..=0x2069)
+}
+
+/// Filters one character: `Some(replacement)` keeps it, `None` drops it. Tab and
+/// newline become a space; other C0/C1 controls, DEL and U+FFFE/U+FFFF are dropped so
+/// the SVG stays well-formed XML 1.0 (specs/svg-output.md#text). Carriage return is
+/// dropped, so CRLF becomes one space.
+fn filter(c: char) -> Option<char> {
+    match c {
+        '\t' | '\n' => Some(' '),
+        '\u{0}'..='\u{1F}' | '\u{7F}'..='\u{9F}' | '\u{FFFE}' | '\u{FFFF}' => None,
+        _ => Some(c),
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Tok {
+    Ch(char),
+    /// `` ` ``
+    Tick,
+    /// `*`
+    Star1,
+    /// `**`
+    Star2,
+    /// `_`
+    Under,
+}
+
+impl Tok {
+    /// The source text of an unpaired token.
+    fn literal(self, out: &mut Vec<char>) {
+        match self {
+            Tok::Ch(c) => out.push(c),
+            Tok::Tick => out.push('`'),
+            Tok::Star1 => out.push('*'),
+            Tok::Star2 => {
+                out.push('*');
+                out.push('*');
+            }
+            Tok::Under => out.push('_'),
+        }
+    }
+
+    /// The character a neighbouring delimiter sees for the flanking rules.
+    fn flank_char(self) -> char {
+        match self {
+            Tok::Ch(c) => c,
+            Tok::Tick => '`',
+            Tok::Star1 | Tok::Star2 => '*',
+            Tok::Under => '_',
+        }
+    }
+}
+
+/// Matches `<br>`, `<br/>`, `<br />` (any case, any spaces before `/` or `>`) at
+/// `chars[i]`; returns the index after the tag.
+fn match_br(chars: &[char], i: usize) -> Option<usize> {
+    if chars.get(i) != Some(&'<') {
+        return None;
+    }
+    let b = chars.get(i + 1)?;
+    let r = chars.get(i + 2)?;
+    if !b.eq_ignore_ascii_case(&'b') || !r.eq_ignore_ascii_case(&'r') {
+        return None;
+    }
+    let mut j = i + 3;
+    while chars.get(j) == Some(&' ') {
+        j += 1;
+    }
+    if chars.get(j) == Some(&'/') {
+        j += 1;
+        while chars.get(j) == Some(&' ') {
+            j += 1;
+        }
+    }
+    (chars.get(j) == Some(&'>')).then_some(j + 1)
+}
+
+/// Filters, splits at `<br>` and tokenizes.
+fn tokenize(text: &str) -> (Vec<Vec<Tok>>, bool) {
+    let mut bidi = false;
+    let chars: Vec<char> = text
+        .chars()
+        .filter(|&c| {
+            let b = is_bidi_control(c);
+            bidi |= b;
+            !b
+        })
+        .filter_map(filter)
+        .collect();
+    let mut lines = alloc::vec![Vec::new()];
+    let mut i = 0;
+    while let Some(&c) = chars.get(i) {
+        if let Some(next) = match_br(&chars, i) {
+            lines.push(Vec::new());
+            i = next;
+            continue;
+        }
+        let (tok, len) = match c {
+            '`' => (Tok::Tick, 1),
+            '*' if chars.get(i + 1) == Some(&'*') => (Tok::Star2, 2),
+            '*' => (Tok::Star1, 1),
+            '_' => (Tok::Under, 1),
+            _ => (Tok::Ch(c), 1),
+        };
+        if let Some(line) = lines.last_mut() {
+            line.push(tok);
+        }
+        i += len;
+    }
+    (lines, bidi)
+}
+
+/// Role of each token after pairing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Role {
+    Literal,
+    /// Toggles its formatting on or off.
+    Active,
+    /// Inside a code span: literal and monospace.
+    Code,
+}
+
+fn pair(toks: &[Tok]) -> Vec<Role> {
+    let mut roles = alloc::vec![Role::Literal; toks.len()];
+    // Code spans first: backticks pair in order; an odd last one stays literal.
+    let ticks: Vec<usize> = toks
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| **t == Tok::Tick)
+        .map(|(i, _)| i)
+        .collect();
+    for p in ticks.chunks_exact(2) {
+        if let [a, b] = *p {
+            for r in roles.iter_mut().take(b).skip(a + 1) {
+                *r = Role::Code;
+            }
+            if let Some(r) = roles.get_mut(a) {
+                *r = Role::Active;
+            }
+            if let Some(r) = roles.get_mut(b) {
+                *r = Role::Active;
+            }
+        }
+    }
+    // Emphasis: each delimiter kind pairs independently, outside code spans.
+    let is_space = |t: Option<&Tok>| t.is_none_or(|t| t.flank_char().is_whitespace());
+    let is_alnum = |t: Option<&Tok>| t.is_some_and(|t| t.flank_char().is_alphanumeric());
+    for kind in [Tok::Star2, Tok::Star1, Tok::Under] {
+        let mut open: Option<usize> = None;
+        for (i, t) in toks.iter().enumerate() {
+            if *t != kind || roles.get(i) != Some(&Role::Literal) {
+                continue;
+            }
+            let prev = i.checked_sub(1).and_then(|p| toks.get(p));
+            let next = toks.get(i + 1);
+            let under = kind == Tok::Under;
+            let can_close = !is_space(prev) && !(under && is_alnum(next));
+            let can_open = !is_space(next) && !(under && is_alnum(prev));
+            match open {
+                Some(o) if can_close => {
+                    if let Some(r) = roles.get_mut(o) {
+                        *r = Role::Active;
+                    }
+                    if let Some(r) = roles.get_mut(i) {
+                        *r = Role::Active;
+                    }
+                    open = None;
+                }
+                // A later opener replaces an unclosed earlier one, which stays literal.
+                _ if can_open => open = Some(i),
+                _ => {}
+            }
+        }
+    }
+    roles
+}
+
+/// Applies paired delimiters to one hard line.
+fn style_line(toks: &[Tok]) -> Vec<Styled> {
+    let roles = pair(toks);
+    let mut out = Vec::with_capacity(toks.len());
+    let (mut bold, mut star, mut under, mut code) = (false, false, false, false);
+    let mut lit = Vec::new();
+    for (t, role) in toks.iter().zip(roles) {
+        match role {
+            Role::Active => match t {
+                Tok::Tick => code = !code,
+                Tok::Star2 => bold = !bold,
+                Tok::Star1 => star = !star,
+                Tok::Under => under = !under,
+                Tok::Ch(_) => {}
+            },
+            Role::Literal | Role::Code => {
+                lit.clear();
+                t.literal(&mut lit);
+                for &c in &lit {
+                    out.push(Styled {
+                        c,
+                        bold: bold && !code,
+                        italic: star || under,
+                        code,
+                    });
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Parses a label into styled hard lines. An empty label is one empty line.
+pub fn parse(text: &str) -> Parsed {
+    let (lines, bidi_stripped) = tokenize(text);
+    Parsed {
+        lines: lines.iter().map(|l| style_line(l)).collect(),
+        bidi_stripped,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::string::String;
+
+    /// Renders a line as text with `B`/`I`/`C` flags per character, for compact assertions.
+    fn show(line: &[Styled]) -> (String, String) {
+        let text = line.iter().map(|s| s.c).collect();
+        let flags = line
+            .iter()
+            .map(|s| match (s.bold, s.italic, s.code) {
+                (_, _, true) => 'C',
+                (true, true, _) => 'X',
+                (true, false, _) => 'B',
+                (false, true, _) => 'I',
+                _ => '.',
+            })
+            .collect();
+        (text, flags)
+    }
+
+    fn one(text: &str) -> (String, String) {
+        let p = parse(text);
+        assert_eq!(p.lines.len(), 1, "{text:?}");
+        show(&p.lines[0])
+    }
+
+    #[test]
+    fn plain_text_is_unstyled() {
+        assert_eq!(one("a b"), ("a b".into(), "...".into()));
+    }
+
+    #[test]
+    fn empty_label_is_one_empty_line() {
+        let p = parse("");
+        assert_eq!(p.lines.len(), 1);
+        assert!(p.lines[0].is_empty());
+    }
+
+    #[test]
+    fn br_variants_break() {
+        for s in [
+            "a<br>b",
+            "a<br/>b",
+            "a<br />b",
+            "a<BR>b",
+            "a<Br/>b",
+            "a<bR  />b",
+        ] {
+            let p = parse(s);
+            assert_eq!(p.lines.len(), 2, "{s}");
+            assert_eq!(show(&p.lines[0]).0, "a");
+            assert_eq!(show(&p.lines[1]).0, "b");
+        }
+    }
+
+    #[test]
+    fn other_html_is_literal() {
+        assert_eq!(one("<b>x</b>").0, "<b>x</b>");
+        assert_eq!(one("<brx>").0, "<brx>");
+        assert_eq!(one("<br").0, "<br");
+        assert_eq!(one("a<br/ x>").0, "a<br/ x>");
+    }
+
+    #[test]
+    fn consecutive_breaks_make_empty_lines() {
+        let p = parse("a<br><br>b");
+        assert_eq!(p.lines.len(), 3);
+        assert!(p.lines[1].is_empty());
+    }
+
+    #[test]
+    fn bold_italic_code() {
+        assert_eq!(one("a **b** c"), ("a b c".into(), "..B..".into()));
+        assert_eq!(one("*i*"), ("i".into(), "I".into()));
+        assert_eq!(one("_i_"), ("i".into(), "I".into()));
+        assert_eq!(one("`x*y*`"), ("x*y*".into(), "CCCC".into()));
+    }
+
+    #[test]
+    fn nested_emphasis() {
+        assert_eq!(
+            one("**bold *both* b**"),
+            ("bold both b".into(), "BBBBBXXXXBB".into())
+        );
+        assert_eq!(one("*it **bo***"), ("it bo".into(), "IIIXX".into()));
+        assert_eq!(one("***x***"), ("x".into(), "X".into()));
+    }
+
+    #[test]
+    fn unclosed_delimiters_stay_literal() {
+        assert_eq!(one("**a"), ("**a".into(), "...".into()));
+        assert_eq!(one("a*"), ("a*".into(), "..".into()));
+        assert_eq!(one("`a"), ("`a".into(), "..".into()));
+        assert_eq!(one("**a **b**"), ("**a b".into(), "....B".into()));
+    }
+
+    #[test]
+    fn spaced_asterisks_are_literal() {
+        assert_eq!(one("a * b * c").0, "a * b * c");
+        assert_eq!(one("2 * 3").0, "2 * 3");
+    }
+
+    #[test]
+    fn intraword_underscore_is_literal() {
+        assert_eq!(
+            one("snake_case_name"),
+            ("snake_case_name".into(), "...............".into())
+        );
+        assert_eq!(one("a *b*c"), ("a bc".into(), "..I.".into()));
+    }
+
+    #[test]
+    fn emphasis_does_not_cross_br() {
+        let p = parse("**a<br>b**");
+        assert_eq!(show(&p.lines[0]).0, "**a");
+        assert_eq!(show(&p.lines[1]).0, "b**");
+    }
+
+    #[test]
+    fn code_is_never_bold() {
+        assert_eq!(one("**a `c` a**"), ("a c a".into(), "BBCBB".into()));
+    }
+
+    #[test]
+    fn filters_controls_and_noncharacters() {
+        assert_eq!(one("a\tb\nc\r\nd").0, "a b c d");
+        assert_eq!(one("a\u{0}\u{7}\u{7F}\u{85}b\u{FFFE}\u{FFFF}").0, "ab");
+        assert!(!parse("ab").bidi_stripped);
+    }
+
+    #[test]
+    fn strips_bidi_controls() {
+        let p = parse("a\u{202E}b\u{2066}c\u{2069}\u{202A}");
+        assert!(p.bidi_stripped);
+        assert_eq!(show(&p.lines[0]).0, "abc");
+    }
+
+    #[test]
+    fn pathological_input_terminates() {
+        let s: String = "*_`<br".repeat(2000);
+        let p = parse(&s);
+        assert_eq!(p.lines.len(), 1);
+    }
+}

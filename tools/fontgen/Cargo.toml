@@ -1,0 +1,10 @@
+[package]
+name = "fontgen"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+# Font parsing for the generator only; never reaches a published artifact (specs/licensing.md).
+ttf-parser = { version = "=0.25.1", default-features = false, features = ["std", "opentype-layout"] }

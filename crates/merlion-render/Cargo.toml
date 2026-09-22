@@ -1,0 +1,13 @@
+[package]
+name = "merlion-render"
+description = "Renders Mermaid diagrams to static, themeable, accessible SVG. no_std, zero dependencies."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+# Zero runtime dependencies (specs/supply-chain.md). CI fails if this table is non-empty.
+[dependencies]
+
+[dev-dependencies]

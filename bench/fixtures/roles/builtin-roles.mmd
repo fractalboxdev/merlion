@@ -1,0 +1,23 @@
+flowchart TB
+  accTitle: Every built-in role on the element kinds it styles
+  subgraph g1 [Grouped]
+    a[Accent]:::accent --> o[OK]:::ok
+    w[Warn]:::warn --> d[Danger]:::danger
+  end
+  subgraph g2 [Plain]
+    m([Muted]):::muted
+    x{{Untoned}}
+  end
+  o e1@-->|fails| m
+  d e2@-.->|later| x
+  a e3@==> w
+  x e4@--o m2[(Store)]:::muted
+  m e5@--x d2[/Out/]:::danger
+  class g1 group
+  class e1 failure
+  class e2 async
+  class e3 failure
+  class e4 async
+  class e5 failure,async
+  class g2 accent
+  class d2 group

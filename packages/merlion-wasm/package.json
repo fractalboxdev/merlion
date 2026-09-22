@@ -1,0 +1,43 @@
+{
+  "name": "@fractalboxdev/merlion-wasm",
+  "version": "0.1.0",
+  "description": "Merlion's Mermaid-to-SVG renderer as WebAssembly, with hand-written glue and no dependencies.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fractalboxdev/merlion.git",
+    "directory": "packages/merlion-wasm"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./worker.js": "./worker.js",
+    "./merlion.wasm": "./merlion.wasm",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "worker.js",
+    "merlion.wasm"
+  ],
+  "sideEffects": [
+    "./worker.js"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "sh scripts/build-wasm.sh",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {},
+  "merlion": {
+    "wasmSha256": ""
+  }
+}

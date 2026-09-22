@@ -1,0 +1,3 @@
+# Build outputs of scripts/build-wasm.sh; the release attests merlion.wasm, git does not carry it.
+/merlion.wasm
+/test/merlion-test.wasm

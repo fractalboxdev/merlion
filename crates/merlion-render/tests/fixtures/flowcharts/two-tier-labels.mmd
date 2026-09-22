@@ -1,0 +1,24 @@
+flowchart LR
+  cron["**cron trigger**<br/>every minute<br/>idempotent run key"]
+  subgraph wf["durable workflow"]
+    lease["**lease**<br/>one run per window<br/>90 s TTL"]
+    due["**due set**<br/>scan schedules<br/>next_at ≤ now"]
+    budget["**budget**<br/>250 push slots<br/>per-tenant caps"]
+    enqueue["**enqueue**<br/>batches of 100<br/>dedupe by job id"]
+    wait["**wait**<br/>sleep until acked<br/>or 30 s timeout"]
+    finalize["**finalize**<br/>record outcomes<br/>advance next_at"]
+    release["**release**<br/>drop the lease"]
+    lease --> due --> budget --> enqueue --> wait --> finalize --> release
+  end
+  q[("**push queue**<br/>at-least-once<br/>visibility 60 s")]
+  subgraph consumers["consumers"]
+    c1["**sender A**<br/>APNs"]
+    c2["**sender B**<br/>FCM"]
+    c3["**sender C**<br/>web push"]
+  end
+  dlq[("**dead letters**<br/>after 5 attempts<br/>kept 14 days")]
+  cron --> lease
+  enqueue -->|batch| q
+  q --> c1 & c2 & c3
+  c1 & c2 & c3 -.->|ack| wait
+  q -->|max retries| dlq

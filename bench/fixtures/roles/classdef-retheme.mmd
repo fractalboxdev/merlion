@@ -1,0 +1,16 @@
+flowchart TD
+  accTitle: classDef tokens, source literals and link styles
+  A[Themed]:::someclass --> B[Masked]:::store
+  B --> C[Literal]
+  C --> D[Default]:::someclass
+  D -->|styled| E[Hot]:::hot
+  subgraph S [Styled cluster]
+    F[Inside]:::someclass
+  end
+  E --> F
+  classDef someclass fill:#f96,stroke:#333,stroke-width:3px,color:#000
+  classDef hot fill:#ff0000,stroke:#660000,color:#ffffff,stroke-dasharray:4 2
+  style C fill:#cde,stroke:#036,color:#012
+  style B stroke:#aa00aa
+  style S fill:#eef,stroke:#88f
+  linkStyle 3 stroke:#e11d48,color:#e11d48
