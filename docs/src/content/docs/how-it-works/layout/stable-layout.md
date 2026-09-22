@@ -25,10 +25,9 @@ flowchart TB
   class surv,constrained accent
   class half,same warn
   class fresh output
-  class i020,i022 danger
+  class i020,i022 warn
   class i021 muted
-  class e1 async
-  class e2,e3 failure
+  class e1,e2,e3 async
 ```
 
 ## Hint

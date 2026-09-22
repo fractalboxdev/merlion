@@ -47,8 +47,8 @@ flowchart TB
   class f0,s1f,hv,s23f warn
   class s1,s2,s3,s4 optional
   class keep output
-  class s5 danger
-  class e1 failure
+  class s5 warn
+  class e1 async
 ```
 
 1. **Other direction.** With `direction: auto`, lay out in the other direction. Keep it if it fits; otherwise continue with the narrower of the two.

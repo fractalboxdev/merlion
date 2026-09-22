@@ -50,9 +50,9 @@ flowchart TB
   class scan,res accent
   class sel,decl warn
   class typed output
-  class w017,w018,w019 danger
+  class w017,w018,w019 warn
   class i032 muted
-  class e1,e2,e3 failure
+  class e1,e2,e3 async
 ```
 
 - **Selectors.** `:root`, `[data-theme="<t>"]`, `:root:not([data-theme])` inside `@media (prefers-color-scheme: dark)`, `.merlion-c-<name>`, `.merlion-cc-<name>`, and role selectors under a named theme. Lists of up to 8.
