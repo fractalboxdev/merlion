@@ -47,10 +47,12 @@ fn shipped_themes_compile_with_no_warning() {
     for css in [THEMES, THEMES_WITH_ROLES] {
         let (s, d) = compile(css, &StylesheetLimits::default());
         let s = s.expect("compiles");
-        // The two viewer rules declare no token: one I032 summary.
+        // The viewer rules declare no token: one I032 summary, whatever their count.
         assert_eq!(codes(&d.items), ["I032"], "{:?}", d.items);
         assert!(
-            d.items[0].message.contains("2 rules"),
+            d.items[0]
+                .message
+                .contains("declaring no `--merlion-*` token"),
             "{}",
             d.items[0].message
         );
