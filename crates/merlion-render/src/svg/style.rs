@@ -1,13 +1,18 @@
 //! The embedded `<style>` (specs/svg-output.md#embedded-style, #theming).
 //!
-//! Every rule starts with `#{id}`, so nothing matches outside the SVG. Rule order:
+//! Every rule starts with `#{id} ` or `:where(#{id} `, so nothing matches outside the
+//! SVG. Rule order:
 //!
 //! 1. the text reset, verbatim from the spec, then the embedded font (`font: "embed"`);
-//! 2. base rules, each reading its token with a literal fallback;
-//! 3. `@supports (color: color-mix(in oklab, #000, #fff))` repeating only the declarations
-//!    whose fallback chain contains a mixed role, now falling back to `color-mix`;
-//! 4. source styles (`classDef`, then node `style`, then `linkStyle`), last so that at
-//!    equal specificity they win over 2 and 3.
+//! 2. the zero-specificity reset of the per-element `--merlion-tone` / `--merlion-dash`
+//!    (specs/svg-output.md#roles), the only custom properties the style declares;
+//! 3. base rules, each reading its token with a literal fallback; strokes read the tone
+//!    first and dash arrays the dash;
+//! 4. `@supports (color: color-mix(in oklab, #000, #fff))` repeating the declarations
+//!    whose fallback chain contains a mixed role, now falling back to `color-mix`, and the
+//!    fills and text that mix the tone into their role;
+//! 5. source styles (`classDef`, then node `style`, then `linkStyle`), last so that at
+//!    equal specificity they win over 3 and 4.
 
 use alloc::format;
 use alloc::string::String;
@@ -18,10 +23,67 @@ use crate::options::FontMode;
 
 use super::theme::{Role, FONT_MONO, STROKE};
 
-/// One base declaration: a CSS property reading either a colour role or a literal.
+/// One base declaration's value.
 enum Value {
+    /// A colour role: `var(--merlion-{role}, …)`.
     Role(Role),
+    /// A literal.
     Lit(String),
+    /// A role replaced by the per-element tone when one is set:
+    /// `var(--merlion-tone, <role chain>)`.
+    Tone(Role),
+    /// A role mixed with the per-element tone at `pct` percent. Outside `@supports` the
+    /// role alone; inside, `color-mix(in oklab, var(--merlion-tone, R) pct%, R)`, which
+    /// with the tone unset mixes R with itself and draws exactly R.
+    ToneMix(Role, u8),
+    /// A dash pattern replaced by the per-element dash when one is set:
+    /// `var(--merlion-dash, <default>)`.
+    Dash(&'static str),
+}
+
+impl Value {
+    /// The value outside `@supports`.
+    fn plain(&self) -> String {
+        match self {
+            Value::Role(r) | Value::ToneMix(r, _) => r.var(false),
+            Value::Lit(s) => s.clone(),
+            Value::Tone(r) => format!("var(--merlion-tone, {})", r.var(false)),
+            Value::Dash(d) => format!("var(--merlion-dash, {})", d),
+        }
+    }
+
+    /// The value inside `@supports (color: color-mix(…))`, when it differs from [`Value::plain`].
+    fn mixed(&self) -> Option<String> {
+        match self {
+            Value::Role(r) if r.is_mixed() => Some(r.var(true)),
+            Value::Tone(r) if r.is_mixed() => Some(format!("var(--merlion-tone, {})", r.var(true))),
+            Value::ToneMix(r, pct) => {
+                let chain = r.var(true);
+                Some(format!(
+                    "color-mix(in oklab, var(--merlion-tone, {}) {}%, {})",
+                    chain, pct, chain
+                ))
+            }
+            _ => None,
+        }
+    }
+}
+
+/// Mix ratios of the per-element tone (specs/svg-output.md#roles).
+const TONE_FILL: u8 = 14;
+const TONE_CLUSTER_FILL: u8 = 8;
+const TONE_TEXT: u8 = 75;
+
+/// The zero-specificity reset of the per-element tokens (specs/svg-output.md#roles): a
+/// tone or dash set on an ancestor, on `:root` or on a cluster never reaches a member
+/// element, while a role rule on the group itself wins over it. Markers are reset too:
+/// they inherit from `<defs>`, not from the edge that references them.
+fn push_token_reset(out: &mut String, id: &str) {
+    out.push_str(&format!(
+        ":where(#{0} .merlion-node, #{0} .merlion-edge, #{0} .merlion-cluster, #{0} marker)\
+         {{--merlion-tone:initial;--merlion-dash:initial;}}",
+        id
+    ));
 }
 
 struct Rule {
@@ -37,7 +99,7 @@ fn stroke_var() -> String {
 }
 
 fn base_rules() -> Vec<Rule> {
-    use Value::{Lit, Role as R};
+    use Value::{Dash, Lit, Role as R, Tone, ToneMix};
     let lit = |s: &str| Lit(String::from(s));
     alloc::vec![
         Rule {
@@ -50,11 +112,11 @@ fn base_rules() -> Vec<Rule> {
         },
         Rule {
             selector: ".merlion-label",
-            decls: alloc::vec![("fill", R(Role::NodeText))],
+            decls: alloc::vec![("fill", ToneMix(Role::NodeText, TONE_TEXT))],
         },
         Rule {
             selector: ".merlion-edge-text,#{id} .merlion-cluster-title",
-            decls: alloc::vec![("fill", R(Role::Fg))],
+            decls: alloc::vec![("fill", ToneMix(Role::Fg, TONE_TEXT))],
         },
         Rule {
             selector: ".merlion-b",
@@ -71,25 +133,28 @@ fn base_rules() -> Vec<Rule> {
         Rule {
             selector: ".merlion-node>.merlion-shape",
             decls: alloc::vec![
-                ("fill", R(Role::NodeBg)),
-                ("stroke", R(Role::NodeBorder)),
+                ("fill", ToneMix(Role::NodeBg, TONE_FILL)),
+                ("stroke", Tone(Role::NodeBorder)),
                 ("stroke-width", Lit(stroke_var())),
+                ("stroke-dasharray", Dash("none")),
             ],
         },
         Rule {
             selector: ".merlion-cluster>.merlion-cluster-box",
             decls: alloc::vec![
-                ("fill", R(Role::ClusterBg)),
-                ("stroke", R(Role::ClusterBorder)),
+                ("fill", ToneMix(Role::ClusterBg, TONE_CLUSTER_FILL)),
+                ("stroke", Tone(Role::ClusterBorder)),
                 ("stroke-width", Lit(stroke_var())),
+                ("stroke-dasharray", Dash("none")),
             ],
         },
         Rule {
             selector: ".merlion-edge>.merlion-edge-path",
             decls: alloc::vec![
                 ("fill", lit("none")),
-                ("stroke", R(Role::Edge)),
+                ("stroke", Tone(Role::Edge)),
                 ("stroke-width", Lit(stroke_var())),
+                ("stroke-dasharray", Dash("none")),
             ],
         },
         Rule {
@@ -98,17 +163,17 @@ fn base_rules() -> Vec<Rule> {
         },
         Rule {
             selector: ".merlion-edge>.merlion-dotted",
-            decls: alloc::vec![("stroke-dasharray", lit("3 3"))],
+            decls: alloc::vec![("stroke-dasharray", Dash("3 3"))],
         },
         Rule {
             selector: ".merlion-marker-fill",
-            decls: alloc::vec![("fill", R(Role::Edge)), ("stroke", lit("none"))],
+            decls: alloc::vec![("fill", Tone(Role::Edge)), ("stroke", lit("none"))],
         },
         Rule {
             selector: ".merlion-marker-stroke",
             decls: alloc::vec![
                 ("fill", lit("none")),
-                ("stroke", R(Role::Edge)),
+                ("stroke", Tone(Role::Edge)),
                 ("stroke-width", lit("1.5px")),
             ],
         },
@@ -184,6 +249,7 @@ pub fn build(
     if let Some(css) = font_css {
         out.push_str(css);
     }
+    push_token_reset(&mut out, id);
     let mut rules = base_rules();
     if let Some(size) = detail_size.filter(|s| s.is_finite() && *s > 0.0) {
         rules.push(detail_rule(size));
@@ -193,10 +259,7 @@ pub fn build(
         for (prop, v) in &r.decls {
             body.push_str(prop);
             body.push(':');
-            match v {
-                Value::Role(role) => body.push_str(&role.var(false)),
-                Value::Lit(s) => body.push_str(s),
-            }
+            body.push_str(&v.plain());
             body.push(';');
         }
         push_rule(&mut out, id, r.selector, &body);
@@ -205,13 +268,11 @@ pub fn build(
     for r in &rules {
         let mut body = String::new();
         for (prop, v) in &r.decls {
-            if let Value::Role(role) = v {
-                if role.is_mixed() {
-                    body.push_str(prop);
-                    body.push(':');
-                    body.push_str(&role.var(true));
-                    body.push(';');
-                }
+            if let Some(m) = v.mixed() {
+                body.push_str(prop);
+                body.push(':');
+                body.push_str(&m);
+                body.push(';');
             }
         }
         if !body.is_empty() {
@@ -237,7 +298,7 @@ mod tests {
              font-size: var(--merlion-font-size, 14px); font-weight: 400; font-style: normal; \
              font-stretch: normal; font-kerning: normal; font-variant-ligatures: none; \
              font-feature-settings: \"calt\" 0, \"liga\" 0; letter-spacing: 0; word-spacing: 0; \
-             text-transform: none; }#m1 "
+             text-transform: none; }:where(#m1 "
         ), "{}", s);
     }
 
@@ -246,8 +307,8 @@ mod tests {
         let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
         assert!(s.contains(
             "#m1 .merlion-node>.merlion-shape{fill:var(--merlion-node-bg, var(--merlion-surface, #f5f5f5));\
-             stroke:var(--merlion-node-border, var(--merlion-border, #c8c9cb));\
-             stroke-width:var(--merlion-stroke, 1.25px);}"
+             stroke:var(--merlion-tone, var(--merlion-node-border, var(--merlion-border, #c8c9cb)));\
+             stroke-width:var(--merlion-stroke, 1.25px);stroke-dasharray:var(--merlion-dash, none);}"
         ), "{}", s);
     }
 
@@ -256,16 +317,21 @@ mod tests {
         let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
         let at = s.find("@supports").unwrap();
         assert!(!s[..at].contains("color-mix"));
-        assert!(s[at..].contains(
-            "#m1 .merlion-node>.merlion-shape{fill:var(--merlion-node-bg, var(--merlion-surface, \
-             color-mix(in oklab, var(--merlion-fg, #1f2328) 4%, var(--merlion-bg, #ffffff))));"
-        ), "{}", s);
+        let bg = "var(--merlion-node-bg, var(--merlion-surface, \
+             color-mix(in oklab, var(--merlion-fg, #1f2328) 4%, var(--merlion-bg, #ffffff))))";
+        assert!(s[at..].contains(&format!(
+            "#m1 .merlion-node>.merlion-shape{{fill:color-mix(in oklab, var(--merlion-tone, {bg}) 14%, {bg});"
+        )), "{}", s);
     }
 
     #[test]
-    fn no_custom_property_is_declared() {
+    fn only_the_per_element_tokens_are_declared() {
         let s = build("m1", FontMode::Link, 14.0, None, None, &[]);
-        assert!(!s.contains("{--") && !s.contains(";--"));
+        assert_eq!(s.matches("{--").count() + s.matches(";--").count(), 2);
+        assert!(s.contains(
+            ":where(#m1 .merlion-node, #m1 .merlion-edge, #m1 .merlion-cluster, #m1 marker)\
+             {--merlion-tone:initial;--merlion-dash:initial;}"
+        ));
     }
 
     #[test]

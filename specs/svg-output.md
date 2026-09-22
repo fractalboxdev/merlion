@@ -91,18 +91,18 @@ Two per-element tokens restyle a role: `--merlion-tone` and `--merlion-dash`. Th
 | Node shape | `stroke` | `var(--merlion-tone, <node-border>)` |
 | Node label | `fill` | `color-mix(in oklab, var(--merlion-tone, <node-text>) 75%, <node-text>)` |
 | Edge path, marker | `stroke`, marker `fill` | `var(--merlion-tone, <edge>)` |
-| Edge label | `fill` | `color-mix(in oklab, var(--merlion-tone, <node-text>) 75%, <node-text>)` |
+| Edge label | `fill` | `color-mix(in oklab, var(--merlion-tone, <fg>) 75%, <fg>)` |
 | Cluster box | `fill`, `stroke` | `color-mix(in oklab, var(--merlion-tone, <cluster-bg>) 8%, <cluster-bg>)`, `var(--merlion-tone, <cluster-border>)` |
-| Cluster title | `fill` | `color-mix(in oklab, var(--merlion-tone, <muted>) 75%, <muted>)` |
+| Cluster title | `fill` | `color-mix(in oklab, var(--merlion-tone, <fg>) 75%, <fg>)` |
 | Node shape, edge path, cluster box | `stroke-dasharray` | `var(--merlion-dash, <the element's default>)` |
 
 `<node-bg>` stands for the role's full fallback chain (`var(--merlion-node-bg, var(--merlion-surface, #f5f5f5))`). With the tone unset, each mix combines a colour with itself, so an untoned element draws exactly its default. The mixes sit inside the `@supports` block; outside it, the element draws its untoned default.
 
 Every node, edge and cluster group resets both tokens at zero specificity:
 
-    :where(#{id} .merlion-node, #{id} .merlion-edge, #{id} .merlion-cluster) { --merlion-tone: initial; --merlion-dash: initial; }
+    :where(#{id} .merlion-node, #{id} .merlion-edge, #{id} .merlion-cluster, #{id} marker) { --merlion-tone: initial; --merlion-dash: initial; }
 
-A tone set on an ancestor, on `:root` or on a cluster therefore never reaches member elements; a role rule on the group itself (specificity 0,1,0 or more) wins over the reset and reaches the group's shape and text by inheritance. These two tokens are the only custom properties the embedded style declares.
+A tone set on an ancestor, on `:root` or on a cluster therefore never reaches member elements, nor the arrow markers, which inherit from `<defs>`; a role rule on the group itself (specificity 0,1,0 or more) wins over the reset and reaches the group's shape and text by inheritance. These two tokens are the only custom properties the embedded style declares.
 
 Each edge role in use gets its own arrow marker in `<defs>` (`{id}-arrow-c-{name}`) carrying the role class, because a marker inherits from `<defs>`, not from the edge that references it.
 
