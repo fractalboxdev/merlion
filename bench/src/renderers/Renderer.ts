@@ -19,6 +19,18 @@ export interface RendererApi {
   readonly version: string;
   /** Renders one diagram. Never fails: a failed render is an outcome with `error` set. */
   readonly render: (source: string, opts?: RenderOpts) => Effect.Effect<RenderOutcome>;
+  /**
+   * Renders many diagrams in one call, keyed by name, where the renderer can
+   * time each one in-process. Never fails; a name missing from the result
+   * counts as a failed render.
+   */
+  readonly renderBatch?: (diagrams: readonly BatchDiagram[]) => Effect.Effect<ReadonlyMap<string, RenderOutcome>>;
+}
+
+export interface BatchDiagram {
+  /** A file-name-safe name, unique within the batch. */
+  readonly name: string;
+  readonly source: string;
 }
 
 export class Renderer extends Context.Tag("bench/Renderer")<Renderer, RendererApi>() {}

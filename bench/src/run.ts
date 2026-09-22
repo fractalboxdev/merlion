@@ -10,7 +10,7 @@ import { compareGraphs, displacement, layoutMetrics } from "./metrics/metrics.ts
 import { COMPAT_DIR, EDITS_DIR, MERLION_WASM_DIR, REPO_DIR, RESULTS_DIR } from "./paths.ts";
 import { MerlionLive } from "./renderers/merlion.ts";
 import { MermaidDagreLive, MermaidElkLive } from "./renderers/mermaid.ts";
-import { Renderer, type RendererName } from "./renderers/Renderer.ts";
+import { failed, Renderer, type RendererName } from "./renderers/Renderer.ts";
 import {
   type Determinism,
   type DiagramResult,
@@ -77,8 +77,10 @@ const runRenderer = (
     const graphs = new Map<string, ExtractedGraph>();
     const svgs = new Map<string, string>();
     const results: DiagramResult[] = [];
+    const batch = r.renderBatch === undefined ? undefined : yield* r.renderBatch(diagrams);
     for (const [k, d] of diagrams.entries()) {
-      const out = yield* r.render(d.source);
+      const out =
+        batch === undefined ? yield* r.render(d.source) : (batch.get(d.name) ?? failed("missing from batch render"));
       let metrics: DiagramResult["metrics"] = null;
       let compat: DiagramResult["compat"] = null;
       if (out.svg !== null) {

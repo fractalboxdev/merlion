@@ -27,7 +27,7 @@ pnpm test && pnpm typecheck
 
 | Name | Runs | Notes |
 |---|---|---|
-| `merlion` | `target/release/merlion render --json [--hint <prev.svg>]`, one process per diagram, source on stdin | Time includes process start-up. Fuel comes from `fuel_used` |
+| `merlion` | `target/release/merlion render --batch in -o out --json-summary`, one process per corpus; edit pairs run `render --json --hint <prev.svg>` per diagram with the source on stdin | Corpus time is the CLI's in-process timing of the core call (`micros`); edit-pair time includes process start-up. Fuel comes from `fuel_used` |
 | `mermaid-dagre` | mermaid 12.0.0 `dist/mermaid.min.js` in headless Chromium (Playwright 1.63.0), `layout: "dagre"` | Time is `mermaid.render` measured in the page |
 | `mermaid-elk` | Same bundle, `layout: "elk"` | mermaid 12 bundles ELK; `@mermaid-js/layout-elk` is not needed |
 
