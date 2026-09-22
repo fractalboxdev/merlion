@@ -129,16 +129,16 @@ interface WasmModule {
   readonly render: (source: string, options?: unknown) => { svg: string | null };
 }
 
-/**
- * Native vs WASM byte identity (specs/architecture.md#determinism), when the
- * WASM package has been built; skipped otherwise.
- */
 class DeterminismSkipped extends Schema.TaggedError<DeterminismSkipped>()("DeterminismSkipped", {
   reason: Schema.String,
 }) {}
 
 const skipped = (reason: string): Determinism => ({ status: "skipped", reason, compared: 0, identical: 0, differing: [] });
 
+/**
+ * Native vs WASM byte identity (specs/architecture.md#determinism), when the
+ * WASM package has been built; skipped otherwise.
+ */
 const checkDeterminism = (diagrams: readonly Diagram[], native: ReadonlyMap<string, string> | undefined) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;

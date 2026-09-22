@@ -19,7 +19,7 @@ import {
 export const SHARED_ENDPOINT_MARGIN = 8;
 /** Douglas–Peucker tolerance (px) applied before counting bends. */
 export const BEND_TOLERANCE = 3;
-/** Minimum turning angle (degrees) for a simplified vertex to count as a bend. */
+/** Minimum summed turn (degrees) for a group of simplified vertices to count as a bend. */
 export const BEND_MIN_ANGLE = 10;
 /** Simplified vertices closer than this (px) merge into one bend. */
 export const BEND_MERGE_DISTANCE = 12;
@@ -38,7 +38,7 @@ export const FIT_WIDTH = 720;
  * Intersections of one pair closer than 1 px are counted once.
  */
 export const crossings = (g: ExtractedGraph): { total: number; maxPerEdge: number } => {
-  const boxes = new Map<string, Box>(g.nodes.map((n) => [n.id, n.box]));
+  const boxes = new Map<string, Box>([...g.clusters.map((c) => [c.id, c.box] as const), ...g.nodes.map((n) => [n.id, n.box] as const)]);
   const per = new Array<number>(g.edges.length).fill(0);
   let total = 0;
   for (let i = 0; i < g.edges.length; i++) {
@@ -107,9 +107,10 @@ export const simplify = (pts: readonly Point[], tol: number): Point[] => {
 };
 
 /**
- * Bends of one edge: interior vertices of its polyline, after Douglas–Peucker
- * simplification at `BEND_TOLERANCE`, whose turning angle exceeds
- * `BEND_MIN_ANGLE`. The simplification makes the count comparable between
+ * Bends of one edge: interior vertices of its polyline after Douglas–Peucker
+ * simplification at `BEND_TOLERANCE`, grouped while closer than
+ * `BEND_MERGE_DISTANCE`; a group whose summed signed turn exceeds
+ * `BEND_MIN_ANGLE` is one bend. This makes the count comparable between
  * orthogonal routes (a rounded corner counts once) and sampled splines (a
  * gentle S-curve counts as its visible turns, not as its sample count).
  */
@@ -163,8 +164,9 @@ export const labelOverlaps = (g: ExtractedGraph): number => {
 
 /**
  * Normalised stress of the drawing (Kamada and Kawai, 1989; Gansner, Koren and
- * North, 2004), with optimal scaling so the value is independent of the
- * drawing's unit (as in Mooney et al., GD 2025):
+ * North, 2004), with the drawing scaled by the factor that minimises it, so
+ * the value does not depend on the drawing's unit. Mooney et al. (GD 2025)
+ * motivate it as a reader-perceivable quality measure (specs/benchmark.md):
  *
  *   stress = (1/P) · Σ_{i<j} ((s·‖x_i − x_j‖ − d_ij) / d_ij)²,
  *   s = Σ (‖x_i − x_j‖ / d_ij) / Σ (‖x_i − x_j‖² / d_ij²)

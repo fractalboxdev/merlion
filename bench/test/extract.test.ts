@@ -107,6 +107,31 @@ describe("extractSvg: mermaid", () => {
   });
 });
 
+describe("extractSvg: mermaid variants", () => {
+  it("resolves edges to subgraphs against cluster ids", () => {
+    const svg = `<svg id="d2" viewBox="0 0 300 100"><g class="clusters"><g class="cluster" id="d2-TOP"><rect x="100" y="0" width="100" height="100"/></g></g>
+      <g class="edgePaths"><path class="flowchart-link" data-id="L_A_TOP_0" d="M40,50 L100,50"/></g>
+      <g class="nodes"><g class="node" id="d2-flowchart-A-0" transform="translate(20,50)"><rect x="-20" y="-10" width="40" height="20"/></g></g></svg>`;
+    expect(extractSvg(svg).edges.map((e) => [e.from, e.to])).toEqual([["A", "TOP"]]);
+  });
+
+  it("reads icon and image nodes by their flowchart element id", () => {
+    const svg = `<svg id="d4" viewBox="0 0 100 100"><g class="nodes"><g class="icon-shape default" id="d4-flowchart-A-0" transform="translate(50,50)"><g><path d="M-10 -10 L10 -10 L10 10 L-10 10 Z"/></g><g class="label"><text>User Icon</text></g></g></g></svg>`;
+    expect(extractSvg(svg).nodes).toEqual([{ id: "A", label: "User Icon", box: { x: 40, y: 40, w: 20, h: 20 } }]);
+  });
+
+  it("reads hand-drawn nodes and uses data-points for multi-stroke edges", () => {
+    const pts = Buffer.from(JSON.stringify([{ x: 40, y: 50 }, { x: 70, y: 60 }, { x: 100, y: 50 }])).toString("base64");
+    const svg = `<svg id="d3" viewBox="0 0 200 100"><g class="edgePaths"><path class="flowchart-link" data-id="L_A_B_0" data-points="${pts}" d="M40 50 C50 50, 60 50, 70 50 M41 51 C50 51, 60 51, 70 51"/></g>
+      <g class="nodes"><g class="rough-node default" id="d3-flowchart-A-0" transform="translate(20,50)"><g class="basic label-container"><path d="M-20 -10 L20 -10 L20 10 L-20 10 Z"/></g></g>
+      <g class="rough-node default" id="d3-flowchart-B-1" transform="translate(120,50)"><path d="M-20 -10 L20 -10 L20 10 L-20 10 Z"/></g></g></svg>`;
+    const g = extractSvg(svg);
+    expect(g.nodes.map((n) => n.id)).toEqual(["A", "B"]);
+    expect(g.edges[0]!.points).toEqual([{ x: 40, y: 50 }, { x: 70, y: 60 }, { x: 100, y: 50 }]);
+    expect(g.edges[0]!.vertices).toHaveLength(3);
+  });
+});
+
 describe("extractSvg: fallbacks", () => {
   it("returns an empty graph for non-SVG input", () => {
     const g = extractSvg("<html>nope</html>");

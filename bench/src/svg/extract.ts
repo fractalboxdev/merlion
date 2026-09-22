@@ -344,13 +344,41 @@ const extractMerlion = (root: XmlElement, ctx: Ctx): Omit<ExtractedGraph, "flavo
 
 const MERMAID_NODE_ID = /(?:^|-)flowchart-(.+)-\d+$/;
 
+/** Decodes mermaid's `data-points` attribute; null when absent or malformed. */
+export const decodeDataPoints = (attr: string | undefined): Point[] | null => {
+  if (attr === undefined) return null;
+  try {
+    const parsed: unknown = JSON.parse(Buffer.from(attr, "base64").toString("utf8"));
+    if (!Array.isArray(parsed)) return null;
+    const pts: Point[] = [];
+    for (const q of parsed) {
+      const x = (q as { x?: unknown }).x;
+      const y = (q as { y?: unknown }).y;
+      if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+      pts.push({ x, y });
+    }
+    return pts.length >= 2 ? pts : null;
+  } catch {
+    return null;
+  }
+};
+
 const extractMermaid = (root: XmlElement, ctx: Ctx): Omit<ExtractedGraph, "flavor" | "viewBox"> => {
   const svgId = root.attrs["id"] ?? "";
   const stripPrefix = (id: string): string => (svgId !== "" && id.startsWith(`${svgId}-`) ? id.slice(svgId.length + 1) : id);
   const isLabelGroup = (e: XmlElement) => e.name === "g" && (hasClass(e, "label") || hasClass(e, "cluster-label"));
 
   const nodes: ExtractedNode[] = [];
-  const nodeGroups = collect(root, (e) => e.name === "g" && hasClass(e, "node") && !hasClass(e, "cluster"));
+  // Node groups carry `node` (classic look), `rough-node` (hand-drawn look) or a
+  // shape class such as `icon-shape`; all carry a `…flowchart-<id>-<n>` id.
+  const nodeGroups = collect(
+    root,
+    (e) =>
+      e.name === "g" &&
+      !hasClass(e, "cluster") &&
+      (hasClass(e, "node") || hasClass(e, "rough-node") || MERMAID_NODE_ID.test(e.attrs["id"] ?? "")),
+    (e) => e.name === "defs" || e.name === "marker",
+  );
   for (const g of nodeGroups) {
     const shapes = collect(g, isShape, (e) => e.name === "text" || isLabelGroup(e));
     const box = unionBoxes(shapes.map((s) => shapeBox(ctx, s)).filter((b): b is Box => b !== null));
@@ -386,7 +414,8 @@ const extractMermaid = (root: XmlElement, ctx: Ctx): Omit<ExtractedGraph, "flavo
     labels.set(key, { label, box });
   }
 
-  const ids = new Set(nodes.map((n) => n.id));
+  // Edges may end at a subgraph, so cluster ids resolve endpoints too.
+  const ids = new Set([...nodes.map((n) => n.id), ...clusters.map((c) => c.id)]);
   const edges: ExtractedEdge[] = [];
   const edgePaths = collect(
     root,
@@ -396,8 +425,11 @@ const extractMermaid = (root: XmlElement, ctx: Ctx): Omit<ExtractedGraph, "flavo
   for (const p of edgePaths) {
     const mat = ctx.ctm.get(p) ?? IDENTITY;
     const subs = parsePath(p.attrs["d"] ?? "");
-    const points = subs.flatMap((s) => s.points).map((q) => applyMatrix(mat, q));
-    const vertices = subs.flatMap((s) => s.vertices).map((q) => applyMatrix(mat, q));
+    // A multi-stroke path (hand-drawn look) is not one polyline; its routed
+    // points are in `data-points` (base64 JSON of {x, y}).
+    const routed = subs.length > 1 ? decodeDataPoints(p.attrs["data-points"]) : null;
+    const points = (routed ?? subs.flatMap((s) => s.points)).map((q) => applyMatrix(mat, q));
+    const vertices = (routed ?? subs.flatMap((s) => s.vertices)).map((q) => applyMatrix(mat, q));
     if (points.length < 2) continue;
     const dataId = p.attrs["data-id"] ?? stripPrefix(p.attrs["id"] ?? "");
     const ends = resolveMermaidEdgeId(dataId, ids);

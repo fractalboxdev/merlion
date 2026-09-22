@@ -2463,13 +2463,6 @@
       "sha256": "0000eed125827fa9e77e45856119d035195fb476e567ade6d59d3d2858ddca1d"
     },
     {
-      "name": "e2e-flowchart-shape-alias-01",
-      "source": "e2e/rendering/flowchart/flowchart-shape-alias.spec.ts",
-      "block": 1,
-      "sourceBlob": "9b0ff5b7f746a9eac66b2346846120b861176f62",
-      "sha256": "d64ee7977758cccf2f7daf73b1d7d71ec947b8098f03c0fb4179ba3d6ff06d8c"
-    },
-    {
       "name": "e2e-flowchart-v2-03",
       "source": "e2e/rendering/flowchart/flowchart-v2.spec.js",
       "block": 3,

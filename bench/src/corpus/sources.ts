@@ -224,5 +224,29 @@ export const extractDiagrams = (path: string, content: string): string[] => {
   else if (/\.(js|ts)$/.test(path)) blocks = extractTemplateLiterals(content);
   else if (path.endsWith(".mmd")) blocks = [dedent(content)];
   else blocks = [];
-  return blocks.filter(isFlowchart);
+  return blocks.filter((b) => isFlowchart(b) && hasStatements(b));
+};
+
+/** True when a line other than front matter, directives, comments and the header remains. */
+const hasStatements = (src: string): boolean => {
+  const lines = src.split("\n");
+  let k = 0;
+  if (lines[0]?.trim() === "---") {
+    k = 1;
+    while (k < lines.length && lines[k]!.trim() !== "---") k++;
+    k++;
+  }
+  let header = false;
+  for (; k < lines.length; k++) {
+    const l = lines[k]!.trim();
+    if (l === "" || l.startsWith("%%")) continue;
+    if (!header) {
+      header = true;
+      // Statements may follow the header on the same line after `;`.
+      if (/;\s*\S/.test(l)) return true;
+      continue;
+    }
+    return true;
+  }
+  return false;
 };

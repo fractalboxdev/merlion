@@ -108,6 +108,8 @@ describe("extractDiagrams", () => {
     expect(extractDiagrams("a.spec.ts", "f(`graph TD\n  C`); g(`not a diagram`)")).toEqual(["graph TD\n  C"]);
     expect(extractDiagrams("a.mmd", "\n  graph TD\n    D\n")).toEqual(["graph TD\n  D"]);
     expect(extractDiagrams("a.mmd", "sequenceDiagram")).toEqual([]);
+    // A header with no statements is not a diagram (e.g. a string later concatenated in a test).
+    expect(extractDiagrams("a.spec.ts", "const base = `flowchart`;")).toEqual([]);
     expect(extractDiagrams("a.txt", "graph TD")).toEqual([]);
   });
 });
