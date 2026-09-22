@@ -33,9 +33,10 @@ describe("MerlionLive", () => {
       const before = yield* r.render("flowchart LR\n  a --> b\n");
       const after = yield* r.render("flowchart LR\n  a --> b\n  b --> c\n", { hint: before.svg ?? "" });
       const batch = yield* r.renderBatch!([{ name: "one", source: "flowchart TB\n  x --> y\n" }]);
-      return { before, after, batch };
+      return { before, after, batch, version: r.version };
     }).pipe(Effect.provide(MerlionLive), Effect.provide(NodeContext.layer));
-    const { before, after, batch } = await Effect.runPromise(program);
+    const { before, after, batch, version } = await Effect.runPromise(program);
+    expect(version).toMatch(/^merlion \d/);
     expect(before.error).toBeNull();
     expect(after.error).toBeNull();
     expect(after.svg).toContain("merlion-node");

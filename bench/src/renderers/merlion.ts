@@ -174,6 +174,8 @@ export const MerlionLive = Layer.scoped(
         ),
       );
 
-    return Renderer.of({ name: "merlion", version: `merlion ${version}`, render, renderBatch });
+    // `merlion --version` prints `merlion <semver>`.
+    const label = version.startsWith("merlion ") ? version : `merlion ${version}`;
+    return Renderer.of({ name: "merlion", version: label, render, renderBatch });
   }),
 );
