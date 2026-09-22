@@ -31,8 +31,9 @@ pub fn edge_d(points: &[Point], style: EdgeStyle) -> String {
     }
     match style {
         EdgeStyle::Orthogonal => rounded(&pts, CORNER_RADIUS),
-        EdgeStyle::Polyline => straight(&pts),
-        EdgeStyle::Spline => smooth(&pts),
+        // Sleeve routing (specs/layout.md#6-edge-routing) is not implemented; `spline`
+        // routes and draws as `polyline`, its prescribed fallback.
+        EdgeStyle::Polyline | EdgeStyle::Spline => straight(&pts),
     }
 }
 
@@ -85,34 +86,6 @@ fn min3(a: f64, b: f64, c: f64) -> f64 {
     } else {
         c
     }
-}
-
-/// Smooth curve through the points: uniform Catmull–Rom converted to cubic Béziers
-/// (control points at ±1/6 of the neighbour difference). `EdgeGeom` carries the routed
-/// polyline only, so the curve interpolates its vertices; two points give a line.
-fn smooth(pts: &[Point]) -> String {
-    if pts.len() < 3 {
-        return straight(pts);
-    }
-    let mut d = String::new();
-    push_pt(&mut d, 'M', pts[0]);
-    let n = pts.len();
-    for i in 0..n - 1 {
-        let p0 = pts[i.saturating_sub(1)];
-        let p1 = pts[i];
-        let p2 = pts[i + 1];
-        let p3 = pts[if i + 2 < n { i + 2 } else { n - 1 }];
-        let c1 = Point::new(p1.x + (p2.x - p0.x) / 6.0, p1.y + (p2.y - p0.y) / 6.0);
-        let c2 = Point::new(p2.x - (p3.x - p1.x) / 6.0, p2.y - (p3.y - p1.y) / 6.0);
-        push_pt(&mut d, 'C', c1);
-        for p in [c2, p2] {
-            d.push(' ');
-            push_num(&mut d, p.x);
-            d.push(' ');
-            push_num(&mut d, p.y);
-        }
-    }
-    d
 }
 
 #[cfg(test)]
@@ -189,13 +162,13 @@ mod tests {
     }
 
     #[test]
-    fn spline_passes_through_vertices() {
-        let d = edge_d(
-            &[p(0.0, 0.0), p(0.0, 60.0), p(60.0, 60.0)],
-            EdgeStyle::Spline,
+    fn spline_draws_the_routed_polyline() {
+        // Sleeve routing is not implemented (specs/roadmap.md M5); `spline` falls back to
+        // `polyline` for drawing as well as routing, so no curve overshoots its vertices.
+        let pts = [p(0.0, 0.0), p(0.0, 60.0), p(60.0, 60.0), p(60.0, 0.0)];
+        assert_eq!(
+            edge_d(&pts, EdgeStyle::Spline),
+            edge_d(&pts, EdgeStyle::Polyline)
         );
-        assert!(d.starts_with("M0 0C"));
-        assert!(d.contains(" 0 60C"));
-        assert!(d.ends_with(" 60 60"));
     }
 }

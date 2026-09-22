@@ -10,8 +10,8 @@
 //!   interior corners with a 6 px radius; the points here are the sharp corners.
 //! - `Polyline`: straight segments through the dummy nodes' centres, meeting each node
 //!   outline on the line towards its neighbour.
-//! - `Spline` (sleeve routing) is not implemented; it falls back to `Polyline`, the
-//!   fallback the spec prescribes when routing fuel runs out.
+//! - `Spline` (sleeve routing) is not implemented; it routes and draws as `Polyline`,
+//!   the fallback the spec prescribes when routing fuel runs out.
 
 use alloc::collections::BTreeMap;
 use alloc::vec;
