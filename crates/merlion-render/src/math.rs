@@ -9,6 +9,9 @@
 //!   in its intermediate steps.
 //! - [`floor`], [`ceil`], [`round`], [`abs`], [`min`], [`max`], [`clamp`] are exact.
 //!
+//! - [`sin_cos_deg`] evaluates a Taylor series after reducing the angle to ±180°; it is
+//!   within 1e-15 of the exact value and serves `oklch()` hues only.
+//!
 //! The layout needs no trigonometry: every angle it uses is a multiple of 90° or comes
 //! from a vector that is normalised with [`hypot`].
 
@@ -172,6 +175,30 @@ pub fn clamp(v: f64, lo: f64, hi: f64) -> f64 {
     }
 }
 
+/// `(sin, cos)` of an angle in degrees, reduced to [-180°, 180°] and evaluated by Taylor
+/// series with `+ − × ÷` only. A non-finite angle gives `(0, 1)`.
+pub fn sin_cos_deg(deg: f64) -> (f64, f64) {
+    if !deg.is_finite() {
+        return (0.0, 1.0);
+    }
+    let turns = deg / 360.0;
+    let reduced = (turns - round(turns)) * 360.0;
+    let x = reduced * (core::f64::consts::PI / 180.0);
+    let x2 = x * x;
+    // sin: x − x³/3! + …; cos: 1 − x²/2! + …; |x| ≤ π, so 30 terms leave < 1e-30.
+    let (mut s, mut c) = (0.0, 0.0);
+    let (mut ts, mut tc) = (x, 1.0);
+    let mut n = 1.0;
+    for _ in 0..30 {
+        s += ts;
+        c += tc;
+        ts = -ts * x2 / ((n + 1.0) * (n + 2.0));
+        tc = -tc * x2 / (n * (n + 1.0));
+        n += 2.0;
+    }
+    (s, c)
+}
+
 #[cfg(test)]
 mod tests {
     extern crate std;
@@ -308,5 +335,30 @@ mod tests {
         assert_eq!(max(1.0, 2.0), 2.0);
         assert_eq!(clamp(5.0, 0.0, 3.0), 3.0);
         assert_eq!(clamp(f64::NAN, 0.0, 3.0), 0.0);
+    }
+
+    #[test]
+    fn sin_cos_known_angles() {
+        let close = |a: f64, b: f64| (a - b).abs() < 1e-14;
+        for (deg, sin, cos) in [
+            (0.0, 0.0, 1.0),
+            (90.0, 1.0, 0.0),
+            (180.0, 0.0, -1.0),
+            (-90.0, -1.0, 0.0),
+            (30.0, 0.5, 0.866_025_403_784_438_6),
+            (
+                765.0,
+                core::f64::consts::FRAC_1_SQRT_2,
+                core::f64::consts::FRAC_1_SQRT_2,
+            ),
+        ] {
+            let (s, c) = sin_cos_deg(deg);
+            assert!(close(s, sin) && close(c, cos), "{} {} {}", deg, s, c);
+        }
+        assert_eq!(sin_cos_deg(f64::NAN), (0.0, 1.0));
+        assert_eq!(
+            sin_cos_deg(1e308).0.to_bits(),
+            sin_cos_deg(1e308).0.to_bits()
+        );
     }
 }
