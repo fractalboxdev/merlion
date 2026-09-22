@@ -1,0 +1,828 @@
+{
+  "corpus": "compat-state",
+  "repo": "https://github.com/mermaid-js/mermaid",
+  "tag": "mermaid@12.0.0",
+  "commit": "98a0945418c76238f15df2afaddbba4272656c3b",
+  "licence": "MIT (c) 2014 - 2022 Knut Sveidqvist; see bench/NOTICES.md",
+  "diagrams": [
+    {
+      "name": "demos-state-01",
+      "source": "demos/state.html",
+      "block": 1,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "26627e004ab42aa591df5de279dfef9cf6cd6e206e09d4cb003bc1fa76324f1d"
+    },
+    {
+      "name": "demos-state-02",
+      "source": "demos/state.html",
+      "block": 2,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "eaf5acfc98e26ec02b8fe6172241a3969370e7df38932dc54a54e26c31e39905"
+    },
+    {
+      "name": "demos-state-03",
+      "source": "demos/state.html",
+      "block": 3,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "b4054a34c05c58f3f38a6f8e2ddbf31208fb0f32239459f89d5b62c586d5e068"
+    },
+    {
+      "name": "demos-state-04",
+      "source": "demos/state.html",
+      "block": 4,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "41a20bd1f8ec7d60016a57093a23e94e71404a1f48d588fa61f21c64f6170b9c"
+    },
+    {
+      "name": "demos-state-05",
+      "source": "demos/state.html",
+      "block": 5,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "304a6a3ba5026aaaa5f73ff4784e13bf20e582e71a6f60fb3f06378d8921c5ff"
+    },
+    {
+      "name": "demos-state-06",
+      "source": "demos/state.html",
+      "block": 6,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "adf6f6069e5942758938bbf17cff1ef17d285551fe928a972430962673e226cd"
+    },
+    {
+      "name": "demos-state-07",
+      "source": "demos/state.html",
+      "block": 7,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "3cf7b317a99b2b73337ef72024f939105a5973301606267d14417a9a91b10ca5"
+    },
+    {
+      "name": "demos-state-08",
+      "source": "demos/state.html",
+      "block": 8,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "79119bb3f25bb1e1b8f9e34a6a95fbd02fd09c3b4ea42b8507dc9469b17e2fe0"
+    },
+    {
+      "name": "demos-state-09",
+      "source": "demos/state.html",
+      "block": 9,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "7fc378485119b258b742a22f4b801f3438ffb1c8d7770b7ab6ac71549f2c885c"
+    },
+    {
+      "name": "demos-state-10",
+      "source": "demos/state.html",
+      "block": 10,
+      "sourceBlob": "aaa8e0aa990027dfac21615d458b085e5c10e9cb",
+      "sha256": "92c681e0822b289b117b06d677852dfd5b483cd367803263702d29f067f4993b"
+    },
+    {
+      "name": "docs-statediagram-01",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 1,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "b6d23e31185f3aa707ee721fa5322f8ac4aee123052b64bcebb760a8e16672db"
+    },
+    {
+      "name": "docs-statediagram-02",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 2,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "6d2057247983854fea81b7045123ce88943c2b2a78109dd66fe1a0a82b840912"
+    },
+    {
+      "name": "docs-statediagram-03",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 3,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "9bb61d7402ae176e06cddd4a7a7ec861aee3e8dbf48c8e1338f679c36947ae5b"
+    },
+    {
+      "name": "docs-statediagram-04",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 4,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "a6d9213dc7de9952ed301fa8db7b430f35ff7e257036fb4f4ed92f40fe8cf267"
+    },
+    {
+      "name": "docs-statediagram-05",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 5,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "0e375ada89f00bca88f233fcf72e9d1ff12e1f70787aceaae6f5eb92c740be9e"
+    },
+    {
+      "name": "docs-statediagram-06",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 6,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "0d3c251118dd2ec6097451351624c96dc9a42d8d397aca0b0a74a8026d0f1eee"
+    },
+    {
+      "name": "docs-statediagram-07",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 7,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "a97e083001a135b784494ddfe197c3e0394d8bee7248fde067c6d4713b71a876"
+    },
+    {
+      "name": "docs-statediagram-08",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 8,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "b89e9b4002fc0bc4590d6cdacc8027a9acd852e33fea246ea01c062b4307a10e"
+    },
+    {
+      "name": "docs-statediagram-09",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 9,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "e4405cbb44e8e163c168f322c709e23997328e08f748249c160c3cb4027d1e58"
+    },
+    {
+      "name": "docs-statediagram-10",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 10,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "512a14e9d12dfdb9fa0306e1d7e4ea358fc768848e443152a6fd13085704ced7"
+    },
+    {
+      "name": "docs-statediagram-11",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 11,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "310699110f33b965a3224108b21b568f562ddd36c69faf064785ae7d6baaf2f9"
+    },
+    {
+      "name": "docs-statediagram-12",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 12,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "4a903890a989c971601659ec521046784c3b93854617cd9caed8c7abfd8565a5"
+    },
+    {
+      "name": "docs-statediagram-13",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 13,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "2c03c56cd9cb0782954216365b631813b7b930644e2dc80b5479a918557b7f11"
+    },
+    {
+      "name": "docs-statediagram-14",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 14,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "19533fc3e7c6f46c062bc7ec8a22eec97c8fd3e71e656121e3f65482521d065e"
+    },
+    {
+      "name": "docs-statediagram-15",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 15,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "17712ed23de45db17659adce09e2d0f8c92d948ca52129a20033eeb96670ddaf"
+    },
+    {
+      "name": "docs-statediagram-16",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 16,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "b60d32be134f45acbf03f0268d80f2c8211861cd4e72529b8cc9f439518a6529"
+    },
+    {
+      "name": "docs-statediagram-17",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 17,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "53391438bfe477a8b5ed3385b6c1aa0ef919b57cc769e4fadb9ddcf7afef456e"
+    },
+    {
+      "name": "docs-statediagram-18",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 18,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "d1d5b94135adfcca44adb35fc436d2cab695d40e1b997358f187cdec3117e3f0"
+    },
+    {
+      "name": "docs-statediagram-19",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 19,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "212959b855bf5e54ad216a56f41e208381e625760fca3f171708c9b5a4d2c6ae"
+    },
+    {
+      "name": "docs-statediagram-20",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 20,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "771a5b7100f5e6d21b3ae3f7151a9644819e2a22b2e02d4016e06688296eb680"
+    },
+    {
+      "name": "docs-statediagram-21",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 21,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "e950c8a257c26b9cbea06f8655b0b80454d0f5fbea6f724046ab62b76d2b28df"
+    },
+    {
+      "name": "docs-statediagram-22",
+      "source": "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "block": 22,
+      "sourceBlob": "2e744a249829d08a9cec15b1a7d78ea49b93feb1",
+      "sha256": "17a2bdb01c32e93b2eba1f41955c4ea443b2441e94885b9767f31273de5b7dd2"
+    },
+    {
+      "name": "e2e-should-group-all-state-elements-under-a-single-root-g-wrapper",
+      "source": "e2e/diagrams/state-diagram/should-group-all-state-elements-under-a-single-root-g-wrapper.mmd",
+      "block": 1,
+      "sourceBlob": "890b9ab46b5771589199dc2b2f9470477d69cbb8",
+      "sha256": "1ca18055e5e0a54e5f14dbeea524b939764be4774739b5331d81c34072ebf335"
+    },
+    {
+      "name": "e2e-should-handle-multiline-notes-with-different-line-breaks",
+      "source": "e2e/diagrams/state-diagram/should-handle-multiline-notes-with-different-line-breaks.mmd",
+      "block": 1,
+      "sourceBlob": "e16db0cc4483778ae9cd87d2cbe715d4d1a9ca6b",
+      "sha256": "790bc44936ff4b8754273492511720563d8220d364d04291c2ce9d315f592958"
+    },
+    {
+      "name": "e2e-should-handle-multiple-arrows-from-one-node-to-another",
+      "source": "e2e/diagrams/state-diagram/should-handle-multiple-arrows-from-one-node-to-another.mmd",
+      "block": 1,
+      "sourceBlob": "66be5bec732e4971b60269bfe8f0d5202782aadd",
+      "sha256": "d29e4d4599b02b6c23289952686a649e4cdca945f47824593ec7a6617b76bc27"
+    },
+    {
+      "name": "e2e-should-render-a-long-descriptions-instead-of-id-when-available",
+      "source": "e2e/diagrams/state-diagram/should-render-a-long-descriptions-instead-of-id-when-available.mmd",
+      "block": 1,
+      "sourceBlob": "daba3b249c38b9436dbae91cccf0aa0fd279f705",
+      "sha256": "dd6da23c77158a7aa824eafdf91e20525e6f3bb0023de0733567c676e19f4baf"
+    },
+    {
+      "name": "e2e-should-render-a-long-descriptions-with-additional-descriptions",
+      "source": "e2e/diagrams/state-diagram/should-render-a-long-descriptions-with-additional-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "7bd81856193f0c5a32f87e41f7211841ac81a73a",
+      "sha256": "e8d8ffe2edebff74fe72fcb166e41e2e584fc08f7714faa563a11aa09a0913a6"
+    },
+    {
+      "name": "e2e-should-render-a-note-with-multiple-lines-in-it",
+      "source": "e2e/diagrams/state-diagram/should-render-a-note-with-multiple-lines-in-it.mmd",
+      "block": 1,
+      "sourceBlob": "2ba9cf6291767733484c2b6cd09845d89a74b6bd",
+      "sha256": "7380e1a426541a564efa6a857306d176b4125c7352437ce3d13e2cda109fe126"
+    },
+    {
+      "name": "e2e-should-render-a-simple-state-diagram",
+      "source": "e2e/diagrams/state-diagram/should-render-a-simple-state-diagram.mmd",
+      "block": 1,
+      "sourceBlob": "8524697ff2aa993afc5cee2307888852c30ac853",
+      "sha256": "46700842667fdd85b40a506104f3311516ecc23f2b58241c8342b1e758f2550a"
+    },
+    {
+      "name": "e2e-should-render-a-simple-state-diagrams",
+      "source": "e2e/diagrams/state-diagram/should-render-a-simple-state-diagrams.mmd",
+      "block": 1,
+      "sourceBlob": "765d28b7ee4fa538f232f79f387c91eb38223575",
+      "sha256": "eb5d92bb4ffe48e605d6f950eb176f7c39794259edbe84a9dd2e21e4658e7694"
+    },
+    {
+      "name": "e2e-should-render-a-simple-state-diagrams-2",
+      "source": "e2e/diagrams/state-diagram/should-render-a-simple-state-diagrams-2.mmd",
+      "block": 1,
+      "sourceBlob": "2f5cb291560add953b13962255fb3db7b3ea8c4d",
+      "sha256": "1fd385724bcc2156201ea3e7aac20b501930174d72b0b3076515611041194f9b"
+    },
+    {
+      "name": "e2e-should-render-a-simple-state-diagrams-with-labels",
+      "source": "e2e/diagrams/state-diagram/should-render-a-simple-state-diagrams-with-labels.mmd",
+      "block": 1,
+      "sourceBlob": "d7dfa87c8bd4592169a41c7e448ea7a4e12e7dc7",
+      "sha256": "e5c4add3ac13dfd3c18d4bf28dea8d3d460abbd353b09bb48050c9506c61db46"
+    },
+    {
+      "name": "e2e-should-render-a-single-state-with-short-descriptions",
+      "source": "e2e/diagrams/state-diagram/should-render-a-single-state-with-short-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "86808531f9fb4afc7e527c158d8b00f449c2cc52",
+      "sha256": "5506890ccd476316445c8032c7a43d2ba35d8b99cf0000da70de6213057f128a"
+    },
+    {
+      "name": "e2e-should-render-a-state-with-a-note",
+      "source": "e2e/diagrams/state-diagram/should-render-a-state-with-a-note.mmd",
+      "block": 1,
+      "sourceBlob": "4e293d5c1bbfc665d3cad56de0adbc9047f37ad3",
+      "sha256": "aa7d27a17d3c8efdf3f40a0bdc22dd348ec91c5a6834de9bbf9a6ce6132472d9"
+    },
+    {
+      "name": "e2e-should-render-a-state-with-a-note-together-with-another-state",
+      "source": "e2e/diagrams/state-diagram/should-render-a-state-with-a-note-together-with-another-state.mmd",
+      "block": 1,
+      "sourceBlob": "5a4a9269875f4369f14ec85cbf5a4402022d6be1",
+      "sha256": "7d5f1b8b620021cecaa4bf3833cf691a4ec85152c88a26e5349687a6bd8887ed"
+    },
+    {
+      "name": "e2e-should-render-a-state-with-on-the-left-side-when-so-specified",
+      "source": "e2e/diagrams/state-diagram/should-render-a-state-with-on-the-left-side-when-so-specified.mmd",
+      "block": 1,
+      "sourceBlob": "3dd0a7739a3bd401f07a88b715d7c27aae2b56c7",
+      "sha256": "e4c99397148bb64513732fbbb7c43830b1457b23ebc7b69b0fab6e8731c510a3"
+    },
+    {
+      "name": "e2e-should-render-a-state-with-states-in-it",
+      "source": "e2e/diagrams/state-diagram/should-render-a-state-with-states-in-it.mmd",
+      "block": 1,
+      "sourceBlob": "34f17c5e7f9ea65660f92a8c3c8baac833e05418",
+      "sha256": "06c14041f772a2dcd9cc6b569151e534bb53e695717196b5b9938e0b70ffd70a"
+    },
+    {
+      "name": "e2e-should-render-a-states-with-descriptions-including-multi-line-descriptions",
+      "source": "e2e/diagrams/state-diagram/should-render-a-states-with-descriptions-including-multi-line-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "aea1d07fa5a38847a955ccc078386e1ae23dc420",
+      "sha256": "7b1a9cfafb7488f589e2480fac2fcb00af94fc258307863894657094a5eb0c51"
+    },
+    {
+      "name": "e2e-should-render-a-transition-descriptions-with-new-lines",
+      "source": "e2e/diagrams/state-diagram/should-render-a-transition-descriptions-with-new-lines.mmd",
+      "block": 1,
+      "sourceBlob": "0563b959b37b9d4dd1dc907aaa50a4b58387d6b8",
+      "sha256": "82344a337e7d9868411019be56086e8a69eda73d7844bc46333cd142e8f89a63"
+    },
+    {
+      "name": "e2e-should-render-composite-states",
+      "source": "e2e/diagrams/state-diagram/should-render-composite-states.mmd",
+      "block": 1,
+      "sourceBlob": "e0b173d37a4ec0fcea90ff2137d6e68228bb2d33",
+      "sha256": "fffb0cc4db693e3ecca499324ce0ca8ef9af5403c4f85b9715a546a92fffb88c"
+    },
+    {
+      "name": "e2e-should-render-concurrency-states",
+      "source": "e2e/diagrams/state-diagram/should-render-concurrency-states.mmd",
+      "block": 1,
+      "sourceBlob": "5b2a64f4e21a4f4479137a61e72264d4ed18b970",
+      "sha256": "2e096ba798b06cc76017f17b391081b6ab7eeaa22028f92608d5474724231ec8"
+    },
+    {
+      "name": "e2e-should-render-forks-and-joins",
+      "source": "e2e/diagrams/state-diagram/should-render-forks-and-joins.mmd",
+      "block": 1,
+      "sourceBlob": "0ed73ffba0a753933aa9f6a28abf5bc752da5c3c",
+      "sha256": "0a8bf810e416a7a082b8f30c6a2f307b932c5032ea5c52ab9b7740748d43991e"
+    },
+    {
+      "name": "e2e-should-render-forks-in-composit-states",
+      "source": "e2e/diagrams/state-diagram/should-render-forks-in-composit-states.mmd",
+      "block": 1,
+      "sourceBlob": "d2bb3ca3e189597bc2d81636dd40ef25405f4e8d",
+      "sha256": "7addeab00065409ea29cf4b449b549055402b00523a75b3a93e534624c16138c"
+    },
+    {
+      "name": "e2e-should-render-multiple-composit-states",
+      "source": "e2e/diagrams/state-diagram/should-render-multiple-composit-states.mmd",
+      "block": 1,
+      "sourceBlob": "626b309cd847c379e04fe90caea2867a7a3a302d",
+      "sha256": "a487c7d187ee825f361063b07928b77ab6620e3272829adea07ad3a156ff0b74"
+    },
+    {
+      "name": "e2e-should-render-state-descriptions",
+      "source": "e2e/diagrams/state-diagram/should-render-state-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "147db983a33552bd4226814f031aa0c062784af8",
+      "sha256": "5c4e4314c2c359d4128c9b31b22ac3e2b65e89fc52647b2bd21ebe89380df9ef"
+    },
+    {
+      "name": "e2e-simplest-composite-state",
+      "source": "e2e/diagrams/state-diagram/simplest-composite-state.mmd",
+      "block": 1,
+      "sourceBlob": "78c9af059f72b8b793d5b7ae832ef52f80bf6715",
+      "sha256": "6f3d8050c46559ec87c5cb8feeb336f3a363543e1ce0b1ec22eeec1366682362"
+    },
+    {
+      "name": "e2e-state-01",
+      "source": "e2e/rendering/state/stateDiagram.spec.js",
+      "block": 1,
+      "sourceBlob": "92793c44b7ee8b8c531fd856ce1844ca54c0989e",
+      "sha256": "49357889f59c9eafa0f94a02041e02bd11490fd6ef41a2feb806a4ae56c08133"
+    },
+    {
+      "name": "e2e-state-neo-01",
+      "source": "e2e/rendering/state/stateDiagram-neo.spec.js",
+      "block": 1,
+      "sourceBlob": "64ce49aa5b96eb7590491260838612804349c7f3",
+      "sha256": "36950b457bb79d2ead795bc61964c6ad7ca5eae734bede3d5d3982ca9e4bf130"
+    },
+    {
+      "name": "e2e-state-neo-02",
+      "source": "e2e/rendering/state/stateDiagram-neo.spec.js",
+      "block": 2,
+      "sourceBlob": "64ce49aa5b96eb7590491260838612804349c7f3",
+      "sha256": "ccefac5c6be292e0320d04c8bd6569d49c553b074e374c162f4ba2497902899a"
+    },
+    {
+      "name": "e2e-state-neo-03",
+      "source": "e2e/rendering/state/stateDiagram-neo.spec.js",
+      "block": 3,
+      "sourceBlob": "64ce49aa5b96eb7590491260838612804349c7f3",
+      "sha256": "278f2512883b89c517fd0cf1748cadb60a09538020eb5796b150a187f6164e5a"
+    },
+    {
+      "name": "e2e-state-neo-04",
+      "source": "e2e/rendering/state/stateDiagram-neo.spec.js",
+      "block": 4,
+      "sourceBlob": "64ce49aa5b96eb7590491260838612804349c7f3",
+      "sha256": "10df53f2f7ac04d0111e5621173d9f0b33ac4640befcdfb5c4b332fb8fedaf12"
+    },
+    {
+      "name": "e2e-state-neo-05",
+      "source": "e2e/rendering/state/stateDiagram-neo.spec.js",
+      "block": 5,
+      "sourceBlob": "64ce49aa5b96eb7590491260838612804349c7f3",
+      "sha256": "0d7eeeec68346cfa56dbc2f82940a5f84fa7bea08066682c1622014098e2b682"
+    },
+    {
+      "name": "e2e-state-neo-06",
+      "source": "e2e/rendering/state/stateDiagram-neo.spec.js",
+      "block": 6,
+      "sourceBlob": "64ce49aa5b96eb7590491260838612804349c7f3",
+      "sha256": "e99fcab3d609ce1d2fe69ac2ef336d1f829442a7b4abe6d2bc9e8a0ee6c66f41"
+    },
+    {
+      "name": "e2e-state-neo-07",
+      "source": "e2e/rendering/state/stateDiagram-neo.spec.js",
+      "block": 7,
+      "sourceBlob": "64ce49aa5b96eb7590491260838612804349c7f3",
+      "sha256": "d1fa3ad15b44ed690cf09178bd94b36470470709e18385e6848fd570813c95d4"
+    },
+    {
+      "name": "e2e-state-redux-color-composites-01",
+      "source": "e2e/rendering/state/stateDiagram-redux-color-composites.spec.ts",
+      "block": 1,
+      "sourceBlob": "5d1f949c0ac5e9979b29ecc1ba6adddbda3f02f1",
+      "sha256": "14aabc39f5dd20bfbe90e0f48937d9de202654cc03edc8ef8f014f408d3d59cc"
+    },
+    {
+      "name": "e2e-state-redux-color-composites-02",
+      "source": "e2e/rendering/state/stateDiagram-redux-color-composites.spec.ts",
+      "block": 2,
+      "sourceBlob": "5d1f949c0ac5e9979b29ecc1ba6adddbda3f02f1",
+      "sha256": "534c67eb360a0323a7b7784949162497c647affe07aaeda001111f82aef79549"
+    },
+    {
+      "name": "e2e-state-redux-color-composites-03",
+      "source": "e2e/rendering/state/stateDiagram-redux-color-composites.spec.ts",
+      "block": 3,
+      "sourceBlob": "5d1f949c0ac5e9979b29ecc1ba6adddbda3f02f1",
+      "sha256": "0d006cd51a856ed1d35c4b7ffadc7f449220e68bb04efca6bf2828ed445d2218"
+    },
+    {
+      "name": "e2e-state-redux-color-composites-04",
+      "source": "e2e/rendering/state/stateDiagram-redux-color-composites.spec.ts",
+      "block": 4,
+      "sourceBlob": "5d1f949c0ac5e9979b29ecc1ba6adddbda3f02f1",
+      "sha256": "c42f13aed1cd67360973783f09273f6d5a84a957bed5f78fff9a997e70de6496"
+    },
+    {
+      "name": "e2e-state-redux-color-composites-05",
+      "source": "e2e/rendering/state/stateDiagram-redux-color-composites.spec.ts",
+      "block": 5,
+      "sourceBlob": "5d1f949c0ac5e9979b29ecc1ba6adddbda3f02f1",
+      "sha256": "90716cb1ea00d7aae14e214e155f7b040db6b5a683ed3c04408cc7e225a528d5"
+    },
+    {
+      "name": "e2e-state-v2-01",
+      "source": "e2e/rendering/state/stateDiagram-v2.spec.js",
+      "block": 1,
+      "sourceBlob": "a6bdf768a94718f4872e969a43b56993225a0448",
+      "sha256": "1416b23cfde74d3b51192278ddbf1c073bc8581da5b7fc12ac47f467335e0c75"
+    },
+    {
+      "name": "e2e-state-v2-02",
+      "source": "e2e/rendering/state/stateDiagram-v2.spec.js",
+      "block": 2,
+      "sourceBlob": "a6bdf768a94718f4872e969a43b56993225a0448",
+      "sha256": "38612aa41ebd2dfb8332727a059ed1912d02e05f5fee44f9f89fbd82324222c2"
+    },
+    {
+      "name": "e2e-state-v2-04",
+      "source": "e2e/rendering/state/stateDiagram-v2.spec.js",
+      "block": 4,
+      "sourceBlob": "a6bdf768a94718f4872e969a43b56993225a0448",
+      "sha256": "6974d18cd1ee687cf217332b5d4c261aa3912497c9d57c85a0da8892f69d8384"
+    },
+    {
+      "name": "e2e-v2-1433-should-render-a-simple-state-diagram-with-a-title",
+      "source": "e2e/diagrams/state-diagram-v2/1433-should-render-a-simple-state-diagram-with-a-title.mmd",
+      "block": 1,
+      "sourceBlob": "dc3c1fc65162c0035cb8dc4c88f19dc90ca0fb4a",
+      "sha256": "b97a803325100079064033b2c96fe37cfe2f82f8e2f922432782caccf544586a"
+    },
+    {
+      "name": "e2e-v2-a-compound-state-should-be-able-to-link-to-itself",
+      "source": "e2e/diagrams/state-diagram-v2/v2-a-compound-state-should-be-able-to-link-to-itself.mmd",
+      "block": 1,
+      "sourceBlob": "ea1a03eb43685531cc08752c3652753ccec38519",
+      "sha256": "f0f3ebe114600796fa7feea601cac858990b128ce48aad46f30df385d923d4ef"
+    },
+    {
+      "name": "e2e-v2-can-have-multiple-classes-applied-to-multiple-states",
+      "source": "e2e/diagrams/state-diagram-v2/v2-can-have-multiple-classes-applied-to-multiple-states.mmd",
+      "block": 1,
+      "sourceBlob": "1f984fbce26dc55d27bcfba1f9018e41905209b6",
+      "sha256": "04864929302340832fedfad5177672fa120f5c73e733ad09610947e59b64f49d"
+    },
+    {
+      "name": "e2e-v2-can-have-styles-applied",
+      "source": "e2e/diagrams/state-diagram-v2/can-have-styles-applied.mmd",
+      "block": 1,
+      "sourceBlob": "39e52fc401c89f89d25d8ec8da8fd3e729635f91",
+      "sha256": "f37a2c9305438fdb491ee5f177d9cb6b3de69df77a6fb6de30cd6c47cc1ca040"
+    },
+    {
+      "name": "e2e-v2-composite-with-a-loop-starts-on-its-start-state",
+      "source": "e2e/diagrams/state-diagram-v2/composite-with-a-loop-starts-on-its-start-state.mmd",
+      "block": 1,
+      "sourceBlob": "78295e6660f0c966a66bd02d0cb3688ab1a9943e",
+      "sha256": "43cfc68194073f7691b8d875a8252e5742f188c7546be1c9599d63c5ca28d4a6"
+    },
+    {
+      "name": "e2e-v2-elk-composite-entry-default-centering",
+      "source": "e2e/diagrams/state-diagram-v2/elk/elk-composite-entry-default-centering.mmd",
+      "block": 1,
+      "sourceBlob": "2223f24f8ceae3fd5befbf48eb925463ffd9e466",
+      "sha256": "564a653733aab1fe5bc6d931f81b6d9e36880fe7219fbf2fbdef559a492b0cf8"
+    },
+    {
+      "name": "e2e-v2-elk-notes-keep-their-layout",
+      "source": "e2e/diagrams/state-diagram-v2/elk/elk-notes-keep-their-layout.mmd",
+      "block": 1,
+      "sourceBlob": "e9350228d945349640f306d915d38270417570ea",
+      "sha256": "cbaacaa76b969d1362fce0f738b07f49bb315ad010cefee95417a5961e8c466c"
+    },
+    {
+      "name": "e2e-v2-elk-start-end-edge-centering",
+      "source": "e2e/diagrams/state-diagram-v2/elk/elk-start-end-edge-centering.mmd",
+      "block": 1,
+      "sourceBlob": "d3099f4ad8807714383fc4b401230c2f37ad361a",
+      "sha256": "3c092916f9dfe63927219a75a6ab9e0620d959c3a74d9c8fafed86985ab820d8"
+    },
+    {
+      "name": "e2e-v2-handle-transition-from-one-state-in-a-composite-state-to-a-composite-state",
+      "source": "e2e/diagrams/state-diagram-v2/v2-handle-transition-from-one-state-in-a-composite-state-to-a-composite-state.mmd",
+      "block": 1,
+      "sourceBlob": "d19d6d22bde7e2524f6398c136610da4c8717337",
+      "sha256": "aba555123b71b86f29212482569db3522a3c864921b75601d98f40e3a3d4d178"
+    },
+    {
+      "name": "e2e-v2-it-should-be-possible-to-use-a-choice",
+      "source": "e2e/diagrams/state-diagram-v2/v2-it-should-be-possible-to-use-a-choice.mmd",
+      "block": 1,
+      "sourceBlob": "758493af0fc3d50e7cc6488f17d5e67f9f2a7924",
+      "sha256": "b6e62b2eaa94128d74bcfe78b9e879343afe1f259409eca81919fc1fc5045d01"
+    },
+    {
+      "name": "e2e-v2-should-align-dividers-correctly",
+      "source": "e2e/diagrams/state-diagram-v2/should-align-dividers-correctly.mmd",
+      "block": 1,
+      "sourceBlob": "70805896de67e8a15b6f0497823474f63841b79d",
+      "sha256": "f7216461e548ca6ca9a69037ee9ae78e93ffbc742aa26f1e5c955a2d93975dbd"
+    },
+    {
+      "name": "e2e-v2-should-allow-styles-to-take-effect-in-subgraphs",
+      "source": "e2e/diagrams/state-diagram-v2/should-allow-styles-to-take-effect-in-subgraphs.mmd",
+      "block": 1,
+      "sourceBlob": "13e32acbcf8f72fe4108e0cc070d0b52727f233a",
+      "sha256": "e563b91210b5144794f5c62968d52612954cbeae62a616931d4456da1ad60235"
+    },
+    {
+      "name": "e2e-v2-should-handle-different-rendering-directions-in-composite-states",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-handle-different-rendering-directions-in-composite-states.mmd",
+      "block": 1,
+      "sourceBlob": "f7157077e2d49f03254f2a162ea2d7b1ff5e2d56",
+      "sha256": "ff720600944adf7548b40bd5fc681ea451526d67ea6871099f3b4de7113d7cf9"
+    },
+    {
+      "name": "e2e-v2-should-handle-multiline-notes-with-different-line-breaks",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-handle-multiline-notes-with-different-line-breaks.mmd",
+      "block": 1,
+      "sourceBlob": "6f072b92d33ad6f2a2c21578b3bb2876be66b196",
+      "sha256": "d6d66c482ab7e30aee2abfb0ab6b046257d47a89e655522c9a20ed48c630cd8c"
+    },
+    {
+      "name": "e2e-v2-should-handle-multiple-arrows-from-one-node-to-another",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-handle-multiple-arrows-from-one-node-to-another.mmd",
+      "block": 1,
+      "sourceBlob": "a581c31dcd055a7b54f6d29d3cd32f0ffea3b244",
+      "sha256": "d61e991c35822e481899b0ade3533d1422ed8731b1da841e3b903cf01c5b816f"
+    },
+    {
+      "name": "e2e-v2-should-handle-multiple-notes-added-to-one-state",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-handle-multiple-notes-added-to-one-state.mmd",
+      "block": 1,
+      "sourceBlob": "6f93766a9d4bdf8de9e4e021c5f4d519513de883",
+      "sha256": "d1a8d0811f0c7dfc03973ec64bf50d5f1cdd0635f2f51b29993c27fbeee1ed1c"
+    },
+    {
+      "name": "e2e-v2-should-let-styles-take-precedence-over-classes",
+      "source": "e2e/diagrams/state-diagram-v2/should-let-styles-take-precedence-over-classes.mmd",
+      "block": 1,
+      "sourceBlob": "7f9e19f8a9140e1c5e0498c86ebd92659faa821f",
+      "sha256": "34aa80b905ec1d4bbe81f4fea99bb7c1f633c6c092a36b0659db2a9ffe727928"
+    },
+    {
+      "name": "e2e-v2-should-render-a-compact-self-loop-edge",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-compact-self-loop-edge.mmd",
+      "block": 1,
+      "sourceBlob": "54cb93ed5f07a9de3dda240bc6c8289b1192c05c",
+      "sha256": "63846c08508f50750a1af200027629c09004d3307feb8ebe38720d562abf5017"
+    },
+    {
+      "name": "e2e-v2-should-render-a-long-descriptions-instead-of-id-when-available",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-long-descriptions-instead-of-id-when-available.mmd",
+      "block": 1,
+      "sourceBlob": "363412f3b54ef2db077308b4362cd3f5d22dbedd",
+      "sha256": "17fc79d454601e15195380db8dbf0ba266c3929b307dbe1f493ad79d1aa19c03"
+    },
+    {
+      "name": "e2e-v2-should-render-a-long-descriptions-with-additional-descriptions",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-long-descriptions-with-additional-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "43f4e564f003d1ca15f437145d2138d050343beb",
+      "sha256": "1d4fdc6aca815bbe77faf14bb6ae16b01b74c92d26f0a60121e92fd53441e397"
+    },
+    {
+      "name": "e2e-v2-should-render-a-note-with-multiple-lines-in-it",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-note-with-multiple-lines-in-it.mmd",
+      "block": 1,
+      "sourceBlob": "eb89c9d90957b0a7b47253c3c30c11e74ea7dd86",
+      "sha256": "ffd97449e504dc4f2d420f759d62361d0eef424da6b1bbe4048612032e680544"
+    },
+    {
+      "name": "e2e-v2-should-render-a-simple-state-diagrams",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-simple-state-diagrams.mmd",
+      "block": 1,
+      "sourceBlob": "9b388732f727111e30aaff768447220d654830a7",
+      "sha256": "d63867fdc06574446f0a7da37ee9764f44a3e8f5eaed7c5743583437ca652b76"
+    },
+    {
+      "name": "e2e-v2-should-render-a-simple-state-diagrams-2",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-simple-state-diagrams-2.mmd",
+      "block": 1,
+      "sourceBlob": "68fc5b00e760cd4509d91b048dfa3d6c382f7d6c",
+      "sha256": "311ee96a356485a9365d9fecd62a121305eae6269667e4568955a4251cc6d977"
+    },
+    {
+      "name": "e2e-v2-should-render-a-simple-state-diagrams-with-labels",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-simple-state-diagrams-with-labels.mmd",
+      "block": 1,
+      "sourceBlob": "de9805f42a4f8f2ce6d197676e70553e3d1195ca",
+      "sha256": "0d363896ed4a9ea8c06d2d0489155544ab9bce1801555296da14d3c776e058d5"
+    },
+    {
+      "name": "e2e-v2-should-render-a-single-state-with-short-descriptions",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-single-state-with-short-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "2b96cc15c80a6c65834d75b80f384482b26dcac9",
+      "sha256": "7f82a205865d5a46ad60e4451001a59fcb19b46ee219c6127c8766b96bad6e40"
+    },
+    {
+      "name": "e2e-v2-should-render-a-state-diagram-and-set-the-correct-length-of-the-labels",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-state-diagram-and-set-the-correct-length-of-the-labels.mmd",
+      "block": 1,
+      "sourceBlob": "8ffcae7f2ca755cafa93500667aefd993d29909d",
+      "sha256": "84e369c92e7922734e523c397705e36f7d2063b1048e0d7decc48f66c271e17d"
+    },
+    {
+      "name": "e2e-v2-should-render-a-state-with-a-note",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-state-with-a-note.mmd",
+      "block": 1,
+      "sourceBlob": "1b2f91996c82824410eafcc38ed9dc4645f07321",
+      "sha256": "153924a29c0e01c50e68d1eb83ac6ed030fd2f2d6bce3788212ddeccd0183611"
+    },
+    {
+      "name": "e2e-v2-should-render-a-state-with-a-note-together-with-another-state",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-state-with-a-note-together-with-another-state.mmd",
+      "block": 1,
+      "sourceBlob": "fb5f1298faebc03fb1e0e5e7412ed20e9f8b2937",
+      "sha256": "4a7379e394454791e0bae618550b0a24e0fc8a0b1518a14556c2f2d77f532d51"
+    },
+    {
+      "name": "e2e-v2-should-render-a-state-with-on-the-left-side-when-so-specified",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-state-with-on-the-left-side-when-so-specified.mmd",
+      "block": 1,
+      "sourceBlob": "618e731981ccb2b2ca115d6775c80a543f3111a4",
+      "sha256": "3bf78bf05629d78cb80267c8886c4c7603937fcd705b48738384e0924e5da8bd"
+    },
+    {
+      "name": "e2e-v2-should-render-a-state-with-states-in-it",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-state-with-states-in-it.mmd",
+      "block": 1,
+      "sourceBlob": "de2c9b72b59f68c9ed30f93904c729b0a8a3358f",
+      "sha256": "eb1e5eba2017c78a8d866137cfead369d6570341c7f8d57e858dd79c1ce74fb4"
+    },
+    {
+      "name": "e2e-v2-should-render-a-states-with-descriptions-including-multi-line-descriptions",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-states-with-descriptions-including-multi-line-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "a8b332792fcec3e5356883daabc8aa6ef65ef051",
+      "sha256": "8ae378dedb9bdfba3ce4c1c97998a52c250b71397fa5ebef39a76f27c2248635"
+    },
+    {
+      "name": "e2e-v2-should-render-a-transition-descriptions-with-new-lines",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-a-transition-descriptions-with-new-lines.mmd",
+      "block": 1,
+      "sourceBlob": "bbf0e4c349200a78a1454122db42031206b27fbb",
+      "sha256": "83a704f08b7662bff0462813c8b2af4565e8511bdb497a3530ee836a5cba5878"
+    },
+    {
+      "name": "e2e-v2-should-render-composite-states",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-composite-states.mmd",
+      "block": 1,
+      "sourceBlob": "9596e08710014d8b5ed33c9b6bd877f6215e8f62",
+      "sha256": "ade46aab530c341ca3b3e94ad02f1a14d0f8434409a83251b1a031c0350eec50"
+    },
+    {
+      "name": "e2e-v2-should-render-concurrency-states",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-concurrency-states.mmd",
+      "block": 1,
+      "sourceBlob": "e848f188c28347b169c7f88f6f5c6783c503845f",
+      "sha256": "c1dfa3d9aa754a5a4373d4c630fb861de025882b059eccd02027fed7db43481e"
+    },
+    {
+      "name": "e2e-v2-should-render-edge-labels-correctly",
+      "source": "e2e/diagrams/state-diagram-v2/should-render-edge-labels-correctly.mmd",
+      "block": 1,
+      "sourceBlob": "67f103371edf0950bfac1f849cda904be8288764",
+      "sha256": "ec479b5d607b2c072df3118cdda40b44bc7c8ff0e5663f17cd56d2803dc6e7ad"
+    },
+    {
+      "name": "e2e-v2-should-render-edge-labels-correctly-with-multiple-states",
+      "source": "e2e/diagrams/state-diagram-v2/should-render-edge-labels-correctly-with-multiple-states.mmd",
+      "block": 1,
+      "sourceBlob": "44362a0b4dee888a1f5c1a9126440105da6f684a",
+      "sha256": "42864feae2b0ab95245243e22b8061ac8fbb4d2231892d62512236c36a925d06"
+    },
+    {
+      "name": "e2e-v2-should-render-edge-labels-correctly-with-multiple-transitions",
+      "source": "e2e/diagrams/state-diagram-v2/should-render-edge-labels-correctly-with-multiple-transitions.mmd",
+      "block": 1,
+      "sourceBlob": "cfdc5f8c45c65c586a4617724201a029a3cb5e27",
+      "sha256": "2477910898f3953c16597e1e1adcda0a1bacc25841ae23a19a3c2388a542e79a"
+    },
+    {
+      "name": "e2e-v2-should-render-forks-and-joins",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-forks-and-joins.mmd",
+      "block": 1,
+      "sourceBlob": "28af48431441c2bc366f998e1f761a96385a3161",
+      "sha256": "b9303e2893acbde4063309444fc13aa3c34484b156f4159a0e426151ebed7fe0"
+    },
+    {
+      "name": "e2e-v2-should-render-forks-in-composite-states",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-forks-in-composite-states.mmd",
+      "block": 1,
+      "sourceBlob": "05112ecec7c447acc5cb39cdd693ec1fc201d658",
+      "sha256": "e5575ed84738784a8b387fa3c9f0cc8ebf93f1e4c3efe1e61213915e6461144f"
+    },
+    {
+      "name": "e2e-v2-should-render-multiple-composite-states",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-multiple-composite-states.mmd",
+      "block": 1,
+      "sourceBlob": "2a76985e4d11326fe2ca74186f870911f5c55781",
+      "sha256": "811e434c226634f925dd248a27b4a118f53688ee67c30f920167db759b855c65"
+    },
+    {
+      "name": "e2e-v2-should-render-state-descriptions",
+      "source": "e2e/diagrams/state-diagram-v2/v2-should-render-state-descriptions.mmd",
+      "block": 1,
+      "sourceBlob": "f66737bf4a79fcc063accaf7c3ba62cb4bd35796",
+      "sha256": "89818468a30dcff0a7663a2edddf17379910b522a132fe1b817b79a890efcdcb"
+    },
+    {
+      "name": "e2e-v2-simplest-composite-state",
+      "source": "e2e/diagrams/state-diagram-v2/v2-simplest-composite-state.mmd",
+      "block": 1,
+      "sourceBlob": "723d5b9e5c4ec730ad6741c01ea9bd920f476cd6",
+      "sha256": "ffe788ad5bf40939119aecda2915709b882347c66f6fa923c6fa88a3d6fa6adb"
+    },
+    {
+      "name": "e2e-v2-state-label-with-names-in-it",
+      "source": "e2e/diagrams/state-diagram-v2/v2-state-label-with-names-in-it.mmd",
+      "block": 1,
+      "sourceBlob": "41ab77e811fd00493e867113e0095cb42e47a35f",
+      "sha256": "efba5abdf37f923821d5497368bd8b41822efec632e6c3a4db8e618af81f57b7"
+    },
+    {
+      "name": "e2e-v2-states-can-have-a-class-applied",
+      "source": "e2e/diagrams/state-diagram-v2/v2-states-can-have-a-class-applied.mmd",
+      "block": 1,
+      "sourceBlob": "141ca2ceb26ccb45385c86536c19cc62bc733991",
+      "sha256": "1f6376cabc0f21f992159575ae4accdb4e3a2a6b47d1b2eead24c07e5ef9eb84"
+    },
+    {
+      "name": "e2e-v2-width-of-compound-state-should-grow-with-title-if-title-is-wider",
+      "source": "e2e/diagrams/state-diagram-v2/v2-width-of-compound-state-should-grow-with-title-if-title-is-wider.mmd",
+      "block": 1,
+      "sourceBlob": "35181c253d3f2f6d71b53e1619d4d9f2eb1fcdc0",
+      "sha256": "e737531295fd6a6f92503203046c10c9066dfad6c65818aadd27e02499e99f9b"
+    }
+  ]
+}

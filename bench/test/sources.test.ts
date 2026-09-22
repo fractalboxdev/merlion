@@ -8,6 +8,7 @@ import {
   extractTemplateLiterals,
   isFlowchart,
   isSequence,
+  isState,
   sourceSlug,
 } from "../src/corpus/sources.ts";
 
@@ -140,6 +141,65 @@ describe("selectSourcePaths for sequences", () => {
       "e2e/rendering/sequence/sequencediagram.spec.js",
       "packages/mermaid/src/docs/syntax/sequenceDiagram.md",
     ]);
+  });
+});
+
+describe("isState", () => {
+  it("accepts both state headers, case-insensitively, after front matter and directives", () => {
+    expect(isState("stateDiagram-v2\n[*] --> A")).toBe(true);
+    expect(isState("stateDiagram\n[*] --> A")).toBe(true);
+    expect(isState("StateDiagram-V2\n[*] --> A")).toBe(true);
+    expect(isState("stateDiagram-v2;[*] --> A")).toBe(true);
+    expect(isState("---\ntitle: x\n---\nstateDiagram-v2\n[*] --> A")).toBe(true);
+    expect(isState("%%{init: {'theme':'dark'}}%%\n%% a comment\n\nstateDiagram-v2")).toBe(true);
+  });
+
+  it("rejects another diagram type and an unterminated front matter", () => {
+    expect(isState("graph TD\nA-->B")).toBe(false);
+    expect(isState("sequenceDiagram\nA->>B: hi")).toBe(false);
+    expect(isState("stateDiagrams\n[*] --> A")).toBe(false);
+    expect(isState("---\ntitle: never closed\nstateDiagram-v2")).toBe(false);
+  });
+});
+
+describe("selectSourcePaths for state machines", () => {
+  it("keeps demo pages, the state syntax doc and both state e2e directories", () => {
+    const tree = [
+      "demos/state.html",
+      "demos/flowchart.html",
+      "packages/mermaid/src/docs/syntax/flowchart.md",
+      "packages/mermaid/src/docs/syntax/stateDiagram.md",
+      "e2e/rendering/flowchart/flowchart-v2.spec.js",
+      "e2e/rendering/state/stateDiagram.spec.js",
+      "e2e/rendering/state/stateDiagram-v2.spec.js",
+      "e2e/diagrams/state-diagram/should-render-composite-states.mmd",
+      "e2e/diagrams/state-diagram-v2/v2-should-render-forks-and-joins.mmd",
+      "e2e/diagrams/state-diagram-v2/elk/elk-notes-keep-their-layout.mmd",
+      "e2e/diagrams/state-diagram-v2/handdrawn/hd-1.mmd",
+      "e2e/diagrams/class-diagram/1.mmd",
+      "e2e/platform/dev-diagrams/diagrams/state-diagram/1-simple-state-diagram.mmd",
+    ];
+    expect(selectSourcePaths(tree, "state")).toEqual([
+      "demos/flowchart.html",
+      "demos/state.html",
+      "e2e/diagrams/state-diagram-v2/elk/elk-notes-keep-their-layout.mmd",
+      "e2e/diagrams/state-diagram-v2/v2-should-render-forks-and-joins.mmd",
+      "e2e/diagrams/state-diagram/should-render-composite-states.mmd",
+      "e2e/rendering/state/stateDiagram-v2.spec.js",
+      "e2e/rendering/state/stateDiagram.spec.js",
+      "packages/mermaid/src/docs/syntax/stateDiagram.md",
+    ]);
+  });
+
+  it("names a state source after its directory, dropping mermaid's v2 prefix", () => {
+    expect(sourceSlug("e2e/diagrams/state-diagram-v2/v2-should-render-forks-and-joins.mmd")).toBe(
+      "e2e-v2-should-render-forks-and-joins",
+    );
+    expect(sourceSlug("e2e/diagrams/state-diagram/should-render-composite-states.mmd")).toBe(
+      "e2e-should-render-composite-states",
+    );
+    expect(sourceSlug("e2e/rendering/state/stateDiagram-v2.spec.js")).toBe("e2e-state-v2");
+    expect(sourceSlug("packages/mermaid/src/docs/syntax/stateDiagram.md")).toBe("docs-statediagram");
   });
 });
 

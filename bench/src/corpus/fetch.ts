@@ -1,12 +1,12 @@
 /**
- * `bench fetch`: downloads the `compat` and `compat-sequence` corpora from the
- * mermaid repository at the pinned commit and derives the `edits` corpus from the
- * flowcharts (specs/benchmark.md#corpora, specs/licensing.md rule 5).
+ * `bench fetch`: downloads the `compat`, `compat-sequence` and `compat-state` corpora
+ * from the mermaid repository at the pinned commit and derives the `edits` corpus from
+ * the flowcharts (specs/benchmark.md#corpora, specs/licensing.md rule 5).
  */
 import { FileSystem, HttpClient, HttpClientRequest, Path } from "@effect/platform";
 import { createHash } from "node:crypto";
 import { Config, Console, Effect, Option, Redacted, Schema } from "effect";
-import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, EDITS_DIR } from "../paths.ts";
+import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, COMPAT_STATE_DIR, EDITS_DIR } from "../paths.ts";
 import { EditPairFile, Manifest, ManifestEntry, MERMAID_COMMIT, MERMAID_REPO, MERMAID_TAG } from "../schema.ts";
 import { makeEdits } from "./edits.ts";
 import { type DiagramKind, extractDiagrams, selectSourcePaths, sourceSlug } from "./sources.ts";
@@ -72,7 +72,11 @@ export const fetchCorpus = Effect.gen(function* () {
   };
 
   /** Rewrites a corpus directory from scratch so removed diagrams do not linger. */
-  const write = (corpus: "compat" | "compat-sequence", dir: string, es: ReadonlyArray<{ entry: ManifestEntry; text: string }>) =>
+  const write = (
+    corpus: "compat" | "compat-sequence" | "compat-state",
+    dir: string,
+    es: ReadonlyArray<{ entry: ManifestEntry; text: string }>,
+  ) =>
     Effect.gen(function* () {
       yield* fs.remove(dir, { recursive: true }).pipe(Effect.ignore);
       yield* fs.makeDirectory(dir, { recursive: true });
@@ -102,6 +106,12 @@ export const fetchCorpus = Effect.gen(function* () {
   const seqEntries = collect("sequence", seqContents);
   yield* write("compat-sequence", COMPAT_SEQUENCE_DIR, seqEntries);
 
+  const stateSources = selectSourcePaths([...blobs.keys()], "state");
+  yield* Console.log(`${stateSources.length} state source files`);
+  const stateContents = yield* Effect.forEach(stateSources, fetchText, { concurrency: 8 });
+  const stateEntries = collect("state", stateContents);
+  yield* write("compat-state", COMPAT_STATE_DIR, stateEntries);
+
   // Edits: pairs from the first EDIT_SOURCES diagrams that yield at least three edit kinds.
   yield* fs.remove(EDITS_DIR, { recursive: true }).pipe(Effect.ignore);
   yield* fs.makeDirectory(EDITS_DIR, { recursive: true });
@@ -119,5 +129,10 @@ export const fetchCorpus = Effect.gen(function* () {
     }
   }
   yield* Console.log(`edits: ${pairs} pairs from ${used} diagrams`);
-  return { diagrams: entries.length, sequenceDiagrams: seqEntries.length, editPairs: pairs };
+  return {
+    diagrams: entries.length,
+    sequenceDiagrams: seqEntries.length,
+    stateDiagrams: stateEntries.length,
+    editPairs: pairs,
+  };
 });
