@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-elk-01--rename-label",
+  "source": "demos-flowchart-elk-01",
+  "kind": "rename-label",
+  "before": "\t\tflowchart-elk TD\n      A([Start]) ==> B[Step 1]\n      B ==> C{Flow 1}\n      C -- Choice 1.1 --> D[Step 2.1]\n      C -- Choice 1.3 --> I[Step 2.3]\n      C == Choice 1.2 ==> E[Step 2.2]\n      D --> F{Flow 2}\n      E ==> F{Flow 2}\n      F{Flow 2} == Choice 2.1 ==> H[Feedback node]\n      H[Feedback node] ==> B[Step 1]\n      F{Flow 2} == Choice 2.2 ==> G((Finish))",
+  "after": "\t\tflowchart-elk TD\n      A([Start]) ==> B[Step 1 renamed]\n      B ==> C{Flow 1}\n      C -- Choice 1.1 --> D[Step 2.1]\n      C -- Choice 1.3 --> I[Step 2.3]\n      C == Choice 1.2 ==> E[Step 2.2]\n      D --> F{Flow 2}\n      E ==> F{Flow 2}\n      F{Flow 2} == Choice 2.1 ==> H[Feedback node]\n      H[Feedback node] ==> B[Step 1]\n      F{Flow 2} == Choice 2.2 ==> G((Finish))"
+}

@@ -18,8 +18,9 @@ export interface EditPair {
 export interface SimpleEdge {
   readonly from: string;
   readonly to: string;
-  /** True when either endpoint carries a shape/label declaration on this line. */
-  readonly shaped: boolean;
+  /** Shape and label declared for the endpoint on this line (`[Label]`, `(Label)`, `{Label}`), if any. */
+  readonly fromShape: string | null;
+  readonly toShape: string | null;
 }
 
 const ID = "([A-Za-z][A-Za-z0-9_]*)";
@@ -32,7 +33,7 @@ const SIMPLE_EDGE = new RegExp(`^\\s*${ID}${SHAPE}\\s*${ARROW}\\s*${EDGE_LABEL}$
 export const parseSimpleEdge = (line: string): SimpleEdge | null => {
   const m = SIMPLE_EDGE.exec(line);
   if (m === null || m[1] === undefined || m[3] === undefined) return null;
-  return { from: m[1], to: m[3], shaped: m[2] !== undefined || m[4] !== undefined };
+  return { from: m[1], to: m[3], fromShape: m[2] ?? null, toShape: m[4] ?? null };
 };
 
 /** Minimum number of simple edge lines for a diagram to be edited. */
@@ -74,16 +75,21 @@ export const makeEdits = (source: string, text: string): EditPair[] => {
     }
   }
 
-  // remove-edge: the last unshaped simple line whose endpoints both appear on other lines.
-  for (let s = simple.length - 1; s >= 0; s--) {
-    const { k, e } = simple[s]!;
-    if (e.shaped) continue;
+  // remove-edge: the last simple line. Endpoints declared on that line, or
+  // mentioned nowhere else, are re-declared in its place so every node survives.
+  {
+    const { k, e } = simple[simple.length - 1]!;
+    const lineIndent = /^[ \t]*/.exec(lines[k]!)?.[0] ?? "";
     const others = lines.filter((_, j) => j !== k).join("\n");
-    const mentions = (id: string): boolean => new RegExp(`(^|[^A-Za-z0-9_])${id}([^A-Za-z0-9_]|$)`, "m").test(others);
-    if (mentions(e.from) && mentions(e.to)) {
-      push("remove-edge", lines.filter((_, j) => j !== k).join("\n"));
-      break;
+    const mentioned = (id: string): boolean => new RegExp(`(^|[^A-Za-z0-9_])${id}([^A-Za-z0-9_]|$)`, "m").test(others);
+    const keep: string[] = [];
+    for (const [id, shape] of [
+      [e.from, e.fromShape],
+      [e.to, e.toShape],
+    ] as const) {
+      if (shape !== null || !mentioned(id)) keep.push(`${lineIndent}${id}${shape ?? ""}`);
     }
+    push("remove-edge", [...lines.slice(0, k), ...keep, ...lines.slice(k + 1)].join("\n"));
   }
 
   // rename-label: the first `id[Label]` with a plain label.

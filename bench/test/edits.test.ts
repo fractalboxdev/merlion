@@ -13,9 +13,10 @@ describe("parseSimpleEdge", () => {
     expect(parseSimpleEdge("  A[Christmas] -->|Get money| B(Go shopping)")).toEqual({
       from: "A",
       to: "B",
-      shaped: true,
+      fromShape: "[Christmas]",
+      toShape: "(Go shopping)",
     });
-    expect(parseSimpleEdge("D --> E;")).toEqual({ from: "D", to: "E", shaped: false });
+    expect(parseSimpleEdge("D --> E;")).toEqual({ from: "D", to: "E", fromShape: null, toShape: null });
     expect(parseSimpleEdge("A --> B & C")).toBeNull();
     expect(parseSimpleEdge("subgraph one")).toBeNull();
   });
@@ -45,6 +46,12 @@ describe("makeEdits", () => {
 
   it("removes an unshaped edge whose endpoints survive", () => {
     expect(byKind.get("remove-edge")!.after).toBe(SRC.replace("\n  D --> E", ""));
+  });
+
+  it("keeps the endpoints of a removed edge whose line declares them", () => {
+    const src = "graph LR\n  A --> B\n  B --> C\n  C -->|x| D[Done]";
+    const e = makeEdits("s", src).find((x) => x.kind === "remove-edge")!;
+    expect(e.after).toBe("graph LR\n  A --> B\n  B --> C\n  D[Done]");
   });
 
   it("renames the first square-bracket label", () => {

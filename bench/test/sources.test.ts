@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   dedent,
+  extractDiagrams,
+  selectSourcePaths,
   extractHtmlPreBlocks,
   extractMarkdownFences,
   extractTemplateLiterals,
@@ -66,6 +68,47 @@ describe("extractTemplateLiterals", () => {
   it("ignores backticks inside ordinary strings and comments", () => {
     const js = "const a = 'x`y'; const b = \"`\"; // don't `x`\n/* `y` it's */ f(`graph LR`)";
     expect(extractTemplateLiterals(js)).toEqual(["graph LR"]);
+  });
+});
+
+describe("selectSourcePaths", () => {
+  it("keeps demo pages, the flowchart syntax doc and flowchart e2e sources", () => {
+    const tree = [
+      "demos/flowchart.html",
+      "demos/sub/x.html",
+      "demos/readme.md",
+      "docs/syntax/flowchart.md",
+      "packages/mermaid/src/docs/syntax/flowchart.md",
+      "packages/mermaid/src/docs/syntax/sequence.md",
+      "e2e/rendering/flowchart/flowchart-v2.spec.js",
+      "e2e/rendering/flowchart/flowchart-shape-alias.spec.ts",
+      "e2e/rendering/sequence/sequence.spec.js",
+      "e2e/diagrams/flowchart/1-a.mmd",
+      "e2e/diagrams/flowchart/dagre/2-b.mmd",
+      "e2e/diagrams/flowchart/handdrawn/3-c.mmd",
+      "e2e/diagrams/class-diagram/1.mmd",
+    ];
+    expect(selectSourcePaths(tree)).toEqual([
+      "demos/flowchart.html",
+      "e2e/diagrams/flowchart/1-a.mmd",
+      "e2e/diagrams/flowchart/dagre/2-b.mmd",
+      "e2e/rendering/flowchart/flowchart-shape-alias.spec.ts",
+      "e2e/rendering/flowchart/flowchart-v2.spec.js",
+      "packages/mermaid/src/docs/syntax/flowchart.md",
+    ]);
+  });
+});
+
+describe("extractDiagrams", () => {
+  it("dispatches on the file type and keeps flowcharts only", () => {
+    expect(extractDiagrams("a.html", `<pre class="mermaid">graph TD\nA</pre><pre class="mermaid">pie\n"a": 1</pre>`)).toEqual([
+      "graph TD\nA",
+    ]);
+    expect(extractDiagrams("a.md", "```mermaid\nflowchart LR\nB\n```")).toEqual(["flowchart LR\nB"]);
+    expect(extractDiagrams("a.spec.ts", "f(`graph TD\n  C`); g(`not a diagram`)")).toEqual(["graph TD\n  C"]);
+    expect(extractDiagrams("a.mmd", "\n  graph TD\n    D\n")).toEqual(["graph TD\n  D"]);
+    expect(extractDiagrams("a.mmd", "sequenceDiagram")).toEqual([]);
+    expect(extractDiagrams("a.txt", "graph TD")).toEqual([]);
   });
 });
 

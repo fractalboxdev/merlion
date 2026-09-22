@@ -1,0 +1,11 @@
+flowchart LR
+  subgraph One
+    X[node] --> Y[node]
+  end
+  subgraph Two
+    Z[node]
+  end
+  classDef mine fill:#ff0000,stroke:#000000
+  class X mine
+  style Two fill:#00ff00,stroke:#0000ff
+  Y --> Z

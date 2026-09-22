@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-04--rename-label",
+  "source": "demos-flowchart-04",
+  "kind": "rename-label",
+  "before": "flowchart TD\n  accTitle: What to buy\n  accDescr: Options of what to buy with Christmas money\n  A[Christmas] -->|Get money| B(Go shopping)\n  B --> C{Let me thinksssssx<br/>sssssssssssssssssssuuu<br />tttsssssssssssssssssssssss}\n  C -->|One| D[Laptop]\n  C -->|Two| E[iPhone]\n  C -->|Three| F[Car]",
+  "after": "flowchart TD\n  accTitle: What to buy\n  accDescr: Options of what to buy with Christmas money\n  A[Christmas renamed] -->|Get money| B(Go shopping)\n  B --> C{Let me thinksssssx<br/>sssssssssssssssssssuuu<br />tttsssssssssssssssssssssss}\n  C -->|One| D[Laptop]\n  C -->|Two| E[iPhone]\n  C -->|Three| F[Car]"
+}

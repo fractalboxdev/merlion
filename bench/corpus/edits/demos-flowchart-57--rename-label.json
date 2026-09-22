@@ -1,0 +1,7 @@
+{
+  "name": "demos-flowchart-57--rename-label",
+  "source": "demos-flowchart-57",
+  "kind": "rename-label",
+  "before": "graph LR\nA1[Multi<br>Line] -->|Multi<br>Line| B1(Multi<br>Line)\nC1[Multi<br />Line] -->|Multi<br />Line| D1(Multi<br />Line)\nE1[Multi<br />Line] -->|Multi<br />Line| F1(Multi<br />Line)\nA2[Multi<br>Line] -->|Multi<br>Line| B2(Multi<br>Line)\nC2[Multi<br />Line] -->|Multi<br />Line| D2(Multi<br />Line)\nE2[Multi<br />Line] -->|Multi<br />Line| F2(Multi<br />Line)\nlinkStyle 0 stroke:DarkGray,stroke-width:2px\nlinkStyle 1 stroke:DarkGray,stroke-width:2px\nlinkStyle 2 stroke:DarkGray,stroke-width:2px",
+  "after": "graph LR\nA1[Multi<br>Line renamed] -->|Multi<br>Line| B1(Multi<br>Line)\nC1[Multi<br />Line] -->|Multi<br />Line| D1(Multi<br />Line)\nE1[Multi<br />Line] -->|Multi<br />Line| F1(Multi<br />Line)\nA2[Multi<br>Line] -->|Multi<br>Line| B2(Multi<br>Line)\nC2[Multi<br />Line] -->|Multi<br />Line| D2(Multi<br />Line)\nE2[Multi<br />Line] -->|Multi<br />Line| F2(Multi<br />Line)\nlinkStyle 0 stroke:DarkGray,stroke-width:2px\nlinkStyle 1 stroke:DarkGray,stroke-width:2px\nlinkStyle 2 stroke:DarkGray,stroke-width:2px"
+}

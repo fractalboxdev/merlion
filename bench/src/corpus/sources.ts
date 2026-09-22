@@ -198,3 +198,31 @@ export const sourceSlug = (path: string): string => {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 };
+
+/**
+ * Repository paths the `compat` corpus is drawn from: demo pages, the
+ * flowchart syntax documentation, and the flowchart end-to-end tests (their
+ * spec files and their `.mmd` fixtures). The `handdrawn/` fixtures repeat other
+ * fixtures with a different `look` and are left out. Sorted.
+ */
+export const selectSourcePaths = (paths: readonly string[]): string[] =>
+  paths
+    .filter(
+      (p) =>
+        /^demos\/[^/]+\.html$/.test(p) ||
+        p === "packages/mermaid/src/docs/syntax/flowchart.md" ||
+        /^e2e\/rendering\/flowchart\/[^/]+\.spec\.(js|ts)$/.test(p) ||
+        (/^e2e\/diagrams\/flowchart\/.+\.mmd$/.test(p) && !p.includes("/handdrawn/")),
+    )
+    .sort();
+
+/** Flowchart diagrams in one source file, in document order. */
+export const extractDiagrams = (path: string, content: string): string[] => {
+  let blocks: string[];
+  if (path.endsWith(".html")) blocks = extractHtmlPreBlocks(content);
+  else if (path.endsWith(".md")) blocks = extractMarkdownFences(content);
+  else if (/\.(js|ts)$/.test(path)) blocks = extractTemplateLiterals(content);
+  else if (path.endsWith(".mmd")) blocks = [dedent(content)];
+  else blocks = [];
+  return blocks.filter(isFlowchart);
+};
