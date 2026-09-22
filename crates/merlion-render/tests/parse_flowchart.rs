@@ -39,7 +39,6 @@ fn headers_and_directions() {
 #[test]
 fn unsupported_headers_name_the_header() {
     for (src, header) in [
-        ("sequenceDiagram\nA->>B: hi", "sequenceDiagram"),
         ("classDiagram", "classDiagram"),
         ("stateDiagram-v2\n[*] --> A", "stateDiagram-v2"),
         ("erDiagram", "erDiagram"),

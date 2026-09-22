@@ -3,6 +3,10 @@
 //! `clusters[i]` is `Flowchart::subgraphs[i]`. Coordinates are px, origin top-left,
 //! already transformed for the final direction and container fit.
 
+//! Sequence diagrams have a fixed geometry of their own: [`sequence`].
+
+pub mod sequence;
+
 use alloc::vec::Vec;
 
 use crate::options::Direction;

@@ -4,18 +4,28 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+pub mod sequence;
+
 use crate::diag::Span;
 use crate::options::Direction;
 
+pub use sequence::Sequence;
+
+/// One variant per diagram type. A diagram is built once per render and moved twice, so
+/// the variants hold their models inline rather than behind a box.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Diagram {
     Flowchart(Flowchart),
+    /// specs/sequence.md
+    Sequence(Sequence),
 }
 
 impl Diagram {
     pub fn type_name(&self) -> &'static str {
         match self {
             Diagram::Flowchart(_) => "flowchart",
+            Diagram::Sequence(_) => "sequence",
         }
     }
 }

@@ -7,7 +7,7 @@ A hand-written recursive-descent parser per diagram type, with no parser-generat
 | Type | Header | Milestone |
 |---|---|---|
 | Flowchart | `flowchart`, `graph` + `TB`/`TD`/`BT`/`LR`/`RL` | M1 |
-| Sequence | `sequenceDiagram` | M4 |
+| Sequence | `sequenceDiagram` | M4 ([sequence.md](sequence.md)) |
 | State | `stateDiagram`, `stateDiagram-v2` | M4 |
 | Class | `classDiagram` | M4 |
 | ER | `erDiagram` | M4 |
@@ -97,6 +97,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `W018` StylesheetDeclarationRejected | Warning | A property outside the token list, a font token, or a value outside the token's grammar |
 | `W019` StylesheetReferenceInvalid | Warning | `var()` naming an undefined token, forming a cycle, or nested deeper than 8 |
 | `W020` ClassesTruncated | Warning | An element given more than 32 classes; the rest are dropped |
+| `W021`–`W023` | Warning | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 | `I010` UnmeasuredGlyph | Info | Code point outside the font table ([text-measurement.md](text-measurement.md)) |
 | `I011` ThemeConfigIgnored | Info | `theme`, `themeVariables` or `look` in front matter or `%%{init}%%` |
 | `I020` LayoutHintDiscarded | Info | Fewer than 50% of nodes survive ([layout.md](layout.md#stable-layout)) |
@@ -107,6 +108,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I032` StylesheetRulesIgnored | Info | Count of stylesheet rules declaring no `--merlion-*` token |
 | `I033` ToneMasked | Info | A source `style` colour, or a `classDef` colour whose token the stylesheet leaves unset, overrides a stylesheet tone on the same element |
 | `R001`–`R008` | Repair | See [Error tolerance](#error-tolerance) |
+| `R009`–`R013` | Repair | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
 

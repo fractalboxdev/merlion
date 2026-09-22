@@ -83,7 +83,7 @@ Formulated as the Constrained Incremental Graph Drawing Problem (C-IGDP; Charyti
 
 ## Fixed-geometry diagram types
 
-Sequence, gantt, timeline, pie, XY, packet and kanban do no graph layout. Each has its own module that computes geometry from the model: for example, sequence participants are columns sized to their widest label and messages are rows. These modules share the text measurement, `target_width` fitting (columns shrink to a minimum, then the SVG widens), the fuel counter and the SVG contract.
+Sequence, gantt, timeline, pie, XY, packet and kanban do no graph layout. Each has its own module that computes geometry from the model: for example, sequence participants are columns sized to their widest label and messages are rows ([sequence.md](sequence.md#layout)). These modules share the text measurement, `target_width` fitting (columns shrink to a minimum, then the SVG widens), the fuel counter and the SVG contract.
 
 ## References
 

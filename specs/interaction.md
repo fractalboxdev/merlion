@@ -9,7 +9,7 @@ Two layers deliver it ([ADR-0010](adr/0010-hover-interaction.md)):
 | **Viewer layer** | `@fractalboxdev/merlion-view/interact`, loaded by `<merlion-view>` for every Merlion SVG | Click to pin a highlight (neighbourhood or transitive path), click to collapse clusters and hide nodes, a detail popover, keyboard traversal with screen-reader announcements, a hover preview. Reads only the `data-merlion-*` attributes and text the SVG already carries |
 | **CSS layer** (Proposed, core) | Rules in the SVG's embedded `<style>`, for diagrams of at most 128 nodes plus edges | Hover preview with JavaScript off: dims the rest and keeps the hovered element's neighbourhood at full opacity. No pinning, popover or keyboard |
 
-Both layers compute the same highlight set; the acceptance tests hold them to it ([Testing](#testing)). This spec extends [svg-output.md](svg-output.md) (data attributes, embedded rules) and [viewer.md](viewer.md) (gestures, extension hook).
+Both layers compute the same highlight set; the acceptance tests hold them to it ([Testing](#testing)). This spec extends [svg-output.md](svg-output.md) (data attributes, embedded rules) and [viewer.md](viewer.md) (gestures, extension hook). It reads "node" and "edge" as the classes an element carries, so a sequence diagram's participants and messages are interactive under exactly these rules ([sequence.md](sequence.md#interaction)).
 
 ## Highlight set
 

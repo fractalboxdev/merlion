@@ -27,6 +27,7 @@ mod link;
 mod outline;
 mod path;
 mod roles;
+pub mod sequence;
 mod shapes;
 mod style;
 pub mod theme;
@@ -54,6 +55,7 @@ use theme::{Role, Table};
 pub use color::is_valid_class_name;
 pub use escape::escape;
 pub use outline::plain_label;
+pub use sequence::{draw_sequence, outline_sequence};
 pub use shapes::ALL_SHAPES;
 pub use theme::EMBED_FONT_FAMILY;
 
