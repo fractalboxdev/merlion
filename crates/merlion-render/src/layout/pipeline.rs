@@ -1299,9 +1299,13 @@ fn finish(
     // moved along their edge until clear.
     let mut placed: Vec<BoxF> = Vec::new();
     let mut labels: Vec<Option<EdgeLabelGeom>> = vec![None; ne];
+    // Where each fixed chip sits in `placed`, so it can be moved once the cluster
+    // titles are known without colliding with the record of its own old position.
+    let mut fixed: Vec<Option<usize>> = vec![None; ne];
     for e in 0..ne {
         if let (Some(p), Some(Some(l))) = (label_at[e], m.edge_label.get(e)) {
             let (cw, ch) = chip_size(l);
+            fixed[e] = Some(placed.len());
             placed.push(centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0));
             labels[e] = Some(EdgeLabelGeom {
                 x: p.0,
@@ -1385,16 +1389,47 @@ fn finish(
         });
     }
     // Titles are obstacles for the edge labels placed next, like nodes.
-    let obstacles: Vec<BoxF> = node_boxes
+    let titles: Vec<BoxF> = clusters
         .iter()
-        .copied()
-        .chain(
-            clusters
-                .iter()
-                .filter(|c| c.label.width > 0.0)
-                .map(|c| centred(c.label_x, c.label_y, c.label.width, c.label.height, 0.0)),
-        )
+        .filter(|c| c.label.width > 0.0)
+        .map(|c| centred(c.label_x, c.label_y, c.label.width, c.label.height, 0.0))
         .collect();
+    let obstacles: Vec<BoxF> = node_boxes.iter().copied().chain(titles.clone()).collect();
+
+    // A chip at a fixed position — a label dummy's slot, or a self-loop's — is placed
+    // before the cluster boxes exist and without consulting the chips beside it, so it
+    // is the one chip that can land on a cluster title or on another chip. Move those,
+    // and only those, along their edge until they clear; a chip that already clears
+    // everything stays exactly where it was.
+    for e in 0..ne {
+        let (Some(pi), Some(l)) = (fixed[e], labels[e].clone()) else {
+            continue;
+        };
+        let (cw, ch) = chip_size(&l.label);
+        let chip = centred(l.x, l.y, cw, ch, 0.0);
+        let others: Vec<BoxF> = placed
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i != pi)
+            .map(|(_, &b)| b)
+            .collect();
+        let clashes = titles.iter().any(|&t| boxes_overlap(chip, t))
+            || others.iter().any(|&o| boxes_overlap(chip, o));
+        if !clashes || edge_pts[e].len() < 2 {
+            continue;
+        }
+        let markers = chart.edges.get(e).map_or_else(Vec::new, |edge| {
+            marker_boxes(&edge_pts[e], edge.arrow_start, edge.arrow_end)
+        });
+        if let Some(p) = place_label(&edge_pts[e], cw, ch, &obstacles, &markers, &others, fuel) {
+            placed[pi] = centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0);
+            labels[e] = Some(EdgeLabelGeom {
+                x: p.0,
+                y: p.1,
+                label: l.label,
+            });
+        }
+    }
 
     for e in 0..ne {
         if labels[e].is_some() || edge_pts[e].len() < 2 {

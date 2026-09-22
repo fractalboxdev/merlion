@@ -276,6 +276,119 @@ fn every_note_box_clears_every_shape() {
     }
 }
 
+/// specs/state.md#testing asks that no label overlap another element. A transition's
+/// label chip clears every state box and every other chip outright. It clears every
+/// cluster title too, unless its own edge offers no room at all: a chip wider than the
+/// segment it sits on, inside a narrow composite, has nowhere to go, and that is a lack
+/// of room rather than a placement that ignored the title.
+#[test]
+fn every_edge_label_chip_clears_the_shapes_the_titles_and_the_other_chips() {
+    for (name, src) in fixtures().into_iter().chain(concurrency_sources()) {
+        let sm = machine(&src);
+        let g = laid_out(&sm).geometry.graph;
+        let chips: Vec<(usize, Box2)> = g
+            .edges
+            .iter()
+            .enumerate()
+            .filter_map(|(e, edge)| edge.label.as_ref().map(|l| (e, chip_box(l))))
+            .collect();
+        let nodes: Vec<Box2> = g.nodes.iter().map(Box2::of_node).collect();
+        let titles: Vec<Box2> = g
+            .clusters
+            .iter()
+            .filter(|c| c.label.width > 0.0)
+            .map(title_box)
+            .collect();
+
+        for (i, (e, chip)) in chips.iter().enumerate() {
+            // A chip never covers a state: the shapes are obstacles the placer honours
+            // before anything else.
+            for (v, nb) in nodes.iter().enumerate() {
+                assert!(
+                    !chip.overlaps(nb, 0.01),
+                    "{name}: the label of transition {e} covers state {v}"
+                );
+            }
+            let with_titles: Vec<Box2> = nodes.iter().chain(&titles).copied().collect();
+            for (c, tb) in titles.iter().enumerate() {
+                if !chip.overlaps(tb, 0.01) {
+                    continue;
+                }
+                assert!(
+                    !edge_has_room(&g.edges[*e], &with_titles),
+                    "{name}: the label of transition {e} covers the title of composite {c}, \
+                     though its edge has room elsewhere"
+                );
+            }
+            // The placer walks the edges in order and avoids the chips already down, so
+            // when two chips meet it is the later one that had nowhere else to go.
+            for (o, other) in chips.iter().skip(i + 1) {
+                if !chip.overlaps(other, 0.01) {
+                    continue;
+                }
+                let against: Vec<Box2> = with_titles
+                    .iter()
+                    .copied()
+                    .chain(chips.iter().filter(|(x, _)| x != o).map(|(_, b)| *b))
+                    .collect();
+                assert!(
+                    !edge_has_room(&g.edges[*o], &against),
+                    "{name}: the labels of transitions {e} and {o} overlap, \
+                     though {o}'s edge has room elsewhere"
+                );
+            }
+        }
+    }
+}
+
+/// The chip box of an edge label.
+fn chip_box(l: &merlion_render::geometry::EdgeLabelGeom) -> Box2 {
+    let (w, h) = merlion_render::geometry::chip_size(&l.label);
+    Box2 {
+        x0: l.x - w / 2.0,
+        y0: l.y - h / 2.0,
+        x1: l.x + w / 2.0,
+        y1: l.y + h / 2.0,
+    }
+}
+
+fn title_box(c: &ClusterGeom) -> Box2 {
+    Box2 {
+        x0: c.label_x - c.label.width / 2.0,
+        y0: c.label_y - c.label.height / 2.0,
+        x1: c.label_x + c.label.width / 2.0,
+        y1: c.label_y + c.label.height / 2.0,
+    }
+}
+
+/// Whether any point along `edge` holds its chip clear of every box in `obstacles`. The
+/// chip is inflated by the clearance the placer keeps around it, so a window the placer
+/// cannot use does not count as room.
+fn edge_has_room(edge: &merlion_render::geometry::EdgeGeom, obstacles: &[Box2]) -> bool {
+    const CLEAR: f64 = 2.0;
+    let Some(l) = edge.label.as_ref() else {
+        return false;
+    };
+    let (w, h) = merlion_render::geometry::chip_size(&l.label);
+    for seg in edge.points.windows(2) {
+        for k in 0..=64 {
+            let t = f64::from(k) / 64.0;
+            let x = seg[0].x + (seg[1].x - seg[0].x) * t;
+            let y = seg[0].y + (seg[1].y - seg[0].y) * t;
+            let b = Box2 {
+                x0: x - w / 2.0 - CLEAR,
+                y0: y - h / 2.0 - CLEAR,
+                x1: x + w / 2.0 + CLEAR,
+                y1: y + h / 2.0 + CLEAR,
+            };
+            if obstacles.iter().all(|o| !b.overlaps(o, 0.01)) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 #[test]
 fn the_drawing_sits_inside_the_view_box() {
     for (name, src) in fixtures() {

@@ -6,6 +6,7 @@ import type { ExtractedGraph, ExtractedNode } from "../svg/extract.ts";
 import {
   type Box,
   boxCenter,
+  boxCorners,
   boxIntersectionArea,
   dist,
   distPointBox,
@@ -159,6 +160,46 @@ export const labelOverlaps = (g: ExtractedGraph): number => {
   return count;
 };
 
+const inBox = (p: Point, b: Box): boolean => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+
+/** Whether the polyline enters `b`: a point inside it, or a segment crossing a side. */
+const polylineHitsBox = (pts: readonly Point[], b: Box): boolean => {
+  if (pts.some((p) => inBox(p, b))) return true;
+  const corners = boxCorners(b);
+  for (let k = 1; k < pts.length; k++) {
+    for (let c = 0; c < corners.length; c++) {
+      const s = corners[c]!;
+      const t = corners[(c + 1) % corners.length]!;
+      if (segmentIntersection(pts[k - 1]!, pts[k]!, s, t) !== null) return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * Edges drawn through another edge's label chip: pairs `(edge, chip)` where the
+ * edge's polyline enters the chip of a different edge, counted once per pair.
+ *
+ * Box-against-box overlap misses this. Each edge group draws its own path and
+ * then its chip, so a later edge covers an earlier chip and the text under it is
+ * unreadable, while the two chips never touch and `labelOverlaps` stays zero.
+ * Cyclic graphs that label their back-edges hit it most
+ * (specs/benchmark.md#metrics).
+ */
+export const edgesThroughLabels = (g: ExtractedGraph): number => {
+  let count = 0;
+  for (let i = 0; i < g.edges.length; i++) {
+    const e = g.edges[i]!;
+    for (let j = 0; j < g.edges.length; j++) {
+      if (i === j) continue;
+      const chip = g.edges[j]!.labelBox;
+      if (chip === null) continue;
+      if (polylineHitsBox(e.points, chip)) count++;
+    }
+  }
+  return count;
+};
+
 // ---------------------------------------------------------------------------
 // Stress.
 
@@ -240,6 +281,8 @@ export interface LayoutMetrics {
   readonly area: number;
   readonly aspectRatio: number | null;
   readonly labelOverlaps: number;
+  /** Edges drawn through another edge's label chip ([`edgesThroughLabels`]). */
+  readonly edgesThroughLabels: number;
   readonly stress: number | null;
   readonly fits720: boolean;
 }
@@ -260,6 +303,7 @@ export const layoutMetrics = (g: ExtractedGraph): LayoutMetrics => {
     area: width * height,
     aspectRatio: height > 0 ? width / height : null,
     labelOverlaps: labelOverlaps(g),
+    edgesThroughLabels: edgesThroughLabels(g),
     stress: stress(g),
     fits720: width > 0 && width <= FIT_WIDTH,
   };

@@ -33,7 +33,7 @@ Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 |---|---|---|
 | Compatibility | % of `compat` rendering the same graph as mermaid, per diagram type | Graph extracted from both SVGs (below) |
 | Round-trip correctness | Node and path alignment between the source graph and the graph extracted from the SVG | After DiagramEval (Liang and You, EMNLP 2025); catches dropped edges and wrong labels |
-| Layout quality | Crossings; maximum crossings on one edge; bends; total edge length; area; label overlaps; **stress** | Stress: people can perceive it, prefer low values, and trace paths faster as it falls (Mooney et al., GD 2025) |
+| Layout quality | Crossings; maximum crossings on one edge; bends; total edge length; area; label overlaps; edges through another edge's label chip; **stress** | Stress: people can perceive it, prefer low values, and trace paths faster as it falls (Mooney et al., GD 2025). An edge painted across a chip leaves the text under it unreadable while the chips never touch, so box-against-box overlap alone reports a drawing as clean that a reader cannot follow |
 | Fit | % of `docs` diagrams fitting 720 px without zoom; aspect ratio | |
 | Stability | Mean and p95 displacement of surviving nodes across `edits` | Relative to the diagram's bounding box |
 | Parser tolerance | Parse rate and repair rate on `llm` | Only Merlion repairs; the other renderers score on parse rate |
