@@ -143,3 +143,56 @@ export const viewBoxSize = (attr) => {
 /** CSS transform for a view; the identity view clears the transform. */
 export const transformOf = ({ s, x, y }) =>
   s === 1 && x === 0 && y === 0 ? "" : `translate(${x}px,${y}px) scale(${s})`;
+
+/**
+ * Whether a primary pointer-down starts a pan (specs/viewer.md#gestures). `hit` is what
+ * the pointer went down on: "text" (a label), "shape" (a node or edge) or "bg" (anything
+ * else). A mouse or pen pans only from the background, so a drag on text selects it; one
+ * finger pans from anywhere, but only once zoomed in, so the page still scrolls at fit.
+ * Nothing pans while the whole drawing fits the box.
+ */
+export const panIntent = (hit, pointerType, fits, zoomed) =>
+  !fits && (pointerType === "touch" ? zoomed : hit === "bg");
+
+/**
+ * Whether a click is a tap, the only kind of click that commands the diagram: the pointer moved
+ * less than 4 px since it went down, the click leaves no text selected, and it is not the second
+ * click of a double-click (`detail` > 1), which belongs to word selection.
+ */
+export const isTap = (dx, dy, detail, selected) => Math.hypot(dx, dy) < 4 && detail < 2 && !selected;
+
+/** Double-click resets the zoom only on the background and never while text is selected. */
+export const resetsOnDoubleClick = (hit, selected) => hit === "bg" && !selected;
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
+
+/**
+ * Popover position against an element's rectangle `E` inside the visible box `C` (both
+ * DOMRect-shaped: x, y, width, height) for a popover of size w × h, 8 px away
+ * (specs/interaction.md#placement). Tries below, above, right and left; otherwise the roomiest
+ * side, with the popover's height (`h`) or width (`w`) capped to it; null when no side has
+ * 48 px. The popover never overlaps `E`.
+ */
+export const place = (E, C, w, h, gap = 8) => {
+  const room = [
+    C.y + C.height - E.y - E.height - gap,
+    E.y - gap - C.y,
+    C.x + C.width - E.x - E.width - gap,
+    E.x - gap - C.x,
+  ];
+  let i = room.findIndex((r, k) => r >= (k < 2 ? h : w));
+  let s = i < 2 ? h : w;
+  if (i < 0) {
+    s = Math.max(...room);
+    if (s < 48) return null;
+    i = room.indexOf(s);
+  }
+  const x = clamp(E.x + E.width / 2 - w / 2, C.x, C.x + C.width - w);
+  const y = clamp(E.y + E.height / 2 - h / 2, C.y, C.y + C.height - h);
+  return [
+    { side: "below", x, y: E.y + E.height + gap, h: s },
+    { side: "above", x, y: E.y - gap - s, h: s },
+    { side: "right", x: E.x + E.width + gap, y, w: s },
+    { side: "left", x: E.x - gap - s, y, w: s },
+  ][i];
+};

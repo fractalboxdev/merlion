@@ -19,6 +19,10 @@ import {
   fitsBox,
   viewBoxSize,
   transformOf,
+  panIntent,
+  isTap,
+  place,
+  resetsOnDoubleClick,
 } from "../zoom.js";
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} ≉ ${b}`);
@@ -192,4 +196,67 @@ test("semanticLimit never declutters the fit view or a zoomed-in view", () => {
   assert.equal(semanticLimit(14, 0.3, 0.5), rankLimit(labelPx(14, 0.3, 0.5)));
   // Legible labels never engage it, even below the fit view.
   assert.equal(semanticLimit(14, 1, 0.9), null);
+});
+
+test("panIntent: a mouse drag pans only from the background of a drawing larger than the box", () => {
+  assert.equal(panIntent("bg", "mouse", false, true), true);
+  assert.equal(panIntent("text", "mouse", false, true), false);
+  assert.equal(panIntent("shape", "mouse", false, true), false);
+  assert.equal(panIntent("bg", "mouse", true, false), false);
+  assert.equal(panIntent("bg", "pen", false, true), true);
+});
+
+test("panIntent: one finger pans a zoomed-in drawing from anywhere, and never a fitted one", () => {
+  assert.equal(panIntent("text", "touch", false, true), true);
+  assert.equal(panIntent("bg", "touch", true, true), false);
+  assert.equal(panIntent("bg", "touch", false, false), false);
+});
+
+test("resetsOnDoubleClick: only on the background, and never over a selection", () => {
+  assert.equal(resetsOnDoubleClick("bg", false), true);
+  assert.equal(resetsOnDoubleClick("text", false), false);
+  assert.equal(resetsOnDoubleClick("shape", false), false);
+  assert.equal(resetsOnDoubleClick("bg", true), false);
+});
+
+const R = (x, y, width, height) => ({ x, y, width, height });
+const C = R(0, 0, 800, 600);
+const overlaps = (a, b) => a.x < b.x + b.width && b.x < a.x + a.w && a.y < b.y + b.height && b.y < a.y + a.h;
+
+test("place: below first, then above, right, left; always inside and off the element", () => {
+  const cases = [
+    [R(300, 100, 100, 40), "below"],
+    [R(300, 500, 100, 40), "above"],
+    [R(10, 100, 100, 420), "right"],
+    [R(690, 100, 100, 420), "left"],
+  ];
+  for (const [el, side] of cases) {
+    const p = place(el, C, 200, 120);
+    const r = { x: p.x, y: p.y, w: 200, h: 120 };
+    assert.equal(p.side, side);
+    assert.ok(!overlaps(r, el), side);
+    assert.ok(r.x >= 0 && r.y >= 0 && r.x + r.w <= 800 && r.y + r.h <= 600, side);
+  }
+});
+
+test("place: no side fits whole, the roomiest side gets a capped size", () => {
+  const p = place(R(0, 200, 800, 300), C, 200, 250);
+  assert.equal(p.side, "above");
+  assert.equal(p.h, 192);
+  assert.equal(p.y, 0);
+});
+
+test("place: refuses when no side has 48 px", () => {
+  assert.equal(place(R(10, 10, 780, 580), C, 200, 120), null);
+});
+
+
+test("isTap: no drag, no selection, not a double-click's second click", () => {
+  assert.equal(isTap(0, 0, 1, false), true);
+  assert.equal(isTap(3, 2, 1, false), true);
+  assert.equal(isTap(3, 3, 1, false), false);
+  assert.equal(isTap(0, 0, 2, false), false);
+  assert.equal(isTap(0, 0, 1, true), false);
+  // a keyboard-activated click has detail 0
+  assert.equal(isTap(0, 0, 0, false), true);
 });

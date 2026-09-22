@@ -1,7 +1,7 @@
 {
   "name": "@fractalboxdev/merlion-view",
   "version": "0.1.0",
-  "description": "<merlion-view>: pan, zoom and fullscreen for any inline SVG diagram. No dependencies.",
+  "description": "<merlion-view>: pan, zoom and fullscreen for any inline SVG diagram, plus click-to-highlight for Merlion flowcharts. No dependencies.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -10,7 +10,8 @@
   },
   "type": "module",
   "sideEffects": [
-    "./merlion-view.js"
+    "./merlion-view.js",
+    "./interact.js"
   ],
   "exports": {
     ".": {
@@ -20,6 +21,10 @@
     "./zoom": {
       "types": "./zoom.d.ts",
       "default": "./zoom.js"
+    },
+    "./interact": {
+      "types": "./interact.d.ts",
+      "default": "./interact.js"
     }
   },
   "types": "./merlion-view.d.ts",
@@ -27,7 +32,10 @@
     "merlion-view.js",
     "merlion-view.d.ts",
     "zoom.js",
-    "zoom.d.ts"
+    "zoom.d.ts",
+    "interact.js",
+    "interact.d.ts",
+    "interact-model.js"
   ],
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",

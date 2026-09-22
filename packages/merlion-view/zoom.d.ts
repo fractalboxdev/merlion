@@ -27,3 +27,33 @@ export declare function rankLimit(px: number): number | null;
 export declare function needsControls(natural: number | undefined, container: number, attr: string | null): boolean;
 export declare function viewBoxSize(attr: string | null | undefined): { w: number; h: number } | null;
 export declare function transformOf(v: View): string;
+export declare function semanticLimit(fontSize: number, fit: number, s: number): number | null;
+export declare function clampView(
+  v: View,
+  content: { w: number; h: number },
+  box: { x: number; y: number; w: number; h: number },
+): View;
+export declare function fitsBox(v: View, content: { w: number; h: number }, box: { w: number; h: number }): boolean;
+
+/** What a pointer went down on. */
+export type Hit = "text" | "shape" | "bg";
+/** Whether a primary pointer-down starts a pan (specs/viewer.md#gestures). */
+export declare function panIntent(hit: Hit, pointerType: string, fits: boolean, zoomed: boolean): boolean;
+/** Whether a click is a tap: moved < 4 px, not a double-click's second click, no text selected. */
+export declare function isTap(dx: number, dy: number, detail: number, selected: boolean): boolean;
+export declare function resetsOnDoubleClick(hit: Hit, selected: boolean): boolean;
+
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+/** Popover placement next to `E` inside `C` (specs/interaction.md#placement); null when no side has 48 px. */
+export declare function place(
+  E: Rect,
+  C: Rect,
+  w: number,
+  h: number,
+  gap?: number,
+): { side: "below" | "above" | "right" | "left"; x: number; y: number; w?: number; h?: number } | null;

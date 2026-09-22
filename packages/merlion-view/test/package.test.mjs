@@ -15,3 +15,15 @@ test("the element module loads outside a browser and registers nothing", async (
   assert.equal(typeof mod.MerlionView, "function");
   assert.equal(globalThis.customElements, undefined);
 });
+
+test("interact is its own export and loads outside a browser", async () => {
+  assert.equal(pkg.exports["./interact"].default, "./interact.js");
+  assert.ok(pkg.files.includes("interact.js") && pkg.files.includes("interact-model.js"));
+  const mod = await import("../interact.js");
+  assert.equal(typeof mod.interact, "function");
+});
+
+test("the base element exposes the extension hook", async () => {
+  const { MerlionView } = await import("../merlion-view.js");
+  assert.equal(typeof MerlionView.extend, "function");
+});
