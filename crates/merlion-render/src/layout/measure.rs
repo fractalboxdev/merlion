@@ -19,6 +19,8 @@
 //! | `Trapezoid` (`[/t\]`) | Top `[−a + s, a − s]`, bottom `[−a, a]` |
 //! | `TrapezoidAlt` (`[\t/]`) | Top `[−a, a]`, bottom `[−a + s, a − s]` |
 //! | `Asymmetric` (`>t]`) | Rectangle whose left side has a notch reaching `h/4` inwards at mid-height |
+//! | `SmallCircle`, `FilledCircle`, `FramedCircle`, `CrossedCircle` | Circle of diameter `w = h` ([`fixed_size`]) |
+//! | `Fork`, `Hourglass`, `Bolt` | The `w × h` rectangle ([`fixed_size`]); the hourglass and bolt are drawn inside it |
 
 use crate::math::{abs, hypot, max, min, sqrt};
 use crate::model::{Flowchart, FontStyle, FontWeight, Node, Shape, Style};
@@ -41,8 +43,24 @@ pub const SUBROUTINE_INSET: f64 = 8.0;
 /// Smallest node width and height.
 pub const MIN_SIZE: f64 = 20.0;
 
+/// Outer size of the label-less symbol shapes ([`Shape::draws_label`]), which do not
+/// grow with the label.
+pub fn fixed_size(shape: Shape) -> Option<(f64, f64)> {
+    match shape {
+        Shape::SmallCircle | Shape::FilledCircle => Some((14.0, 14.0)),
+        Shape::FramedCircle => Some((20.0, 20.0)),
+        Shape::CrossedCircle | Shape::Hourglass => Some((30.0, 30.0)),
+        Shape::Fork => Some((70.0, 10.0)),
+        Shape::Bolt => Some((24.0, 36.0)),
+        _ => None,
+    }
+}
+
 /// Outer size `(w, h)` of a node whose label box measures `lw × lh`.
 pub fn node_size(shape: Shape, lw: f64, lh: f64) -> (f64, f64) {
+    if let Some(size) = fixed_size(shape) {
+        return size;
+    }
     let lw = max(lw, 0.0);
     let lh = max(lh, 0.0);
     let tw = lw + 2.0 * PAD_X;
@@ -81,6 +99,14 @@ pub fn node_size(shape: Shape, lw: f64, lh: f64) -> (f64, f64) {
         }
         // The notch reaches h/4 into the left side.
         Shape::Asymmetric => (tw + th / 4.0, th),
+        // Fixed sizes, returned above.
+        Shape::SmallCircle
+        | Shape::FilledCircle
+        | Shape::FramedCircle
+        | Shape::CrossedCircle
+        | Shape::Fork
+        | Shape::Hourglass
+        | Shape::Bolt => (tw, th),
     };
     (max(w, MIN_SIZE), max(h, MIN_SIZE))
 }
@@ -97,6 +123,7 @@ pub fn inside(shape: Shape, w: f64, h: f64, x: f64, y: f64) -> bool {
     const EPS: f64 = 1e-9;
     match shape {
         Shape::Rect | Shape::Round | Shape::Subroutine => true,
+        Shape::Fork | Shape::Hourglass | Shape::Bolt => true,
         Shape::Stadium => {
             let r = b;
             let cx = max(a - r, 0.0);
@@ -112,7 +139,12 @@ pub fn inside(shape: Shape, w: f64, h: f64, x: f64, y: f64) -> bool {
             let k = sqrt(max(1.0 - u * u, 0.0));
             y <= b - ry + ry * k + EPS && y >= -b + ry - ry * k - EPS
         }
-        Shape::Circle | Shape::DoubleCircle => {
+        Shape::Circle
+        | Shape::DoubleCircle
+        | Shape::SmallCircle
+        | Shape::FilledCircle
+        | Shape::FramedCircle
+        | Shape::CrossedCircle => {
             if a <= 0.0 || b <= 0.0 {
                 return false;
             }
@@ -287,7 +319,7 @@ mod tests {
     use alloc::string::String;
     use alloc::vec;
 
-    const ALL: [Shape; 14] = [
+    const ALL: [Shape; 21] = [
         Shape::Rect,
         Shape::Round,
         Shape::Stadium,
@@ -302,6 +334,13 @@ mod tests {
         Shape::ParallelogramAlt,
         Shape::Trapezoid,
         Shape::TrapezoidAlt,
+        Shape::SmallCircle,
+        Shape::FilledCircle,
+        Shape::FramedCircle,
+        Shape::CrossedCircle,
+        Shape::Fork,
+        Shape::Hourglass,
+        Shape::Bolt,
     ];
 
     #[test]
@@ -312,7 +351,7 @@ mod tests {
 
     #[test]
     fn label_box_fits_inside_every_shape() {
-        for shape in ALL {
+        for shape in ALL.into_iter().filter(|s| s.draws_label()) {
             for (lw, lh) in [(0.0, 17.0), (40.0, 17.0), (180.0, 51.0), (8.0, 34.0)] {
                 let (w, h) = node_size(shape, lw, lh);
                 assert!(w > 0.0 && h > 0.0, "{:?}", shape);

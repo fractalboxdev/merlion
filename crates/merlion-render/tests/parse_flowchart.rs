@@ -162,6 +162,43 @@ fn at_shape_form() {
 }
 
 #[test]
+fn label_less_small_shapes() {
+    // mermaid 12 draws these without their label.
+    let cases = [
+        ("sm-circ", Shape::SmallCircle),
+        ("small-circle", Shape::SmallCircle),
+        ("start", Shape::SmallCircle),
+        ("f-circ", Shape::FilledCircle),
+        ("filled-circle", Shape::FilledCircle),
+        ("junction", Shape::FilledCircle),
+        ("fr-circ", Shape::FramedCircle),
+        ("framed-circle", Shape::FramedCircle),
+        ("stop", Shape::FramedCircle),
+        ("cross-circ", Shape::CrossedCircle),
+        ("crossed-circle", Shape::CrossedCircle),
+        ("summary", Shape::CrossedCircle),
+        ("fork", Shape::Fork),
+        ("join", Shape::Fork),
+        ("hourglass", Shape::Hourglass),
+        ("collate", Shape::Hourglass),
+        ("bolt", Shape::Bolt),
+        ("com-link", Shape::Bolt),
+        ("lightning-bolt", Shape::Bolt),
+    ];
+    for (name, shape) in cases {
+        let (f, d) = parse_ok(&format!(
+            "flowchart TD\nA@{{ shape: {name}, label: \"Label {name}\" }}"
+        ));
+        assert_eq!(f.nodes[0].shape, shape, "{name}");
+        assert!(!shape.draws_label(), "{name}");
+        // The label stays in the model for the text alternative.
+        assert_eq!(f.nodes[0].label, format!("Label {name}"));
+        assert!(!has(&d, "W015"), "{name}: {d:?}");
+    }
+    assert!(Shape::Rect.draws_label() && Shape::Circle.draws_label());
+}
+
+#[test]
 fn at_shape_form_details() {
     // Multi-line, quoted shape, missing label, class shorthand and an edge.
     let f = chart(
@@ -176,8 +213,9 @@ fn at_shape_form_details() {
 
 #[test]
 fn at_shape_unsupported_shapes_and_keys_warn() {
-    let (f, d) =
-        parse_ok("flowchart TD\nA@{ shape: bolt, label: Zap }\nB@{ icon: 'fa:user', shape: rect }");
+    let (f, d) = parse_ok(
+        "flowchart TD\nA@{ shape: cloud, label: Zap }\nB@{ icon: 'fa:user', shape: rect }",
+    );
     assert_eq!(node(&f, "A").shape, Shape::Rect);
     assert_eq!(node(&f, "A").label, "Zap");
     assert_eq!(count(&d, "W015"), 2, "{d:#?}");

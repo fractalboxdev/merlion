@@ -19,6 +19,8 @@ Any other header returns `UnsupportedDiagram { header }`, never a partial render
 
 Compatibility means rendering the same graph that mermaid 12.0.0 renders: the same nodes, edges, labels, clusters and directions. Pixel positions are not part of it. The benchmark reports the pass rate per diagram type against the mermaid repository's own demo and test diagrams ([benchmark.md](benchmark.md)).
 
+mermaid 12's small symbol shapes (`@{ shape: … }` `sm-circ`, `f-circ`, `fr-circ`, `cross-circ`, `fork`, `hourglass`, `bolt` and their aliases) are drawn at a fixed size without their label, as mermaid draws them; the label stays in the model for the text alternative. Other shape names mermaid 12 accepts and Merlion does not draw become rectangles with `W015`.
+
 Subgraph ids follow mermaid's resolution, which happens after the whole source is read:
 
 - A node id that names a subgraph stands for the subgraph unless it is given a bracket shape, an `@{…}` `shape` or `label`, or a label by `R004`. So `id@{…}` with other keys (`view`, `algorithm`) configures the subgraph and never creates a node.

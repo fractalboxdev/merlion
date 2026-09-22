@@ -282,6 +282,13 @@ fn every_shape_gets_boundary_ports() {
         Shape::ParallelogramAlt,
         Shape::Trapezoid,
         Shape::TrapezoidAlt,
+        Shape::SmallCircle,
+        Shape::FilledCircle,
+        Shape::FramedCircle,
+        Shape::CrossedCircle,
+        Shape::Fork,
+        Shape::Hourglass,
+        Shape::Bolt,
     ];
     for dir in [Direction::TB, Direction::BT, Direction::LR, Direction::RL] {
         let mut b = B::new().dir(dir);
@@ -510,6 +517,23 @@ fn rhombus_and_circle_labels_fit_inside() {
             );
         }
     }
+}
+
+#[test]
+fn label_less_shapes_have_a_fixed_size_and_no_drawn_label() {
+    let mut b = B::new();
+    let a = b.shape("a", "Small start with a long label", Shape::SmallCircle);
+    let f = b.shape("f", "Fork or Join", Shape::Fork);
+    let z = b.node("z");
+    b.edge(a, f);
+    b.edge(f, z);
+    let g = run(&b.c);
+    check(&b.c, &g);
+    assert!(g.nodes[a].label.lines.is_empty());
+    assert!(g.nodes[f].label.lines.is_empty());
+    assert_eq!((g.nodes[a].w, g.nodes[a].h), (14.0, 14.0));
+    assert_eq!((g.nodes[f].w, g.nodes[f].h), (70.0, 10.0));
+    assert!(!g.nodes[z].label.lines.is_empty());
 }
 
 /// specs/text-measurement.md#serving-the-font: `font: "system"` draws in a stack measured

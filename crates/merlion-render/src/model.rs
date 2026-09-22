@@ -97,6 +97,38 @@ pub enum Shape {
     Trapezoid,
     /// `A[\text/]`
     TrapezoidAlt,
+    /// `@{ shape: sm-circ }` (`small-circle`, `start`); drawn without its label.
+    SmallCircle,
+    /// `@{ shape: f-circ }` (`filled-circle`, `junction`); drawn without its label.
+    FilledCircle,
+    /// `@{ shape: fr-circ }` (`framed-circle`, `stop`); drawn without its label.
+    FramedCircle,
+    /// `@{ shape: cross-circ }` (`crossed-circle`, `summary`); drawn without its label.
+    CrossedCircle,
+    /// `@{ shape: fork }` (`join`); drawn without its label.
+    Fork,
+    /// `@{ shape: hourglass }` (`collate`); drawn without its label.
+    Hourglass,
+    /// `@{ shape: bolt }` (`com-link`, `lightning-bolt`); drawn without its label.
+    Bolt,
+}
+
+impl Shape {
+    /// Whether the shape shows its label. mermaid 12 draws its small symbol shapes
+    /// (start, stop, junction, summary, fork, collate, communication link) without one;
+    /// the label stays in the model for the text alternative.
+    pub fn draws_label(self) -> bool {
+        !matches!(
+            self,
+            Shape::SmallCircle
+                | Shape::FilledCircle
+                | Shape::FramedCircle
+                | Shape::CrossedCircle
+                | Shape::Fork
+                | Shape::Hourglass
+                | Shape::Bolt
+        )
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

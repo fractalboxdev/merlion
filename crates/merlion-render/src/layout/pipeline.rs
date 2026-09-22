@@ -146,7 +146,11 @@ fn measure_all(chart: &Flowchart, o: &Opts, wrap: f64, diags: &mut Diagnostics) 
     let mut size = Vec::with_capacity(chart.nodes.len());
     for node in &chart.nodes {
         let style = measure::text_style(chart, node, o.font_size);
-        let l = clean_label(text::layout_label(&node.label, &style, wrap, diags));
+        let l = if node.shape.draws_label() {
+            clean_label(text::layout_label(&node.label, &style, wrap, diags))
+        } else {
+            LabelLayout::default()
+        };
         size.push(measure::node_size(node.shape, l.width, l.height));
         node_label.push(l);
     }

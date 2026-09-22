@@ -164,12 +164,44 @@ pub fn shape_d(shape: Shape, cx: f64, cy: f64, w: f64, h: f64) -> String {
             let s = min(h / 2.0, w / 4.0);
             polygon(&mut d, &[(l, t), (r, t), (r - s, b), (l + s, b)]);
         }
+        Shape::SmallCircle | Shape::FilledCircle => ellipse(&mut d, cx, cy, w / 2.0, h / 2.0),
+        Shape::FramedCircle => {
+            ellipse(&mut d, cx, cy, w / 2.0, h / 2.0);
+            let (irx, iry) = (nonneg(w / 2.0 - INSET), nonneg(h / 2.0 - INSET));
+            ellipse(&mut d, cx, cy, irx, iry);
+        }
+        Shape::CrossedCircle => {
+            let (rx, ry) = (w / 2.0, h / 2.0);
+            ellipse(&mut d, cx, cy, rx, ry);
+            // The diagonals at 45° meet the circle at 1/√2 of each radius.
+            let (dx, dy) = (
+                rx * core::f64::consts::FRAC_1_SQRT_2,
+                ry * core::f64::consts::FRAC_1_SQRT_2,
+            );
+            d.cmd('M', &[cx - dx, cy - dy])
+                .cmd('L', &[cx + dx, cy + dy]);
+            d.cmd('M', &[cx + dx, cy - dy])
+                .cmd('L', &[cx - dx, cy + dy]);
+        }
+        Shape::Fork => round_rect(&mut d, l, t, w, h, 0.0),
+        Shape::Hourglass => polygon(&mut d, &[(l, t), (r, t), (l, b), (r, b)]),
+        Shape::Bolt => polygon(
+            &mut d,
+            &[
+                (l + 0.6 * w, t),
+                (l, cy + 0.1 * h),
+                (cx, cy + 0.1 * h),
+                (l + 0.4 * w, b),
+                (r, cy - 0.1 * h),
+                (cx, cy - 0.1 * h),
+            ],
+        ),
     }
     d.0
 }
 
 /// Every shape, for exhaustive tests.
-pub const ALL_SHAPES: [Shape; 14] = [
+pub const ALL_SHAPES: [Shape; 21] = [
     Shape::Rect,
     Shape::Round,
     Shape::Stadium,
@@ -184,6 +216,13 @@ pub const ALL_SHAPES: [Shape; 14] = [
     Shape::ParallelogramAlt,
     Shape::Trapezoid,
     Shape::TrapezoidAlt,
+    Shape::SmallCircle,
+    Shape::FilledCircle,
+    Shape::FramedCircle,
+    Shape::CrossedCircle,
+    Shape::Fork,
+    Shape::Hourglass,
+    Shape::Bolt,
 ];
 
 #[cfg(test)]
@@ -236,7 +275,13 @@ mod tests {
 
     #[test]
     fn composite_shapes_have_extra_subpaths() {
-        for s in [Shape::Subroutine, Shape::Cylinder, Shape::DoubleCircle] {
+        for s in [
+            Shape::Subroutine,
+            Shape::Cylinder,
+            Shape::DoubleCircle,
+            Shape::FramedCircle,
+            Shape::CrossedCircle,
+        ] {
             let d = shape_d(s, 60.0, 30.0, 80.0, 40.0);
             assert!(d.matches('M').count() >= 2, "{:?}: {}", s, d);
         }
