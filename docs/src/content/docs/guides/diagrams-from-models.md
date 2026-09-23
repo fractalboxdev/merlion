@@ -9,6 +9,8 @@ The second job is the one models are bad at, and not for want of capability. Tex
 
 Nor can the model check its own estimate. Asked to name the digit an SVG draws, from the source alone, GPT-4o is right 13% of the time — chance is 10% ([SGP-Bench, ICLR 2025](https://arxiv.org/abs/2408.08313)). Writing SVG means placing geometry blind and having no way to look.
 
+It shows. A code model prompted for a diagram in SVG keeps 44.6% of its labels inside their boxes; training it on more correct SVG moves that number nowhere, because the constraint being broken appears nowhere in the text it is imitating ([GeoSVG-RL](https://arxiv.org/abs/2605.25447)). Only rendering the drawing and measuring it finds the problem — which is what a layout engine does before it draws anything.
+
 Merlion takes the Mermaid and does the rest: layout, text measurement, routing, theming, accessibility metadata.
 
 ```mermaid
