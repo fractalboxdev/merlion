@@ -8,7 +8,7 @@ A hand-written recursive-descent parser per diagram type, with no parser-generat
 |---|---|---|
 | Flowchart | `flowchart`, `graph` + `TB`/`TD`/`BT`/`LR`/`RL` | M1 |
 | Sequence | `sequenceDiagram` | M4 ([sequence.md](sequence.md)) |
-| State | `stateDiagram`, `stateDiagram-v2` | M4 |
+| State | `stateDiagram`, `stateDiagram-v2` | M4 ([state.md](state.md)) |
 | Class | `classDiagram` | M4 |
 | ER | `erDiagram` | M4 |
 | Gantt, timeline, pie, XY, packet, kanban | `gantt`, `timeline`, `pie`, `xychart-beta`/`xychart`, `packet-beta`/`packet`, `kanban` | M3 |
@@ -64,7 +64,7 @@ A label reaches the model normalised, in this order:
 
 1. A Markdown string (`` "`…`" ``) loses its backticks.
 2. Every `<br>` variant — `<br>`, `<br/>`, `<br />`, any case, spaces before the `/` or `>` — and every newline inside a quoted label becomes a `\n`, the model's hard line break.
-3. Each line is trimmed, then its Mermaid entity codes (`#quot;`, `#35;`, `#x2665;`, the named codes) are decoded.
+3. Each line is trimmed, then its Mermaid entity codes (`#quot;`, `#35;`, `#x2665;`, the named codes) are decoded. The named codes cover the ASCII punctuation a label cannot carry as itself, each spelled as HTML5 spells it — `#colon;`, `#semi;`, `#lpar;`, `#rpar;`, `#lbrace;`, `#rbrace;`, `#lbrack;`, `#rbrack;`, `#num;`, `#percnt;`, `#commat;`, `#dollar;`, `#excl;`, `#quest;`, `#sol;`, `#bsol;`, `#verbar;`, `#lowbar;`, `#ast;`, `#plus;`, `#equals;`, `#period;`, `#comma;`, `#grave;` — beside the typographic names (`#hearts;`, `#mdash;`, `#nbsp;`, …). A name the table does not hold stays literal.
 
 The order of 2 and 3 is the contract, not an implementation detail. `#lt;br#gt;` is how a source writes a literal `<br>`: decoding it before the split would produce a `<br>` indistinguishable from the source's own, and the text stage would break the line and swallow the text. Splitting first keeps it. A code can never decode to a `\n` — `decode_entity` refuses control characters — so the separator is unforgeable and a `<br>` left in the model is always text.
 
@@ -110,6 +110,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `W019` StylesheetReferenceInvalid | Warning | `var()` naming an undefined token, forming a cycle, or nested deeper than 8 |
 | `W020` ClassesTruncated | Warning | An element given more than 32 classes; the rest are dropped |
 | `W021`–`W023` | Warning | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
+| `W024`–`W025` | Warning | State diagrams ([state.md](state.md#diagnostics)) |
 | `I010` UnmeasuredGlyph | Info | Code point outside the font table ([text-measurement.md](text-measurement.md)) |
 | `I011` ThemeConfigIgnored | Info | `theme`, `themeVariables` or `look` in front matter or `%%{init}%%` |
 | `I020` LayoutHintDiscarded | Info | Fewer than 50% of nodes survive ([layout.md](layout.md#stable-layout)) |
@@ -119,9 +120,13 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I031` ClickCallbackIgnored | Info | `click` callback or `call` dropped |
 | `I032` StylesheetRulesIgnored | Info | Count of stylesheet rules declaring no `--merlion-*` token |
 | `I033` ToneMasked | Info | A source `style` colour, or a `classDef` colour whose token the stylesheet leaves unset, overrides a stylesheet tone on the same element |
+| `I034` DiagnosticsTruncated | Info | Count of diagnostics past `limits.diagnostics`, which are counted rather than kept; always the last diagnostic |
 | `R001`–`R008` | Repair | See [Error tolerance](#error-tolerance) |
 | `R009`–`R013` | Repair | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
+| `R014`–`R019` | Repair | State diagrams ([state.md](state.md#diagnostics)) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
+
+The list holds at most `limits.diagnostics` (4,000). Past that a diagnostic is counted rather than kept and the last slot holds `I034` with the count, so a source that repairs every second byte costs bounded memory. A dropped `Error` still fails the render: the count never turns a rejected source into a rendered one.
 
 A failed render always carries at least one `Error` diagnostic. When no stage recorded one, the core adds `E002`, `E003` or `E004` for its `RenderError`, so the CLI, the WASM module and every other caller report the same codes.

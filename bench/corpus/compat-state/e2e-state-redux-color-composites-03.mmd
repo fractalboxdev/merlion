@@ -1,0 +1,15 @@
+stateDiagram-v2
+  state Machine {
+    state Concurrent {
+      [*] --> Left
+      --
+      [*] --> Right
+    }
+    Concurrent --> Finish
+    state Finish {
+      [*] --> Flush
+      state Deep {
+        [*] --> Done
+      }
+    }
+  }

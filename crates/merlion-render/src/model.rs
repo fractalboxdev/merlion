@@ -5,11 +5,13 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 pub mod sequence;
+pub mod state;
 
 use crate::diag::Span;
 use crate::options::Direction;
 
 pub use sequence::Sequence;
+pub use state::StateMachine;
 
 /// One variant per diagram type. A diagram is built once per render and moved twice, so
 /// the variants hold their models inline rather than behind a box.
@@ -19,6 +21,8 @@ pub enum Diagram {
     Flowchart(Flowchart),
     /// specs/sequence.md
     Sequence(Sequence),
+    /// specs/state.md
+    State(StateMachine),
 }
 
 impl Diagram {
@@ -26,6 +30,7 @@ impl Diagram {
         match self {
             Diagram::Flowchart(_) => "flowchart",
             Diagram::Sequence(_) => "sequence",
+            Diagram::State(_) => "state",
         }
     }
 }
@@ -260,6 +265,23 @@ pub struct Node {
     /// Innermost subgraph containing this node.
     pub subgraph: Option<usize>,
     pub span: Span,
+    /// Room the layout keeps beside the node on top of its shape.
+    pub reserve: Reserve,
+}
+
+/// Room a node occupies beyond its shape, in px (specs/state.md#notes-2). The layout
+/// adds it to the node's extent, so the space is free of every other node, cluster title
+/// and routed edge, and the shape itself stays its measured size at its own centre.
+/// A state-diagram note takes its box out of it; a flowchart node reserves nothing.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Reserve {
+    /// Order-axis room before the node: left in `TB` / `BT`, above in `LR` / `RL`.
+    pub before: f64,
+    /// Order-axis room after the node: right in `TB` / `BT`, below in `LR` / `RL`.
+    pub after: f64,
+    /// Least layer-axis extent the node occupies, its own height (width in `LR` / `RL`)
+    /// included.
+    pub thick: f64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

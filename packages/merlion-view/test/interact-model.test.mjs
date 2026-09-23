@@ -6,6 +6,7 @@ import {
   reach,
   focusSet,
   collapseSets,
+  outOfView,
   clickAction,
   lines,
   nameOf,
@@ -89,6 +90,24 @@ test("collapsing a cluster hides its members, internal edges and nested clusters
   assert.equal(c.edges.get(1), "stub");
   assert.equal(c.edges.get(2), "stub");
   assert.equal(c.edges.get(4), undefined);
+});
+
+test("a cluster target is out of view when a collapsed cluster hides it", () => {
+  const c = collapseSets(nodes, clusters, cedges, new Set(["A"]), new Set());
+  // A nested cluster hidden under the collapsed one is no keyboard target and clears a pin.
+  assert.equal(outOfView(c, { c: "B" }), true);
+  // The collapsed cluster itself stays drawn, dashed, and stays a target.
+  assert.equal(outOfView(c, { c: "A" }), false);
+  assert.equal(outOfView(c, { n: "r" }), true);
+  assert.equal(outOfView(c, { n: "s" }), false);
+  // A stub edge is drawn, dimmed; only a hidden one is out of view.
+  assert.equal(outOfView(c, { e: 0 }), true);
+  assert.equal(outOfView(c, { e: 1 }), false);
+});
+
+test("nothing is out of view when nothing is collapsed or hidden", () => {
+  const c = collapseSets(nodes, clusters, cedges, new Set(), new Set());
+  for (const t of [{ c: "A" }, { c: "B" }, { n: "p" }, { e: 0 }]) assert.equal(outOfView(c, t), false);
 });
 
 test("collapsing a nested cluster counts only its own members", () => {

@@ -68,6 +68,7 @@ fn node(id: &str, label: &str) -> Node {
         link: None,
         subgraph: None,
         span: Span::default(),
+        reserve: Default::default(),
     }
 }
 

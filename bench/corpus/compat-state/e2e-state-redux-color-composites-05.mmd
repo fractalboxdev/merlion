@@ -1,0 +1,12 @@
+stateDiagram-v2
+  classDef pinned fill:#111827,stroke:#F59E0B,color:#F9FAFB
+  state Split {
+    [*] --> Left
+    --
+    [*] --> Right
+  }
+  Split --> Neighbour
+  state Neighbour {
+    [*] --> After
+  }
+  class Split pinned

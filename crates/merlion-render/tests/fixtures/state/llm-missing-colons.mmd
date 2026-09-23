@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Queued
+    Queued --> Running picked up by a runner
+    Running --> Passed every check is green
+    Running --> Failed a check exits non-zero
+    Passed --> [*]
+    Failed --> [*]

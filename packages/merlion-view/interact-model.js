@@ -88,6 +88,14 @@ export const collapseSets = (nodes, clusters, edges, collapsed, hidden) => {
 };
 
 /**
+ * Whether a target is out of view for what [`collapseSets`] returned, so it is no keyboard
+ * target and clears a pin: a hidden node, a hidden edge — a stub is drawn, dimmed, and stays —
+ * or a cluster a collapsed ancestor hides. A collapsed cluster itself is drawn dashed and stays.
+ */
+export const outOfView = (gone, t) =>
+  t.c !== undefined ? gone.clusters.has(t.c) : t.e >= 0 ? gone.edges.get(t.e) === "hidden" : gone.nodes.has(t.n);
+
+/**
  * What a tap does (specs/interaction.md#gestures); a click that is not a tap (a drag, a text
  * selection, a double-click) never reaches this. `hit`: "node", "edge", "title" (a cluster title),
  * "bg" or "link" (inside an <a>, left to the browser). `same` is the mode

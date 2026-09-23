@@ -1,0 +1,13 @@
+stateDiagram-v2
+    classDef terminal stroke-width:2px
+    classDef risky font-weight:bold
+
+    [*] --> Received
+    Received --> Screening:::risky
+    Screening --> Approved : the record is clean
+    Screening --> Blocked : a rule flags the record
+    Approved --> [*]
+    Blocked --> [*]
+
+    class Approved,Blocked terminal
+    style Received stroke-dasharray:4 4

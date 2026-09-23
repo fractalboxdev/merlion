@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Queued
+    Queued --> Running : a runner picks the job up
+    state Running {
+        [*] --> Checkout
+        Checkout --> Build
+        Build --> Test
+        Test --> [*]
+    }
+    Running --> Passed : every stage is green
+    Running --> Failed : a stage exits non-zero
+    Failed --> Queued : retry
+    Passed --> [*]

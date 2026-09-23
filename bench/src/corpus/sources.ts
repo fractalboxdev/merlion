@@ -29,12 +29,13 @@ export const dedent = (s: string): string => {
 };
 
 /** The corpora this module extracts: one per diagram type Merlion draws. */
-export type DiagramKind = "flowchart" | "sequence";
+export type DiagramKind = "flowchart" | "sequence" | "state";
 
 /** The header keyword of each kind. Mermaid's lexer reads the keyword case-insensitively. */
 const HEADER: Record<DiagramKind, RegExp> = {
   flowchart: /^(graph|flowchart|flowchart-elk)(\s|;|$)/,
   sequence: /^sequenceDiagram(\s|;|$)/i,
+  state: /^stateDiagram(-v2)?(\s|;|$)/i,
 };
 
 /**
@@ -71,9 +72,16 @@ export const isSequence = (src: string): boolean => {
   return h !== null && HEADER.sequence.test(h);
 };
 
+/** True when the diagram's header is `stateDiagram` or `stateDiagram-v2`. */
+export const isState = (src: string): boolean => {
+  const h = header(src);
+  return h !== null && HEADER.state.test(h);
+};
+
 const isKind: Record<DiagramKind, (src: string) => boolean> = {
   flowchart: isFlowchart,
   sequence: isSequence,
+  state: isState,
 };
 
 /** Contents of every `<pre class="… mermaid …">` block, entity-decoded and dedented. */
@@ -213,6 +221,10 @@ export const sourceSlug = (path: string): string => {
     [/^e2e\/rendering\/sequence\/sequence[dD]iagram-?/, "e2e-sequence-"],
     [/^e2e\/rendering\/sequence\//, "e2e-sequence-"],
     [/^e2e\/diagrams\/sequence\//, "e2e-"],
+    [/^e2e\/rendering\/state\/state[dD]iagram-?/, "e2e-state-"],
+    [/^e2e\/rendering\/state\//, "e2e-state-"],
+    [/^e2e\/diagrams\/state-diagram-v2\/(elk\/)?(v2-)?/, "e2e-v2-"],
+    [/^e2e\/diagrams\/state-diagram\//, "e2e-"],
   ];
   let s = path;
   for (const [re, prefix] of known) {
@@ -231,21 +243,31 @@ export const sourceSlug = (path: string): string => {
 /**
  * Repository paths a corpus is drawn from: every demo page, the kind's syntax
  * documentation, and the kind's end-to-end tests (their spec files and their
- * `.mmd` fixtures). The flowchart `handdrawn/` fixtures repeat other fixtures
- * with a different `look` and are left out. Sorted.
+ * `.mmd` fixtures). The `handdrawn/` fixtures repeat other fixtures with a
+ * different `look` and are left out. Sorted.
+ *
+ * A state diagram is drawn under two directories, `state-diagram/` for the
+ * `stateDiagram` header and `state-diagram-v2/` for `stateDiagram-v2`; both are
+ * taken, and the identical sources among them collapse on content.
  */
+const SOURCES: Record<DiagramKind, (p: string) => boolean> = {
+  flowchart: (p) =>
+    p === "packages/mermaid/src/docs/syntax/flowchart.md" ||
+    /^e2e\/rendering\/flowchart\/[^/]+\.spec\.(js|ts)$/.test(p) ||
+    /^e2e\/diagrams\/flowchart\/.+\.mmd$/.test(p),
+  sequence: (p) =>
+    p === "packages/mermaid/src/docs/syntax/sequenceDiagram.md" ||
+    /^e2e\/rendering\/sequence\/[^/]+\.spec\.(js|ts)$/.test(p) ||
+    /^e2e\/diagrams\/sequence\/.+\.mmd$/.test(p),
+  state: (p) =>
+    p === "packages/mermaid/src/docs/syntax/stateDiagram.md" ||
+    /^e2e\/rendering\/state\/[^/]+\.spec\.(js|ts)$/.test(p) ||
+    /^e2e\/diagrams\/state-diagram(-v2)?\/.+\.mmd$/.test(p),
+};
+
 export const selectSourcePaths = (paths: readonly string[], kind: DiagramKind = "flowchart"): string[] =>
   paths
-    .filter((p) => {
-      if (/^demos\/[^/]+\.html$/.test(p)) return true;
-      return kind === "flowchart"
-        ? p === "packages/mermaid/src/docs/syntax/flowchart.md" ||
-            /^e2e\/rendering\/flowchart\/[^/]+\.spec\.(js|ts)$/.test(p) ||
-            (/^e2e\/diagrams\/flowchart\/.+\.mmd$/.test(p) && !p.includes("/handdrawn/"))
-        : p === "packages/mermaid/src/docs/syntax/sequenceDiagram.md" ||
-            /^e2e\/rendering\/sequence\/[^/]+\.spec\.(js|ts)$/.test(p) ||
-            /^e2e\/diagrams\/sequence\/.+\.mmd$/.test(p);
-    })
+    .filter((p) => !p.includes("/handdrawn/") && (/^demos\/[^/]+\.html$/.test(p) || SOURCES[kind](p)))
     .sort();
 
 /** Diagrams of one kind in one source file, in document order. */
@@ -254,7 +276,11 @@ export const extractDiagrams = (path: string, content: string, kind: DiagramKind
   if (path.endsWith(".html")) blocks = extractHtmlPreBlocks(content);
   else if (path.endsWith(".md")) blocks = extractMarkdownFences(content);
   else if (/\.(js|ts)$/.test(path)) blocks = extractTemplateLiterals(content);
-  else if (path.endsWith(".mmd")) blocks = [dedent(content)];
+  // A `.mmd` under `e2e/diagrams/` is inserted into an HTML page by mermaid's own
+  // harness, so the browser decodes its entities before the parser sees them: the four
+  // fork and join fixtures spell the markers `&lt;&lt;fork&gt;&gt;`, which mermaid draws
+  // as bars and Merlion would drop with `W024`.
+  else if (path.endsWith(".mmd")) blocks = [dedent(decodeEntities(content))];
   else blocks = [];
   return blocks.filter((b) => isKind[kind](b) && hasStatements(b));
 };

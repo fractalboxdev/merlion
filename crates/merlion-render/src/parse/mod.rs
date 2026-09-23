@@ -24,6 +24,7 @@ pub mod label;
 pub mod link;
 pub mod repair;
 pub mod sequence;
+pub mod state;
 pub mod style;
 
 use alloc::string::String;
@@ -133,6 +134,9 @@ pub fn parse(
         }
         "sequenceDiagram" => {
             sequence::parse_sequence(&idx, c.pos, meta, opts, diags).map(Diagram::Sequence)
+        }
+        "stateDiagram" | "stateDiagram-v2" => {
+            state::parse_state(&idx, c.pos, meta, opts, diags).map(Diagram::State)
         }
         _ => {
             return Err(ParseError::UnsupportedDiagram {

@@ -49,6 +49,7 @@ Two foundation tokens drive the rest. The other roles default to mixes of those 
 | `--merlion-node-detail` | muted (detail lines of title + detail node labels; see [Text](#text)) |
 | `--merlion-edge` / `-edge-label-bg` | line / bg |
 | `--merlion-cluster-bg` / `-cluster-border` | `color-mix(in oklab, var(--merlion-fg) 2%, var(--merlion-bg))` / border |
+| `--merlion-note-bg` / `-note-border` | bg / warn (the note box of a state diagram; its own pair, so an annotation never paints as a state) |
 | `--merlion-series-1` … `--merlion-series-8` | `#0969da`, `#d4762c`, `#2e8b57`, `#b8408f`, `#6f5bd6`, `#1b98a6`, `#b59a16`, `#c4453d`: the categorical palette for charts, pie and gantt sections, and the tones of the cluster roles `series-1` … `series-8` ([Automatic tones](#automatic-tones)) |
 | `--merlion-font` | `Inter, ui-sans-serif, system-ui, sans-serif` |
 | `--merlion-font-size` | `14px` (must match the measured size; see [text-measurement.md](text-measurement.md)) |
@@ -220,7 +221,7 @@ The root rule resets the text properties that inline SVG would otherwise inherit
 - Text is escaped: `&`, `<`, `>`, `"`, `'` become entities in text and in attribute values.
 - Dropped characters: control characters other than tab and newline, and the non-characters U+FFFE and U+FFFF, so the SVG is well-formed XML 1.0.
 - Bidirectional formatting characters (U+202A–U+202E, U+2066–U+2069) are stripped with `W014 BidiControlStripped`. They can make a label display in a different order from its source text; right-to-left scripts render correctly without them through the Unicode bidirectional algorithm.
-- Markdown in labels (`**bold**`, `*italic*`, `` `code` ``) becomes `<tspan>` with `font-weight`, `font-style` or `font-family` set. Bold and italic runs are measured with the matching weight table. Code runs are drawn in `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` and measured at a fixed 0.6 em per glyph (1 em for CJK, Hangul and fullwidth glyphs, 0 for combining marks), with no kerning: those fonts draw Latin at 0.55–0.602 em, so the estimate is within 0.01 em per glyph and errs wide except against 0.602 em fonts. Other HTML in labels is rendered as literal text.
+- Markdown in labels (`**bold**`, `*italic*`, `` `code` ``) becomes `<tspan>` with `font-weight`, `font-style` or `font-family` set. Bold and italic runs are measured with the matching weight table. Code runs are drawn in `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` and measured at a fixed 0.6 em per glyph (1 em for CJK, Hangul and fullwidth glyphs, 0 for combining marks), with no kerning: those fonts draw Latin at 0.55–0.602 em, so the estimate is within 0.01 em per glyph and errs wide except against 0.602 em fonts. Other HTML in labels is rendered as literal text. A delimiter opens when a non-space follows it and closes when a non-space precedes it, `_` neither opens nor closes inside a word, and a delimiter without a partner is drawn as the character it is; a run of the same delimiter flanks as one, so every character of `State1___` is drawn (CommonMark 0.31 §6.2, reduced).
 - **Title + detail node labels.** A node label whose first line (up to the first `<br>`) is one `**bold**` span, ignoring surrounding spaces, and which has at least one later line holding text renders in two tiers. Example: `q["**q-observe**<br/>250 push slots<br/>separate invocations"]`.
   - The first line is the title: SemiBold at the font size, drawn like any other line.
   - Every later line is a detail line, including wrapped continuations and empty lines between detail lines. A detail line is measured and drawn at 0.8 × the font size (11.2 px at 14 px) and wraps at the same maximum width; Markdown inside it keeps working at that size.
@@ -244,6 +245,7 @@ Hooks for maths, extended label formatting and icons ([ADR-0002](adr/0002-zero-r
 - Clusters: `<g class="merlion-cluster" data-merlion-id="…">` with members nested inside.
 - Edges: `<g class="merlion-edge" data-merlion-from="…" data-merlion-to="…">`, with `data-merlion-back="true"` on reversed edges and `merlion-c-{name}` for each role given through the edge's id.
 - Sequence participants carry the node classes and sequence messages the edge classes, so every rule above reaches them ([sequence.md](sequence.md#groups-and-data-attributes)).
+- A state diagram's states, transitions and composite states are the nodes, edges and clusters of the graph it lowers to, so every rule above reaches them unchanged ([state.md](state.md#groups-and-data-attributes)).
 - Source ids in `data-merlion-*` values are escaped the same way as text. Where a source id becomes part of an XML id or of the layout hint, it is encoded into `[A-Za-z0-9-_]`: ASCII letters, digits and `-` stay, `_` becomes `__`, and every other byte of its UTF-8 form becomes `_` plus two lowercase hex digits. The encoding is injective, so distinct source ids never collide.
 
 ## Layout hint

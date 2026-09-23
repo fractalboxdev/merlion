@@ -132,18 +132,53 @@ enum Role {
     Code,
 }
 
+/// The first and last index of the maximal run of equal tokens each position belongs to:
+/// one pass each way, so the whole line costs two steps per token however long its runs.
+/// `_a__b` gives `[0,1,2,2,4]` and `[0,1,3,3,4]`.
+fn runs(toks: &[Tok], steps: &mut u64) -> (Vec<usize>, Vec<usize>) {
+    let n = toks.len();
+    let mut lo = alloc::vec![0usize; n];
+    let mut hi = alloc::vec![0usize; n];
+    let mut start = 0usize;
+    for i in 0..n {
+        *steps += 1;
+        if toks[i] != toks[start] {
+            start = i;
+        }
+        lo[i] = start;
+    }
+    let mut end = n.saturating_sub(1);
+    for i in (0..n).rev() {
+        *steps += 1;
+        if toks[i] != toks[end] {
+            end = i;
+        }
+        hi[i] = end;
+    }
+    (lo, hi)
+}
+
 fn pair(toks: &[Tok]) -> Vec<Role> {
+    let mut steps = 0u64;
+    pair_counted(toks, &mut steps)
+}
+
+/// [`pair`], counting every token it looks at. The count is what holds the pass linear:
+/// a test reads it instead of a clock, so the bound is the same on every machine.
+fn pair_counted(toks: &[Tok], steps: &mut u64) -> Vec<Role> {
     let mut roles = alloc::vec![Role::Literal; toks.len()];
     // Code spans first: backticks pair in order; an odd last one stays literal.
     let ticks: Vec<usize> = toks
         .iter()
         .enumerate()
+        .inspect(|_| *steps += 1)
         .filter(|(_, t)| **t == Tok::Tick)
         .map(|(i, _)| i)
         .collect();
     for p in ticks.chunks_exact(2) {
         if let [a, b] = *p {
             for r in roles.iter_mut().take(b).skip(a + 1) {
+                *steps += 1;
                 *r = Role::Code;
             }
             if let Some(r) = roles.get_mut(a) {
@@ -154,17 +189,23 @@ fn pair(toks: &[Tok]) -> Vec<Role> {
             }
         }
     }
+    // A run of the same delimiter flanks as one, so the text on each side of the whole
+    // run decides whether each of its delimiters opens or closes: `State1___` neither
+    // opens nor closes and every character of it is drawn. The two ends of every run are
+    // found once, in one pass, rather than scanned for from each position in it.
+    let (lo, hi) = runs(toks, steps);
     // Emphasis: each delimiter kind pairs independently, outside code spans.
     let is_space = |t: Option<&Tok>| t.is_none_or(|t| t.flank_char().is_whitespace());
     let is_alnum = |t: Option<&Tok>| t.is_some_and(|t| t.flank_char().is_alphanumeric());
     for kind in [Tok::Star2, Tok::Star1, Tok::Under] {
         let mut open: Option<usize> = None;
         for (i, t) in toks.iter().enumerate() {
+            *steps += 1;
             if *t != kind || roles.get(i) != Some(&Role::Literal) {
                 continue;
             }
-            let prev = i.checked_sub(1).and_then(|p| toks.get(p));
-            let next = toks.get(i + 1);
+            let prev = lo[i].checked_sub(1).and_then(|p| toks.get(p));
+            let next = toks.get(hi[i] + 1);
             let under = kind == Tok::Under;
             let can_close = !is_space(prev) && !(under && is_alnum(next));
             let can_open = !is_space(next) && !(under && is_alnum(prev));
@@ -335,6 +376,19 @@ mod tests {
     }
 
     #[test]
+    fn a_run_of_delimiters_flanks_as_one() {
+        // A trailing run follows the end of the line, so it opens nothing and every
+        // character of it is drawn (CommonMark 0.31 §6.2, the delimiter run).
+        assert_eq!(
+            one("State1_____________"),
+            ("State1_____________".into(), ".".repeat(19))
+        );
+        assert_eq!(one("a___").0, "a___");
+        assert_eq!(one("___a").0, "___a");
+        assert_eq!(one("a ___ b").0, "a ___ b");
+    }
+
+    #[test]
     fn emphasis_does_not_cross_a_line_break() {
         let p = parse("**a\nb**");
         assert_eq!(show(&p.lines[0]).0, "**a");
@@ -365,5 +419,32 @@ mod tests {
         let s: String = "*_`<br".repeat(2000);
         let p = parse(&s);
         assert_eq!(p.lines.len(), 1);
+    }
+
+    /// Tokens `pair` looks at for one label, the whole hard line in one pass.
+    fn pair_work(text: &str) -> u64 {
+        let (lines, _) = tokenize(text);
+        let mut steps = 0u64;
+        for l in &lines {
+            pair_counted(l, &mut steps);
+        }
+        steps
+    }
+
+    #[test]
+    fn a_delimiter_run_costs_no_more_than_plain_text() {
+        // 1 MiB of one delimiter is the worst case for the flanking rules: every token
+        // is the same kind, so a scan over the run from each of its positions would be
+        // quadratic. Labels are the shared text path, so the pass stays linear and the
+        // work a delimiter run costs stays within a small multiple of plain text's.
+        const N: usize = 1 << 20;
+        let plain = pair_work(&"a".repeat(N));
+        for run in ["_", "*", "**", "`"] {
+            let work = pair_work(&run.repeat(N / run.len()));
+            assert!(
+                work <= 4 * plain,
+                "{run:?} run costs {work} steps against {plain} for plain text"
+            );
+        }
     }
 }

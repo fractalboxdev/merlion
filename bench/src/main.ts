@@ -4,9 +4,10 @@
  *   pnpm bench fetch
  *   pnpm bench run [--renderers merlion,mermaid-dagre,mermaid-elk] [--corpus compat] [--limit N] [--out-svgs] [--no-edits]
  *   pnpm bench report [--input results/<file>.json] [--out <file>.md]
- *   pnpm bench determinism [--corpus compat|sequence] [--font link|embed|system]
+ *   pnpm bench determinism [--corpus compat|compat-sequence|compat-state|sequence|state] [--font link|embed|system]
  *   pnpm bench parity [--limit N] [--require-rsvg]
  *   pnpm bench sequence [--limit N] [--out-svgs]
+ *   pnpm bench state [--limit N] [--out-svgs]
  */
 import { Command, Options } from "@effect/cli";
 import { FetchHttpClient } from "@effect/platform";
@@ -19,6 +20,7 @@ import { RENDERER_NAMES, type RendererName } from "./renderers/Renderer.ts";
 import { report } from "./report.ts";
 import { run } from "./run.ts";
 import { sequenceRun } from "./sequence-run.ts";
+import { stateRun } from "./state-run.ts";
 
 const fetchCmd = Command.make("fetch", {}, () => fetchCorpus.pipe(Effect.asVoid)).pipe(
   Command.withDescription("Download the compat corpus at the pinned mermaid commit and derive the edits corpus"),
@@ -53,7 +55,7 @@ const reportCmd = Command.make("report", { input, out }, (o) => report(o.input, 
 const font = Options.choice("font", FONT_MODES).pipe(Options.withDefault("link" as const));
 const determinismCorpus = Options.choice("corpus", CORPUS_NAMES).pipe(
   Options.withDefault("compat" as const),
-  Options.withDescription("compat (mermaid flowcharts) or sequence (the core's sequence fixtures)"),
+  Options.withDescription("A mermaid corpus (compat, compat-sequence, compat-state) or a core fixture corpus (sequence, state)"),
 );
 const determinismCmd = Command.make("determinism", { corpus: determinismCorpus, font }, (o) =>
   determinism(o.corpus, o.font).pipe(Effect.asVoid),
@@ -73,8 +75,14 @@ const sequenceCmd = Command.make("sequence", { limit: seqLimit, outSvgs: seqOutS
   sequenceRun({ limit: o.limit, outSvgs: o.outSvgs }).pipe(Effect.asVoid),
 ).pipe(Command.withDescription("Render the compat-sequence corpus with Merlion and mermaid and write the baseline"));
 
+const stateLimit = Options.integer("limit").pipe(Options.optional, Options.withDescription("Render only the first N diagrams"));
+const stateOutSvgs = Options.boolean("out-svgs").pipe(Options.withDescription("Write every SVG to results/svgs-state/<renderer>/"));
+const stateCmd = Command.make("state", { limit: stateLimit, outSvgs: stateOutSvgs }, (o) =>
+  stateRun({ limit: o.limit, outSvgs: o.outSvgs }).pipe(Effect.asVoid),
+).pipe(Command.withDescription("Render the compat-state corpus with Merlion and mermaid and write the baseline"));
+
 const bench = Command.make("bench").pipe(
-  Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd, sequenceCmd]),
+  Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd, sequenceCmd, stateCmd]),
 );
 
 const cli = Command.run(bench, { name: "merlion-bench", version: "0.0.0" });

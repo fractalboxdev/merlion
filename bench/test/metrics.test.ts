@@ -6,6 +6,7 @@ import {
   countBends,
   crossings,
   displacement,
+  edgesThroughLabels,
   labelOverlaps,
   layoutMetrics,
   quantile,
@@ -104,6 +105,31 @@ describe("labelOverlaps", () => {
     );
     // a–b overlap, label x overlaps c.
     expect(labelOverlaps(g)).toBe(2);
+  });
+});
+
+describe("edgesThroughLabels", () => {
+  it("counts an edge painted across another edge's chip, which box overlap misses", () => {
+    const g = graph(
+      [node("a", 0, 0), node("b", 100, 0), node("c", 0, 100), node("d", 100, 100)],
+      [
+        // `a → b` carries a chip at the middle of the drawing.
+        edge("a", "b", [{ x: 0, y: 0 }, { x: 100, y: 0 }], "x", { x: 40, y: 40, w: 20, h: 20 }),
+        // `c → d` runs straight through it and carries no chip of its own.
+        edge("c", "d", [{ x: 0, y: 50 }, { x: 100, y: 50 }], ""),
+      ],
+    );
+    expect(edgesThroughLabels(g)).toBe(1);
+    // The chips never touch, so box-against-box overlap reports nothing.
+    expect(labelOverlaps(g)).toBe(0);
+  });
+
+  it("does not count an edge across its own chip", () => {
+    const g = graph(
+      [node("a", 0, 0), node("b", 100, 0)],
+      [edge("a", "b", [{ x: 0, y: 0 }, { x: 100, y: 0 }], "x", { x: 40, y: -10, w: 20, h: 20 })],
+    );
+    expect(edgesThroughLabels(g)).toBe(0);
   });
 });
 

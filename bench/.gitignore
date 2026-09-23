@@ -4,3 +4,4 @@ node_modules/
 !/results/baseline-*.md
 !/results/*-baseline.md
 !/results/*-round*.md
+!/results/*-final.md

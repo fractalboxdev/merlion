@@ -104,6 +104,47 @@ test("renders a sequence diagram through the real WASM, with its outline", async
   assert.ok(outlines[0].outline.includes("loop Every minute:"), outlines[0].outline);
 });
 
+test("renders a state diagram through the real WASM, with its outline", async () => {
+  const doc = [
+    "# Lifecycle",
+    "",
+    "```mermaid",
+    "stateDiagram-v2",
+    "  accTitle: Order lifecycle",
+    "  [*] --> Draft",
+    "  Draft --> Review : submit",
+    "  state Review {",
+    "    [*] --> Editing",
+    "    Editing --> Approved",
+    "  }",
+    "  Review --> Published : approve",
+    "  note right of Published : The feed picks it up within a minute.",
+    "  Published --> [*]",
+    "```",
+    "",
+  ].join("\n");
+  const outlines = [];
+  const file = await pipeline({ width: 480, outline: (info) => outlines.push(info) }).process(
+    new VFile({ value: doc, path: "/site/docs/state.md", cwd: "/site" }),
+  );
+  const html = String(file);
+  const id = idPrefix("docs/state.md", 1);
+  assert.ok(html.includes(`<figure id=\"diagram-1\" class=\"merlion-figure\"><merlion-view><svg`), html.slice(0, 300));
+  assert.ok(html.includes(`class=\"merlion merlion-state\"`), "the root names the diagram type");
+  assert.ok(html.includes(`<title id=\"${id}-title\">Order lifecycle</title>`), "accTitle becomes the SVG title");
+  assert.ok(html.includes('data-merlion-id=\"Draft\"'), "states carry their ids");
+  assert.ok(html.includes('data-merlion-kind=\"start\"'), "a pseudo-state names its kind");
+  assert.ok(html.includes('class=\"merlion-cluster merlion-composite'), "the composite state is a cluster");
+  assert.ok(html.includes('class=\"merlion-note\"'), "the note is drawn");
+  assert.ok(html.includes("<figcaption>Order lifecycle</figcaption>"), html.slice(-400));
+  assert.ok(html.includes('<details><summary>Diagram source</summary><pre><code class=\"language-mermaid\">stateDiagram-v2'), html.slice(-600));
+  assert.deepEqual(file.messages.filter((m) => /^E\d{3}$/.test(String(m.ruleId))), []);
+  assert.equal(outlines.length, 1);
+  assert.equal(outlines[0].path, "docs/state.md");
+  assert.ok(outlines[0].outline.startsWith("State diagram, top to bottom."), outlines[0].outline);
+  assert.ok(outlines[0].outline.includes("Draft → Review [submit]"), outlines[0].outline);
+});
+
 test("strict fails the process on a parse error", async () => {
   const { render } = fakeRender();
   await assert.rejects(pipeline({ render, strict: true }).process(md), /1 Mermaid diagram failed/);

@@ -11,10 +11,11 @@ pnpm bench run [--renderers merlion,mermaid-dagre,mermaid-elk] [--corpus compat]
 pnpm bench report [--input results/<file>.json] [--out <file>.md]
 pnpm bench parity [--limit N] [--require-rsvg]   # stylesheet parity, after the release build
 pnpm bench sequence [--limit N] [--out-svgs]    # compat-sequence against mermaid, writes results/<date>-sequence-baseline.md
+pnpm bench state [--limit N] [--out-svgs]       # compat-state against mermaid, writes results/<date>-state-baseline.md
 pnpm test && pnpm typecheck
 ```
 
-`run` writes `results/<date>-<commit>.json`; `report` writes the Markdown summary next to the newest results file. `--out-svgs` writes every drawing to `results/svgs/<renderer>/<name>.svg`. Only `results/baseline-*.md`, `results/<date>-baseline.md`, `results/<date>-round<n>.md`, `results/<date>-sequence-baseline.md` and `results/<date>-sequence-round<n>.md` are committed; the JSON and the SVG dumps are not.
+`run` writes `results/<date>-<commit>.json`; `report` writes the Markdown summary next to the newest results file. `--out-svgs` writes every drawing to `results/svgs/<renderer>/<name>.svg`. Only `results/baseline-*.md`, `results/<date>-baseline.md`, `results/<date>-round<n>.md`, `results/<date>-sequence-baseline.md`, `results/<date>-sequence-round<n>.md`, `results/<date>-state-baseline.md` and `results/<date>-state-round<n>.md` are committed; the JSON and the SVG dumps are not.
 
 ## Corpora
 
@@ -22,6 +23,7 @@ pnpm test && pnpm typecheck
 |---|---|---|
 | `compat` | mermaid at tag `mermaid@12.0.0` (commit `98a0945418c7`): `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/flowchart.md`, static template literals in `e2e/rendering/flowchart/*.spec.*`, and `e2e/diagrams/flowchart/**/*.mmd` except `handdrawn/`. Flowchart and graph diagrams only, de-duplicated by content | 390 |
 | `compat-sequence` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, static template literals in `e2e/rendering/sequence/*.spec.*`, and `e2e/diagrams/sequence/*.mmd`. `sequenceDiagram` sources only, de-duplicated by content | 216 |
+| `compat-state` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/stateDiagram.md`, static template literals in `e2e/rendering/state/*.spec.*`, and `e2e/diagrams/state-diagram/**/*.mmd` and `e2e/diagrams/state-diagram-v2/**/*.mmd`. `stateDiagram` and `stateDiagram-v2` sources only, de-duplicated by content | 117 |
 | `edits` | The first 30 `compat` diagrams (by name) with at least three simple edge lines, each edited four ways: add an isolated node, add an edge between the farthest-apart unconnected pair, remove the last simple edge (re-declaring endpoints it declared), rename the first `id[Label]` | 106 pairs |
 
 Each corpus's `manifest.json` pins every diagram by source path, source blob and sha256. The mermaid MIT notice is in [NOTICES.md](NOTICES.md).
@@ -61,6 +63,14 @@ All metrics are computed from the SVG alone (`src/svg/extract.ts`, `src/metrics/
 - **Extraction.** Merlion: `g.merlion-participant[data-merlion-id]`, `g.merlion-message`, `g.merlion-note`, `g.merlion-fragment[data-merlion-kind]`. mermaid: `text.actor-box` / `text.actor-man` for participants — one `<text>` per drawn line at a shared anchor, and the whole label once at the head and once at the foot, so texts are grouped by anchor and kept once per column, and the hidden `g.actorPopupMenu` a `link` statement adds is skipped; `.messageLine0` / `.messageLine1` for messages with `.messageText` for their labels; `rect.note` with the `.noteText` lines it holds; `.labelText` and `.loopText` for fragments.
 - **Render rate, fit, size and speed**, as for flowcharts.
 - **Label overlaps**: pairs of drawn boxes intersecting by more than 1 px² — participant head boxes and note boxes, plus one box per message label estimated at 0.55 em per character in that renderer's own font size, since mermaid draws no background box behind a message label.
+
+## State diagrams
+
+`pnpm bench state` measures the `compat-state` corpus (`src/state-run.ts`, `src/svg/state.ts`, `src/metrics/state.ts`). A state machine lowers to a routed graph, so the flowchart measures — crossings, label overlaps, size, fit and speed — apply unchanged and are reported beside the content comparison. What is state-specific:
+
+- **Content compatibility** against the `mermaid-dagre` drawing of the same source: the same state labels, the same number of pseudo-states, the same transition count, the same non-empty transition labels and the same note texts, each a multiset with whitespace removed. A state is named by what a reader sees, because the two renderers generate different ids for one scope, so `[*]`, a choice diamond and a fork bar are counted rather than named.
+- **Extraction.** Merlion: `g.merlion-node[data-merlion-id]`, `g.merlion-edge[data-merlion-from][data-merlion-to]`, `g.merlion-cluster` — a concurrency region is `g.merlion-region` and is not one — and `g.merlion-note` with its `.merlion-note-box`. mermaid: `g.node` for the states, `g.statediagram-cluster` for the composites minus the `note-cluster` it wraps a noted state in, `path.transition` minus the `note-edge` that links a note to its state, and `g.statediagram-note` for the notes; the two node ids ending `----note` and `----parent` belong to that scaffolding and are dropped.
+- **Label overlaps** are reported twice: over the state boxes and transition-label chips, as for flowcharts, and again with the note boxes counted in.
 
 ## Stylesheet parity
 

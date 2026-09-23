@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Drafting
+    note right of Drafting
+        The author writes the post and can save it
+        as often as they like.
+    Drafting --> Review : submit
+    Review --> Published : approve
+    Review --> Drafting : request changes
+    Published --> [*]

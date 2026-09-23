@@ -7,13 +7,23 @@
  * as a layout hint), and through `packages/merlion-wasm` loaded with `initSync`. Fails when
  * any diagram differs, including one that renders on one target and fails on the other.
  *
- * Two corpora: `compat`, the mermaid flowcharts of the benchmark, and `sequence`, the core's
- * sequence fixtures, which the compat corpus holds none of.
+ * One corpus per diagram type on each side: `compat`, `compat-sequence` and `compat-state`
+ * are the mermaid sources of the benchmark, and `sequence` and `state` are the core's own
+ * fixtures.
  */
 import { Command, FileSystem, Path } from "@effect/platform";
 import { Console, Effect, Schema } from "effect";
 import { pathToFileURL } from "node:url";
-import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, MERLION_BIN, MERLION_WASM_DIR, REPO_DIR, SEQUENCE_DIR } from "./paths.ts";
+import {
+  COMPAT_DIR,
+  COMPAT_SEQUENCE_DIR,
+  COMPAT_STATE_DIR,
+  MERLION_BIN,
+  MERLION_WASM_DIR,
+  REPO_DIR,
+  SEQUENCE_DIR,
+  STATE_DIR,
+} from "./paths.ts";
 
 export const FONT_MODES = ["link", "embed", "system"] as const;
 export type FontMode = (typeof FONT_MODES)[number];
@@ -22,7 +32,9 @@ export type FontMode = (typeof FONT_MODES)[number];
 export const CORPORA = {
   compat: COMPAT_DIR,
   "compat-sequence": COMPAT_SEQUENCE_DIR,
+  "compat-state": COMPAT_STATE_DIR,
   sequence: SEQUENCE_DIR,
+  state: STATE_DIR,
 } as const;
 export const CORPUS_NAMES = Object.keys(CORPORA) as [Corpus, ...Corpus[]];
 export type Corpus = keyof typeof CORPORA;

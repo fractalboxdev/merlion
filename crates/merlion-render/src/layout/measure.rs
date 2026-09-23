@@ -690,6 +690,7 @@ mod tests {
             link: None,
             subgraph: None,
             span: Default::default(),
+            reserve: Default::default(),
         };
         assert_eq!(text_style(&chart, &node, 14.0).weight, Weight::Regular);
         node.classes.push(String::from("hot"));

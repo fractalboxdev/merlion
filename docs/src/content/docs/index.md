@@ -1,9 +1,9 @@
 ---
 title: Merlion
-description: Merlion renders Mermaid flowcharts to static, themeable, accessible SVG from a no_std Rust core shipped as a CLI and as WebAssembly.
+description: Merlion renders Mermaid flowcharts, sequence diagrams and state diagrams to static, themeable, accessible SVG from a no_std Rust core shipped as a CLI and as WebAssembly.
 template: splash
 hero:
-  tagline: Mermaid flowcharts to static, themeable, accessible SVG. One no_std Rust core with zero dependencies, shipped as a CLI and as WebAssembly, byte-identical on both.
+  tagline: Mermaid flowcharts, sequence diagrams and state diagrams to static, themeable, accessible SVG. One no_std Rust core with zero dependencies, shipped as a CLI and as WebAssembly, byte-identical on both.
   actions:
     - text: Get started
       link: /getting-started/

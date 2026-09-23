@@ -1,15 +1,16 @@
 # Third-party notices: benchmark corpora
 
-## mermaid (`corpus/compat/`, `corpus/compat-sequence/`, `corpus/edits/`)
+## mermaid (`corpus/compat/`, `corpus/compat-sequence/`, `corpus/compat-state/`, `corpus/edits/`)
 
-`corpus/compat/*.mmd` and `corpus/compat-sequence/*.mmd` are diagrams extracted
-verbatim (dedented) from the mermaid repository at tag `mermaid@12.0.0`, commit
-`98a0945418c76238f15df2afaddbba4272656c3b`.
+`corpus/compat/*.mmd`, `corpus/compat-sequence/*.mmd` and `corpus/compat-state/*.mmd`
+are diagrams extracted verbatim (dedented) from the mermaid repository at tag
+`mermaid@12.0.0`, commit `98a0945418c76238f15df2afaddbba4272656c3b`.
 
 | Corpus | Sources |
 |---|---|
 | `compat` | `demos/*.html`, `packages/mermaid/src/docs/syntax/flowchart.md`, `e2e/rendering/flowchart/*.spec.*`, `e2e/diagrams/flowchart/**/*.mmd` except `handdrawn/` |
 | `compat-sequence` | `demos/*.html`, `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, `e2e/rendering/sequence/*.spec.*`, `e2e/diagrams/sequence/*.mmd` |
+| `compat-state` | `demos/*.html`, `packages/mermaid/src/docs/syntax/stateDiagram.md`, `e2e/rendering/state/*.spec.*`, `e2e/diagrams/state-diagram/**/*.mmd` and `e2e/diagrams/state-diagram-v2/**/*.mmd` except `handdrawn/` |
 
 Each corpus's `manifest.json` records every diagram's source path, the source
 file's git blob, and the diagram's sha256. `corpus/edits/*.json` are derived

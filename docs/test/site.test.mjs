@@ -7,18 +7,21 @@ import { CURATED, fence, galleryPage, gallerySections } from "../scripts/prepare
 import { check } from "../../scripts/check-docs-alignment.mjs";
 import { headingAndLead, specHref, specId, SPECS_BASE } from "../src/lib/specs.mjs";
 
-const fixtures = readdirSync(new URL("../../crates/merlion-render/tests/fixtures/flowcharts/", import.meta.url)).filter((n) =>
-  n.endsWith(".mmd"),
-);
+const mmd = (dir) => readdirSync(new URL(dir, import.meta.url)).filter((n) => n.endsWith(".mmd"));
+const fixtures = mmd("../../crates/merlion-render/tests/fixtures/flowcharts/");
+const stateFixtures = mmd("../../crates/merlion-render/tests/fixtures/state/");
 
-test("the gallery lists the showcase, the roles fixture, every fixture and twelve compat diagrams", () => {
+test("the gallery lists the showcase, the roles fixture, every flowchart and state fixture and twelve compat diagrams", () => {
   const sections = gallerySections();
   const by = (slug) => sections.find((s) => s.slug === slug).entries;
   assert.deepEqual(
     sections.map((s) => s.slug),
-    ["showcase", "roles", "fixtures", "mermaid-corpus"],
+    ["showcase", "roles", "fixtures", "state-diagrams", "mermaid-corpus"],
   );
   assert.equal(by("fixtures").length, fixtures.length);
+  assert.equal(by("state-diagrams").length, stateFixtures.length);
+  // Every state entry is a state diagram, headed by the fixture's stem.
+  for (const e of by("state-diagrams")) assert.match(e.source, /^(---[\s\S]*?---\n)?stateDiagram(-v2)?\b/, e.title);
   assert.equal(CURATED.length, 12);
   assert.equal(by("mermaid-corpus").length, 12);
   for (const s of sections) for (const e of s.entries) assert.ok(e.source.length > 0, e.title);

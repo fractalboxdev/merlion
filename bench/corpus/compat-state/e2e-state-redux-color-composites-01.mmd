@@ -1,0 +1,16 @@
+stateDiagram-v2
+  [*] --> Boot
+  state Boot {
+    [*] --> Firmware
+    state Kernel {
+      [*] --> Sched
+      state Drivers {
+        [*] --> Probe
+      }
+    }
+  }
+  Boot --> Running
+  state Running {
+    [*] --> Serving
+  }
+  Running --> [*]

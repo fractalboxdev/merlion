@@ -176,7 +176,7 @@ pub fn diagram_id(source: &str, opts: &RenderOptions, layout: &str) -> String {
 
 /// Renders one diagram. Never panics; failures are reported in `error` and `diagnostics`.
 pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
-    let mut diags = Diagnostics::new(opts.strict);
+    let mut diags = Diagnostics::with_limit(opts.strict, opts.limits.diagnostics);
     if source.len() > opts.limits.input_bytes {
         return RenderResult::failed(RenderError::TooLarge { what: "input" }, diags.items, 0);
     }
@@ -246,6 +246,39 @@ pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
                 fuel_used: fuel.used(),
             }
         }
+        Diagram::State(sm) => {
+            // Draw-time role work, charged before layout as a flowchart's is
+            // (specs/state.md#fuel).
+            if fuel.burn(svg::state::role_units(sm, opts)).is_err() {
+                return RenderResult::failed(
+                    RenderError::TooLarge { what: "fuel" },
+                    diags.items,
+                    fuel.used(),
+                );
+            }
+            let layout = match layout::layout_state(sm, opts, &mut fuel, &mut diags) {
+                Ok(l) => l,
+                Err(layout::LayoutError::TooLarge { what }) => {
+                    return RenderResult::failed(
+                        RenderError::TooLarge { what },
+                        diags.items,
+                        fuel.used(),
+                    )
+                }
+            };
+            let id = diagram_id(source, opts, &svg::state::layout_hint(&layout));
+            let out = svg::draw_state(sm, &layout, opts, &id, &mut diags);
+            if diags.has_errors() {
+                return RenderResult::failed(RenderError::Parse, diags.items, fuel.used());
+            }
+            RenderResult {
+                svg: Some(out.svg),
+                outline: Some(out.outline),
+                diagnostics: diags.items,
+                error: None,
+                fuel_used: fuel.used(),
+            }
+        }
     }
 }
 
@@ -255,7 +288,7 @@ pub fn check(source: &str, strict: bool) -> Vec<Diagnostic> {
         strict,
         ..RenderOptions::default()
     };
-    let mut diags = Diagnostics::new(strict);
+    let mut diags = Diagnostics::with_limit(strict, opts.limits.diagnostics);
     if source.len() > opts.limits.input_bytes {
         explain(&mut diags.items, &RenderError::TooLarge { what: "input" });
         return diags.items;
@@ -273,5 +306,6 @@ pub fn outline(source: &str) -> Result<String, RenderError> {
     match parse::parse(source, &parse_opts(&opts), &mut diags).map_err(map_parse_error)? {
         Diagram::Flowchart(c) => Ok(svg::outline_flowchart(&c)),
         Diagram::Sequence(s) => Ok(svg::outline_sequence(&s)),
+        Diagram::State(s) => Ok(svg::outline_state(&s)),
     }
 }

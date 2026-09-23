@@ -20,10 +20,14 @@ Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 
 | Corpus | Contents | Licence |
 |---|---|---|
-| `compat` | Demo and test diagrams from the mermaid repository, pinned commit | MIT, vendored with the notice |
+| `compat` | Flowcharts from the mermaid repository's demos, syntax documentation and end-to-end tests, pinned commit | MIT, vendored with the notice |
+| `compat-sequence` | The same sources' sequence diagrams | MIT, vendored with the notice |
+| `compat-state` | The same sources' `stateDiagram` and `stateDiagram-v2` diagrams | MIT, vendored with the notice |
 | `docs` | 200+ real diagrams collected from public MIT/Apache/CC-BY documentation repositories, each with its source and licence recorded | Per diagram |
 | `llm` | MermaidSeqBench (132 cases) plus generated diagrams with known syntax errors | Apache-2.0, fetched at run time |
 | `edits` | Pairs (diagram, diagram after a one-line edit): add node, add edge, remove edge, rename label | Original |
+
+A diagram is extracted as the browser would read it: an end-to-end `.mmd` fixture is inserted into an HTML page by mermaid's own harness, so its entities are decoded before the parser sees them. `state f &lt;&lt;fork&gt;&gt;` left encoded reaches the grammar as text and is dropped, which is how four fork and join fixtures came to sit in `compat-state` exercising no bar while still counting towards the pass rate.
 
 ## Metrics
 
@@ -31,13 +35,13 @@ Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 |---|---|---|
 | Compatibility | % of `compat` rendering the same graph as mermaid, per diagram type | Graph extracted from both SVGs (below) |
 | Round-trip correctness | Node and path alignment between the source graph and the graph extracted from the SVG | After DiagramEval (Liang and You, EMNLP 2025); catches dropped edges and wrong labels |
-| Layout quality | Crossings; maximum crossings on one edge; bends; total edge length; area; label overlaps; **stress** | Stress: people can perceive it, prefer low values, and trace paths faster as it falls (Mooney et al., GD 2025) |
+| Layout quality | Crossings; maximum crossings on one edge; bends; total edge length; area; label overlaps; edges through another edge's label chip; **stress** | Stress: people can perceive it, prefer low values, and trace paths faster as it falls (Mooney et al., GD 2025). An edge painted across a chip leaves the text under it unreadable while the chips never touch, so box-against-box overlap alone reports a drawing as clean that a reader cannot follow |
 | Fit | % of `docs` diagrams fitting 720 px without zoom; aspect ratio | |
 | Stability | Mean and p95 displacement of surviving nodes across `edits` | Relative to the diagram's bounding box |
 | Parser tolerance | Parse rate and repair rate on `llm` | Only Merlion repairs; the other renderers score on parse rate |
 | Style loss | Share of `docs` diagrams with at least one `W010 StyleRejected`, and the rejected properties by frequency | The cost of the style allow-list ([svg-output.md](svg-output.md#source-styles-classdef-style-linkstyle)); a property used in more than 5% of diagrams is a candidate for the allow-list |
 | Speed | p50/p95 render time per diagram type, cold and warm; fuel used per diagram | Native and WASM, measured separately; the fuel-to-time ratio calibrates the `fuel` default ([ADR-0008](adr/0008-deterministic-work-budget.md)) |
-| Determinism | % of `compat` and of the core's sequence fixtures byte-identical between native and WASM, in each font mode | `pnpm bench determinism --corpus compat\|sequence --font link\|embed\|system`; the compat corpus holds no sequence diagram, so sequences are checked over the fixtures. Must be 100% |
+| Determinism | % of `compat` and of the core's sequence and state fixtures byte-identical between native and WASM, in each font mode | `pnpm bench determinism --corpus compat\|compat-sequence\|compat-state\|sequence\|state --font link\|embed\|system`; the compat corpus holds no sequence and no state diagram, so those are checked over the fixtures. Must be 100% |
 | Weight | Gzip size per published artifact, including `merlion-themes.css`; runtime dependency count; packages in the install tree | |
 | Accessibility / SEO | axe violations on the inlined SVG; share of label text extractable by `curl` + HTML-to-text; `<title>`/`<desc>` present | |
 | Theme switch | Cost of a light→dark switch: re-render vs CSS change | |

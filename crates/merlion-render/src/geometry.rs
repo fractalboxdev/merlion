@@ -3,9 +3,12 @@
 //! `clusters[i]` is `Flowchart::subgraphs[i]`. Coordinates are px, origin top-left,
 //! already transformed for the final direction and container fit.
 
-//! Sequence diagrams have a fixed geometry of their own: [`sequence`].
+//! Sequence diagrams have a fixed geometry of their own: [`sequence`]. State diagrams
+//! lower to a graph the flowchart engine lays out, so [`state`] wraps this [`Geometry`]
+//! and adds only the note boxes (specs/state.md#lowering).
 
 pub mod sequence;
+pub mod state;
 
 use alloc::vec::Vec;
 

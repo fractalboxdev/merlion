@@ -40,7 +40,6 @@ fn headers_and_directions() {
 fn unsupported_headers_name_the_header() {
     for (src, header) in [
         ("classDiagram", "classDiagram"),
-        ("stateDiagram-v2\n[*] --> A", "stateDiagram-v2"),
         ("erDiagram", "erDiagram"),
         ("gantt", "gantt"),
         ("pie title Pets", "pie"),

@@ -42,6 +42,7 @@ impl B {
             link: None,
             subgraph: None,
             span: Default::default(),
+            reserve: Default::default(),
         });
         self.c.nodes.len() - 1
     }

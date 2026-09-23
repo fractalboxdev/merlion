@@ -1,0 +1,15 @@
+---
+title: Access review
+---
+stateDiagram-v2
+    accTitle: Quarterly access review
+    accDescr: Every account moves from collected to retained or revoked.
+
+    [*] --> Collected
+    Collected --> UnderReview : a reviewer takes the account
+    UnderReview --> Retained : the access stays
+    UnderReview --> Revoked : the access is removed
+    Retained --> [*]
+    Revoked --> [*]
+
+    click UnderReview href "https://example.com/access-review" _blank

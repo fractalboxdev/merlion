@@ -78,12 +78,12 @@ export const normalizeLabel = (s: string): string =>
 // ---------------------------------------------------------------------------
 // Tree context: absolute transforms and parents.
 
-interface Ctx {
+export interface Ctx {
   readonly ctm: Map<XmlElement, Matrix>;
   readonly parent: Map<XmlElement, XmlElement>;
 }
 
-const buildCtx = (root: XmlElement): Ctx => {
+export const buildCtx = (root: XmlElement): Ctx => {
   const ctm = new Map<XmlElement, Matrix>();
   const parent = new Map<XmlElement, XmlElement>();
   // The root's viewBox maps to the viewport; all coordinates are reported in
@@ -104,7 +104,7 @@ const buildCtx = (root: XmlElement): Ctx => {
 };
 
 /** Descendants of `el` matching `pred`, not descending into elements matching `prune`. */
-const collect = (
+export const collect = (
   el: XmlElement,
   pred: (e: XmlElement) => boolean,
   prune: (e: XmlElement) => boolean = () => false,
@@ -188,7 +188,7 @@ const shapePoints = (e: XmlElement): Point[] => {
 };
 
 /** Absolute bounding box of a shape, transforming every outline point (and both rect corners pairs). */
-const shapeBox = (ctx: Ctx, e: XmlElement): Box | null => {
+export const shapeBox = (ctx: Ctx, e: XmlElement): Box | null => {
   const m = ctx.ctm.get(e) ?? IDENTITY;
   let pts = shapePoints(e);
   if (e.name !== "path" && pts.length === 2 && e.name !== "line") {
@@ -200,7 +200,7 @@ const shapeBox = (ctx: Ctx, e: XmlElement): Box | null => {
   return box !== null && (box.w > 0 || box.h > 0) ? box : null;
 };
 
-const isShape = (e: XmlElement): boolean => SHAPES.has(e.name);
+export const isShape = (e: XmlElement): boolean => SHAPES.has(e.name);
 
 /**
  * Text of a label: `<text>` content with a space inserted before every line
@@ -261,7 +261,7 @@ const mermaidLabel = (scope: XmlElement): { label: string; texts: XmlElement[]; 
 };
 
 /** Estimated box of a `<text>` element, used only when no background box exists. */
-const estimateTextBox = (ctx: Ctx, t: XmlElement): Box | null => {
+export const estimateTextBox = (ctx: Ctx, t: XmlElement): Box | null => {
   const text = labelText([t]);
   if (text.length === 0) return null;
   const lines = Math.max(1, collect(t, (e) => e.name === "tspan" && ("x" in e.attrs || "dy" in e.attrs || hasClass(e, "row"))).length);
@@ -277,7 +277,7 @@ const estimateTextBox = (ctx: Ctx, t: XmlElement): Box | null => {
   return boxOfPoints([applyMatrix(m, { x: x0, y: y - 0.8 * size }), applyMatrix(m, { x: x0 + w, y: y - 0.8 * size + h })]);
 };
 
-const parseViewBox = (root: XmlElement): Box | null => {
+export const parseViewBox = (root: XmlElement): Box | null => {
   const ns = parseNumbers(root.attrs["viewBox"] ?? "");
   if (ns.length < 4) return null;
   const [x, y, w, h] = ns as [number, number, number, number];
@@ -287,7 +287,7 @@ const parseViewBox = (root: XmlElement): Box | null => {
 // ---------------------------------------------------------------------------
 // Edge endpoint matching.
 
-const nearestNode = (p: Point | undefined, nodes: readonly ExtractedNode[]): string | null => {
+export const nearestNode = (p: Point | undefined, nodes: readonly ExtractedNode[]): string | null => {
   if (p === undefined) return null;
   let best: string | null = null;
   let bestD = ENDPOINT_TOLERANCE;

@@ -1,0 +1,17 @@
+stateDiagram-v2
+    state risk <<choice>>
+    [*] --> Authorizing
+    Authorizing --> risk
+    risk --> Captured : the risk score is under 40
+    risk --> ThreeDS : the risk score is 40 or over
+    state ThreeDS {
+        [*] --> Challenge
+        Challenge --> Verified : the issuer accepts
+        Challenge --> Abandoned : the shopper leaves
+        Verified --> [*]
+        Abandoned --> [*]
+    }
+    ThreeDS --> Captured : verified
+    ThreeDS --> Declined : abandoned
+    Captured --> [*]
+    Declined --> [*]

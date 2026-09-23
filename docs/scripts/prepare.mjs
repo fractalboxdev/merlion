@@ -12,6 +12,7 @@
 //        - roles: bench/fixtures/roles/two-tier-roles.mmd, inline and as standalone
 //          light and dark renders with the site stylesheet baked in (public/gallery/)
 //        - fixtures: every crates/merlion-render/tests/fixtures/flowcharts/*.mmd
+//        - state: every crates/merlion-render/tests/fixtures/state/*.mmd
 //        - compat: twelve curated diagrams of bench/corpus/compat/
 //      Each diagram is a ```mermaid block, rendered at build time by the Merlion
 //      integration like any other page.
@@ -27,6 +28,7 @@ const WASM_DIR = join(REPO, "packages", "merlion-wasm");
 const THEMES_CSS = join(REPO, "packages", "merlion-themes", "merlion-themes.css");
 const SITE_CSS = join(DOCS, "src", "styles", "diagrams.css");
 const FIXTURES = join(REPO, "crates", "merlion-render", "tests", "fixtures", "flowcharts");
+const STATE = join(REPO, "crates", "merlion-render", "tests", "fixtures", "state");
 const COMPAT = join(REPO, "bench", "corpus", "compat");
 const ROLES = join(REPO, "bench", "fixtures", "roles");
 const SHOWCASE = join(DOCS, "src", "gallery", "showcase.json");
@@ -115,6 +117,18 @@ export const gallerySections = () => {
       intro:
         "Every file in `crates/merlion-render/tests/fixtures/flowcharts/`, the inputs of the core's snapshot tests. Fixtures with deliberate mistakes (`llm-repairs`, `llm-typographic`, `llm-unquoted-labels`) render through the parser's repairs.",
       entries: mmd(FIXTURES).map((f) => ({ title: titleOf(f.stem), source: f.source })),
+    },
+    {
+      slug: "state-diagrams",
+      from: "crates/merlion-render/tests/fixtures/state/",
+      title: "State diagrams",
+      description:
+        "Every state diagram fixture of the Merlion core's test suite: composite and concurrent states, choice, fork and join, notes, directions, styles and LLM-style repairs.",
+      intro: [
+        "Every file in `crates/merlion-render/tests/fixtures/state/`. A `stateDiagram-v2` lowers to the same layered graph a flowchart uses, so these run through the seven layout phases with no engine of their own ([how it works](/how-it-works/state-lowering/)).",
+        "The five `llm-` sources carry the mistakes a language model makes — `->` for `-->`, a transition label with no `:`, a composite state left open, a stray `}` — and render through the parser's repairs ([State diagrams](/guides/state-diagrams/#diagnostics)).",
+      ].join("\n\n"),
+      entries: mmd(STATE).map((f) => ({ title: titleOf(f.stem), source: f.source })),
     },
     {
       slug: "mermaid-corpus",

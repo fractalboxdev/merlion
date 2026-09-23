@@ -12,19 +12,29 @@ use alloc::vec::Vec;
 
 use crate::model::Flowchart;
 
-/// Deepest cluster nesting the layout follows; deeper parent links are cut. Matches the
-/// parser's nesting limit (specs/architecture.md#boundaries).
-pub const MAX_CLUSTER_DEPTH: usize = 64;
+/// Deepest cluster nesting the layout follows; deeper parent links are cut.
+///
+/// Twice the parser's nesting limit (specs/architecture.md#boundaries), because a model
+/// element may lower to more than one cluster: a composite state that splits into
+/// concurrency regions becomes a cluster holding one cluster per region, so a state
+/// machine nested to the parser's 64 reaches 128 cluster levels
+/// (specs/state.md#concurrency). At the parser's own limit the cut therefore never
+/// fires, and `E010 NestingTooDeep` is the only gate a source meets.
+pub const MAX_CLUSTER_DEPTH: usize = 128;
 
 /// The validated cluster (subgraph) tree. Parent links that point out of range, at
 /// the cluster itself, into a cycle, or deeper than [`MAX_CLUSTER_DEPTH`] are cut, so
-/// every chain of parents ends at the root within 64 steps.
+/// every chain of parents ends at the root within [`MAX_CLUSTER_DEPTH`] steps.
 #[derive(Clone, Debug, Default)]
 pub struct Clusters {
     pub parent: Vec<Option<usize>>,
     pub depth: Vec<usize>,
     /// Innermost cluster of every model node (`None` at the top level).
     pub node_cluster: Vec<Option<usize>>,
+    /// Clusters whose parent link the depth limit cut, in index order. Each is drawn at
+    /// the top level rather than inside the cluster it named, so the caller reports it
+    /// instead of drawing a truncated hierarchy as a correct one.
+    pub too_deep: Vec<usize>,
 }
 
 impl Clusters {
@@ -36,11 +46,15 @@ impl Clusters {
             .enumerate()
             .map(|(i, s)| s.parent.filter(|&p| p < k && p != i))
             .collect();
+        let mut too_deep = Vec::new();
         for i in 0..k {
             let mut cur = parent[i];
             let mut steps = 0usize;
             while let Some(c) = cur {
                 if c == i || steps >= MAX_CLUSTER_DEPTH {
+                    if c != i {
+                        too_deep.push(i);
+                    }
                     parent[i] = None;
                     break;
                 }
@@ -71,6 +85,7 @@ impl Clusters {
             parent,
             depth,
             node_cluster,
+            too_deep,
         }
     }
 
@@ -498,6 +513,7 @@ mod tests {
                 link: None,
                 subgraph: *s,
                 span: Default::default(),
+                reserve: Default::default(),
             });
         }
         c

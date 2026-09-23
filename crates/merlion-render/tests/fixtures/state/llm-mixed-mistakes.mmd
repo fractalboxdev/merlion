@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] -> Received
+    state Processing {
+        [*] --> Validate
+        Validate --> Enrich
+        Enrich --> [*]
+    Received --> Processing queue the record
+    Processing ==> Stored
+    Stored --> [*]

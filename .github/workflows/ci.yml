@@ -99,7 +99,7 @@ jobs:
       - name: Every corpus, native vs WASM, every font mode
         working-directory: bench
         run: |
-          for corpus in compat sequence; do
+          for corpus in compat sequence state; do
             for font in link embed system; do
               pnpm bench determinism --corpus "$corpus" --font "$font"
             done
