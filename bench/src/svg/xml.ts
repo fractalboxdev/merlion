@@ -121,13 +121,9 @@ export const parseXml = (src: string): XmlElement => {
       i = lt + 1;
       continue;
     }
+    // The character after "<" is a name start, checked above, so the tag has at
+    // least one character of content and `gt` is always past it.
     const { end: gt, terminated } = findTagEnd(src, lt + 1);
-    if (gt <= lt + 1) {
-      // "<" immediately followed by "<": literal text.
-      pushText("<");
-      i = lt + 1;
-      continue;
-    }
     const inner = src.slice(lt + 1, gt);
     /** An unterminated tag ends at the `<` that follows it, which stays unread. */
     const next = terminated ? gt + 1 : gt;
