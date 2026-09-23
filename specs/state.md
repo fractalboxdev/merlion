@@ -40,7 +40,7 @@ state "Some long name" as s3 : The description
 
 - A bare id declares a simple state whose label is the id.
 - `state "<description>" as <id>`, `state <id> : <description>` and `<id> : <description>` all describe a state. The first description replaces the id the state is named by and every later one adds a line, so the three forms above in that order label `s3` `Some long name` over `The description`, as mermaid's description list does. A description runs to the end of the statement and may contain `<br/>`.
-- Text after the state id that the grammar has no place for — `state s2 &lt;&lt;fork&gt;&gt;`, the entity spelling an HTML source carries — is dropped with `W024`, together with the rest of its line, as mermaid's lexer drops it.
+- Text after the state id that the grammar has no place for — `state s2 &lt;&lt;fork&gt;&gt;`, the entity spelling an HTML source carries — is dropped with `W024`. It runs to the end of the statement, like every other scan: the `}` of `state Outer { state A }` closes `Outer` and the `;` of `state A; B --> C` starts the next statement rather than joining the dropped text. A `;` that closes an entity separates nothing, in either spelling: the `#lt;` the grammar defines and the `&lt;` an HTML source escapes to.
 - A state named by a transition before any declaration is declared at that point, with its id as its label and `implicit` set.
 - `<id>:::<class>` applies a role where the id stands, on either side of a transition ([Styling](#styling)).
 
@@ -111,6 +111,8 @@ note left of State2 : This is the note to the left.
 
 `note left of <id>` and `note right of <id>` take either `: <text>` on the same line or lines up to an `end note` line, which mermaid joins into one text with its line breaks kept. A floating note (`note "<text>" as <id>`) draws nothing in mermaid's renderer either, and is dropped with `W024`.
 
+A block without its `end note` is `R019`: the block ends before the first line that can only be a statement — one carrying a transition arrow, or opening with `}`, `[*]`, `--` or a keyword the grammar reserves — or at the end of input, and the fix inserts the missing `end note` there. The statements after it parse as written instead of being read as note text.
+
 A state takes any number of notes; they stack on the side their placement names, in source order.
 
 ### Direction
@@ -146,6 +148,7 @@ Codes shared with flowcharts keep their meaning: `E002`, `E004`, `E010`, `E011`,
 | `R016` ConcurrencyOutsideState | Repair | `--` outside a composite state; dropped |
 | `R017` TransitionTextUnmarked | Repair | A transition with text and no `:` (`s1 --> s2 done`); the `:` is inserted |
 | `R018` TransitionArrowRepaired | Repair | An arrow other than `-->`; read as `-->` |
+| `R019` NoteNotClosed | Repair | A block note without its `end note`; closed before the next statement |
 
 Every repair carries a `fix` that edits the source, as in flowcharts. A transition to an undeclared state is **not** repaired: declaring every state before naming it is not idiomatic, so `R005`'s flowchart reasoning does not hold and the state is declared silently, as mermaid does.
 
@@ -309,7 +312,7 @@ The highlight sets of [interaction.md](interaction.md#highlight-set) carry over 
 
 ## Testing
 
-- Parser: one fixture per statement form, each asserting the model, plus a repair fixture per `R014`–`R018` whose fix, applied to the source, re-parses without that diagnostic; `[*]` resolving to one start and one end per scope, including inside a composite state and inside a concurrency region.
+- Parser: one fixture per statement form, each asserting the model, plus a repair fixture per `R014`–`R019` whose fix, applied to the source, re-parses without that diagnostic; `[*]` resolving to one start and one end per scope, including inside a composite state and inside a concurrency region.
 - Lowering: the six guarantees above, each as its own test — id injectivity over a source that declares `root_start`, declaration order, parents before children, innermost cluster, endpoints of a transition naming a composite, and a graph whose node, layer and crossing counts are equal with and without notes.
 - Layout: over the `compat` state diagrams, no label overlaps another element, every member sits inside its composite's box, and every note box sits inside the extent the lowering reserved.
 - SVG: `assert_safe` and `assert_well_formed` over every state fixture, the same checks flowcharts pass, extended with the state class names and the draw order above.

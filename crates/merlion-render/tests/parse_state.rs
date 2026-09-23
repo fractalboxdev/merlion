@@ -1,6 +1,6 @@
 //! The `stateDiagram` / `stateDiagram-v2` parser (specs/state.md#syntax, #diagnostics):
 //! one case per statement form, `[*]` resolving to one start and one end per scope, the
-//! diagnostics `W024`, `W025` and the shared codes, and a repair case per `R014`–`R018`
+//! diagnostics `W024`, `W025` and the shared codes, and a repair case per `R014`–`R019`
 //! whose fix reparses clean.
 
 mod parse_support;
@@ -582,6 +582,23 @@ fn a_state_declared_before_the_composite_keeps_its_first_parent() {
 }
 
 #[test]
+fn a_state_declaration_ends_at_the_brace_that_closes_its_scope() {
+    // `state A` ends at the `}`, which closes `Outer` on the same line: the brace is
+    // not text following the id.
+    let s = st("state Outer { state A }\nOuter --> D\n");
+    assert_eq!(find(&s, "A").parent, Some(idx(&s, "Outer")));
+    assert_eq!(find(&s, "Outer").kind, StateKind::Composite);
+    assert_eq!(edges(&s), [("Outer", "D", "")]);
+}
+
+#[test]
+fn a_state_declaration_ends_at_its_semicolon() {
+    let s = st("state A; B --> C\n");
+    assert_eq!(ids(&s), ["A", "B", "C"]);
+    assert_eq!(edges(&s), [("B", "C", "")]);
+}
+
+#[test]
 fn a_composite_upgrade_keeps_the_states_position() {
     let s = st("A --> Box\nstate Box {\n  x --> y\n}\n");
     assert_eq!(ids(&s), ["A", "Box", "x", "y"]);
@@ -817,8 +834,42 @@ fn end_note_is_case_insensitive() {
 
 #[test]
 fn a_block_note_left_open_closes_at_the_end_of_input() {
-    let s = st("A\nnote right of A\n  text\n");
+    let (s, d) = st_d("A\nnote right of A\n  text\n");
     assert_eq!(s.notes[0].text, "text");
+    assert_eq!(count(&d, "R019"), 1, "{:?}", codes(&d));
+}
+
+#[test]
+fn a_block_note_left_open_stops_at_the_next_statement() {
+    let (s, d) = st_d("[*] --> A\nnote right of A\n  hello\nA --> B\nB --> [*]\n");
+    assert_eq!(s.notes.len(), 1);
+    assert_eq!(s.notes[0].text, "hello");
+    assert_eq!(count(&d, "R019"), 1, "{:?}", codes(&d));
+    assert_eq!(
+        edges(&s),
+        [
+            ("root_start", "A", ""),
+            ("A", "B", ""),
+            ("B", "root_end", "")
+        ]
+    );
+}
+
+#[test]
+fn a_block_note_left_open_stops_at_a_closing_brace() {
+    let (s, d) = st_d("state Outer {\n  A\n  note right of A\n    hello\n}\nOuter --> D\n");
+    assert_eq!(s.notes[0].text, "hello");
+    assert_eq!(count(&d, "R019"), 1, "{:?}", codes(&d));
+    assert!(!has(&d, "R014"), "the composite closes on its own `}}`");
+    assert_eq!(edges(&s), [("Outer", "D", "")]);
+}
+
+#[test]
+fn a_repaired_block_note_reparses_clean() {
+    assert_fix_round_trip(
+        &body("[*] --> A\nnote right of A\n  hello\nA --> B\n"),
+        &["R019"],
+    );
 }
 
 #[test]

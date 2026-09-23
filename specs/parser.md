@@ -123,7 +123,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I034` DiagnosticsTruncated | Info | Count of diagnostics past `limits.diagnostics`, which are counted rather than kept; always the last diagnostic |
 | `R001`–`R008` | Repair | See [Error tolerance](#error-tolerance) |
 | `R009`–`R013` | Repair | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
-| `R014`–`R018` | Repair | State diagrams ([state.md](state.md#diagnostics)) |
+| `R014`–`R019` | Repair | State diagrams ([state.md](state.md#diagnostics)) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
 

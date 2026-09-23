@@ -23,7 +23,7 @@
 //! Diagnostics this module adds (specs/state.md#diagnostics): `W024` dropped statement,
 //! `W025` rejected state kind, `R014` unclosed composite state, `R015` unmatched `}`,
 //! `R016` `--` outside a composite state, `R017` transition text without its `:`,
-//! `R018` an arrow other than `-->`.
+//! `R018` an arrow other than `-->`, `R019` a block note without its `end note`.
 
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::{String, ToString};
@@ -57,7 +57,7 @@ fn arrow_at(src: &str, at: usize) -> Option<&'static str> {
     ARROWS.iter().copied().find(|t| rest.starts_with(t))
 }
 
-/// Length of the entity code starting just after a `#`, through its `;` (`35;`,
+/// Length of the entity code starting just after a `#` or `&`, through its `;` (`35;`,
 /// `x2665;`, `hearts;`), or `None` when the `#` opens a comment instead.
 fn entity_len(after_hash: &str) -> Option<usize> {
     for (i, c) in after_hash.char_indices() {
@@ -69,6 +69,43 @@ fn entity_len(after_hash: &str) -> Option<usize> {
         }
     }
     None
+}
+
+/// Keywords that open a statement of their own, so a line starting with one cannot be
+/// the text of a note block left open.
+const STATEMENT_KEYWORDS: &[&str] = &[
+    "state",
+    "note",
+    "direction",
+    "class",
+    "classdef",
+    "style",
+    "click",
+    "link",
+    "acctitle",
+    "accdescr",
+];
+
+/// Whether a line can only be the next statement rather than more note text: it carries
+/// a transition arrow, or it opens with `}`, `[*]`, `--` or a keyword the grammar
+/// reserves. An `end note` line is the block's own terminator and is matched before this
+/// (specs/state.md#notes).
+fn starts_a_statement(line: &str) -> bool {
+    let t = line.trim();
+    if t.is_empty() {
+        return false;
+    }
+    // Every arrow in `ARROWS` but `-.-` holds `->` or `=>`.
+    if t.contains("->") || t.contains("=>") || t.contains("-.-") {
+        return true;
+    }
+    if t.starts_with('}') || t.starts_with("[*]") || t.starts_with("--") {
+        return true;
+    }
+    let word = t.split_whitespace().next().unwrap_or("");
+    STATEMENT_KEYWORDS
+        .iter()
+        .any(|k| word.eq_ignore_ascii_case(k))
 }
 
 /// Cuts `text` at the comment it holds: `%%`, or a `#` that opens no entity code
@@ -351,7 +388,9 @@ impl P<'_, '_> {
                     depth -= 1;
                     i += 1;
                 }
-                Some(b'#') => match entity_len(text.get(i + 1..).unwrap_or("")) {
+                // Both spellings of an entity carry a `;` that separates nothing: the
+                // `#lt;` the grammar defines, and the `&lt;` an HTML source escapes to.
+                Some(b'#') | Some(b'&') => match entity_len(text.get(i + 1..).unwrap_or("")) {
                     Some(len) => i += 1 + len,
                     None => i += 1,
                 },
@@ -1017,15 +1056,11 @@ impl P<'_, '_> {
         // same line, and any other text the grammar has no place for.
         let mut trailing: Option<(usize, usize)> = None;
         if !composite {
-            let described_here = self.char_at(self.pos) == Some(':');
-            // A description ends where any statement ends; text the grammar has no place
-            // for runs to the end of the line, because mermaid's lexer drops the line and
-            // its `;` and `}` never separate statements there.
-            let stop = if described_here {
-                self.stmt_end(self.pos)
-            } else {
-                self.eol_from(self.pos)
-            };
+            // A description, and any other text the grammar has no place for, ends where
+            // every statement ends: at the first `;` or unmatched `}`. `state A; B --> C`
+            // is two statements, and the `}` of `state Outer { state A }` closes `Outer`
+            // rather than trailing its member.
+            let stop = self.stmt_end(self.pos);
             let rest = cut_comment(self.src.get(self.pos..stop).unwrap_or(""));
             if !rest.trim().is_empty() {
                 trailing = Some((self.pos, self.pos + rest.len()));
@@ -1336,7 +1371,21 @@ impl P<'_, '_> {
                 )
             }
             None => {
-                let (body, consumed) = self.note_block(line_end);
+                let (body, consumed, unclosed) = self.note_block(line_end);
+                if let Some(insert_at) = unclosed {
+                    let span = self.span(kw_start, consumed);
+                    self.repair(
+                        "R019",
+                        span,
+                        String::from(
+                            "block note has no `end note`; closed before the next statement",
+                        ),
+                        Fix {
+                            span: self.span(insert_at, insert_at),
+                            replacement: String::from("\nend note"),
+                        },
+                    );
+                }
                 (body, line_end, consumed, consumed)
             }
         };
@@ -1355,9 +1404,11 @@ impl P<'_, '_> {
         Ok(())
     }
 
-    /// The lines of a block note after `from`, up to an `end note` line or the end of
-    /// input. Returns the joined text and the offset just past the last line read.
-    fn note_block(&self, from: usize) -> (String, usize) {
+    /// The lines of a block note after `from`, up to its `end note`, the first line that
+    /// can only be the next statement, or the end of input. Returns the joined text, the
+    /// offset just past the last line read, and, when the block has no `end note`, where
+    /// one belongs.
+    fn note_block(&self, from: usize) -> (String, usize, Option<usize>) {
         let mut lines: Vec<&str> = Vec::new();
         let mut at = self.idx.next_line_start(from);
         let mut consumed = from;
@@ -1365,14 +1416,18 @@ impl P<'_, '_> {
             let next = self.idx.next_line_start(at);
             let line = self.src.get(at..next).unwrap_or("");
             let trimmed = line.trim();
+            if trimmed.eq_ignore_ascii_case("end note") {
+                return (lines.join("\n"), at + line.trim_end().len(), None);
+            }
+            if starts_a_statement(trimmed) {
+                return (lines.join("\n"), consumed, Some(consumed));
+            }
             consumed = at + line.trim_end().len();
             at = next;
-            if trimmed.eq_ignore_ascii_case("end note") {
-                return (lines.join("\n"), consumed);
-            }
             lines.push(trimmed);
         }
-        (lines.join("\n"), consumed.max(from))
+        let consumed = consumed.max(from);
+        (lines.join("\n"), consumed, Some(consumed))
     }
 
     // ------------------------------------------------------------ direction

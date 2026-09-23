@@ -59,7 +59,7 @@ fn find<'a>(s: &'a StateMachine, id: &str) -> &'a merlion_render::model::state::
 #[test]
 fn corpus_size() {
     let n = fixtures().len();
-    assert!((15..=20).contains(&n), "{n} fixtures");
+    assert!((15..=24).contains(&n), "{n} fixtures");
 }
 
 #[test]
@@ -150,7 +150,7 @@ fn the_repair_fixtures_cover_every_state_repair() {
             seen.insert(x.code);
         }
     }
-    for c in ["R014", "R015", "R016", "R017", "R018"] {
+    for c in ["R014", "R015", "R016", "R017", "R018", "R019"] {
         assert!(seen.contains(c), "{c} is never exercised: {seen:?}");
     }
 }
