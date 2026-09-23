@@ -7,6 +7,8 @@ Ask a model for a diagram and it can answer in two ways. In Mermaid it writes th
 
 The second job is the one models are bad at, and not for want of capability. Text advance depends on the font the reader's browser resolves; nothing a model can compute at generation time tells it how wide `Assign a third reviewer as tie-breaker` will be at 14 px in Inter. A layout engine measures it. A model estimates it, and a label that overruns its box is unreadable no matter how good the prose that produced it.
 
+Nor can the model check its own estimate. Asked to name the digit an SVG draws, from the source alone, GPT-4o is right 13% of the time — chance is 10% ([SGP-Bench, ICLR 2025](https://arxiv.org/abs/2408.08313)). Writing SVG means placing geometry blind and having no way to look.
+
 Merlion takes the Mermaid and does the rest: layout, text measurement, routing, theming, accessibility metadata.
 
 ```mermaid
@@ -29,7 +31,9 @@ flowchart LR
 
 **It is cheap.** A Mermaid flowchart is one line per node and one per edge. The same diagram in SVG carries a path, a rectangle, a text element and their coordinates for each of those, and every one of those is output tokens — paid for, and waited for, on every generation.
 
-**It is checkable.** A Mermaid source *states* its graph, so a parser recovers exactly what the model declared and a program can compare it against what was asked for, before anything is drawn. An SVG states coordinates; its graph has to be inferred back out of geometry — a painted shape holding a label is probably a node, a stroke between two shapes is probably an edge — and "probably" is as good as that check gets. This is why a model can be held to a Mermaid diagram in a way it cannot be held to an SVG one: the failure is visible without rendering it and looking.
+**It is checkable.** A Mermaid source *states* its graph, so a parser recovers exactly what the model declared and a program can compare it against what was asked for, before anything is drawn. An SVG states coordinates; its graph has to be inferred back out of geometry — a painted shape holding a label is probably a node, a stroke between two shapes is probably an edge — and "probably" is as good as that check gets.
+
+Mermaid is the stricter format, and that is the point rather than the cost. A model's SVG nearly always parses, because SVG has no grammar to violate — and an SVG that parses can still be unreadable, with nothing to say so. A model's Mermaid sometimes breaks the grammar, loudly, at parse time, where a diagnostic can go back to the model. Mermaid fails early and visibly; SVG fails late and silently, and only a reader finds out.
 
 Merlion's [`authoring` benchmark](/reference/specs/benchmark/#authoring) measures both properties, along with fidelity to the requested graph and whether the labels fit, over 18 diagrams asked of the same model in each format.
 
