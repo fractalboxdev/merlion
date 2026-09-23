@@ -690,6 +690,99 @@ fn a_note_overlaps_no_node_no_cluster_title_and_no_note() {
 }
 
 #[test]
+fn a_note_overlaps_no_node_of_another_component() {
+    // Four components, each carrying a note that reaches well past its own states:
+    // packing must keep the room the notes reserved, whichever side they take.
+    let mut b = Build::new();
+    let a = b.state("A", StateKind::Simple);
+    let a2 = b.state("A2", StateKind::Simple);
+    let c = b.state("C", StateKind::Simple);
+    let d = b.state("D", StateKind::Simple);
+    let e = b.state("E", StateKind::Simple);
+    let f = b.state("F", StateKind::Simple);
+    let g1 = b.state("G", StateKind::Simple);
+    let h = b.state("H", StateKind::Simple);
+    b.edge(a, a2);
+    b.edge(c, d);
+    b.edge(e, f);
+    b.edge(g1, h);
+    b.note(
+        c,
+        NotePlacement::Before,
+        "this note is deliberately long so it reaches far left",
+    );
+    b.note(
+        e,
+        NotePlacement::After,
+        "and this one reaches just as far to the right of its own state",
+    );
+    b.note(
+        h,
+        NotePlacement::Before,
+        "a third note, on the second layer, left of the state it names",
+    );
+    let sm = b.done();
+
+    let g = laid_out(&sm);
+    let geo = &g.geometry.graph;
+    let boxes: Vec<Box2> = g.geometry.notes.iter().map(Box2::of_note).collect();
+    for (i, nb) in boxes.iter().enumerate() {
+        for v in 0..geo.nodes.len() {
+            assert!(
+                !nb.overlaps(&node_box(geo, v), 0.01),
+                "note {i} overlaps node {}",
+                g.lowering.graph.nodes[v].id
+            );
+        }
+        for (j, other) in boxes.iter().enumerate() {
+            if i != j {
+                assert!(!nb.overlaps(other, 0.01), "notes {i} and {j} overlap");
+            }
+        }
+        assert!(nb.x0 >= -0.01 && nb.y0 >= -0.01);
+        assert!(nb.x1 <= geo.width + 0.01 && nb.y1 <= geo.height + 0.01);
+    }
+}
+
+#[test]
+fn a_note_overlaps_no_cluster_of_another_component() {
+    // The note is on a state of its own component; the other component is a composite,
+    // so what the note must not cover is a cluster box rather than a bare node.
+    let mut b = Build::new();
+    let outer = b.state("Outer", StateKind::Composite);
+    let inner = b.member("Inner", StateKind::Simple, Some(outer), None);
+    let inner2 = b.member("Inner2", StateKind::Simple, Some(outer), None);
+    let lone = b.state("Lone", StateKind::Simple);
+    let after = b.state("After", StateKind::Simple);
+    b.edge(inner, inner2);
+    b.edge(lone, after);
+    b.note(
+        lone,
+        NotePlacement::Before,
+        "this note is deliberately long so it reaches far to the left",
+    );
+    let sm = b.done();
+
+    let g = laid_out(&sm);
+    let geo = &g.geometry.graph;
+    let nb = Box2::of_note(note_of(&g, 0));
+    for (c, cg) in geo.clusters.iter().enumerate() {
+        assert!(
+            !nb.overlaps(&Box2::of_cluster(cg), 0.01),
+            "the note overlaps cluster {}",
+            g.lowering.graph.subgraphs[c].id
+        );
+    }
+    for v in 0..geo.nodes.len() {
+        assert!(
+            !nb.overlaps(&node_box(geo, v), 0.01),
+            "the note overlaps node {}",
+            g.lowering.graph.nodes[v].id
+        );
+    }
+}
+
+#[test]
 fn a_note_clears_the_self_loop_on_its_own_state() {
     let mut b = Build::new();
     let a = b.state("Retry", StateKind::Simple);

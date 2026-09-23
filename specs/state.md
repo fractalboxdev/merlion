@@ -207,6 +207,8 @@ A note is geometry, not a graph node, so no layout phase changes for it. The low
 
 Because the space comes out of the node's own extent, a note box overlaps no node, no cluster title and no routed edge: the layout already treats that rectangle as occupied. Placing the note on the order axis, never the layer axis, keeps it clear of the ports a transition attaches to, which sit on the layer-axis sides of the node in every direction.
 
+The reserved room is nothing the layout draws, so a component's drawing — measured from what it draws — ends inside it. Component packing therefore packs each component's drawn box grown by the room it reserved, and the guarantee holds across components as well as inside one: a note on a state in one component never lands on a node or cluster of the next.
+
 ### Fuel
 
 Mandatory: one unit per state, transition, note and region charged by the lowering before it allocates, then the flowchart pipeline's own charges. Draw-time role work is `svg::role_units` over the lowered graph. Exhaustion in a mandatory phase returns `TooLarge`; an optional pass stops and keeps the previous result.

@@ -24,7 +24,7 @@ use crate::diag::{Diagnostics, Severity, Span};
 use crate::fuel::{Fuel, OutOfFuel};
 use crate::geometry::{chip_size, ClusterGeom, EdgeGeom, EdgeLabelGeom, Geometry, NodeGeom, Point};
 use crate::math::{abs, clamp, hypot, max, min};
-use crate::model::{Arrow, Flowchart};
+use crate::model::{Arrow, Flowchart, Reserve};
 use crate::options::{Direction, DirectionOption, EdgeStyle, RenderOptions};
 use crate::text::{self, LabelLayout, TextStyle, Weight};
 
@@ -1931,14 +1931,22 @@ fn run_packed(
                 Some(&mut stats),
             )?);
         }
+        let pads: Vec<pack::Pad> = comps
+            .iter()
+            .zip(&geoms)
+            .map(|(c, g)| reserve_pad(chart, c, g, dir))
+            .collect();
         let g = pack::merge(
             chart,
             comps,
             &geoms,
+            &pads,
             dir,
-            o.target_width,
-            o.node_spacing,
-            o.rank_spacing,
+            pack::Spacing {
+                target_width: o.target_width,
+                node: o.node_spacing,
+                rank: o.rank_spacing,
+            },
         );
         Ok((g, stats))
     };
@@ -1990,6 +1998,86 @@ fn run_packed(
     }
     geom.fuel_used = fuel.used();
     Ok(geom)
+}
+
+/// The room a component reserved beyond what it drew, on each screen side.
+///
+/// [`node_extent`] grows a node's extent by its [`Reserve`], so the room is free of every
+/// other node, cluster and edge — but nothing is drawn in it, and the drawing is
+/// translated from what it draws, which trims the reserve at the edge of the component.
+/// Packing the trimmed box would let the next component sit in room a note is about to
+/// take, so the reserve is packed as part of the component
+/// (specs/state.md#what-the-lowering-guarantees). A flowchart reserves nothing and pads
+/// by zero, which packs exactly the drawn boxes.
+fn reserve_pad(chart: &Flowchart, c: &pack::Component, g: &Geometry, dir: Direction) -> pack::Pad {
+    let reserved: Vec<(usize, Reserve)> = c
+        .nodes
+        .iter()
+        .enumerate()
+        .filter_map(|(i, &v)| {
+            let r = chart.nodes.get(v)?.reserve;
+            (r != Reserve::default()).then_some((i, r))
+        })
+        .collect();
+    if reserved.is_empty() {
+        return pack::Pad::default();
+    }
+    let horizontal = dir.is_horizontal();
+    // Self-loops sit on the `after` side of the order axis and an `after` note starts
+    // beyond them, so the room there runs from the far edge of the loop, not the node.
+    let mut reach = vec![f64::MIN; c.nodes.len()];
+    for (i, &e) in c.edges.iter().enumerate() {
+        let Some(edge) = chart.edges.get(e).filter(|x| x.from == x.to) else {
+            continue;
+        };
+        let (Ok(k), Some(eg)) = (c.nodes.binary_search(&edge.from), g.edges.get(i)) else {
+            continue;
+        };
+        let Some(slot) = reach.get_mut(k) else {
+            continue;
+        };
+        for p in &eg.points {
+            *slot = max(*slot, if horizontal { p.y } else { p.x });
+        }
+        if let Some(l) = &eg.label {
+            let (cw, ch) = chip_size(&l.label);
+            *slot = max(
+                *slot,
+                if horizontal {
+                    l.y + ch / 2.0
+                } else {
+                    l.x + cw / 2.0
+                },
+            );
+        }
+    }
+    let (mut lo_o, mut hi_o) = (f64::MAX, f64::MIN);
+    let (mut lo_l, mut hi_l) = (f64::MAX, f64::MIN);
+    for (i, r) in reserved {
+        let Some(n) = g.nodes.get(i) else { continue };
+        let (o_c, o_half, l_c, l_half) = if horizontal {
+            (n.y, n.h / 2.0, n.x, n.w / 2.0)
+        } else {
+            (n.x, n.w / 2.0, n.y, n.h / 2.0)
+        };
+        let far = max(o_c + o_half, reach.get(i).copied().unwrap_or(f64::MIN));
+        lo_o = min(lo_o, o_c - o_half - max(finite_or(r.before, 0.0), 0.0));
+        hi_o = max(hi_o, far + max(finite_or(r.after, 0.0), 0.0));
+        let half = max(l_half, max(finite_or(r.thick, 0.0), 0.0) / 2.0);
+        lo_l = min(lo_l, l_c - half);
+        hi_l = max(hi_l, l_c + half);
+    }
+    let ((lo_x, hi_x), (lo_y, hi_y)) = if horizontal {
+        ((lo_l, hi_l), (lo_o, hi_o))
+    } else {
+        ((lo_o, hi_o), (lo_l, hi_l))
+    };
+    pack::Pad {
+        left: max(MARGIN - lo_x, 0.0),
+        top: max(MARGIN - lo_y, 0.0),
+        right: max(hi_x - (g.width - MARGIN), 0.0),
+        bottom: max(hi_y - (g.height - MARGIN), 0.0),
+    }
 }
 
 /// Phases 1–7 and container fit for one connected drawing.

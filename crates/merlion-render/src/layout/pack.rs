@@ -185,32 +185,63 @@ pub fn sub_chart(chart: &Flowchart, c: &Component, dir: Direction) -> Flowchart 
     }
 }
 
+/// Room a component occupies beyond what it draws, on each screen side. A node's
+/// reserved room is not drawn, so the component's own translate trims it at the edge of
+/// its drawing; packing keeps it clear all the same, because a state diagram carves its
+/// note boxes out of that room once the components are packed
+/// (specs/state.md#notes-2). All zero for a flowchart, which reserves nothing.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Pad {
+    pub left: f64,
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
+}
+
+/// What packing lays the component drawings out to: the width a row fills before the
+/// next component starts a new one, and the gaps along and across the order axis.
+#[derive(Clone, Copy, Debug)]
+pub struct Spacing {
+    pub target_width: f64,
+    pub node: f64,
+    pub rank: f64,
+}
+
 /// Packs the component drawings `geoms` (one per component, each with its
-/// [`MARGIN`]) into one geometry indexed like `chart`.
+/// [`MARGIN`]) into one geometry indexed like `chart`. `pads[k]` is the room component
+/// `k` reserved beyond its drawing, which is packed as part of it.
 pub fn merge(
     chart: &Flowchart,
     comps: &[Component],
     geoms: &[Geometry],
+    pads: &[Pad],
     dir: Direction,
-    target_width: f64,
-    node_spacing: f64,
-    rank_spacing: f64,
+    spacing: Spacing,
 ) -> Geometry {
-    let content = |g: &Geometry| {
+    let Spacing {
+        target_width,
+        node: node_spacing,
+        rank: rank_spacing,
+    } = spacing;
+    let pad = |k: usize| pads.get(k).copied().unwrap_or_default();
+    // The whole box a component occupies: what it drew plus what it reserved.
+    let content = |k: usize| {
+        let g = &geoms[k];
+        let p = pad(k);
         (
-            max(g.width - 2.0 * MARGIN, 0.0),
-            max(g.height - 2.0 * MARGIN, 0.0),
+            max(g.width - 2.0 * MARGIN, 0.0) + p.left + p.right,
+            max(g.height - 2.0 * MARGIN, 0.0) + p.top + p.bottom,
         )
     };
-    // Top-left corner of each component's content, relative to the drawing's content.
+    // Top-left corner of each component's box, relative to the drawing's content.
     let mut at = vec![(0.0f64, 0.0f64); geoms.len()];
     let mut width = 0.0f64;
     let height;
     if dir.is_horizontal() {
-        let widest = geoms.iter().map(|g| content(g).0).fold(0.0, max);
+        let widest = (0..geoms.len()).map(|k| content(k).0).fold(0.0, max);
         let mut y = 0.0;
-        for (k, g) in geoms.iter().enumerate() {
-            let (w, h) = content(g);
+        for (k, slot) in at.iter_mut().enumerate() {
+            let (w, h) = content(k);
             if k > 0 {
                 y += node_spacing;
             }
@@ -219,7 +250,7 @@ pub fn merge(
             } else {
                 0.0
             };
-            at[k] = (x, y);
+            *slot = (x, y);
             y += h;
         }
         (width, height) = (widest, y);
@@ -228,8 +259,8 @@ pub fn merge(
         // Rows of component indices.
         let mut rows: Vec<Vec<usize>> = Vec::new();
         let mut row_w = 0.0;
-        for (k, g) in geoms.iter().enumerate() {
-            let w = content(g).0;
+        for k in 0..geoms.len() {
+            let w = content(k).0;
             match rows.last_mut() {
                 Some(row) if row_w + node_spacing + w <= inner => {
                     row_w += node_spacing + w;
@@ -246,10 +277,10 @@ pub fn merge(
             if r > 0 {
                 y += rank_spacing;
             }
-            let row_h = row.iter().map(|&k| content(&geoms[k]).1).fold(0.0, max);
+            let row_h = row.iter().map(|&k| content(k).1).fold(0.0, max);
             let mut x = 0.0;
             for (i, &k) in row.iter().enumerate() {
-                let (w, h) = content(&geoms[k]);
+                let (w, h) = content(k);
                 if i > 0 {
                     x += node_spacing;
                 }
@@ -285,10 +316,11 @@ pub fn merge(
         .collect();
     let mut clusters = vec![None; chart.subgraphs.len()];
     let mut layers: Vec<Vec<usize>> = Vec::new();
-    for ((c, g), &(ox, oy)) in comps.iter().zip(geoms).zip(&at) {
-        // Component content starts at MARGIN in its own drawing and at MARGIN + at
-        // in the packed one.
-        let (dx, dy) = (ox, oy);
+    for (k, ((c, g), &(ox, oy))) in comps.iter().zip(geoms).zip(&at).enumerate() {
+        // Component content starts at MARGIN in its own drawing and at MARGIN + at,
+        // past whatever it reserved on the near sides, in the packed one.
+        let p = pad(k);
+        let (dx, dy) = (ox + p.left, oy + p.top);
         for (i, &v) in c.nodes.iter().enumerate() {
             if let (Some(slot), Some(ng)) = (nodes.get_mut(v), g.nodes.get(i)) {
                 let mut ng = ng.clone();
