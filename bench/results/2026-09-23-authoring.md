@@ -70,3 +70,65 @@ Answers recorded 2026-09-23 through `claude-cli`.
 | onboarding-funnel | large | mermaid | yes | 1.00 | 1.00 | 0/18 | 0 | 229 |
 | onboarding-funnel | large | svg | yes | 0.85 | 1.00 | 0/19 | 2 | 23238 |
 
+## google/gemma-4-31b
+
+Answers recorded 2026-09-23 through `openai-compatible`.
+
+| | Mermaid | SVG | SVG ÷ Mermaid |
+|---|---|---|---|
+| Answers holding a diagram that draws | 94.4% | 100.0% | |
+| Calls the provider never returned (excluded above) | 0 | 11 | |
+| Mean output tokens | 819 | 4914 | 6.0× |
+| — of those, the diagram itself | 124 | 1436 | 11.6× |
+| Mean source bytes | 402 | 3201 | 8.0× |
+| Node F1 against the declared graph | 0.988 | 0.830 | |
+| Edge F1 against the declared graph | 0.966 | 0.828 | |
+| Labelled edges drawn with the right label | 35.9% | 10.0% | |
+| Labels overflowing their shape | 0.0% | 8.3% | |
+| Labels touching no shape (a title, or a chipless edge label) | 0 | 13 | |
+| Shape overlaps | 0 | 2 | |
+| Ink outside the viewBox | 0 | 0 | |
+| Edges with an endpoint at no shape | 0 | 3 | |
+| Mermaid answers mermaid 12.0.0 itself parses | 94.4% | — | |
+
+### Per task
+
+| Task | Size | Format | Drawn | Node F1 | Edge F1 | Overflowing | Overlaps | Output tokens |
+|---|---|---|---|---|---|---|---|---|
+| ci-pipeline | small | mermaid | yes | 1.00 | 1.00 | 0/10 | 0 | 468 |
+| ci-pipeline | small | svg | yes | 0.86 | 1.00 | 2/10 | 0 | 6047 |
+| password-reset | small | mermaid | yes | 1.00 | 1.00 | 0/8 | 0 | 451 |
+| password-reset | small | svg | yes | 0.86 | 1.00 | 0/8 | 0 | 3996 |
+| order-fulfilment | small | mermaid | yes | 1.00 | 1.00 | 0/8 | 0 | 461 |
+| order-fulfilment | small | svg | yes | 0.83 | 0.60 | 2/8 | 0 | 2938 |
+| cache-read | small | mermaid | yes | 1.00 | 1.00 | 0/7 | 0 | 607 |
+| cache-read | small | svg | no (fetch failed) | — | — | — | — | — |
+| long-labels | small | mermaid | yes | 1.00 | 1.00 | 0/7 | 0 | 541 |
+| long-labels | small | svg | no (fetch failed) | — | — | — | — | — |
+| oauth-code | medium | mermaid | yes | 1.00 | 1.00 | 0/10 | 0 | 799 |
+| oauth-code | medium | svg | no (fetch failed) | — | — | — | — | — |
+| build-cache | medium | mermaid | yes | 1.00 | 1.00 | 0/14 | 0 | 884 |
+| build-cache | medium | svg | no (fetch failed) | — | — | — | — | — |
+| support-triage | medium | mermaid | yes | 1.00 | 1.00 | 0/15 | 0 | 1570 |
+| support-triage | medium | svg | no (fetch failed) | — | — | — | — | — |
+| request-lifecycle | medium | mermaid | yes | 1.00 | 1.00 | 0/15 | 0 | 770 |
+| request-lifecycle | medium | svg | no (fetch failed) | — | — | — | — | — |
+| release-train | medium | mermaid | yes | 1.00 | 1.00 | 0/13 | 0 | 730 |
+| release-train | medium | svg | yes | 0.70 | 0.71 | 0/13 | 0 | 5435 |
+| data-ingest | medium | mermaid | yes | 1.00 | 1.00 | 0/12 | 0 | 606 |
+| data-ingest | medium | svg | yes | 0.95 | 1.00 | 1/12 | 0 | 5070 |
+| compiler-stages | medium | mermaid | no (exit 1: no JSON on stdout; <stdin>:5:18: error E002 expected a link, `&`, `;` or a newline, found `r`) | — | — | — | — | 696 |
+| compiler-stages | medium | svg | yes | 0.77 | 0.67 | 2/16 | 0 | 5843 |
+| k8s-rollout | large | mermaid | yes | 1.00 | 1.00 | 0/20 | 0 | 1155 |
+| k8s-rollout | large | svg | no (fetch failed) | — | — | — | — | — |
+| payment-settlement | large | mermaid | yes | 1.00 | 1.00 | 0/22 | 0 | 1328 |
+| payment-settlement | large | svg | no (fetch failed) | — | — | — | — | — |
+| incident-response | large | mermaid | yes | 1.00 | 1.00 | 0/20 | 0 | 1072 |
+| incident-response | large | svg | no (fetch failed) | — | — | — | — | — |
+| content-moderation | large | mermaid | yes | 0.80 | 0.42 | 0/21 | 0 | 821 |
+| content-moderation | large | svg | no (fetch failed) | — | — | — | — | — |
+| warehouse-etl | large | mermaid | yes | 1.00 | 1.00 | 0/17 | 0 | 964 |
+| warehouse-etl | large | svg | yes | 0.84 | 0.82 | 0/17 | 2 | 5068 |
+| onboarding-funnel | large | mermaid | yes | 1.00 | 1.00 | 0/18 | 0 | 817 |
+| onboarding-funnel | large | svg | no (fetch failed) | — | — | — | — | — |
+

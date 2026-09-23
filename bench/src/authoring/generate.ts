@@ -7,10 +7,10 @@
  * extractor or a metric changes, and the numbers move only when Merlion does.
  */
 import { FileSystem, Path } from "@effect/platform";
-import { Effect, Either, Option, Schedule } from "effect";
+import { Effect, Either, Option, Schedule, Schema } from "effect";
 import { ask, type Provider } from "./provider.ts";
 import { extractAnswer, promptFor } from "./prompt.ts";
-import { FORMATS, loadTasks, type Output, OUTPUTS_DIR } from "./tasks.ts";
+import { FORMATS, loadTasks, type Output, OutputFile, OUTPUTS_DIR } from "./tasks.ts";
 
 export interface GenerateOpts {
   readonly provider: Provider;
@@ -18,6 +18,8 @@ export interface GenerateOpts {
   /** File stem under corpus/authoring/outputs/; defaults to the model name. */
   readonly label: string | undefined;
   readonly limit: number | undefined;
+  /** Keep the answers already recorded and ask only for the ones missing or failed. */
+  readonly resume: boolean;
 }
 
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
@@ -41,6 +43,19 @@ export const generate = (opts: GenerateOpts) =>
     const resolved = new Set<string>();
     yield* fs.makeDirectory(OUTPUTS_DIR, { recursive: true });
     const target = path.join(OUTPUTS_DIR, `${slug(opts.label ?? opts.model)}.json`);
+
+    /** Answers already recorded and worth keeping: `--resume` re-asks only the rest. */
+    const keep = new Map<string, Output>();
+    if (opts.resume && (yield* fs.exists(target))) {
+      const existing = yield* Schema.decodeUnknown(Schema.parseJson(OutputFile))(yield* fs.readFileString(target));
+      for (const o of existing.outputs) {
+        if (o.error !== null && o.error !== undefined) continue;
+        if (o.truncated === true) continue;
+        keep.set(`${o.task}/${o.format}`, o);
+        if (o.model !== "") resolved.add(o.model);
+      }
+      yield* Effect.log(`resuming: ${keep.size} answers kept, the rest re-asked`);
+    }
 
     // Written after every answer. A run is dozens of slow calls, and a crash
     // thirty answers in should cost the next one, not all thirty.
@@ -68,6 +83,11 @@ export const generate = (opts: GenerateOpts) =>
 
     for (const task of tasks) {
       for (const format of FORMATS) {
+        const already = keep.get(`${task.name}/${format}`);
+        if (already !== undefined) {
+          outputs.push(already);
+          continue;
+        }
         const answer = yield* ask(opts.provider, opts.model, promptFor(task, format)).pipe(
           Effect.retry(RETRY),
           Effect.tapError((e) => Effect.logWarning(`${task.name}/${format}: ${e.message}`)),

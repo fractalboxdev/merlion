@@ -9,6 +9,8 @@
  */
 import { Command, CommandExecutor } from "@effect/platform";
 import { Effect, Schema } from "effect";
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
 
 export const PROVIDERS = ["anthropic", "claude-cli", "openai-compatible"] as const;
 export const Provider = Schema.Literal(...PROVIDERS);
@@ -146,6 +148,48 @@ const OpenAiResponse = Schema.Struct({
   })),
 });
 
+/** POSTs JSON and reads the whole response, with no time limit on the body. */
+const post = (url: string, key: string, payload: string): Promise<unknown> =>
+  new Promise((resolve, reject) => {
+    const target = new URL(url);
+    const send = target.protocol === "https:" ? httpsRequest : httpRequest;
+    const req = send(
+      target,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "content-length": Buffer.byteLength(payload),
+          authorization: `Bearer ${key}`,
+        },
+        // No socket, headers or body deadline: the caller decides when to stop.
+        timeout: 0,
+      },
+      (res) => {
+        let text = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk: string) => {
+          text += chunk;
+        });
+        res.on("end", () => {
+          const status = res.statusCode ?? 0;
+          if (status < 200 || status >= 300) {
+            reject(new Error(`${status} ${text.slice(0, 500)}`));
+            return;
+          }
+          try {
+            resolve(JSON.parse(text) as unknown);
+          } catch (e) {
+            reject(e instanceof Error ? e : new Error(String(e)));
+          }
+        });
+      },
+    );
+    req.on("error", reject);
+    req.write(payload);
+    req.end();
+  });
+
 /**
  * Any OpenAI-compatible chat endpoint: a local LM Studio, Ollama or vLLM
  * server, or a hosted one. `OPENAI_BASE_URL` points at it and `OPENAI_API_KEY`
@@ -160,16 +204,17 @@ const openAiCompatible = (model: string, prompt: string): Effect.Effect<Answer, 
     const base = (process.env["OPENAI_BASE_URL"] ?? DEFAULT_OPENAI_BASE_URL).replace(/\/$/, "");
     const key = process.env["OPENAI_API_KEY"] ?? "not-needed";
     const fail = (message: string) => new ProviderError({ provider: "openai-compatible", message });
+    // `node:http` rather than `fetch`: undici caps a response body at 300 s,
+    // and a local model writing an SVG for a large diagram runs well past that,
+    // so fetch failed on exactly the biggest diagrams and left holes where the
+    // interesting answers should have been.
     const body = yield* Effect.tryPromise({
-      try: async () => {
-        const res = await fetch(`${base}/chat/completions`, {
-          method: "POST",
-          headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-          body: JSON.stringify({ model, max_tokens: MAX_TOKENS, temperature: TEMPERATURE, messages: [{ role: "user", content: prompt }] }),
-        });
-        if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-        return (await res.json()) as unknown;
-      },
+      try: () => post(`${base}/chat/completions`, key, JSON.stringify({
+        model,
+        max_tokens: MAX_TOKENS,
+        temperature: TEMPERATURE,
+        messages: [{ role: "user", content: prompt }],
+      })),
       catch: (e) => fail(e instanceof Error ? e.message : String(e)),
     });
     const parsed = yield* Schema.decodeUnknown(OpenAiResponse)(body).pipe(Effect.mapError((e) => fail(String(e))));

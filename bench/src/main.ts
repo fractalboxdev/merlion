@@ -8,7 +8,7 @@
  *   pnpm bench parity [--limit N] [--require-rsvg]
  *   pnpm bench sequence [--limit N] [--out-svgs]
  *   pnpm bench state [--limit N] [--out-svgs]
- *   pnpm bench authoring generate --provider <p> --model <m> [--label <name>] [--limit N]
+ *   pnpm bench authoring generate --provider <p> --model <m> [--label <name>] [--limit N] [--resume]
  *   pnpm bench authoring score [--out <dir>]
  */
 import { Command, Options } from "@effect/cli";
@@ -96,12 +96,16 @@ const label = Options.text("label").pipe(
   Options.withDescription("File stem under corpus/authoring/outputs/ (default: the model id)"),
 );
 const authoringLimit = Options.integer("limit").pipe(Options.optional, Options.withDescription("Ask only the first N tasks"));
-const generateCmd = Command.make("generate", { provider, model, label, authoringLimit }, (o) =>
+const resume = Options.boolean("resume").pipe(
+  Options.withDescription("Keep the answers already recorded and re-ask only the ones missing, failed or truncated"),
+);
+const generateCmd = Command.make("generate", { provider, model, label, authoringLimit, resume }, (o) =>
   generate({
     provider: o.provider,
     model: o.model,
     label: Option.getOrUndefined(o.label),
     limit: Option.getOrUndefined(o.authoringLimit),
+    resume: o.resume,
   }).pipe(Effect.asVoid),
 ).pipe(Command.withDescription("Ask one model for every authoring task in both formats and record the answers"));
 
