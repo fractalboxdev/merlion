@@ -143,6 +143,8 @@ pnpm bench authoring score                                            # Mermaid 
 
 `pnpm bench authoring` measures the premise the project rests on: that a model asked for a diagram should write Mermaid rather than SVG. Eighteen diagrams stated in prose beside the graph each one means are asked of a model in both formats, under the same readability requirement, and the answers are scored on cost, validity, fidelity to the declared graph and whether the labels fit — the last measured in Chromium, because text advance is the quantity a model writing SVG cannot compute ([specs/benchmark.md](specs/benchmark.md#authoring), evidence in [specs/research/llm-authoring.md](specs/research/llm-authoring.md)).
 
+Over those 18 diagrams `claude-sonnet-5` spends **56× the output tokens** writing SVG instead of Mermaid (215 against 12,096 on average; 67× on the largest diagrams, 136× at the extreme) and draws a graph that matches the request less often (node F1 0.918 against 1.000), while both formats reach edge F1 1.000. It overflows none of its labels, so at this model scale the cost is tokens and fidelity rather than legibility, per [bench/results/2026-09-23-authoring.md](bench/results/2026-09-23-authoring.md).
+
 ## Licence
 
 MIT. The embedded Inter subset is under the SIL Open Font License 1.1; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [specs/licensing.md](specs/licensing.md).
