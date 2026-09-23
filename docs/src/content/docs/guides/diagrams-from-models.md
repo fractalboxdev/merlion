@@ -35,7 +35,9 @@ flowchart LR
 
 **It is checkable.** A Mermaid source *states* its graph, so a parser recovers exactly what the model declared and a program can compare it against what was asked for, before anything is drawn. An SVG states coordinates; its graph has to be inferred back out of geometry — a painted shape holding a label is probably a node, a stroke between two shapes is probably an edge — and "probably" is as good as that check gets.
 
-Mermaid is the stricter format, and that is the point rather than the cost. A model's SVG nearly always parses, because SVG has no grammar to violate — and an SVG that parses can still be unreadable, with nothing to say so. A model's Mermaid sometimes breaks the grammar, loudly, at parse time, where a diagnostic can go back to the model. Mermaid fails early and visibly; SVG fails late and silently, and only a reader finds out.
+Mermaid is the stricter format, and that is the point rather than the cost. A model's SVG nearly always parses, because SVG has no grammar to violate — and an SVG that parses can still be unreadable, with nothing to say so. A model's Mermaid sometimes breaks the grammar, loudly, at parse time, where a diagnostic can go back to the model.
+
+That difference decides whether a repair loop works. [VisPlotBench](https://arxiv.org/abs/2510.23642) (ICLR 2026) runs the same tasks in both formats and feeds the renderer's output back to the model: GPT-4.1's Mermaid goes from 68.7% to 93.9%, its SVG from 95.4% to 96.9%. SVG starts higher and stays there — not because it is better, but because running it reveals almost nothing about what is wrong with it.
 
 Merlion's [`authoring` benchmark](/reference/specs/benchmark/#authoring) measures both properties, along with fidelity to the requested graph and whether the labels fit, over 18 diagrams asked of the same model in each format.
 
