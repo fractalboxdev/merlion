@@ -44,9 +44,32 @@ GeoSVG-RL is also the closest external check on the `authoring` method, and it w
 - **That models cannot draw SVG at all.** They draw simple figures well; SVGenius measures degradation *with complexity*, not failure at the floor, and GeoSVG-RL's render success rates sit above 90%. The claim here is about diagrams dense enough for layout to matter, and about what the failures cost.
 - **That Mermaid is the more reliable format on syntax.** It is not, and this cuts against the argument. Raw SVG is forgiving markup with no grammar to violate, so a model's SVG output almost always parses; Mermaid has a grammar and a model's output sometimes breaks it, which is why MermaidSeqBench scores syntax correctness at all and why Merlion's parser repairs rather than rejects. What SVG buys with that parse rate is the wrong kind of success: an SVG that parses can still be unreadable, and nothing says so. Mermaid fails loudly and early, SVG fails silently and late, and a pipeline can act on the first.
 - **A measured token ratio between the two formats for the same diagram.** No published source compares them directly. The ratios in the [authoring results](../../bench/results/) are this project's own measurement, over 18 diagrams and the models recorded in the corpus.
-- **That a frontier model overflows its labels.** It is the failure the literature measures most sharply, and the `authoring` corpus does not reproduce it: over 18 diagrams, `claude-sonnet-5` overflowed **none** of its 257 SVG labels, including on the task written to stress text measurement with five long labels. It sizes its boxes generously and picks a wide canvas. GeoSVG-RL's 44.6% Text-In-Box Rate is a 7B code model prompted cold, and that gap does not carry to a frontier model on diagrams of this size. What does carry is cost, and a smaller fidelity gap — the drawing is legible, it is just expensive and slightly wrong.
+- **That a frontier model overflows its labels.** It is the failure the literature measures most sharply, and the `authoring` corpus does not reproduce it: over 18 diagrams, `claude-sonnet-5` overflowed **none** of its 257 SVG labels, including on the task written to stress text measurement with five long labels. It sizes its boxes generously and picks a wide canvas. GeoSVG-RL's 44.6% Text-In-Box Rate is a 7B code model prompted cold, and that gap does not carry to the top of the capability range. What carries there is cost, and a smaller fidelity gap — the drawing is legible, it is just expensive and slightly wrong. The failure is capability-dependent rather than absent, which is its own finding ([below](#the-weaker-the-model-the-more-the-format-matters)), and the corpus records models across the range so the claim is not made from one point on it.
 - **That constraining a model to a grammar is free.** Grammar-constrained decoding raises validity by construction, but its cost to the quality of what is generated is contested and was not resolved here. Merlion does not constrain decoding; it parses tolerantly after the fact, which sidesteps the question rather than answering it.
 - **That Mermaid is the best graph DSL for this.** Graphviz, D2 and others make the same trade. Mermaid is chosen for reach — it is what models already emit and what Markdown renderers already accept — not because it was measured against the alternatives.
+
+## The weaker the model, the more the format matters
+
+The two jobs a diagram request asks for have different difficulty curves.
+
+**Stating the graph scales with the diagram and with nothing else.** Naming six boxes and the six arrows between them is reading comprehension. It gets longer as the diagram grows; it never gets qualitatively harder, and a small model does it.
+
+**Placing the geometry has a floor.** Before any of it is usable a model must size text it cannot measure, keep hundreds of coordinates mutually consistent, route arrows to the right boundaries, and hold the painter's-algorithm order that decides what ends up on top. Below that floor the output is not a worse drawing — it is not a drawing. Labels sit outside their boxes, arrows land in empty space, and a reader cannot recover the graph the model was asked for.
+
+That floor is what the measurements straddle:
+
+| Model | Labels inside their box | Renders at all | Arrows anchored correctly |
+|---|---|---|---|
+| A 7B code model, prompted ([GeoSVG-RL](https://arxiv.org/abs/2605.25447) Table 2) | 44.6% | 72.4% | 31.7% |
+| `claude-sonnet-5`, this corpus | 100% (0 of 257 overflow) | 100% | 100% |
+
+SVGenius puts the same gap across 22 models in one sentence: proprietary models significantly outperform open-source ones, and every family degrades as geometric complexity rises. Direct SVG authoring is a capability that arrives late and then only holds for small diagrams.
+
+Nothing comparable separates the two on Mermaid. Over this corpus both models state the graph correctly; the weaker one simply spends longer thinking about it.
+
+So the choice of output format is worth **more** the less capable the model, not less. A frontier model writing SVG pays in tokens and a little fidelity. A small model writing SVG pays in usability, and there is no prompt that buys it back — GeoSVG-RL's own ablation shows supervised imitation moving text containment from 44.6 to 39.8, because the constraint being violated appears nowhere in the text being imitated.
+
+This is the range Merlion is for. A 31-billion-parameter model on a laptop, or a cheap fast hosted one, produces a publishable diagram through Mermaid and cannot produce one through SVG. The renderer is what makes a small model's diagram good, and it is the same renderer that makes a frontier model's diagram cheap.
 
 ## Where SVG is the right answer
 

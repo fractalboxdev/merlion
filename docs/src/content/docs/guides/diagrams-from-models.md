@@ -1,6 +1,6 @@
 ---
 title: Diagrams from models
-description: A model asked for a diagram should write Mermaid, not SVG. Mermaid asks it for the graph alone; SVG also asks it for geometry it cannot measure. Merlion renders the result.
+description: A model asked for a diagram should write Mermaid, not SVG. Mermaid asks it for the graph alone; SVG also asks for geometry it cannot measure — which is why a small model needs this most. Merlion renders the result.
 ---
 
 Ask a model for a diagram and it can answer in two ways. In Mermaid it writes the graph: which nodes exist, which edges connect them, what each is called. In SVG it writes the graph *and the geometry* — every coordinate, every text width, every arrow route.
@@ -40,6 +40,17 @@ Mermaid is the stricter format, and that is the point rather than the cost. A mo
 That difference decides whether a repair loop works. [VisPlotBench](https://arxiv.org/abs/2510.23642) (ICLR 2026) runs the same tasks in both formats and feeds the renderer's output back to the model: GPT-4.1's Mermaid goes from 68.7% to 93.9%, its SVG from 95.4% to 96.9%. SVG starts higher and stays there — not because it is better, but because running it reveals almost nothing about what is wrong with it.
 
 Merlion's [`authoring` benchmark](/reference/specs/benchmark/#authoring) measures both properties, along with fidelity to the requested graph and whether the labels fit, over 18 diagrams asked of the same model in each format.
+
+## Small models need this most
+
+The two jobs have different difficulty curves. Stating a graph gets longer as the diagram grows and never gets qualitatively harder — naming six boxes and six arrows is reading comprehension, and a small model does it. Placing geometry has a floor: size text you cannot measure, keep hundreds of coordinates consistent, route arrows to the right boundaries, hold the order that decides what covers what. Below that floor the output is not a worse drawing, it is not a drawing.
+
+| Writing SVG | Labels inside their box | Renders at all | Arrows anchored |
+|---|---|---|---|
+| A 7B code model, prompted ([GeoSVG-RL](https://arxiv.org/abs/2605.25447)) | 44.6% | 72.4% | 31.7% |
+| A frontier model ([this benchmark](/reference/specs/benchmark/#authoring)) | 100% | 100% | 100% |
+
+Nothing like that gap shows up on Mermaid, where both state the graph correctly. So the format is worth **more** the less capable the model: a frontier model writing SVG pays in tokens, and a small one pays in usability. Run a 31B model on a laptop and Mermaid is the difference between a diagram you can publish and one you cannot.
 
 ## Repairing what a model writes
 

@@ -59,6 +59,8 @@ Both prompts carry the same requirement: *every label sits inside the shape it n
 
 Generation and scoring are separate. `pnpm bench authoring generate` records a model's answers in `bench/corpus/authoring/outputs/<model>.json` and `pnpm bench authoring score` reads those files, so the same answers are re-scored whenever a metric or the extractor changes and the numbers move only when Merlion does. A Mermaid answer becomes a drawing through Merlion; an SVG answer is the drawing. Both are then read the same way.
 
+The corpus holds several models across the capability range, because the cost of writing SVG is not the same at both ends of it. Placing geometry has a floor a model is either above or below, while stating a graph only gets longer as the diagram grows; a result from one frontier model would say nothing about where that floor sits. Providers cover the range without a common account: `claude-cli` uses the local CLI, `anthropic` the Messages API, and `openai-compatible` any local LM Studio, Ollama or vLLM server. Where a model reasons before answering, the reasoning tokens are recorded beside the total and reported apart from it, because a reasoning model bills its thinking as output and a comparison against a model that does not think would otherwise be measuring the wrong thing.
+
 ### What is measured
 
 | Dimension | Metric | Notes |
