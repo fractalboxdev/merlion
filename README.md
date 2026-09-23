@@ -135,9 +135,13 @@ pnpm install --ignore-workspace
 pnpm bench run --renderers merlion,mermaid-dagre,mermaid-elk
 pnpm bench report
 pnpm bench determinism [--corpus <name>] [--font link|embed|system]   # CLI --batch vs WASM, byte for byte
+pnpm bench authoring generate --provider claude-cli --model <m>       # record one model's answers
+pnpm bench authoring score                                            # Mermaid against SVG, same diagrams
 ```
 
 `pnpm bench determinism` renders a corpus with `merlion render --batch` and through the WASM module and fails on any difference. Five corpora: `compat`, `compat-sequence` and `compat-state` from the mermaid sources, and `sequence` and `state`, the core's own fixtures. CI runs every corpus in all three font modes.
+
+`pnpm bench authoring` measures the premise the project rests on: that a model asked for a diagram should write Mermaid rather than SVG. Eighteen diagrams stated in prose beside the graph each one means are asked of a model in both formats, under the same readability requirement, and the answers are scored on cost, validity, fidelity to the declared graph and whether the labels fit — the last measured in Chromium, because text advance is the quantity a model writing SVG cannot compute ([specs/benchmark.md](specs/benchmark.md#authoring), evidence in [specs/research/llm-authoring.md](specs/research/llm-authoring.md)).
 
 ## Licence
 

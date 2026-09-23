@@ -52,6 +52,7 @@ export default defineConfig({
             "guides/stable-layout",
             "guides/viewer",
             "guides/diagnostics",
+            "guides/diagrams-from-models",
           ],
         },
         {

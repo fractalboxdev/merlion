@@ -1,6 +1,6 @@
 # Research relevant to Merlion (2025–2026)
 
-*Snapshot as of 2026-09-22. Each row states the paper's finding and where the specs apply it.*
+*Snapshot as of 2026-09-23. Each row states the paper's finding and where the specs apply it.*
 
 | \ | Paper | Venue | Finding | Applied in |
 |---|---|---|---|---|
@@ -14,5 +14,8 @@
 | 8 | P. Schaad, T. Ben-Nun, T. Hoefler. *VEIL: Reading Control Flow Graphs Like Code.* [arXiv:2511.05066](https://arxiv.org/abs/2511.05066) | arXiv, 2025-11 | Dominator-based layering preserves execution order; adds happens-before ordering and edge-direction grouping as criteria; beats general-purpose layouts on real control-flow graphs. | [layout.md](../layout.md) flowchart layering |
 | 9 | C. Liang, J. You. *DiagramEval: Evaluating LLM-Generated Diagrams via Graphs.* [arXiv:2510.25761](https://arxiv.org/abs/2510.25761) | EMNLP 2025 | Scores SVG diagrams by extracting a graph (text → nodes, connections → edges) and aligning nodes and paths with the intended graph. | [benchmark.md](../benchmark.md) round-trip correctness |
 | 10 | B. Shbita, F. Ahmed, C. DeLuca. *MermaidSeqBench.* [arXiv:2511.14967](https://arxiv.org/abs/2511.14967) | NeurIPS 2025 workshop | 132 test cases for turning natural language into Mermaid sequence diagrams; LLMs differ widely on syntax correctness. Dataset Apache-2.0. | [benchmark.md](../benchmark.md) `llm` corpus; [parser.md](../parser.md) |
+| 11 | S. Li, Y. Cai, H. Chen, Y. Wang. *GeoSVG-RL: Geometry-Aware Reinforcement Learning for Layout-Constrained Text-to-SVG Diagram Generation.* [arXiv:2605.25447](https://arxiv.org/abs/2605.25447) | arXiv, 2026-05 | Misaligned connectors, labels overlapping their borders and layouts drifting off the canvas make generated SVG unusable; rewards computed by rendering in a browser. Their system reaches a Text-In-Box Rate of 83.0 and an Arrow Anchor Accuracy of 78.6, the best of three compared. | [llm-authoring.md](llm-authoring.md); [benchmark.md](../benchmark.md) `authoring` legibility |
+| 12 | S. Chen et al. *SVGenius: Benchmarking LLMs in SVG Understanding, Editing and Generation.* [arXiv:2506.03139](https://arxiv.org/abs/2506.03139) | ACM MM 2025 | 2,377 queries over 22 models stratified by geometric complexity: every model degrades as complexity rises, and reasoning-enhanced training helps more than scale. | [llm-authoring.md](llm-authoring.md) |
+| 13 | J. A. Rodriguez et al. *StarVector: Generating Scalable Vector Graphics Code from Images and Text.* [arXiv:2312.11556](https://arxiv.org/abs/2312.11556) | arXiv, 2023-12 (rev. 2025-05) | A purpose-built SVG generation model is "constrained by its 16k token context, which is inadequate for complex SVGs"; its corpus averages 1,822 ± 1,808 tokens per drawing. | [llm-authoring.md](llm-authoring.md) token cost |
 
 Background: X. Qian et al., *GraphTide* ([arXiv:2604.12624](https://arxiv.org/abs/2604.12624), 2026) found that revealing a nested graph step by step improves comprehension, which is relevant to a future viewer mode. The ELK design is described in [arXiv:2311.00533](https://arxiv.org/abs/2311.00533) (2023).

@@ -8,11 +8,16 @@
  *   pnpm bench parity [--limit N] [--require-rsvg]
  *   pnpm bench sequence [--limit N] [--out-svgs]
  *   pnpm bench state [--limit N] [--out-svgs]
+ *   pnpm bench authoring generate --provider <p> --model <m> [--label <name>] [--limit N]
+ *   pnpm bench authoring score [--out <dir>]
  */
 import { Command, Options } from "@effect/cli";
 import { FetchHttpClient } from "@effect/platform";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
-import { Effect, Layer, Schema } from "effect";
+import { Effect, Layer, Option, Schema } from "effect";
+import { generate } from "./authoring/generate.ts";
+import { PROVIDERS } from "./authoring/provider.ts";
+import { score } from "./authoring/score.ts";
 import { fetchCorpus } from "./corpus/fetch.ts";
 import { CORPUS_NAMES, determinism, FONT_MODES } from "./determinism.ts";
 import { parity } from "./parity/gate.ts";
@@ -81,8 +86,40 @@ const stateCmd = Command.make("state", { limit: stateLimit, outSvgs: stateOutSvg
   stateRun({ limit: o.limit, outSvgs: o.outSvgs }).pipe(Effect.asVoid),
 ).pipe(Command.withDescription("Render the compat-state corpus with Merlion and mermaid and write the baseline"));
 
+const provider = Options.choice("provider", PROVIDERS).pipe(
+  Options.withDefault("claude-cli" as const),
+  Options.withDescription("anthropic (ANTHROPIC_API_KEY) or claude-cli (the local `claude` CLI, no key)"),
+);
+const model = Options.text("model").pipe(Options.withDescription("Model id, as the provider names it"));
+const label = Options.text("label").pipe(
+  Options.optional,
+  Options.withDescription("File stem under corpus/authoring/outputs/ (default: the model id)"),
+);
+const authoringLimit = Options.integer("limit").pipe(Options.optional, Options.withDescription("Ask only the first N tasks"));
+const generateCmd = Command.make("generate", { provider, model, label, authoringLimit }, (o) =>
+  generate({
+    provider: o.provider,
+    model: o.model,
+    label: Option.getOrUndefined(o.label),
+    limit: Option.getOrUndefined(o.authoringLimit),
+  }).pipe(Effect.asVoid),
+).pipe(Command.withDescription("Ask one model for every authoring task in both formats and record the answers"));
+
+const scoreOut = Options.directory("out").pipe(
+  Options.optional,
+  Options.withDescription("Where to write the summaries (default: results/)"),
+);
+const scoreCmd = Command.make("score", { scoreOut }, (o) => score(Option.getOrUndefined(o.scoreOut)).pipe(Effect.asVoid)).pipe(
+  Command.withDescription("Score every recorded answer against the task's declared graph and write the summary"),
+);
+
+const authoringCmd = Command.make("authoring").pipe(
+  Command.withDescription("Mermaid or SVG: which output format serves a model better"),
+  Command.withSubcommands([generateCmd, scoreCmd]),
+);
+
 const bench = Command.make("bench").pipe(
-  Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd, sequenceCmd, stateCmd]),
+  Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd, sequenceCmd, stateCmd, authoringCmd]),
 );
 
 const cli = Command.run(bench, { name: "merlion-bench", version: "0.0.0" });

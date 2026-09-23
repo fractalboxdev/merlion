@@ -35,4 +35,4 @@ Merlion renders Mermaid diagrams to static, themeable, accessible SVG. It is a R
 | [benchmark.md](benchmark.md) | How "better" is measured |
 | [roadmap.md](roadmap.md) | Milestones |
 | [adr/](adr/) | Decisions and their trade-offs |
-| [research/](research/) | Landscape of existing renderers and the academic literature (dated snapshots) |
+| [research/](research/) | Landscape of existing renderers, the academic literature, and why a model writes Mermaid rather than SVG (dated snapshots) |
