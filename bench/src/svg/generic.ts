@@ -38,7 +38,7 @@ import {
   parseViewBox,
   shapeBox,
 } from "./extract.ts";
-import { parsePath } from "./path.ts";
+import { parsePath, type SubPath } from "./path.ts";
 import { parseXml, type XmlElement } from "./xml.ts";
 
 /**
@@ -89,8 +89,19 @@ const inherited = (ctx: Ctx, e: XmlElement, attr: string): string | undefined =>
 
 const isNone = (v: string | undefined): boolean => v === undefined || v.trim().toLowerCase() === "none";
 
-/** A path whose `d` never closes a subpath is a stroke, not an outline. */
-const pathIsOpen = (e: XmlElement): boolean => !/[zZ]/.test(e.attrs["d"] ?? "");
+/**
+ * Whether a path's subpaths are strokes rather than an outline.
+ *
+ * A `Z` anywhere used to disqualify the whole element, which lost the very
+ * common arrow that draws its shaft and a closed filled head in one `d`
+ * (`M10 10 L50 10 M45 5 L50 10 L45 15 Z`). Each subpath is judged on its own
+ * instead: an unclosed one is a stroke whatever its siblings do.
+ */
+const openSubPaths = (e: XmlElement): SubPath[] =>
+  parsePath(e.attrs["d"] ?? "").filter((sub) => !sub.closed);
+
+const pathHasOutline = (e: XmlElement): boolean =>
+  parsePath(e.attrs["d"] ?? "").some((sub) => sub.closed);
 
 /**
  * A drawn outline: a closed shape, or a closed path, that is painted. An
@@ -98,24 +109,27 @@ const pathIsOpen = (e: XmlElement): boolean => !/[zZ]/.test(e.attrs["d"] ?? "");
  */
 const isOutline = (ctx: Ctx, e: XmlElement): boolean => {
   if (CLOSED_SHAPES.has(e.name)) return !isNone(inherited(ctx, e, "fill")) || !isNone(inherited(ctx, e, "stroke"));
-  if (e.name === "path") return !pathIsOpen(e) && !isNone(inherited(ctx, e, "fill"));
+  if (e.name === "path") return pathHasOutline(e) && !isNone(inherited(ctx, e, "fill"));
   return false;
 };
 
-/** A drawn stroke: an open shape, or an open path, with a stroke. */
+/** A drawn stroke: an open shape, or a path with at least one unclosed subpath, with a stroke. */
 const isStroke = (ctx: Ctx, e: XmlElement): boolean => {
   if (!OPEN_SHAPES.has(e.name)) return false;
-  if (e.name === "path" && !pathIsOpen(e)) return false;
+  if (e.name === "path" && openSubPaths(e).length === 0) return false;
   return !isNone(inherited(ctx, e, "stroke"));
 };
 
-/** Sampled polyline of an open shape, in absolute coordinates. */
-const strokePoints = (ctx: Ctx, e: XmlElement): { points: Point[]; vertices: Point[] } => {
+/**
+ * Sampled polylines of an open shape, in absolute coordinates — one per
+ * subpath, because a `d` holding two `M` commands draws two separate strokes
+ * and joining them would invent an edge running between them.
+ */
+const strokePolylines = (ctx: Ctx, e: XmlElement): Array<{ points: Point[]; vertices: Point[] }> => {
   const m = ctx.ctm.get(e) ?? IDENTITY;
   const abs = (ps: readonly Point[]): Point[] => ps.map((p) => applyMatrix(m, p));
   if (e.name === "path") {
-    const subs = parsePath(e.attrs["d"] ?? "");
-    return { points: abs(subs.flatMap((s) => s.points)), vertices: abs(subs.flatMap((s) => s.vertices)) };
+    return openSubPaths(e).map((sub) => ({ points: abs(sub.points), vertices: abs(sub.vertices) }));
   }
   // `line` and `polyline` outline points are already the polyline itself.
   const local = e.name === "line"
@@ -124,7 +138,7 @@ const strokePoints = (ctx: Ctx, e: XmlElement): { points: Point[]; vertices: Poi
       { x: Number.parseFloat(e.attrs["x2"] ?? "0") || 0, y: Number.parseFloat(e.attrs["y2"] ?? "0") || 0 },
     ]
     : pointsAttr(e.attrs["points"]);
-  return { points: abs(local), vertices: abs(local) };
+  return [{ points: abs(local), vertices: abs(local) }];
 };
 
 const pointsAttr = (s: string | undefined): Point[] => {
@@ -191,7 +205,7 @@ export const extractGeneric = (svg: string): ExtractedGraph => {
     .filter((o) => viewBox === null || o.box.w * o.box.h < viewBox.w * viewBox.h * BACKGROUND_AREA_RATIO);
 
   const strokes = collect(root, (e) => isShape(e) && isStroke(ctx, e), prune)
-    .map((e) => strokePoints(ctx, e))
+    .flatMap((e) => strokePolylines(ctx, e))
     .filter((s) => s.points.length >= 2 && polylineLength(s.points) >= MIN_EDGE_LENGTH);
 
   // Each stroke takes the text sitting on it, nearest first.

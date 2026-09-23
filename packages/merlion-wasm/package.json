@@ -38,6 +38,6 @@
   },
   "dependencies": {},
   "merlion": {
-    "wasmSha256": "39dcf5919388f9932bf21fd4c32487c6468b189b5f5cc03a61ba789e37bb40e1"
+    "wasmSha256": ""
   }
 }

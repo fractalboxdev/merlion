@@ -28,11 +28,13 @@ export interface Legibility {
   readonly worstOverflow: number;
   /** Labels and shapes with ink outside the viewBox. */
   readonly clipped: number;
-  /** Pairs of node shapes intersecting by more than 1 px². */
+  /** Pairs of painted shapes intersecting by more than 1 px². */
   readonly shapeOverlaps: number;
+  /** Labels touching no shape at all: a title, or an edge label drawn without a chip. */
+  readonly unplaced: number;
 }
 
-export const EMPTY: Legibility = { labels: 0, overflowing: 0, worstOverflow: 0, clipped: 0, shapeOverlaps: 0 };
+export const EMPTY: Legibility = { labels: 0, overflowing: 0, worstOverflow: 0, clipped: 0, shapeOverlaps: 0, unplaced: 0 };
 
 /** Injects the probe once; a page measures many drawings. */
 export const preparePage = (page: Page): Effect.Effect<void, Error> =>

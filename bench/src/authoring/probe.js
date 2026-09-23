@@ -14,7 +14,7 @@
   /** A shape covering at least this share of the viewBox is a background plate, not a node. */
   const BACKGROUND_AREA_RATIO = 0.9;
 
-  const EMPTY = { labels: 0, overflowing: 0, worstOverflow: 0, clipped: 0, shapeOverlaps: 0 };
+  const EMPTY = { labels: 0, overflowing: 0, worstOverflow: 0, clipped: 0, shapeOverlaps: 0, unplaced: 0 };
 
   const inDefs = (el) => el.closest("defs, marker, clipPath, mask, symbol, pattern") !== null;
 
@@ -29,6 +29,14 @@
   const intersection = (a, b) =>
     Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
     Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+
+  const overflowOf = (owner, box) =>
+    Math.max(
+      owner.x - box.x,
+      box.x + box.w - (owner.x + owner.w),
+      owner.y - box.y,
+      box.y + box.h - (owner.y + owner.h),
+    );
 
   window.legibilityProbe = (svg) => {
     const host = document.createElement("div");
@@ -70,10 +78,14 @@
       const vb = root.viewBox.baseVal;
       const view = vb && vb.width > 0 ? { x: vb.x, y: vb.y, w: vb.width, h: vb.height } : null;
 
-      // Painted closed shapes, background plate excluded.
+      // Painted closed shapes, background plate excluded. `path` belongs here:
+      // Merlion draws every node as a closed filled path, so a selector of
+      // primitives alone would measure a hand-written SVG and nothing else.
       const shapes = [];
-      for (const el of Array.from(root.querySelectorAll("rect, circle, ellipse, polygon"))) {
+      for (const el of Array.from(root.querySelectorAll("rect, circle, ellipse, polygon, path"))) {
         if (inDefs(el)) continue;
+        // An open path is a stroke — an edge, not a box.
+        if (el.tagName === "path" && !/[zZ]/.test(el.getAttribute("d") || "")) continue;
         const box = boxIn(el);
         if (box === null) continue;
         if (view !== null && box.w * box.h >= view.w * view.h * BACKGROUND_AREA_RATIO) continue;
@@ -93,7 +105,7 @@
       let overflowing = 0;
       let worstOverflow = 0;
       let clipped = 0;
-      const owners = [];
+      let unplaced = 0;
       for (const box of texts) {
         if (view !== null && !contains(view, box, OVERFLOW_TOLERANCE)) clipped++;
         const centre = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
@@ -103,32 +115,41 @@
           if (!holds(s, centre)) continue;
           if (owner === null || s.w * s.h < owner.w * owner.h) owner = s;
         }
-        if (owner === null) continue;
-        owners.push(owner);
+        if (owner === null) {
+          // No shape holds this text. A label that has slid off the box it
+          // names still touches it, and that is the worst overflow there is;
+          // text touching nothing is a title or a chipless edge label, which
+          // is not a defect and is counted apart rather than scored as one.
+          let touched = null;
+          for (const s of shapes) {
+            if (intersection(s, box) <= OVERLAP_MIN_AREA) continue;
+            if (touched === null || s.w * s.h < touched.w * touched.h) touched = s;
+          }
+          if (touched === null) {
+            unplaced++;
+            continue;
+          }
+          owner = touched;
+        }
         if (contains(owner, box, OVERFLOW_TOLERANCE)) continue;
         overflowing++;
-        const over = Math.max(
-          owner.x - box.x,
-          box.x + box.w - (owner.x + owner.w),
-          owner.y - box.y,
-          box.y + box.h - (owner.y + owner.h),
-        );
+        const over = overflowOf(owner, box);
         if (owner.w > 0 && over / owner.w > worstOverflow) worstOverflow = over / owner.w;
       }
       for (const s of shapes) {
         if (view !== null && !contains(view, s, OVERFLOW_TOLERANCE)) clipped++;
       }
 
-      // A shape holding a label is a node; a plain decorative rectangle is not.
-      const nodes = shapes.filter((s) => owners.indexOf(s) >= 0);
+      // Every painted shape but the background counts, because two node boxes
+      // overlapping is a defect whether or not their labels stayed inside them.
       let shapeOverlaps = 0;
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          if (intersection(nodes[i], nodes[j]) > OVERLAP_MIN_AREA) shapeOverlaps++;
+      for (let i = 0; i < shapes.length; i++) {
+        for (let j = i + 1; j < shapes.length; j++) {
+          if (intersection(shapes[i], shapes[j]) > OVERLAP_MIN_AREA) shapeOverlaps++;
         }
       }
 
-      return { labels: texts.length, overflowing, worstOverflow, clipped, shapeOverlaps };
+      return { labels: texts.length, overflowing, worstOverflow, clipped, shapeOverlaps, unplaced };
     } finally {
       host.remove();
     }

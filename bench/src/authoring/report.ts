@@ -18,6 +18,7 @@ interface Agg {
   readonly drawn: number;
   /** Rows where the provider never returned, which judge no model output. */
   readonly callFailed: number;
+  readonly truncated: number;
   readonly mermaidParsed: number | null;
   readonly nodeF1: number | null;
   readonly edgeF1: number | null;
@@ -28,6 +29,9 @@ interface Agg {
   readonly reasoning: boolean;
   readonly sourceBytes: number | null;
   readonly overflowRate: number | null;
+  readonly unplaced: number;
+  /** Drawings the probe could not measure; excluded from every legibility figure. */
+  readonly unmeasured: number;
   readonly clipped: number;
   readonly overlaps: number;
   readonly dangling: number;
@@ -45,6 +49,7 @@ const aggregate = (rows: readonly Row[]): Agg => {
     n: answered.length,
     drawn: drawn.length,
     callFailed: rows.length - answered.length,
+    truncated: rows.filter((r) => r.truncated).length,
     mermaidParsed: parseable.length === 0 ? null : parseable.filter((r) => r.mermaidParsed === true).length / parseable.length,
     nodeF1: mean(fid.map((f) => f.nodeF1)),
     edgeF1: mean(fid.map((f) => f.edgeF1)),
@@ -58,6 +63,8 @@ const aggregate = (rows: readonly Row[]): Agg => {
     reasoning: answered.some((r) => (r.reasoningTokens ?? 0) > 0),
     sourceBytes: mean(answered.map((r) => r.sourceBytes)),
     overflowRate: labels === 0 ? null : leg.reduce((a, l) => a + l.overflowing, 0) / labels,
+    unplaced: leg.reduce((a, l) => a + l.unplaced, 0),
+    unmeasured: drawn.length - leg.length,
     clipped: leg.reduce((a, l) => a + l.clipped, 0),
     overlaps: leg.reduce((a, l) => a + l.shapeOverlaps, 0),
     dangling: fid.reduce((a, f) => a + f.danglingEdges, 0),
@@ -114,6 +121,9 @@ export const renderReport = (r: AuthoringResults): string => {
     if (mermaid.callFailed > 0 || svg.callFailed > 0) {
       out.push(`| Calls the provider never returned (excluded above) | ${mermaid.callFailed} | ${svg.callFailed} | |`);
     }
+    if (mermaid.truncated > 0 || svg.truncated > 0) {
+      out.push(`| Answers cut off at the token cap | ${mermaid.truncated} | ${svg.truncated} | |`);
+    }
     out.push(`| Mean output tokens | ${num(mermaid.outputTokens, 0)} | ${num(svg.outputTokens, 0)} | ${ratio(svg.outputTokens, mermaid.outputTokens)} |`);
     if (mermaid.reasoning || svg.reasoning) {
       out.push(
@@ -127,7 +137,11 @@ export const renderReport = (r: AuthoringResults): string => {
     out.push(`| Edge F1 against the declared graph | ${num(mermaid.edgeF1, 3)} | ${num(svg.edgeF1, 3)} | |`);
     out.push(`| Labelled edges drawn with the right label | ${mermaid.edgeLabels === null ? "—" : pct(mermaid.edgeLabels, 1)} | ${svg.edgeLabels === null ? "—" : pct(svg.edgeLabels, 1)} | |`);
     out.push(`| Labels overflowing their shape | ${mermaid.overflowRate === null ? "—" : pct(mermaid.overflowRate, 1)} | ${svg.overflowRate === null ? "—" : pct(svg.overflowRate, 1)} | |`);
+    out.push(`| Labels touching no shape (a title, or a chipless edge label) | ${mermaid.unplaced} | ${svg.unplaced} | |`);
     out.push(`| Shape overlaps | ${mermaid.overlaps} | ${svg.overlaps} | |`);
+    if (mermaid.unmeasured > 0 || svg.unmeasured > 0) {
+      out.push(`| Drawings the probe could not measure (excluded above) | ${mermaid.unmeasured} | ${svg.unmeasured} | |`);
+    }
     out.push(`| Ink outside the viewBox | ${mermaid.clipped} | ${svg.clipped} | |`);
     out.push(`| Edges with an endpoint at no shape | ${mermaid.dangling} | ${svg.dangling} | |`);
     if (mermaid.mermaidParsed !== null) {

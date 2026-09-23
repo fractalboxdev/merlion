@@ -234,6 +234,35 @@ describe("extractGeneric", () => {
     expect(g.edges).toHaveLength(1);
   });
 
+  it("reads an arrow whose head closes with Z as an edge", () => {
+    // Shaft and filled head in one `d`: the Z belongs to the head, not the shaft.
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">` +
+      box(20, 20, "Push") +
+      box(20, 120, "Build") +
+      `<path d="M60 60 L60 120 M55 115 L60 120 L65 115 Z" fill="none" stroke="#333"/>` +
+      `</svg>`;
+    const g = extractGeneric(svg);
+    expect(g.edges).toHaveLength(1);
+    expect(g.edges[0]?.from).toBe(g.nodes.find((n) => n.label === "Push")?.id);
+    expect(g.edges[0]?.to).toBe(g.nodes.find((n) => n.label === "Build")?.id);
+  });
+
+  it("reads two subpaths of one path as two edges, not one crossing between them", () => {
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">` +
+      box(20, 20, "A") +
+      box(20, 160, "B") +
+      box(260, 20, "C") +
+      box(260, 160, "D") +
+      `<path d="M60 60 L60 160 M300 60 L300 160" fill="none" stroke="#333"/>` +
+      `</svg>`;
+    const g = extractGeneric(svg);
+    const id = (label: string) => g.nodes.find((n) => n.label === label)?.id;
+    expect(g.edges).toHaveLength(2);
+    expect(g.edges.map((e) => [e.from, e.to])).toEqual([[id("A"), id("B")], [id("C"), id("D")]]);
+  });
+
   it("is empty for input that is not an SVG", () => {
     expect(extractGeneric("not markup").nodes).toHaveLength(0);
   });

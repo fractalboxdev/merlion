@@ -105,12 +105,17 @@ export class Output extends Schema.Class<Output>("Output")({
    * format is slower to generate.
    */
   error: Schema.optional(Schema.NullOr(Schema.String)),
+  /** The answer stopped at the token cap, so whatever it holds is a fragment. */
+  truncated: Schema.optional(Schema.Boolean),
   usage: Usage,
 }) {}
 
 export class OutputFile extends Schema.Class<OutputFile>("OutputFile")({
   corpus: Schema.Literal("authoring"),
+  /** The model id the provider resolved, which an alias like `sonnet` does not name. */
   model: Schema.String,
+  /** What was asked for, where it differs from what ran. */
+  requestedModel: Schema.optional(Schema.String),
   provider: Schema.String,
   generated: Schema.String,
   tasksVersion: Schema.Number,

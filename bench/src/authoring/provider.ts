@@ -16,6 +16,10 @@ export type Provider = typeof Provider.Type;
 
 export interface Answer {
   readonly text: string;
+  /** The model the provider actually ran, which an alias like `sonnet` does not name. */
+  readonly model: string | null;
+  /** The provider stopped at the token cap, so the answer is a fragment. */
+  readonly truncated: boolean;
   /** Every token the model emitted, reasoning included; this is what a caller pays for. */
   readonly outputTokens: number | null;
   readonly inputTokens: number | null;
@@ -38,6 +42,8 @@ const DEFAULT_OPENAI_BASE_URL = "http://127.0.0.1:1234/v1";
 // ---------------------------------------------------------------------------
 
 const AnthropicResponse = Schema.Struct({
+  model: Schema.optional(Schema.String),
+  stop_reason: Schema.optional(Schema.NullOr(Schema.String)),
   content: Schema.Array(Schema.Struct({ type: Schema.String, text: Schema.optional(Schema.String) })),
   usage: Schema.optional(Schema.Struct({
     input_tokens: Schema.optional(Schema.Number),
@@ -69,6 +75,8 @@ const anthropic = (model: string, prompt: string): Effect.Effect<Answer, Provide
     );
     return {
       text: parsed.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join(""),
+      model: parsed.model ?? null,
+      truncated: parsed.stop_reason === "max_tokens",
       outputTokens: parsed.usage?.output_tokens ?? null,
       inputTokens: parsed.usage?.input_tokens ?? null,
       reasoningTokens: null,
@@ -80,6 +88,8 @@ const anthropic = (model: string, prompt: string): Effect.Effect<Answer, Provide
 const ClaudeCliResponse = Schema.Struct({
   result: Schema.optional(Schema.String),
   is_error: Schema.optional(Schema.Boolean),
+  stop_reason: Schema.optional(Schema.NullOr(Schema.String)),
+  modelUsage: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
   usage: Schema.optional(Schema.Struct({
     input_tokens: Schema.optional(Schema.Number),
     output_tokens: Schema.optional(Schema.Number),
@@ -106,6 +116,9 @@ const claudeCli = (
     if (parsed.is_error === true) return yield* fail(parsed.result ?? "claude reported an error");
     return {
       text: parsed.result ?? "",
+      // The CLI reports the resolved id as the sole key of `modelUsage`.
+      model: Object.keys(parsed.modelUsage ?? {})[0] ?? null,
+      truncated: parsed.stop_reason === "max_tokens",
       outputTokens: parsed.usage?.output_tokens ?? null,
       inputTokens: null,
       reasoningTokens: null,
@@ -115,6 +128,7 @@ const claudeCli = (
 // ---------------------------------------------------------------------------
 
 const OpenAiResponse = Schema.Struct({
+  model: Schema.optional(Schema.String),
   choices: Schema.Array(Schema.Struct({
     message: Schema.Struct({
       content: Schema.NullOr(Schema.String),
@@ -168,6 +182,8 @@ const openAiCompatible = (model: string, prompt: string): Effect.Effect<Answer, 
     }
     return {
       text,
+      model: parsed.model ?? null,
+      truncated: choice.finish_reason === "length",
       outputTokens: parsed.usage?.completion_tokens ?? null,
       inputTokens: parsed.usage?.prompt_tokens ?? null,
       reasoningTokens: parsed.usage?.completion_tokens_details?.reasoning_tokens ?? null,

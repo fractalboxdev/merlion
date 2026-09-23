@@ -37,6 +37,35 @@ export const generate = (opts: GenerateOpts) =>
     const generated = new Date().toISOString().slice(0, 10);
 
     const outputs: Output[] = [];
+    /** What the provider says it ran, which an alias does not name. */
+    const resolved = new Set<string>();
+    yield* fs.makeDirectory(OUTPUTS_DIR, { recursive: true });
+    const target = path.join(OUTPUTS_DIR, `${slug(opts.label ?? opts.model)}.json`);
+
+    // Written after every answer. A run is dozens of slow calls, and a crash
+    // thirty answers in should cost the next one, not all thirty.
+    const save = Effect.suspend(() => {
+      const ran = resolved.size === 1 ? [...resolved][0] ?? opts.model : opts.model;
+      return fs.writeFileString(
+        target,
+        `${
+          JSON.stringify(
+            {
+              corpus: "authoring" as const,
+              model: ran,
+              ...(ran === opts.model ? {} : { requestedModel: opts.model }),
+              provider: opts.provider,
+              generated,
+              tasksVersion: file.version,
+              outputs,
+            },
+            null,
+            2,
+          )
+        }\n`,
+      );
+    });
+
     for (const task of tasks) {
       for (const format of FORMATS) {
         const answer = yield* ask(opts.provider, opts.model, promptFor(task, format)).pipe(
@@ -55,37 +84,32 @@ export const generate = (opts: GenerateOpts) =>
             text: "",
             extracted: null,
             error: Either.getLeft(answer).pipe(Option.map((e) => e.message), Option.getOrElse(() => "the call failed")),
+            truncated: false,
             usage: { outputTokens: null, inputTokens: null, reasoningTokens: null },
           });
+          yield* save;
           continue;
         }
-        const { text, outputTokens, inputTokens, reasoningTokens } = got.value;
+        const { text, outputTokens, inputTokens, reasoningTokens, truncated } = got.value;
+        if (got.value.model !== null) resolved.add(got.value.model);
         outputs.push({
           task: task.name,
           format,
-          model: opts.model,
+          model: got.value.model ?? opts.model,
           generated,
           text,
           extracted: extractAnswer(text, format),
           error: null,
+          truncated,
           usage: { outputTokens, inputTokens, reasoningTokens },
         });
         const thinking = reasoningTokens === null || reasoningTokens === undefined ? "" : ` (${reasoningTokens} reasoning)`;
-        yield* Effect.log(`${task.name}/${format}: ${outputTokens ?? "?"} output tokens${thinking}`);
+        const clipped = truncated ? " — TRUNCATED at the token cap" : "";
+        yield* save;
+        yield* Effect.log(`${task.name}/${format}: ${outputTokens ?? "?"} output tokens${thinking}${clipped}`);
       }
     }
 
-    yield* fs.makeDirectory(OUTPUTS_DIR, { recursive: true });
-    const target = path.join(OUTPUTS_DIR, `${slug(opts.label ?? opts.model)}.json`);
-    const body = {
-      corpus: "authoring" as const,
-      model: opts.model,
-      provider: opts.provider,
-      generated,
-      tasksVersion: file.version,
-      outputs,
-    };
-    yield* fs.writeFileString(target, `${JSON.stringify(body, null, 2)}\n`);
     yield* Effect.log(`recorded ${outputs.length} answers → ${target}`);
     return target;
   });

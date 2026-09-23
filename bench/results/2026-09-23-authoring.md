@@ -10,7 +10,7 @@ Merlion's own drawing of each task's declared graph, read back through the same 
 |---|---|---|---|---|
 | 1.000 | 1.000 | 0.0% | 0 | 0 |
 
-## sonnet
+## claude-sonnet-5
 
 Answers recorded 2026-09-23 through `claude-cli`.
 
@@ -22,8 +22,9 @@ Answers recorded 2026-09-23 through `claude-cli`.
 | Node F1 against the declared graph | 1.000 | 0.918 | |
 | Edge F1 against the declared graph | 1.000 | 1.000 | |
 | Labelled edges drawn with the right label | 58.8% | 29.4% | |
-| Labels overflowing their shape | 0.0% | 0.0% | |
-| Shape overlaps | 0 | 3 | |
+| Labels overflowing their shape | 0.0% | 0.4% | |
+| Labels touching no shape (a title, or a chipless edge label) | 0 | 16 | |
+| Shape overlaps | 0 | 4 | |
 | Ink outside the viewBox | 0 | 0 | |
 | Edges with an endpoint at no shape | 0 | 0 | |
 | Mermaid answers mermaid 12.0.0 itself parses | 100.0% | — | |
@@ -41,13 +42,13 @@ Answers recorded 2026-09-23 through `claude-cli`.
 | cache-read | small | mermaid | yes | 1.00 | 1.00 | 0/7 | 0 | 89 |
 | cache-read | small | svg | yes | 0.91 | 1.00 | 0/7 | 0 | 3385 |
 | long-labels | small | mermaid | yes | 1.00 | 1.00 | 0/7 | 0 | 129 |
-| long-labels | small | svg | yes | 0.91 | 1.00 | 0/7 | 0 | 6229 |
+| long-labels | small | svg | yes | 0.91 | 1.00 | 0/7 | 1 | 6229 |
 | oauth-code | medium | mermaid | yes | 1.00 | 1.00 | 0/10 | 0 | 144 |
 | oauth-code | medium | svg | yes | 0.89 | 1.00 | 0/12 | 0 | 5237 |
 | build-cache | medium | mermaid | yes | 1.00 | 1.00 | 0/14 | 0 | 164 |
 | build-cache | medium | svg | yes | 1.00 | 1.00 | 0/14 | 0 | 6682 |
 | support-triage | medium | mermaid | yes | 1.00 | 1.00 | 0/15 | 0 | 173 |
-| support-triage | medium | svg | yes | 0.87 | 1.00 | 0/15 | 0 | 12987 |
+| support-triage | medium | svg | yes | 0.87 | 1.00 | 1/15 | 0 | 12987 |
 | request-lifecycle | medium | mermaid | yes | 1.00 | 1.00 | 0/15 | 0 | 248 |
 | request-lifecycle | medium | svg | yes | 0.92 | 1.00 | 0/15 | 1 | 9127 |
 | release-train | medium | mermaid | yes | 1.00 | 1.00 | 0/13 | 0 | 162 |

@@ -13,15 +13,15 @@
  * SVG column is never credited or blamed for the reader's own error.
  */
 import { FileSystem, Path } from "@effect/platform";
-import { Effect, Schema } from "effect";
+import { Context, Effect, Layer, Schema } from "effect";
 import { chromium } from "playwright";
 import { MerlionLive } from "../renderers/merlion.ts";
 import { MermaidDagreLive } from "../renderers/mermaid.ts";
-import { Renderer } from "../renderers/Renderer.ts";
+import { Renderer, type RendererApi } from "../renderers/Renderer.ts";
 import { extractSvg } from "../svg/extract.ts";
 import { extractGeneric } from "../svg/generic.ts";
 import { fidelity, type Fidelity } from "./compare.ts";
-import { EMPTY, type Legibility, measure, preparePage } from "./legibility.ts";
+import { type Legibility, measure, preparePage } from "./legibility.ts";
 import { extractAnswer } from "./prompt.ts";
 import { renderReport } from "./report.ts";
 import { type Format, loadTasks, OutputFile, OUTPUTS_DIR, referenceMermaid, type Task } from "./tasks.ts";
@@ -47,6 +47,7 @@ const LegibilitySchema = Schema.Struct({
   worstOverflow: Schema.Number,
   clipped: Schema.Number,
   shapeOverlaps: Schema.Number,
+  unplaced: Schema.Number,
 });
 
 export const Row = Schema.Struct({
@@ -57,6 +58,8 @@ export const Row = Schema.Struct({
   drawn: Schema.Boolean,
   /** The provider never returned an answer, so this row judges no model output. */
   callFailed: Schema.Boolean,
+  /** The answer stopped at the token cap; a fragment is not a drawing. */
+  truncated: Schema.Boolean,
   error: Schema.NullOr(Schema.String),
   outputTokens: Schema.NullOr(Schema.Number),
   /** Of those, the ones spent thinking rather than answering; null where the provider does not separate them. */
@@ -101,12 +104,13 @@ const renderMermaid = (source: string) =>
     return yield* r.render(source);
   }).pipe(Effect.provide(MerlionLive));
 
-const mermaidAccepts = (source: string) =>
-  Effect.gen(function* () {
-    const r = yield* Renderer;
-    const out = yield* r.render(source);
-    return out.svg !== null;
-  }).pipe(Effect.provide(MermaidDagreLive), Effect.orElseSucceed(() => false));
+/**
+ * Whether mermaid itself parses a source, which separates Merlion's tolerance
+ * from validity. The layer is built once by the caller: building it per answer
+ * launches a browser and reloads the mermaid bundle for every row.
+ */
+const mermaidAccepts = (mermaid: RendererApi, source: string) =>
+  mermaid.render(source).pipe(Effect.map((out) => out.svg !== null), Effect.orElseSucceed(() => false));
 
 /** The drawing a model's answer produces, and why there is none when there is none. */
 const draw = (answer: string, format: Format) =>
@@ -132,6 +136,8 @@ export const score = (outDir?: string) =>
       return p;
     });
     yield* preparePage(page);
+    // One mermaid host for the whole run, not one per answer.
+    const mermaid = Context.get(yield* Layer.build(MermaidDagreLive), Renderer);
 
     // The ceiling: Merlion's drawing of each declared graph, read back the way
     // a hand-written SVG is read.
@@ -144,7 +150,10 @@ export const score = (outDir?: string) =>
       ceiling.push({
         task: task.name,
         fidelity: fidelity(task.reference, extractGeneric(out.svg)),
-        legibility: yield* measure(page, out.svg).pipe(Effect.orElseSucceed(() => EMPTY)),
+        legibility: yield* measure(page, out.svg).pipe(
+          Effect.orElseFail(() => new Error(`the legibility probe failed on the reference drawing of ${task.name}`)),
+          Effect.orDie,
+        ),
       });
     }
 
@@ -156,10 +165,21 @@ export const score = (outDir?: string) =>
     for (const name of files) {
       const text = yield* fs.readFileString(path.join(OUTPUTS_DIR, name));
       const of = yield* Schema.decodeUnknown(Schema.parseJson(OutputFile))(text);
+      if (of.tasksVersion !== file.version) {
+        return yield* Effect.die(
+          new Error(
+            `${name} holds answers to task file version ${of.tasksVersion}, but tasks.json is version ${file.version}. Re-generate it, or restore the task file.`,
+          ),
+        );
+      }
       const rows: Row[] = [];
       for (const o of of.outputs) {
         const task = tasks.get(o.task);
-        if (task === undefined) continue;
+        if (task === undefined) {
+          return yield* Effect.die(
+            new Error(`${name} holds an answer to "${o.task}", which tasks.json no longer defines. Re-generate it, or restore the task.`),
+          );
+        }
         rows.push(
           yield* scoreOne(
             page,
@@ -169,6 +189,8 @@ export const score = (outDir?: string) =>
             o.usage.outputTokens,
             o.usage.reasoningTokens ?? null,
             o.error ?? null,
+            o.truncated ?? false,
+            mermaid,
           ),
         );
       }
@@ -200,6 +222,8 @@ const scoreOne = (
   outputTokens: number | null,
   reasoningTokens: number | null,
   callError: string | null,
+  truncated: boolean,
+  mermaid: RendererApi,
 ) =>
   Effect.gen(function* () {
     const base = {
@@ -210,14 +234,20 @@ const scoreOne = (
       reasoningTokens,
       sourceBytes: answer?.length ?? 0,
       callFailed: callError !== null,
+      truncated,
     };
+    // A fragment cut off at the cap is not a worse drawing, it is half a file;
+    // scoring it for fidelity would read the model's budget, not its answer.
+    if (truncated) {
+      return { ...base, drawn: false, error: "the answer stopped at the token cap", mermaidParsed: null, fidelity: null, legibility: null };
+    }
     if (callError !== null) {
       return { ...base, drawn: false, error: callError, mermaidParsed: null, fidelity: null, legibility: null };
     }
     if (answer === null) {
       return { ...base, drawn: false, error: "no diagram in the answer", mermaidParsed: null, fidelity: null, legibility: null };
     }
-    const mermaidParsed = format === "mermaid" ? yield* mermaidAccepts(answer) : null;
+    const mermaidParsed = format === "mermaid" ? yield* mermaidAccepts(mermaid, answer) : null;
     const { svg, error } = yield* draw(answer, format);
     if (svg === null) {
       return { ...base, drawn: false, error: error ?? "no drawing", mermaidParsed, fidelity: null, legibility: null };
@@ -231,7 +261,13 @@ const scoreOne = (
       error: null,
       mermaidParsed,
       fidelity: fidelity(task.reference, graph),
-      legibility: yield* measure(page, svg).pipe(Effect.orElseSucceed(() => EMPTY)),
+      // A probe that cannot measure a drawing reports nothing rather than a
+      // clean sheet: `EMPTY` is a perfect score, and a crash must never read
+      // as one.
+      legibility: yield* measure(page, svg).pipe(
+        Effect.tapError((e) => Effect.logWarning(`${task.name}/${format}: legibility not measured (${e.message})`)),
+        Effect.orElseSucceed(() => null),
+      ),
     };
   });
 
