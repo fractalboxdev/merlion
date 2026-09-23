@@ -219,6 +219,21 @@ describe("extractGeneric", () => {
     expect(g.edges).toHaveLength(0);
   });
 
+  it("recovers when an end tag is missing its bracket, as a renderer does", () => {
+    // `</defs` instead of `</defs>`: browsers end the tag at the next `<` and
+    // draw the rest, so everything after it must not be lost inside <defs>.
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">` +
+      `<defs><marker id="a"><polygon points="0,0 10,5 0,10"/></marker></defs` +
+      box(20, 20, "Push") +
+      box(20, 120, "Build") +
+      `<path d="M60 60L60 120" fill="none" stroke="#333"/>` +
+      `</svg>`;
+    const g = extractGeneric(svg);
+    expect(g.nodes.map((n) => n.label).sort()).toEqual(["Build", "Push"]);
+    expect(g.edges).toHaveLength(1);
+  });
+
   it("is empty for input that is not an SVG", () => {
     expect(extractGeneric("not markup").nodes).toHaveLength(0);
   });

@@ -39,7 +39,7 @@ export const generate = (opts: GenerateOpts) =>
         );
         const got = Option.getOrNull(answer);
         if (got === null) continue;
-        const { text, outputTokens, inputTokens } = got;
+        const { text, outputTokens, inputTokens, reasoningTokens } = got;
         outputs.push({
           task: task.name,
           format,
@@ -47,9 +47,10 @@ export const generate = (opts: GenerateOpts) =>
           generated,
           text,
           extracted: extractAnswer(text, format),
-          usage: { outputTokens, inputTokens },
+          usage: { outputTokens, inputTokens, reasoningTokens },
         });
-        yield* Effect.log(`${task.name}/${format}: ${outputTokens ?? "?"} output tokens`);
+        const thinking = reasoningTokens === null || reasoningTokens === undefined ? "" : ` (${reasoningTokens} reasoning)`;
+        yield* Effect.log(`${task.name}/${format}: ${outputTokens ?? "?"} output tokens${thinking}`);
       }
     }
 

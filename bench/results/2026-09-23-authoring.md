@@ -69,3 +69,28 @@ Answers recorded 2026-09-23 through `claude-cli`.
 | onboarding-funnel | large | mermaid | yes | 1.00 | 1.00 | 0/18 | 0 | 229 |
 | onboarding-funnel | large | svg | yes | 0.85 | 1.00 | 0/19 | 2 | 23238 |
 
+## google/gemma-4-31b
+
+Answers recorded 2026-09-23 through `openai-compatible`.
+
+| | Mermaid | SVG | SVG ÷ Mermaid |
+|---|---|---|---|
+| Answers holding a diagram that draws | 100.0% | 100.0% | |
+| Mean output tokens | 538 | 4195 | 7.8× |
+| Mean source bytes | 189 | 2606 | 13.8× |
+| Node F1 against the declared graph | 1.000 | 0.857 | |
+| Edge F1 against the declared graph | 1.000 | 1.000 | |
+| Labelled edges drawn with the right label | 0.0% | 50.0% | |
+| Labels overflowing their shape | 0.0% | 0.0% | |
+| Shape overlaps | 0 | 0 | |
+| Ink outside the viewBox | 0 | 0 | |
+| Edges with an endpoint at no shape | 0 | 0 | |
+| Mermaid answers mermaid 12.0.0 itself parses | 100.0% | — | |
+
+### Per task
+
+| Task | Size | Format | Drawn | Node F1 | Edge F1 | Overflowing | Overlaps | Output tokens |
+|---|---|---|---|---|---|---|---|---|
+| ci-pipeline | small | mermaid | yes | 1.00 | 1.00 | 0/10 | 0 | 538 |
+| ci-pipeline | small | svg | yes | 0.86 | 1.00 | 0/10 | 0 | 4195 |
+

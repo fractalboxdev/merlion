@@ -57,6 +57,8 @@ export const Row = Schema.Struct({
   drawn: Schema.Boolean,
   error: Schema.NullOr(Schema.String),
   outputTokens: Schema.NullOr(Schema.Number),
+  /** Of those, the ones spent thinking rather than answering; null where the provider does not separate them. */
+  reasoningTokens: Schema.NullOr(Schema.Number),
   /** Bytes of the diagram source the model wrote, before rendering. */
   sourceBytes: Schema.Number,
   /** A Mermaid answer only: whether mermaid 12.0.0 itself parses it. */
@@ -156,7 +158,9 @@ export const score = (outDir?: string) =>
       for (const o of of.outputs) {
         const task = tasks.get(o.task);
         if (task === undefined) continue;
-        rows.push(yield* scoreOne(page, task, o.format, o.extracted ?? extractAnswer(o.text, o.format), o.usage.outputTokens));
+        rows.push(
+          yield* scoreOne(page, task, o.format, o.extracted ?? extractAnswer(o.text, o.format), o.usage.outputTokens, o.usage.reasoningTokens ?? null),
+        );
       }
       models.push({ model: of.model, provider: of.provider, generated: of.generated, rows });
     }
@@ -184,9 +188,10 @@ const scoreOne = (
   format: Format,
   answer: string | null,
   outputTokens: number | null,
+  reasoningTokens: number | null,
 ) =>
   Effect.gen(function* () {
-    const base = { task: task.name, size: task.size, format, outputTokens, sourceBytes: answer?.length ?? 0 };
+    const base = { task: task.name, size: task.size, format, outputTokens, reasoningTokens, sourceBytes: answer?.length ?? 0 };
     if (answer === null) {
       return { ...base, drawn: false, error: "no diagram in the answer", mermaidParsed: null, fidelity: null, legibility: null };
     }

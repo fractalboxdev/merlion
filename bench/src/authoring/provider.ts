@@ -10,14 +10,17 @@
 import { Command, CommandExecutor } from "@effect/platform";
 import { Effect, Schema } from "effect";
 
-export const PROVIDERS = ["anthropic", "claude-cli"] as const;
+export const PROVIDERS = ["anthropic", "claude-cli", "openai-compatible"] as const;
 export const Provider = Schema.Literal(...PROVIDERS);
 export type Provider = typeof Provider.Type;
 
 export interface Answer {
   readonly text: string;
+  /** Every token the model emitted, reasoning included; this is what a caller pays for. */
   readonly outputTokens: number | null;
   readonly inputTokens: number | null;
+  /** Of those, the ones spent thinking rather than answering, where the provider separates them. */
+  readonly reasoningTokens: number | null;
 }
 
 export class ProviderError extends Schema.TaggedError<ProviderError>()("ProviderError", {
@@ -27,7 +30,10 @@ export class ProviderError extends Schema.TaggedError<ProviderError>()("Provider
 
 /** Sampling is off: the same prompt gives the same answer as far as the provider allows. */
 const TEMPERATURE = 0;
-const MAX_TOKENS = 8192;
+/** Generous enough that an SVG answer, and a reasoning model's thinking before it, both fit. */
+const MAX_TOKENS = 32768;
+/** LM Studio and every other OpenAI-compatible server, when `OPENAI_BASE_URL` is unset. */
+const DEFAULT_OPENAI_BASE_URL = "http://127.0.0.1:1234/v1";
 
 // ---------------------------------------------------------------------------
 
@@ -65,6 +71,7 @@ const anthropic = (model: string, prompt: string): Effect.Effect<Answer, Provide
       text: parsed.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join(""),
       outputTokens: parsed.usage?.output_tokens ?? null,
       inputTokens: parsed.usage?.input_tokens ?? null,
+      reasoningTokens: null,
     };
   });
 
@@ -101,6 +108,69 @@ const claudeCli = (
       text: parsed.result ?? "",
       outputTokens: parsed.usage?.output_tokens ?? null,
       inputTokens: null,
+      reasoningTokens: null,
+    };
+  });
+
+// ---------------------------------------------------------------------------
+
+const OpenAiResponse = Schema.Struct({
+  choices: Schema.Array(Schema.Struct({
+    message: Schema.Struct({
+      content: Schema.NullOr(Schema.String),
+      /** A reasoning model puts its thinking here and keeps `content` for the answer. */
+      reasoning_content: Schema.optional(Schema.NullOr(Schema.String)),
+    }),
+    finish_reason: Schema.optional(Schema.NullOr(Schema.String)),
+  })),
+  usage: Schema.optional(Schema.Struct({
+    prompt_tokens: Schema.optional(Schema.Number),
+    completion_tokens: Schema.optional(Schema.Number),
+    completion_tokens_details: Schema.optional(Schema.Struct({
+      reasoning_tokens: Schema.optional(Schema.Number),
+    })),
+  })),
+});
+
+/**
+ * Any OpenAI-compatible chat endpoint: a local LM Studio, Ollama or vLLM
+ * server, or a hosted one. `OPENAI_BASE_URL` points at it and `OPENAI_API_KEY`
+ * authenticates where the server asks for it; a local server usually does not.
+ *
+ * `completion_tokens` counts a reasoning model's thinking as well as its
+ * answer, so the reasoning count is recorded beside it and the report states
+ * the diagram's own cost apart from the thinking that preceded it.
+ */
+const openAiCompatible = (model: string, prompt: string): Effect.Effect<Answer, ProviderError> =>
+  Effect.gen(function* () {
+    const base = (process.env["OPENAI_BASE_URL"] ?? DEFAULT_OPENAI_BASE_URL).replace(/\/$/, "");
+    const key = process.env["OPENAI_API_KEY"] ?? "not-needed";
+    const fail = (message: string) => new ProviderError({ provider: "openai-compatible", message });
+    const body = yield* Effect.tryPromise({
+      try: async () => {
+        const res = await fetch(`${base}/chat/completions`, {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+          body: JSON.stringify({ model, max_tokens: MAX_TOKENS, temperature: TEMPERATURE, messages: [{ role: "user", content: prompt }] }),
+        });
+        if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+        return (await res.json()) as unknown;
+      },
+      catch: (e) => fail(e instanceof Error ? e.message : String(e)),
+    });
+    const parsed = yield* Schema.decodeUnknown(OpenAiResponse)(body).pipe(Effect.mapError((e) => fail(String(e))));
+    const choice = parsed.choices[0];
+    if (choice === undefined) return yield* fail("the server returned no choice");
+    // A model that spends its whole budget thinking answers with empty content.
+    const text = choice.message.content ?? "";
+    if (text.trim() === "" && choice.finish_reason === "length") {
+      return yield* fail("the answer hit the token limit before any content was emitted");
+    }
+    return {
+      text,
+      outputTokens: parsed.usage?.completion_tokens ?? null,
+      inputTokens: parsed.usage?.prompt_tokens ?? null,
+      reasoningTokens: parsed.usage?.completion_tokens_details?.reasoning_tokens ?? null,
     };
   });
 
@@ -108,5 +178,13 @@ export const ask = (
   provider: Provider,
   model: string,
   prompt: string,
-): Effect.Effect<Answer, ProviderError, CommandExecutor.CommandExecutor> =>
-  provider === "anthropic" ? anthropic(model, prompt) : claudeCli(model, prompt);
+): Effect.Effect<Answer, ProviderError, CommandExecutor.CommandExecutor> => {
+  switch (provider) {
+    case "anthropic":
+      return anthropic(model, prompt);
+    case "openai-compatible":
+      return openAiCompatible(model, prompt);
+    default:
+      return claudeCli(model, prompt);
+  }
+};

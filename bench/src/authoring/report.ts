@@ -21,6 +21,9 @@ interface Agg {
   readonly edgeF1: number | null;
   readonly edgeLabels: number | null;
   readonly outputTokens: number | null;
+  /** Output tokens less the ones spent thinking: the diagram's own cost. */
+  readonly answerTokens: number | null;
+  readonly reasoning: boolean;
   readonly sourceBytes: number | null;
   readonly overflowRate: number | null;
   readonly clipped: number;
@@ -43,6 +46,12 @@ const aggregate = (rows: readonly Row[]): Agg => {
     edgeF1: mean(fid.map((f) => f.edgeF1)),
     edgeLabels: labelled === 0 ? null : fid.reduce((a, f) => a + f.edgeLabelsMatched, 0) / labelled,
     outputTokens: mean(rows.map((r) => r.outputTokens).filter((t): t is number => t !== null)),
+    answerTokens: mean(
+      rows
+        .filter((r) => r.outputTokens !== null)
+        .map((r) => (r.outputTokens ?? 0) - (r.reasoningTokens ?? 0)),
+    ),
+    reasoning: rows.some((r) => (r.reasoningTokens ?? 0) > 0),
     sourceBytes: mean(rows.map((r) => r.sourceBytes)),
     overflowRate: labels === 0 ? null : leg.reduce((a, l) => a + l.overflowing, 0) / labels,
     clipped: leg.reduce((a, l) => a + l.clipped, 0),
@@ -99,6 +108,13 @@ export const renderReport = (r: AuthoringResults): string => {
     out.push("|---|---|---|---|");
     out.push(`| Answers holding a diagram that draws | ${pct(mermaid.drawn, mermaid.n)} | ${pct(svg.drawn, svg.n)} | |`);
     out.push(`| Mean output tokens | ${num(mermaid.outputTokens, 0)} | ${num(svg.outputTokens, 0)} | ${ratio(svg.outputTokens, mermaid.outputTokens)} |`);
+    if (mermaid.reasoning || svg.reasoning) {
+      out.push(
+        `| — of those, the diagram itself | ${num(mermaid.answerTokens, 0)} | ${num(svg.answerTokens, 0)} | ${
+          ratio(svg.answerTokens, mermaid.answerTokens)
+        } |`,
+      );
+    }
     out.push(`| Mean source bytes | ${num(mermaid.sourceBytes, 0)} | ${num(svg.sourceBytes, 0)} | ${ratio(svg.sourceBytes, mermaid.sourceBytes)} |`);
     out.push(`| Node F1 against the declared graph | ${num(mermaid.nodeF1, 3)} | ${num(svg.nodeF1, 3)} | |`);
     out.push(`| Edge F1 against the declared graph | ${num(mermaid.edgeF1, 3)} | ${num(svg.edgeF1, 3)} | |`);

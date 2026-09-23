@@ -95,10 +95,13 @@ Output: a summary on stdout and every mismatch in `target/parity/report.json`. W
 `pnpm bench authoring` measures which output format serves a model better when it is asked for the same diagram twice, implementing [specs/benchmark.md](../specs/benchmark.md#authoring) (`src/authoring/`). Generation and scoring are separate steps so the numbers are reproducible without an account:
 
 ```sh
-pnpm bench authoring generate --provider claude-cli --model sonnet     # records corpus/authoring/outputs/sonnet.json
+pnpm bench authoring generate --provider claude-cli --model sonnet        # the local `claude` CLI, no key
 pnpm bench authoring generate --provider anthropic --model claude-opus-5  # needs ANTHROPIC_API_KEY
-pnpm bench authoring score                                             # scores every recorded file
+pnpm bench authoring generate --provider openai-compatible --model google/gemma-4-31b
+pnpm bench authoring score                                                # scores every recorded file
 ```
+
+`openai-compatible` posts to `$OPENAI_BASE_URL/chat/completions` (default `http://127.0.0.1:1234/v1`, where LM Studio serves) with `$OPENAI_API_KEY` where the server wants one, so a local LM Studio, Ollama or vLLM server is a provider like any other. Where a model reasons before answering, the reasoning tokens are recorded beside the total and the report states the diagram's own cost apart from the thinking that preceded it.
 
 `generate` asks one model for each of the 18 tasks in both formats and writes the answers, the extracted diagram and the provider's token counts to one file per model. `score` never calls a model: it reads those files, draws each Mermaid answer through Merlion, takes each SVG answer as the drawing, and writes `results/<date>-authoring.{json,md}`.
 

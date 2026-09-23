@@ -77,9 +77,15 @@ export const referenceMermaid = (g: RefGraph): string => {
 // Recorded model output.
 
 export class Usage extends Schema.Class<Usage>("Usage")({
-  /** Tokens the provider reported for the generated diagram, or null when it reported none. */
+  /** Every token the model emitted, reasoning included, or null when the provider reported none. */
   outputTokens: Schema.NullOr(Schema.Number),
   inputTokens: Schema.NullOr(Schema.Number),
+  /**
+   * Of those, the ones spent thinking rather than answering. Absent for a
+   * provider that does not separate them, and for answers recorded before a
+   * reasoning model was first measured.
+   */
+  reasoningTokens: Schema.optional(Schema.NullOr(Schema.Number)),
 }) {}
 
 export class Output extends Schema.Class<Output>("Output")({
