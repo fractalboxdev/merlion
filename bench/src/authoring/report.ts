@@ -16,6 +16,8 @@ const mean = (xs: readonly number[]): number | null =>
 interface Agg {
   readonly n: number;
   readonly drawn: number;
+  /** Rows where the provider never returned, which judge no model output. */
+  readonly callFailed: number;
   readonly mermaidParsed: number | null;
   readonly nodeF1: number | null;
   readonly edgeF1: number | null;
@@ -38,21 +40,23 @@ const aggregate = (rows: readonly Row[]): Agg => {
   const parseable = rows.filter((r) => r.mermaidParsed !== null);
   const labelled = fid.reduce((a, f) => a + f.labelledEdges, 0);
   const labels = leg.reduce((a, l) => a + l.labels, 0);
+  const answered = rows.filter((r) => !r.callFailed);
   return {
-    n: rows.length,
+    n: answered.length,
     drawn: drawn.length,
+    callFailed: rows.length - answered.length,
     mermaidParsed: parseable.length === 0 ? null : parseable.filter((r) => r.mermaidParsed === true).length / parseable.length,
     nodeF1: mean(fid.map((f) => f.nodeF1)),
     edgeF1: mean(fid.map((f) => f.edgeF1)),
     edgeLabels: labelled === 0 ? null : fid.reduce((a, f) => a + f.edgeLabelsMatched, 0) / labelled,
-    outputTokens: mean(rows.map((r) => r.outputTokens).filter((t): t is number => t !== null)),
+    outputTokens: mean(answered.map((r) => r.outputTokens).filter((t): t is number => t !== null)),
     answerTokens: mean(
-      rows
+      answered
         .filter((r) => r.outputTokens !== null)
         .map((r) => (r.outputTokens ?? 0) - (r.reasoningTokens ?? 0)),
     ),
-    reasoning: rows.some((r) => (r.reasoningTokens ?? 0) > 0),
-    sourceBytes: mean(rows.map((r) => r.sourceBytes)),
+    reasoning: answered.some((r) => (r.reasoningTokens ?? 0) > 0),
+    sourceBytes: mean(answered.map((r) => r.sourceBytes)),
     overflowRate: labels === 0 ? null : leg.reduce((a, l) => a + l.overflowing, 0) / labels,
     clipped: leg.reduce((a, l) => a + l.clipped, 0),
     overlaps: leg.reduce((a, l) => a + l.shapeOverlaps, 0),
@@ -107,6 +111,9 @@ export const renderReport = (r: AuthoringResults): string => {
     out.push("| | Mermaid | SVG | SVG ÷ Mermaid |");
     out.push("|---|---|---|---|");
     out.push(`| Answers holding a diagram that draws | ${pct(mermaid.drawn, mermaid.n)} | ${pct(svg.drawn, svg.n)} | |`);
+    if (mermaid.callFailed > 0 || svg.callFailed > 0) {
+      out.push(`| Calls the provider never returned (excluded above) | ${mermaid.callFailed} | ${svg.callFailed} | |`);
+    }
     out.push(`| Mean output tokens | ${num(mermaid.outputTokens, 0)} | ${num(svg.outputTokens, 0)} | ${ratio(svg.outputTokens, mermaid.outputTokens)} |`);
     if (mermaid.reasoning || svg.reasoning) {
       out.push(

@@ -7,7 +7,7 @@
  * extractor or a metric changes, and the numbers move only when Merlion does.
  */
 import { FileSystem, Path } from "@effect/platform";
-import { Effect, Option } from "effect";
+import { Effect, Either, Option, Schedule } from "effect";
 import { ask, type Provider } from "./provider.ts";
 import { extractAnswer, promptFor } from "./prompt.ts";
 import { FORMATS, loadTasks, type Output, OUTPUTS_DIR } from "./tasks.ts";
@@ -22,6 +22,12 @@ export interface GenerateOpts {
 
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
 
+/**
+ * A local server drops a long connection now and then. Three tries with a
+ * widening gap turns that into a delay rather than a hole in the corpus.
+ */
+const RETRY = Schedule.exponential("2 seconds").pipe(Schedule.intersect(Schedule.recurs(2)));
+
 export const generate = (opts: GenerateOpts) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -34,12 +40,26 @@ export const generate = (opts: GenerateOpts) =>
     for (const task of tasks) {
       for (const format of FORMATS) {
         const answer = yield* ask(opts.provider, opts.model, promptFor(task, format)).pipe(
+          Effect.retry(RETRY),
           Effect.tapError((e) => Effect.logWarning(`${task.name}/${format}: ${e.message}`)),
-          Effect.option,
+          Effect.either,
         );
-        const got = Option.getOrNull(answer);
-        if (got === null) continue;
-        const { text, outputTokens, inputTokens, reasoningTokens } = got;
+        const got = Either.getRight(answer);
+        if (Option.isNone(got)) {
+          // Recorded, not dropped, so the report can say a call never returned.
+          outputs.push({
+            task: task.name,
+            format,
+            model: opts.model,
+            generated,
+            text: "",
+            extracted: null,
+            error: Either.getLeft(answer).pipe(Option.map((e) => e.message), Option.getOrElse(() => "the call failed")),
+            usage: { outputTokens: null, inputTokens: null, reasoningTokens: null },
+          });
+          continue;
+        }
+        const { text, outputTokens, inputTokens, reasoningTokens } = got.value;
         outputs.push({
           task: task.name,
           format,
@@ -47,6 +67,7 @@ export const generate = (opts: GenerateOpts) =>
           generated,
           text,
           extracted: extractAnswer(text, format),
+          error: null,
           usage: { outputTokens, inputTokens, reasoningTokens },
         });
         const thinking = reasoningTokens === null || reasoningTokens === undefined ? "" : ` (${reasoningTokens} reasoning)`;

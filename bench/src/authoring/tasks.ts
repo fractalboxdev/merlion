@@ -98,6 +98,13 @@ export class Output extends Schema.Class<Output>("Output")({
   text: Schema.String,
   /** Null when the model answered with no fenced block of the requested language. */
   extracted: Schema.NullOr(Schema.String),
+  /**
+   * Why the provider returned nothing, where it did. A failed call is recorded
+   * rather than dropped: the calls that fail are the long ones, which are the
+   * hard diagrams, so silently omitting them would quietly flatter whichever
+   * format is slower to generate.
+   */
+  error: Schema.optional(Schema.NullOr(Schema.String)),
   usage: Usage,
 }) {}
 

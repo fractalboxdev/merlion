@@ -55,6 +55,8 @@ export const Row = Schema.Struct({
   format: Schema.String,
   /** A drawing exists: the answer held the requested format and it renders. */
   drawn: Schema.Boolean,
+  /** The provider never returned an answer, so this row judges no model output. */
+  callFailed: Schema.Boolean,
   error: Schema.NullOr(Schema.String),
   outputTokens: Schema.NullOr(Schema.Number),
   /** Of those, the ones spent thinking rather than answering; null where the provider does not separate them. */
@@ -159,7 +161,15 @@ export const score = (outDir?: string) =>
         const task = tasks.get(o.task);
         if (task === undefined) continue;
         rows.push(
-          yield* scoreOne(page, task, o.format, o.extracted ?? extractAnswer(o.text, o.format), o.usage.outputTokens, o.usage.reasoningTokens ?? null),
+          yield* scoreOne(
+            page,
+            task,
+            o.format,
+            o.extracted ?? extractAnswer(o.text, o.format),
+            o.usage.outputTokens,
+            o.usage.reasoningTokens ?? null,
+            o.error ?? null,
+          ),
         );
       }
       models.push({ model: of.model, provider: of.provider, generated: of.generated, rows });
@@ -189,9 +199,21 @@ const scoreOne = (
   answer: string | null,
   outputTokens: number | null,
   reasoningTokens: number | null,
+  callError: string | null,
 ) =>
   Effect.gen(function* () {
-    const base = { task: task.name, size: task.size, format, outputTokens, reasoningTokens, sourceBytes: answer?.length ?? 0 };
+    const base = {
+      task: task.name,
+      size: task.size,
+      format,
+      outputTokens,
+      reasoningTokens,
+      sourceBytes: answer?.length ?? 0,
+      callFailed: callError !== null,
+    };
+    if (callError !== null) {
+      return { ...base, drawn: false, error: callError, mermaidParsed: null, fidelity: null, legibility: null };
+    }
     if (answer === null) {
       return { ...base, drawn: false, error: "no diagram in the answer", mermaidParsed: null, fidelity: null, legibility: null };
     }
