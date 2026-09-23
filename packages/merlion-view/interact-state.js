@@ -67,6 +67,16 @@ export const assign = (keys, desc) => {
   });
 };
 
+/**
+ * The node a note on state `id` travels with. A note names its state whether that state drew a
+ * node or became a cluster, and the core draws a composite's note beside the first member
+ * declared inside it, anchoring the connector to that member's rect
+ * (specs/state.md#note-placement). So the note joins that member: it hides when the composite
+ * collapses, and lights with the composite, whose set holds every member. `seq` is the states in
+ * declaration order with `cl`, their enclosing composites outermost first.
+ */
+export const noteOwner = (id, seq) => seq.find((n) => n.id === id || n.cl.includes(id));
+
 /** What a composite state lights: the states it holds and the transitions between them. */
 export const held = (ids, edges) => {
   const has = new Set(ids);
@@ -105,7 +115,7 @@ export default ({ svg, nodes, edges, cls, desc, walk, groups, text, style }) => 
   const at = assign(targets.map(keyOf), desc);
 
   // A composite state lights what it holds and heads the popover with its own outline line. It
-  // still collapses on a plain tap; Shift+tap pins the set (specs/interaction.md#gestures).
+  // still collapses on a plain tap; Alt+tap pins the set (specs/interaction.md#gestures).
   targets.forEach((t, i) => {
     const c = of(t);
     c.line = desc[at[i]] ?? keyOf(t);
@@ -117,5 +127,5 @@ export default ({ svg, nodes, edges, cls, desc, walk, groups, text, style }) => 
 
   // A note is geometry on its state, not a target of its own: it hides with the state, lights
   // with it and, carrying neither the node nor the edge class, never dims.
-  for (const g of svg.querySelectorAll(".merlion-note")) byId.get(g.dataset.merlionId)?.els.push(g);
+  for (const g of svg.querySelectorAll(".merlion-note")) noteOwner(g.dataset.merlionId, seq)?.els.push(g);
 };

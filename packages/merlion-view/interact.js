@@ -4,7 +4,7 @@
 // re-renders or touches the SVG's <style>, and clearing restores the SVG's markup exactly.
 // The popover and the live region are the base element's (`tip`, `say`).
 import { MerlionView } from "./merlion-view.js";
-import { adjacency, focusSet, collapseSets, clickAction, lines, nameOf, prefix, outline } from "./interact-model.js";
+import { adjacency, focusSet, collapseSets, outOfView, clickAction, lines, nameOf, prefix, outline } from "./interact-model.js";
 
 const V = "[data-merlion-interactive] ";
 // Classes only this module sets need no scope.
@@ -109,7 +109,7 @@ export const interact = (host, svg) => {
   // Shown: the pin, else the keyboard's target as a preview.
   const shown = () => pin ?? active;
   const elOf = (t) => (t.c ? groups.get(t.c).g : t.e >= 0 ? edges[t.e].el : byId.get(t.n).g);
-  const away = (t) => (t.e >= 0 ? gone.edges.get(t.e) === "hidden" : gone.nodes.has(t.n));
+  const away = (t) => outOfView(gone, t);
   const visible = () => walk.filter((t) => !away(t));
 
   host.toggleAttribute("data-merlion-interactive", true);

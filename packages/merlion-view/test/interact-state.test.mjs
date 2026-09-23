@@ -1,7 +1,7 @@
 // Pure state logic behind @fractalboxdev/merlion-view/interact (specs/state.md#interaction), no DOM.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { assign, declOrder, display, held, walkOf } from "../interact-state.js";
+import { assign, declOrder, display, held, noteOwner, walkOf } from "../interact-state.js";
 
 // The outline of crates/merlion-render/tests/fixtures/state/keyboard-concurrency.mmd.
 const keyboard = [
@@ -103,6 +103,20 @@ const transitions = [
   { from: "Active_r1_start", to: "CapsLockOff" },
   { from: "Active_r0_start", to: "root_end" },
 ];
+
+test("a note on a composite travels with the member it is drawn beside, the first one declared", () => {
+  const cruising = { id: "Cruising", cl: ["Moving"] };
+  const seq = [
+    { id: "Idle", cl: [] },
+    cruising,
+    { id: "Level", cl: ["Moving"] },
+  ];
+  // A note on a simple state still joins that state's own node.
+  assert.equal(noteOwner("Idle", seq), seq[0]);
+  assert.equal(noteOwner("Moving", seq), cruising);
+  // A note naming neither a state nor a composite joins nothing rather than throwing.
+  assert.equal(noteOwner("Ghost", seq), undefined);
+});
 
 test("a composite lights what it holds: its states and the transitions between them", () => {
   assert.deepEqual(held(["Active_r0_start", "NumLockOff", "NumLockOn"], transitions), {

@@ -186,7 +186,7 @@ The rules live in the base element's light-DOM sheet (`MerlionView.style`), a co
 - An edge from outside a collapsed cluster to one of its members stays drawn, dimmed (`merlion-stub`), and ends at the member's old position inside the box.
 - An edge between members of two different collapsed clusters is a stub; an edge whose ends share the outermost collapsed cluster is hidden.
 - Collapsing an outer cluster takes the count of a collapsed inner one: the badge sits on the outermost collapsed cluster only.
-- Hiding the pinned element, or the keyboard's current node, clears it. Keyboard traversal skips hidden nodes.
+- Hiding the pinned element, or the keyboard's current node, clears it. Keyboard traversal skips hidden nodes. A cluster is a target where a diagram type makes one of it — a composite state — and the same holds for it: a cluster a collapsed ancestor hides is skipped and clears a pin on it, while a collapsed cluster is still drawn and stays both.
 - Hide state lives in the viewer. Nothing re-renders or re-lays out, and the SVG's own `<style>` is untouched; the badge run is removed on expand, so **Show all** restores the markup byte for byte (measured).
 
 ## Detail popover
@@ -266,9 +266,9 @@ The popover never overlaps `E`. Every view change (zoom, pan, fullscreen, resize
 
 | Item | Budget |
 |---|---|
-| `@fractalbox/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,272 B), enforced by `scripts/size.mjs` |
-| Its sequence module, loaded only for a sequence diagram | ≤ 1 KB (984 B), enforced by the same script |
-| Its state module, loaded only for a state diagram | ≤ 1 KB (1,020 B), enforced by the same script |
+| `@fractalbox/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,293 B), enforced by `scripts/size.mjs` |
+| Its sequence module, loaded only for a sequence diagram | ≤ 1.25 KB (984 B), enforced by the same script |
+| Its state module, loaded only for a state diagram | ≤ 1.25 KB (1,054 B), enforced by the same script |
 | Base `<merlion-view>` with the hook and the shared chrome | ≤ 6 KB (4,953 B), enforced by the same script |
 | Model and text | Built once per adopted SVG, O(V + E); popover text is rebuilt per pin from the target only |
 | Per pin | Class removal on the old lit set, class addition on the new one, one layout read to place the popover |
@@ -295,7 +295,7 @@ TODO(owner): decide whether rehype passes `hover: "none"` when `interactive` is 
 
 ## Testing
 
-**Core (Rust, CSS layer):** every node and edge group has its id, and ids are unique; the number of hover rules is V + E + 2 at V + E ≤ 128 and 0 above it, with `I034`; every rule starts with an allowed prefix; `hover: None` changes only the rules; native and WASM output byte-identical over `compat`.
+**Core (Rust, CSS layer):** every node and edge group has its id, and ids are unique; the number of hover rules is V + E + 2 at V + E ≤ 128 and 0 above it, with `I035`; every rule starts with an allowed prefix; `hover: None` changes only the rules; native and WASM output byte-identical over `compat`.
 
 **Unit (`node --test`, no DOM):** adjacency and path search on hand-built graphs with self-loops, parallel edges, cycles and undirected links, and a 20,000-edge cycle; collapse sets for nested clusters, stub and hidden edges, hidden nodes; tap outcomes; the pan, tap and double-click rules; text reconstruction for joined, wrapped and run-split lines; outline prefix and order, including a name that prefixes another's; placement on all four sides, the capped fallback and the 48 px refusal.
 
