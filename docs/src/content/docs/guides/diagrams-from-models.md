@@ -48,7 +48,7 @@ The two jobs have different difficulty curves. Stating a graph gets longer as th
 | Writing SVG | Labels inside their box | Renders at all | Arrows anchored |
 |---|---|---|---|
 | A 7B code model, prompted ([GeoSVG-RL](https://arxiv.org/abs/2605.25447)) | 44.6% | 72.4% | 31.7% |
-| Gemma 4 31B, on a laptop ([this benchmark](/reference/specs/benchmark/#authoring)) | 90.5% | 100% | 98.1% |
+| Gemma 4 31B, on a laptop ([this benchmark](/reference/specs/benchmark/#authoring)) | 90.5% | 100% | 98.5% |
 | A frontier model | 99.6% | 100% | 100% |
 
 Nothing like that gap shows up on Mermaid. Over the same 18 diagrams, dropping from the frontier model to the local one costs 0.034 of edge fidelity in Mermaid and 0.130 in SVG, and takes label overflow from 0.4% to 9.5%. The format is worth **more** the less capable the model: a frontier model writing SVG pays in tokens, and a small one pays in usability. Run a 31B model on your own hardware and Mermaid is the difference between a diagram you can publish and one you cannot.

@@ -61,7 +61,7 @@ That floor is what the measurements straddle:
 | Model | Labels inside their box | Renders at all | Arrows anchored correctly |
 |---|---|---|---|
 | A 7B code model, prompted ([GeoSVG-RL](https://arxiv.org/abs/2605.25447) Table 2) | 44.6% | 72.4% | 31.7% |
-| `google/gemma-4-31b`, this corpus | 90.5% (24 of 253 overflow) | 100% | 98.1% |
+| `google/gemma-4-31b`, this corpus | 90.5% (24 of 253 overflow) | 100% | 98.5% |
 | `claude-sonnet-5`, this corpus | 99.6% (1 of 257 overflows) | 100% | 100% |
 
 SVGenius puts the same gap across 22 models in one sentence: proprietary models significantly outperform open-source ones, and every family degrades as geometric complexity rises. Direct SVG authoring is a capability that arrives late and then only holds for small diagrams.
