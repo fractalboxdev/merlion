@@ -232,7 +232,10 @@ const scoreOne = (
       format,
       outputTokens,
       reasoningTokens,
-      sourceBytes: answer?.length ?? 0,
+      // Real UTF-8 bytes: `String.length` counts UTF-16 code units, which is
+      // a different number for any diagram with an arrow glyph or an accent,
+      // and this is the figure the cost comparison is reported on.
+      sourceBytes: answer === null ? 0 : Buffer.byteLength(answer, "utf8"),
       callFailed: callError !== null,
       truncated,
     };

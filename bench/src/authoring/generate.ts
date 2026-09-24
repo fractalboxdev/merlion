@@ -74,8 +74,10 @@ export const generate = (opts: GenerateOpts) =>
         );
       }
       for (const o of existing.outputs) {
+        // A call that never returned is worth re-asking; an answer the model
+        // gave is not, truncated or otherwise. Re-rolling a truncated answer
+        // until one fits would quietly drop the penalty for producing it.
         if (o.error !== null && o.error !== undefined) continue;
-        if (o.truncated === true) continue;
         keep.set(`${o.task}/${o.format}`, o);
         if (o.model !== "") resolved.add(o.model);
       }
