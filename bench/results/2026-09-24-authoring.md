@@ -1,6 +1,6 @@
 # Authoring: Mermaid or SVG
 
-18 tasks (corpus version 1), each asked of every model twice — once as a Mermaid flowchart, once as a standalone SVG — with the same description and the same readability requirement. Scored 2026-09-23. Method: [specs/benchmark.md](../../specs/benchmark.md#authoring).
+18 tasks (corpus version 1), each asked of every model twice — once as a Mermaid flowchart, once as a standalone SVG — with the same description and the same readability requirement. Scored 2026-09-24. Method: [specs/benchmark.md](../../specs/benchmark.md#authoring).
 
 ## Reader ceiling
 
@@ -77,15 +77,14 @@ Answers recorded 2026-09-23 through `openai-compatible`.
 | | Mermaid | SVG | SVG ÷ Mermaid |
 |---|---|---|---|
 | Answers holding a diagram that draws | 94.4% | 100.0% | |
-| Calls the provider never returned (excluded above) | 0 | 11 | |
-| Mean output tokens | 819 | 4914 | 6.0× |
-| — of those, the diagram itself | 124 | 1436 | 11.6× |
-| Mean source bytes | 402 | 3201 | 8.0× |
-| Node F1 against the declared graph | 0.988 | 0.830 | |
-| Edge F1 against the declared graph | 0.966 | 0.828 | |
-| Labelled edges drawn with the right label | 35.9% | 10.0% | |
-| Labels overflowing their shape | 0.0% | 8.3% | |
-| Labels touching no shape (a title, or a chipless edge label) | 0 | 13 | |
+| Mean output tokens | 819 | 7569 | 9.2× |
+| — of those, the diagram itself | 124 | 1656 | 13.4× |
+| Mean source bytes | 402 | 3687 | 9.2× |
+| Node F1 against the declared graph | 0.988 | 0.870 | |
+| Edge F1 against the declared graph | 0.966 | 0.870 | |
+| Labelled edges drawn with the right label | 35.9% | 14.7% | |
+| Labels overflowing their shape | 0.0% | 9.5% | |
+| Labels touching no shape (a title, or a chipless edge label) | 0 | 53 | |
 | Shape overlaps | 0 | 2 | |
 | Ink outside the viewBox | 0 | 0 | |
 | Edges with an endpoint at no shape | 0 | 3 | |
@@ -102,17 +101,17 @@ Answers recorded 2026-09-23 through `openai-compatible`.
 | order-fulfilment | small | mermaid | yes | 1.00 | 1.00 | 0/8 | 0 | 461 |
 | order-fulfilment | small | svg | yes | 0.83 | 0.60 | 2/8 | 0 | 2938 |
 | cache-read | small | mermaid | yes | 1.00 | 1.00 | 0/7 | 0 | 607 |
-| cache-read | small | svg | no (fetch failed) | — | — | — | — | — |
+| cache-read | small | svg | yes | 0.91 | 1.00 | 0/7 | 0 | 7087 |
 | long-labels | small | mermaid | yes | 1.00 | 1.00 | 0/7 | 0 | 541 |
-| long-labels | small | svg | no (fetch failed) | — | — | — | — | — |
+| long-labels | small | svg | yes | 0.91 | 1.00 | 0/7 | 0 | 9413 |
 | oauth-code | medium | mermaid | yes | 1.00 | 1.00 | 0/10 | 0 | 799 |
-| oauth-code | medium | svg | no (fetch failed) | — | — | — | — | — |
+| oauth-code | medium | svg | yes | 1.00 | 1.00 | 2/10 | 0 | 8487 |
 | build-cache | medium | mermaid | yes | 1.00 | 1.00 | 0/14 | 0 | 884 |
-| build-cache | medium | svg | no (fetch failed) | — | — | — | — | — |
+| build-cache | medium | svg | yes | 0.91 | 1.00 | 0/14 | 0 | 9826 |
 | support-triage | medium | mermaid | yes | 1.00 | 1.00 | 0/15 | 0 | 1570 |
-| support-triage | medium | svg | no (fetch failed) | — | — | — | — | — |
+| support-triage | medium | svg | yes | 0.87 | 0.50 | 1/15 | 0 | 6647 |
 | request-lifecycle | medium | mermaid | yes | 1.00 | 1.00 | 0/15 | 0 | 770 |
-| request-lifecycle | medium | svg | no (fetch failed) | — | — | — | — | — |
+| request-lifecycle | medium | svg | yes | 0.85 | 1.00 | 2/15 | 0 | 8261 |
 | release-train | medium | mermaid | yes | 1.00 | 1.00 | 0/13 | 0 | 730 |
 | release-train | medium | svg | yes | 0.70 | 0.71 | 0/13 | 0 | 5435 |
 | data-ingest | medium | mermaid | yes | 1.00 | 1.00 | 0/12 | 0 | 606 |
@@ -120,15 +119,15 @@ Answers recorded 2026-09-23 through `openai-compatible`.
 | compiler-stages | medium | mermaid | no (exit 1: no JSON on stdout; <stdin>:5:18: error E002 expected a link, `&`, `;` or a newline, found `r`) | — | — | — | — | 696 |
 | compiler-stages | medium | svg | yes | 0.77 | 0.67 | 2/16 | 0 | 5843 |
 | k8s-rollout | large | mermaid | yes | 1.00 | 1.00 | 0/20 | 0 | 1155 |
-| k8s-rollout | large | svg | no (fetch failed) | — | — | — | — | — |
+| k8s-rollout | large | svg | yes | 0.94 | 1.00 | 3/20 | 0 | 9345 |
 | payment-settlement | large | mermaid | yes | 1.00 | 1.00 | 0/22 | 0 | 1328 |
-| payment-settlement | large | svg | no (fetch failed) | — | — | — | — | — |
+| payment-settlement | large | svg | yes | 0.85 | 1.00 | 2/22 | 0 | 8800 |
 | incident-response | large | mermaid | yes | 1.00 | 1.00 | 0/20 | 0 | 1072 |
-| incident-response | large | svg | no (fetch failed) | — | — | — | — | — |
+| incident-response | large | svg | yes | 0.90 | 0.94 | 2/20 | 0 | 10554 |
 | content-moderation | large | mermaid | yes | 0.80 | 0.42 | 0/21 | 0 | 821 |
-| content-moderation | large | svg | no (fetch failed) | — | — | — | — | — |
+| content-moderation | large | svg | yes | 0.87 | 0.42 | 3/21 | 0 | 14049 |
 | warehouse-etl | large | mermaid | yes | 1.00 | 1.00 | 0/17 | 0 | 964 |
 | warehouse-etl | large | svg | yes | 0.84 | 0.82 | 0/17 | 2 | 5068 |
 | onboarding-funnel | large | mermaid | yes | 1.00 | 1.00 | 0/18 | 0 | 817 |
-| onboarding-funnel | large | svg | no (fetch failed) | — | — | — | — | — |
+| onboarding-funnel | large | svg | yes | 0.85 | 1.00 | 2/18 | 0 | 9369 |
 
