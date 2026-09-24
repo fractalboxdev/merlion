@@ -27,7 +27,7 @@ pnpm test && pnpm typecheck
 | `compat-sequence` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, static template literals in `e2e/rendering/sequence/*.spec.*`, and `e2e/diagrams/sequence/*.mmd`. `sequenceDiagram` sources only, de-duplicated by content | 216 |
 | `compat-state` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/stateDiagram.md`, static template literals in `e2e/rendering/state/*.spec.*`, and `e2e/diagrams/state-diagram/**/*.mmd` and `e2e/diagrams/state-diagram-v2/**/*.mmd`. `stateDiagram` and `stateDiagram-v2` sources only, de-duplicated by content | 117 |
 | `edits` | The first 30 `compat` diagrams (by name) with at least three simple edge lines, each edited four ways: add an isolated node, add an edge between the farthest-apart unconnected pair, remove the last simple edge (re-declaring endpoints it declared), rename the first `id[Label]` | 106 pairs |
-| `authoring` | 18 diagrams (5 to 19 nodes) stated in prose in `corpus/authoring/tasks.json` beside the graph each one means, and the recorded model answers in `corpus/authoring/outputs/` | 18 tasks |
+| `authoring` | 18 diagrams (5 to 16 nodes, 5 to 19 edges) stated in prose in `corpus/authoring/tasks.json` beside the graph each one means, and the recorded model answers in `corpus/authoring/outputs/` | 18 tasks |
 
 Every corpus but `authoring` pins each diagram in its `manifest.json` by source path, source blob and sha256; `authoring` is original, and its task file is its own ground truth. The mermaid MIT notice is in [NOTICES.md](NOTICES.md).
 

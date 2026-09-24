@@ -54,7 +54,9 @@ const aggregate = (rows: readonly Row[]): Agg => {
   const leg = drawn.map((r) => r.legibility).filter((l): l is NonNullable<typeof l> => l !== null);
   const parseable = rows.filter((r) => r.mermaidParsed !== null);
   const labelled = fid.reduce((a, f) => a + f.labelledEdges, 0);
-  const labels = leg.reduce((a, l) => a + l.labels, 0);
+  // Labels that could overflow: one touching no shape has nothing to overflow,
+  // so counting it in the denominator measures a different thing in each column.
+  const labels = leg.reduce((a, l) => a + l.labels - l.unplaced, 0);
   const answered = answeredRows(rows);
   return {
     n: answered.length,
@@ -154,7 +156,7 @@ export const renderReport = (r: AuthoringResults): string => {
     out.push(`| Node F1 against the declared graph (an answer that drew nothing scores 0) | ${num(mermaid.nodeF1, 3)} | ${num(svg.nodeF1, 3)} | |`);
     out.push(`| Edge F1 against the declared graph (an answer that drew nothing scores 0) | ${num(mermaid.edgeF1, 3)} | ${num(svg.edgeF1, 3)} | |`);
     out.push(`| Labelled edges drawn with the right label | ${mermaid.edgeLabels === null ? "—" : pct(mermaid.edgeLabels, 1)} | ${svg.edgeLabels === null ? "—" : pct(svg.edgeLabels, 1)} | |`);
-    out.push(`| Labels overflowing their shape | ${mermaid.overflowRate === null ? "—" : pct(mermaid.overflowRate, 1)} | ${svg.overflowRate === null ? "—" : pct(svg.overflowRate, 1)} | |`);
+    out.push(`| Labels overflowing the shape they sit in | ${mermaid.overflowRate === null ? "—" : pct(mermaid.overflowRate, 1)} | ${svg.overflowRate === null ? "—" : pct(svg.overflowRate, 1)} | |`);
     out.push(`| Labels touching no shape (a title, or a chipless edge label) | ${mermaid.unplaced} | ${svg.unplaced} | |`);
     out.push(`| Shape overlaps | ${mermaid.overlaps} | ${svg.overlaps} | |`);
     if (mermaid.unmeasured > 0 || svg.unmeasured > 0) {

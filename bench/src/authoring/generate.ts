@@ -53,6 +53,26 @@ export const generate = (opts: GenerateOpts) =>
     const keep = new Map<string, Output>();
     if (opts.resume && (yield* fs.exists(target))) {
       const existing = yield* Schema.decodeUnknown(Schema.parseJson(OutputFile))(yield* fs.readFileString(target));
+      // Resuming onto answers generated from a different task file, or by a
+      // different model, would merge two corpora under one name.
+      if (existing.tasksVersion !== file.version) {
+        return yield* Effect.die(
+          new Error(
+            `${target} holds answers to task file version ${existing.tasksVersion}, but tasks.json is version ${file.version}. Generate afresh rather than resuming.`,
+          ),
+        );
+      }
+      const asked = existing.requestedModel ?? existing.model;
+      if (asked !== opts.model && existing.model !== opts.model) {
+        return yield* Effect.die(
+          new Error(`${target} holds ${existing.model}'s answers, not ${opts.model}'s. Use a different --label.`),
+        );
+      }
+      if (existing.provider !== opts.provider) {
+        return yield* Effect.die(
+          new Error(`${target} was recorded through ${existing.provider}, not ${opts.provider}. Use a different --label.`),
+        );
+      }
       for (const o of existing.outputs) {
         if (o.error !== null && o.error !== undefined) continue;
         if (o.truncated === true) continue;

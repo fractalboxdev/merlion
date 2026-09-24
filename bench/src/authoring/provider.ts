@@ -41,10 +41,17 @@ export class ProviderError extends Schema.TaggedError<ProviderError>()("Provider
 
 /** Sampling is off: the same prompt gives the same answer as far as the provider allows. */
 const TEMPERATURE = 0;
-/** Generous enough that an SVG answer, and a reasoning model's thinking before it, both fit. */
+/**
+ * Generous enough that an SVG answer, and a reasoning model's thinking before
+ * it, both fit. It binds the two providers that take a cap; `claude-cli` runs
+ * under the CLI's own limit, so a recorded answer may exceed this and the two
+ * are not held equal on budget.
+ */
 const MAX_TOKENS = 32768;
 /** LM Studio and every other OpenAI-compatible server, when `OPENAI_BASE_URL` is unset. */
 const DEFAULT_OPENAI_BASE_URL = "http://127.0.0.1:1234/v1";
+/** How long a socket may go silent before the attempt is abandoned and retried. */
+const IDLE_TIMEOUT_MS = 20 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 
@@ -178,12 +185,15 @@ const post = (url: string, key: string, payload: string): Promise<unknown> =>
           "content-length": Buffer.byteLength(payload),
           authorization: `Bearer ${key}`,
         },
-        // No socket, headers or body deadline: the caller decides when to stop.
-        timeout: 0,
+        // Generous rather than absent: a local model writes a large SVG for
+        // many minutes, and undici's five-minute body cap is what lost those
+        // answers, but a socket that goes quiet forever must not hang the run.
+        timeout: IDLE_TIMEOUT_MS,
       },
       (res) => {
         let text = "";
         res.setEncoding("utf8");
+        res.on("error", reject);
         res.on("data", (chunk: string) => {
           text += chunk;
         });
@@ -202,6 +212,9 @@ const post = (url: string, key: string, payload: string): Promise<unknown> =>
       },
     );
     req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy(new Error(`no data for ${IDLE_TIMEOUT_MS / 1000}s`));
+    });
     req.write(payload);
     req.end();
   });

@@ -24,7 +24,7 @@ Answers recorded 2026-09-23 through `claude-cli`.
 | Node F1 against the declared graph (an answer that drew nothing scores 0) | 1.000 | 0.918 | |
 | Edge F1 against the declared graph (an answer that drew nothing scores 0) | 1.000 | 1.000 | |
 | Labelled edges drawn with the right label | 58.8% | 29.4% | |
-| Labels overflowing their shape | 0.0% | 0.4% | |
+| Labels overflowing the shape they sit in | 0.0% | 0.4% | |
 | Labels touching no shape (a title, or a chipless edge label) | 0 | 16 | |
 | Shape overlaps | 0 | 4 | |
 | Ink outside the viewBox | 0 | 0 | |
@@ -85,7 +85,7 @@ Answers recorded 2026-09-23 through `openai-compatible`.
 | Node F1 against the declared graph (an answer that drew nothing scores 0) | 0.933 | 0.870 | |
 | Edge F1 against the declared graph (an answer that drew nothing scores 0) | 0.912 | 0.870 | |
 | Labelled edges drawn with the right label | 35.9% | 14.7% | |
-| Labels overflowing their shape | 0.0% | 9.5% | |
+| Labels overflowing the shape they sit in | 0.0% | 12.0% | |
 | Labels touching no shape (a title, or a chipless edge label) | 0 | 53 | |
 | Shape overlaps | 0 | 2 | |
 | Ink outside the viewBox | 0 | 0 | |

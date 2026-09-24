@@ -51,7 +51,7 @@ The two jobs have different difficulty curves. Stating a graph gets longer as th
 | Gemma 4 31B, on a laptop ([this benchmark](/reference/specs/benchmark/#authoring)) | 90.5% | 100% | 98.5% |
 | A frontier model | 99.6% | 100% | 100% |
 
-Over the same 18 diagrams, dropping from the frontier model to the local one costs 0.088 of edge fidelity in Mermaid and 0.130 in SVG, and takes label overflow from 0.4% to 9.5% while leaving it at zero in Mermaid. The two failures differ in kind: the Mermaid losses are syntax, which the parser names and repairs, and the SVG losses are geometry, which nothing reports. The format is worth **more** the less capable the model: a frontier model writing SVG pays in size, and a small one pays in usability.
+Over the same 18 diagrams, dropping from the frontier model to the local one costs 0.088 of edge fidelity in Mermaid and 0.130 in SVG, and takes label overflow from 0.4% to 12.0% while leaving it at zero in Mermaid. The two failures differ in kind: the Mermaid losses are syntax, which the parser names and repairs, and the SVG losses are geometry, which nothing reports. The format is worth **more** the less capable the model: a frontier model writing SVG pays in size, and a small one pays in usability.
 
 ## Repairing what a model writes
 
