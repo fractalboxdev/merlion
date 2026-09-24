@@ -27,6 +27,11 @@ export interface Answer {
   readonly inputTokens: number | null;
   /** Of those, the ones spent thinking rather than answering, where the provider separates them. */
   readonly reasoningTokens: number | null;
+  /**
+   * Assistant turns the provider took to answer, where it runs an agent rather
+   * than a single completion. Above one, the token counts cover the run.
+   */
+  readonly turns: number | null;
 }
 
 export class ProviderError extends Schema.TaggedError<ProviderError>()("ProviderError", {
@@ -82,6 +87,7 @@ const anthropic = (model: string, prompt: string): Effect.Effect<Answer, Provide
       outputTokens: parsed.usage?.output_tokens ?? null,
       inputTokens: parsed.usage?.input_tokens ?? null,
       reasoningTokens: null,
+      turns: 1,
     };
   });
 
@@ -91,17 +97,26 @@ const ClaudeCliResponse = Schema.Struct({
   result: Schema.optional(Schema.String),
   is_error: Schema.optional(Schema.Boolean),
   stop_reason: Schema.optional(Schema.NullOr(Schema.String)),
+  num_turns: Schema.optional(Schema.Number),
   modelUsage: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
   usage: Schema.optional(Schema.Struct({
     input_tokens: Schema.optional(Schema.Number),
     output_tokens: Schema.optional(Schema.Number),
+    output_tokens_details: Schema.optional(Schema.Struct({
+      thinking_tokens: Schema.optional(Schema.Number),
+    })),
   })),
 });
 
 /**
- * The `claude` CLI in print mode, which needs no API key. Its input token
- * count covers the CLI's own system prompt and tool definitions as well as the
- * task, so only the output count is comparable with the API provider's.
+ * The `claude` CLI in print mode, which needs no API key.
+ *
+ * Its counts are for the whole agentic run, not for the answer: the input side
+ * carries the CLI's own system prompt and tool definitions, and the output side
+ * sums every assistant turn the run took, while `result` holds only the last
+ * one. A run that took several turns reports several times the tokens its
+ * answer contains, so this provider's output count measures what the run cost
+ * and not what the diagram cost, and the benchmark compares sizes instead.
  */
 const claudeCli = (
   model: string,
@@ -123,7 +138,8 @@ const claudeCli = (
       truncated: parsed.stop_reason === "max_tokens",
       outputTokens: parsed.usage?.output_tokens ?? null,
       inputTokens: null,
-      reasoningTokens: null,
+      reasoningTokens: parsed.usage?.output_tokens_details?.thinking_tokens ?? null,
+      turns: parsed.num_turns ?? null,
     };
   });
 
@@ -232,6 +248,7 @@ const openAiCompatible = (model: string, prompt: string): Effect.Effect<Answer, 
       outputTokens: parsed.usage?.completion_tokens ?? null,
       inputTokens: parsed.usage?.prompt_tokens ?? null,
       reasoningTokens: parsed.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+      turns: 1,
     };
   });
 

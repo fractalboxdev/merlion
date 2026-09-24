@@ -13,6 +13,9 @@ const num = (x: number | null, digits = 2): string => (x === null ? "—" : x.to
 const mean = (xs: readonly number[]): number | null =>
   xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length;
 
+/** Rows that judge a model answer: a call the provider never returned judges nothing. */
+const answeredRows = (rows: readonly Row[]): readonly Row[] => rows.filter((r) => !r.callFailed);
+
 interface Agg {
   readonly n: number;
   readonly drawn: number;
@@ -40,19 +43,27 @@ interface Agg {
 const aggregate = (rows: readonly Row[]): Agg => {
   const drawn = rows.filter((r) => r.drawn);
   const fid = drawn.map((r) => r.fidelity).filter((f): f is NonNullable<typeof f> => f !== null);
+  /**
+   * Fidelity is averaged over every answer the model gave, with one that drew
+   * nothing scoring zero. Averaging over the drawn ones alone would let a model
+   * raise its score by failing outright, and would compare a 17-answer mean
+   * against an 18-answer one.
+   */
+  const scored = (pick: (f: NonNullable<Row["fidelity"]>) => number) =>
+    mean(answeredRows(rows).map((r) => (r.fidelity === null ? 0 : pick(r.fidelity))));
   const leg = drawn.map((r) => r.legibility).filter((l): l is NonNullable<typeof l> => l !== null);
   const parseable = rows.filter((r) => r.mermaidParsed !== null);
   const labelled = fid.reduce((a, f) => a + f.labelledEdges, 0);
   const labels = leg.reduce((a, l) => a + l.labels, 0);
-  const answered = rows.filter((r) => !r.callFailed);
+  const answered = answeredRows(rows);
   return {
     n: answered.length,
     drawn: drawn.length,
     callFailed: rows.length - answered.length,
     truncated: rows.filter((r) => r.truncated).length,
     mermaidParsed: parseable.length === 0 ? null : parseable.filter((r) => r.mermaidParsed === true).length / parseable.length,
-    nodeF1: mean(fid.map((f) => f.nodeF1)),
-    edgeF1: mean(fid.map((f) => f.edgeF1)),
+    nodeF1: scored((f) => f.nodeF1),
+    edgeF1: scored((f) => f.edgeF1),
     edgeLabels: labelled === 0 ? null : fid.reduce((a, f) => a + f.edgeLabelsMatched, 0) / labelled,
     outputTokens: mean(answered.map((r) => r.outputTokens).filter((t): t is number => t !== null)),
     answerTokens: mean(
@@ -115,6 +126,12 @@ export const renderReport = (r: AuthoringResults): string => {
     out.push("");
     out.push(`Answers recorded ${m.generated} through \`${m.provider}\`.`);
     out.push("");
+    if (m.provider === "claude-cli") {
+      out.push(
+        "`claude-cli` counts the whole agentic run rather than the answer: the output figure sums every assistant turn, while only the last one is the diagram. Its token row is what the run cost, not what the diagram cost. Source bytes is the comparable measure here, and the answer-token row of a single-completion provider is the comparable token figure.",
+      );
+      out.push("");
+    }
     out.push("| | Mermaid | SVG | SVG ÷ Mermaid |");
     out.push("|---|---|---|---|");
     out.push(`| Answers holding a diagram that draws | ${pct(mermaid.drawn, mermaid.n)} | ${pct(svg.drawn, svg.n)} | |`);
@@ -124,7 +141,8 @@ export const renderReport = (r: AuthoringResults): string => {
     if (mermaid.truncated > 0 || svg.truncated > 0) {
       out.push(`| Answers cut off at the token cap | ${mermaid.truncated} | ${svg.truncated} | |`);
     }
-    out.push(`| Mean output tokens | ${num(mermaid.outputTokens, 0)} | ${num(svg.outputTokens, 0)} | ${ratio(svg.outputTokens, mermaid.outputTokens)} |`);
+    const tokenLabel = m.provider === "claude-cli" ? "Mean output tokens over the run" : "Mean output tokens";
+    out.push(`| ${tokenLabel} | ${num(mermaid.outputTokens, 0)} | ${num(svg.outputTokens, 0)} | ${ratio(svg.outputTokens, mermaid.outputTokens)} |`);
     if (mermaid.reasoning || svg.reasoning) {
       out.push(
         `| — of those, the diagram itself | ${num(mermaid.answerTokens, 0)} | ${num(svg.answerTokens, 0)} | ${
@@ -133,8 +151,8 @@ export const renderReport = (r: AuthoringResults): string => {
       );
     }
     out.push(`| Mean source bytes | ${num(mermaid.sourceBytes, 0)} | ${num(svg.sourceBytes, 0)} | ${ratio(svg.sourceBytes, mermaid.sourceBytes)} |`);
-    out.push(`| Node F1 against the declared graph | ${num(mermaid.nodeF1, 3)} | ${num(svg.nodeF1, 3)} | |`);
-    out.push(`| Edge F1 against the declared graph | ${num(mermaid.edgeF1, 3)} | ${num(svg.edgeF1, 3)} | |`);
+    out.push(`| Node F1 against the declared graph (an answer that drew nothing scores 0) | ${num(mermaid.nodeF1, 3)} | ${num(svg.nodeF1, 3)} | |`);
+    out.push(`| Edge F1 against the declared graph (an answer that drew nothing scores 0) | ${num(mermaid.edgeF1, 3)} | ${num(svg.edgeF1, 3)} | |`);
     out.push(`| Labelled edges drawn with the right label | ${mermaid.edgeLabels === null ? "—" : pct(mermaid.edgeLabels, 1)} | ${svg.edgeLabels === null ? "—" : pct(svg.edgeLabels, 1)} | |`);
     out.push(`| Labels overflowing their shape | ${mermaid.overflowRate === null ? "—" : pct(mermaid.overflowRate, 1)} | ${svg.overflowRate === null ? "—" : pct(svg.overflowRate, 1)} | |`);
     out.push(`| Labels touching no shape (a title, or a chipless edge label) | ${mermaid.unplaced} | ${svg.unplaced} | |`);

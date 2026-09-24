@@ -44,7 +44,12 @@ export const generate = (opts: GenerateOpts) =>
     yield* fs.makeDirectory(OUTPUTS_DIR, { recursive: true });
     const target = path.join(OUTPUTS_DIR, `${slug(opts.label ?? opts.model)}.json`);
 
-    /** Answers already recorded and worth keeping: `--resume` re-asks only the rest. */
+    /**
+     * Answers already recorded and worth keeping: `--resume` re-asks only the
+     * rest. Every kept answer is carried into the new file, including ones for
+     * tasks outside `--limit`, because writing the file is a replacement and a
+     * kept answer left out of it is a deleted one.
+     */
     const keep = new Map<string, Output>();
     if (opts.resume && (yield* fs.exists(target))) {
       const existing = yield* Schema.decodeUnknown(Schema.parseJson(OutputFile))(yield* fs.readFileString(target));
@@ -86,6 +91,7 @@ export const generate = (opts: GenerateOpts) =>
         const already = keep.get(`${task.name}/${format}`);
         if (already !== undefined) {
           outputs.push(already);
+          keep.delete(`${task.name}/${format}`);
           continue;
         }
         const answer = yield* ask(opts.provider, opts.model, promptFor(task, format)).pipe(
@@ -130,6 +136,10 @@ export const generate = (opts: GenerateOpts) =>
       }
     }
 
+    // Answers this run never reached — a task outside `--limit`, or one the
+    // task file no longer lists — are kept rather than dropped.
+    for (const held of keep.values()) outputs.push(held);
+    yield* save;
     yield* Effect.log(`recorded ${outputs.length} answers → ${target}`);
     return target;
   });

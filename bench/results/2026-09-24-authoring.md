@@ -14,13 +14,15 @@ Merlion's own drawing of each task's declared graph, read back through the same 
 
 Answers recorded 2026-09-23 through `claude-cli`.
 
+`claude-cli` counts the whole agentic run rather than the answer: the output figure sums every assistant turn, while only the last one is the diagram. Its token row is what the run cost, not what the diagram cost. Source bytes is the comparable measure here, and the answer-token row of a single-completion provider is the comparable token figure.
+
 | | Mermaid | SVG | SVG ÷ Mermaid |
 |---|---|---|---|
 | Answers holding a diagram that draws | 100.0% | 100.0% | |
-| Mean output tokens | 215 | 12096 | 56.3× |
+| Mean output tokens over the run | 215 | 12096 | 56.3× |
 | Mean source bytes | 426 | 4034 | 9.5× |
-| Node F1 against the declared graph | 1.000 | 0.918 | |
-| Edge F1 against the declared graph | 1.000 | 1.000 | |
+| Node F1 against the declared graph (an answer that drew nothing scores 0) | 1.000 | 0.918 | |
+| Edge F1 against the declared graph (an answer that drew nothing scores 0) | 1.000 | 1.000 | |
 | Labelled edges drawn with the right label | 58.8% | 29.4% | |
 | Labels overflowing their shape | 0.0% | 0.4% | |
 | Labels touching no shape (a title, or a chipless edge label) | 0 | 16 | |
@@ -80,8 +82,8 @@ Answers recorded 2026-09-23 through `openai-compatible`.
 | Mean output tokens | 819 | 7569 | 9.2× |
 | — of those, the diagram itself | 124 | 1656 | 13.4× |
 | Mean source bytes | 402 | 3687 | 9.2× |
-| Node F1 against the declared graph | 0.988 | 0.870 | |
-| Edge F1 against the declared graph | 0.966 | 0.870 | |
+| Node F1 against the declared graph (an answer that drew nothing scores 0) | 0.933 | 0.870 | |
+| Edge F1 against the declared graph (an answer that drew nothing scores 0) | 0.912 | 0.870 | |
 | Labelled edges drawn with the right label | 35.9% | 14.7% | |
 | Labels overflowing their shape | 0.0% | 9.5% | |
 | Labels touching no shape (a title, or a chipless edge label) | 0 | 53 | |

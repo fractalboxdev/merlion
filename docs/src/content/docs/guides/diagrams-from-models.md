@@ -31,7 +31,7 @@ flowchart LR
 
 ## Two properties Mermaid has and SVG does not
 
-**It is cheap.** A Mermaid flowchart is one line per node and one per edge. The same diagram in SVG carries a path, a rectangle, a text element and their coordinates for each of those, and every one of those is output tokens — paid for, and waited for, on every generation.
+**It is cheap.** A Mermaid flowchart is one line per node and one per edge. The same diagram in SVG carries a path, a rectangle, a text element and their coordinates for each of those — about nine times the source for both models measured, and thirteen times the output tokens where the provider counts a single completion. That is paid for, and waited for, on every generation.
 
 **It is checkable.** A Mermaid source *states* its graph, so a parser recovers exactly what the model declared and a program can compare it against what was asked for, before anything is drawn. An SVG states coordinates; its graph has to be inferred back out of geometry — a painted shape holding a label is probably a node, a stroke between two shapes is probably an edge — and "probably" is as good as that check gets.
 
@@ -51,7 +51,7 @@ The two jobs have different difficulty curves. Stating a graph gets longer as th
 | Gemma 4 31B, on a laptop ([this benchmark](/reference/specs/benchmark/#authoring)) | 90.5% | 100% | 98.5% |
 | A frontier model | 99.6% | 100% | 100% |
 
-Nothing like that gap shows up on Mermaid. Over the same 18 diagrams, dropping from the frontier model to the local one costs 0.034 of edge fidelity in Mermaid and 0.130 in SVG, and takes label overflow from 0.4% to 9.5%. The format is worth **more** the less capable the model: a frontier model writing SVG pays in tokens, and a small one pays in usability. Run a 31B model on your own hardware and Mermaid is the difference between a diagram you can publish and one you cannot.
+Over the same 18 diagrams, dropping from the frontier model to the local one costs 0.088 of edge fidelity in Mermaid and 0.130 in SVG, and takes label overflow from 0.4% to 9.5% while leaving it at zero in Mermaid. The two failures differ in kind: the Mermaid losses are syntax, which the parser names and repairs, and the SVG losses are geometry, which nothing reports. The format is worth **more** the less capable the model: a frontier model writing SVG pays in size, and a small one pays in usability.
 
 ## Repairing what a model writes
 
