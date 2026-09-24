@@ -50,8 +50,16 @@ const parseAttrs = (s: string): Record<string, string> => {
   return attrs;
 };
 
-/** Index of the `>` ending a start or end tag, skipping `>` inside quoted values; -1 if none. */
-const findTagEnd = (src: string, from: number): number => {
+/**
+ * Where a start or end tag ends, skipping `>` inside quoted values.
+ *
+ * A tag that reaches an unquoted `<` before its `>` was never closed. Browsers
+ * recover by ending it there and reading the `<` as the next tag, and so does
+ * this: a model that writes `</defs` instead of `</defs>` still produces a
+ * drawing every renderer shows, so the benchmark reads it the way a renderer
+ * does rather than losing the rest of the document inside the unclosed element.
+ */
+const findTagEnd = (src: string, from: number): { end: number; terminated: boolean } => {
   let quote: string | null = null;
   for (let k = from; k < src.length; k++) {
     const ch = src[k];
@@ -60,10 +68,12 @@ const findTagEnd = (src: string, from: number): number => {
     } else if (ch === '"' || ch === "'") {
       quote = ch;
     } else if (ch === ">") {
-      return k;
+      return { end: k, terminated: true };
+    } else if (ch === "<") {
+      return { end: k, terminated: false };
     }
   }
-  return -1;
+  return { end: src.length, terminated: false };
 };
 
 /**
@@ -111,12 +121,12 @@ export const parseXml = (src: string): XmlElement => {
       i = lt + 1;
       continue;
     }
-    const gt = findTagEnd(src, lt + 1);
-    if (gt < 0) {
-      pushText(decodeEntities(src.slice(lt)));
-      break;
-    }
+    // The character after "<" is a name start, checked above, so the tag has at
+    // least one character of content and `gt` is always past it.
+    const { end: gt, terminated } = findTagEnd(src, lt + 1);
     const inner = src.slice(lt + 1, gt);
+    /** An unterminated tag ends at the `<` that follows it, which stays unread. */
+    const next = terminated ? gt + 1 : gt;
 
     if (inner.startsWith("/")) {
       const name = inner.slice(1).trim();
@@ -127,7 +137,7 @@ export const parseXml = (src: string): XmlElement => {
           break;
         }
       }
-      i = gt + 1;
+      i = next;
       continue;
     }
 
@@ -143,7 +153,7 @@ export const parseXml = (src: string): XmlElement => {
     const attrSrc = inner.slice(name.length, selfClosing ? -1 : undefined);
     const el: XmlElement = { name, attrs: parseAttrs(attrSrc), children: [] };
     top().children.push(el);
-    i = gt + 1;
+    i = next;
     if (selfClosing) continue;
 
     if (RAW_TEXT.has(name)) {

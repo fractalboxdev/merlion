@@ -12,6 +12,8 @@ pnpm bench report [--input results/<file>.json] [--out <file>.md]
 pnpm bench parity [--limit N] [--require-rsvg]   # stylesheet parity, after the release build
 pnpm bench sequence [--limit N] [--out-svgs]    # compat-sequence against mermaid, writes results/<date>-sequence-baseline.md
 pnpm bench state [--limit N] [--out-svgs]       # compat-state against mermaid, writes results/<date>-state-baseline.md
+pnpm bench authoring generate --provider claude-cli --model <m> [--label <name>] [--limit N]
+pnpm bench authoring score [--out <dir>]        # writes results/<date>-authoring.md
 pnpm test && pnpm typecheck
 ```
 
@@ -25,8 +27,9 @@ pnpm test && pnpm typecheck
 | `compat-sequence` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, static template literals in `e2e/rendering/sequence/*.spec.*`, and `e2e/diagrams/sequence/*.mmd`. `sequenceDiagram` sources only, de-duplicated by content | 216 |
 | `compat-state` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/stateDiagram.md`, static template literals in `e2e/rendering/state/*.spec.*`, and `e2e/diagrams/state-diagram/**/*.mmd` and `e2e/diagrams/state-diagram-v2/**/*.mmd`. `stateDiagram` and `stateDiagram-v2` sources only, de-duplicated by content | 117 |
 | `edits` | The first 30 `compat` diagrams (by name) with at least three simple edge lines, each edited four ways: add an isolated node, add an edge between the farthest-apart unconnected pair, remove the last simple edge (re-declaring endpoints it declared), rename the first `id[Label]` | 106 pairs |
+| `authoring` | 18 diagrams (5 to 16 nodes, 5 to 19 edges) stated in prose in `corpus/authoring/tasks.json` beside the graph each one means, and the recorded model answers in `corpus/authoring/outputs/` | 18 tasks |
 
-Each corpus's `manifest.json` pins every diagram by source path, source blob and sha256. The mermaid MIT notice is in [NOTICES.md](NOTICES.md).
+Every corpus but `authoring` pins each diagram in its `manifest.json` by source path, source blob and sha256; `authoring` is original, and its task file is its own ground truth. The mermaid MIT notice is in [NOTICES.md](NOTICES.md).
 
 ## Renderers
 
@@ -86,3 +89,25 @@ All metrics are computed from the SVG alone (`src/svg/extract.ts`, `src/metrics/
 Compared per element (every path, rect, circle, ellipse, line, polygon, text and tspan outside `<defs>`, plus marker contents): computed `fill` and `stroke` through a canvas `fillStyle` round trip to 8-bit sRGB (±1 per channel, paint opacity folded into alpha), `stroke-dasharray`, and the product of `opacity` up the tree. Pixel samples: up to three interior fill points per shape that are the topmost element there and clear of every label's box (widened for font differences), up to three points on each stroke kept 1 px inside a dash, and one interior point per marker instance. A sample counts only where the reference screenshot shows the element's own opaque paint, so occluded and antialiased points are dropped and reported as a count. Text is compared by ink, because glyph outlines differ between Chromium's and librsvg's font stacks: one box per text element (per tspan when tspans carry their own fill), and inside it a pixel within ±8 per channel of the computed fill must appear in the rsvg-convert raster whenever the reference screenshot shows one. The run also bakes every named theme of `merlion-themes.css` and fails on a stylesheet warning.
 
 Output: a summary on stdout and every mismatch in `target/parity/report.json`. Without rsvg-convert on `PATH` the pixel target is reported as skipped; CI passes `--require-rsvg`.
+
+## Authoring: Mermaid or SVG
+
+`pnpm bench authoring` measures which output format serves a model better when it is asked for the same diagram twice, implementing [specs/benchmark.md](../specs/benchmark.md#authoring) (`src/authoring/`). Generation and scoring are separate steps so the numbers are reproducible without an account:
+
+```sh
+pnpm bench authoring generate --provider claude-cli --model sonnet        # the local `claude` CLI, no key
+pnpm bench authoring generate --provider anthropic --model claude-opus-5  # needs ANTHROPIC_API_KEY
+pnpm bench authoring generate --provider openai-compatible --model google/gemma-4-31b
+pnpm bench authoring score                                                # scores every recorded file
+```
+
+`openai-compatible` posts to `$OPENAI_BASE_URL/chat/completions` (default `http://127.0.0.1:1234/v1`, where LM Studio serves) with `$OPENAI_API_KEY` where the server wants one, so a local LM Studio, Ollama or vLLM server is a provider like any other. Where a model reasons before answering, the reasoning tokens are recorded beside the total and the report states the diagram's own cost apart from the thinking that preceded it.
+
+`generate` asks one model for each of the 18 tasks in both formats and writes the answers, the extracted diagram and the provider's token counts to one file per model. `score` never calls a model: it reads those files, draws each Mermaid answer through Merlion, takes each SVG answer as the drawing, and writes `results/<date>-authoring.{json,md}`.
+
+- **The two prompts differ only in the output format** (`src/authoring/prompt.ts`). Both carry the same readability requirement, which the layout engine satisfies for one side and the model has to satisfy itself for the other.
+- **Fidelity** (`src/authoring/compare.ts`) compares labels, never ids. A Mermaid answer's graph is read exactly from Merlion's data attributes; an SVG answer's graph is recovered from geometry (`src/svg/generic.ts`): a painted closed shape holding a label is a node, a stroke is an edge, a text sitting on a stroke within 12 units of its middle is that edge's label and the outline around it is a chip rather than a node.
+- **Legibility** (`src/authoring/probe.js`) is measured in Chromium, because text advance depends on the font the browser resolves. Per drawing: labels whose laid-out ink leaves their shape, pairs of node shapes overlapping, and ink outside the `viewBox`.
+- **The reader ceiling** is scored on every run: Merlion's own drawing of each task's declared graph, read back through the same geometry recovery. The graph is known to be right, so the ceiling is the reader's error rather than the drawing's, and it bounds what any hand-written SVG can score.
+
+Only `results/<date>-authoring.md` is committed; the JSON is not.

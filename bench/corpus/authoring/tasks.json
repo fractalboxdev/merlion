@@ -1,0 +1,589 @@
+{
+  "corpus": "authoring",
+  "version": 1,
+  "licence": "MIT (original, written for this benchmark)",
+  "note": "Each task states a graph in prose and declares the same graph as data. The prose is what a model is given; the declared graph is the ground truth every output is scored against. Node labels are quoted in the prose exactly as the reference spells them, so a model that follows the prose scores full node fidelity in either output format. Edge labels are scored apart from topology, because the prose names a condition without fixing its wording.",
+  "tasks": [
+    {
+      "name": "ci-pipeline",
+      "size": "small",
+      "prompt": "A continuous integration pipeline. A \"Push\" starts a \"Build\". If the build succeeds it runs \"Test\"; if it fails it goes to \"Notify author\". If the test passes it runs \"Deploy\"; if it fails it also goes to \"Notify author\". \"Deploy\" ends at \"Done\".",
+      "reference": {
+        "nodes": [
+          { "id": "push", "label": "Push" },
+          { "id": "build", "label": "Build" },
+          { "id": "test", "label": "Test" },
+          { "id": "notify", "label": "Notify author" },
+          { "id": "deploy", "label": "Deploy" },
+          { "id": "done", "label": "Done" }
+        ],
+        "edges": [
+          { "from": "push", "to": "build", "label": "" },
+          { "from": "build", "to": "test", "label": "succeeds" },
+          { "from": "build", "to": "notify", "label": "fails" },
+          { "from": "test", "to": "deploy", "label": "passes" },
+          { "from": "test", "to": "notify", "label": "fails" },
+          { "from": "deploy", "to": "done", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "password-reset",
+      "size": "small",
+      "prompt": "A password reset flow. \"Request reset\" leads to \"Send email\". \"Send email\" leads to \"Open link\". \"Open link\" leads to \"Check token\". If the token is valid, \"Check token\" leads to \"Set password\"; if it has expired it leads back to \"Request reset\". \"Set password\" leads to \"Sign in\".",
+      "reference": {
+        "nodes": [
+          { "id": "request", "label": "Request reset" },
+          { "id": "email", "label": "Send email" },
+          { "id": "open", "label": "Open link" },
+          { "id": "check", "label": "Check token" },
+          { "id": "set", "label": "Set password" },
+          { "id": "signin", "label": "Sign in" }
+        ],
+        "edges": [
+          { "from": "request", "to": "email", "label": "" },
+          { "from": "email", "to": "open", "label": "" },
+          { "from": "open", "to": "check", "label": "" },
+          { "from": "check", "to": "set", "label": "valid" },
+          { "from": "check", "to": "request", "label": "expired" },
+          { "from": "set", "to": "signin", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "order-fulfilment",
+      "size": "small",
+      "prompt": "Order fulfilment. \"Order placed\" goes to \"Charge card\". A successful charge goes to \"Pick items\"; a declined charge goes to \"Cancel order\". \"Pick items\" goes to \"Ship\", and \"Ship\" goes to \"Delivered\".",
+      "reference": {
+        "nodes": [
+          { "id": "placed", "label": "Order placed" },
+          { "id": "charge", "label": "Charge card" },
+          { "id": "pick", "label": "Pick items" },
+          { "id": "cancel", "label": "Cancel order" },
+          { "id": "ship", "label": "Ship" },
+          { "id": "delivered", "label": "Delivered" }
+        ],
+        "edges": [
+          { "from": "placed", "to": "charge", "label": "" },
+          { "from": "charge", "to": "pick", "label": "paid" },
+          { "from": "charge", "to": "cancel", "label": "declined" },
+          { "from": "pick", "to": "ship", "label": "" },
+          { "from": "ship", "to": "delivered", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "cache-read",
+      "size": "small",
+      "prompt": "A read-through cache. \"Read request\" goes to \"Cache lookup\". A hit goes to \"Return value\". A miss goes to \"Query database\", which goes to \"Fill cache\", which goes to \"Return value\".",
+      "reference": {
+        "nodes": [
+          { "id": "req", "label": "Read request" },
+          { "id": "lookup", "label": "Cache lookup" },
+          { "id": "ret", "label": "Return value" },
+          { "id": "db", "label": "Query database" },
+          { "id": "fill", "label": "Fill cache" }
+        ],
+        "edges": [
+          { "from": "req", "to": "lookup", "label": "" },
+          { "from": "lookup", "to": "ret", "label": "hit" },
+          { "from": "lookup", "to": "db", "label": "miss" },
+          { "from": "db", "to": "fill", "label": "" },
+          { "from": "fill", "to": "ret", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "long-labels",
+      "size": "small",
+      "prompt": "A document review flow whose steps have long names. \"Submit the manuscript for editorial review\" goes to \"Assign two independent reviewers\". That goes to \"Collect reviewer recommendations\". If the recommendations agree, it goes to \"Notify the author of the decision\"; if they conflict, it goes to \"Assign a third reviewer as tie-breaker\", which goes to \"Notify the author of the decision\".",
+      "reference": {
+        "nodes": [
+          { "id": "submit", "label": "Submit the manuscript for editorial review" },
+          { "id": "assign", "label": "Assign two independent reviewers" },
+          { "id": "collect", "label": "Collect reviewer recommendations" },
+          { "id": "notify", "label": "Notify the author of the decision" },
+          { "id": "third", "label": "Assign a third reviewer as tie-breaker" }
+        ],
+        "edges": [
+          { "from": "submit", "to": "assign", "label": "" },
+          { "from": "assign", "to": "collect", "label": "" },
+          { "from": "collect", "to": "notify", "label": "agree" },
+          { "from": "collect", "to": "third", "label": "conflict" },
+          { "from": "third", "to": "notify", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "oauth-code",
+      "size": "medium",
+      "prompt": "The OAuth authorization code flow, as a flowchart. \"User clicks sign in\" goes to \"Redirect to provider\". That goes to \"User consents\". That goes to \"Provider redirects back with code\". That goes to \"Exchange code for token\". A successful exchange goes to \"Store session\" and then \"Show dashboard\". A failed exchange goes to \"Show error\". \"Show error\" goes back to \"User clicks sign in\".",
+      "reference": {
+        "nodes": [
+          { "id": "click", "label": "User clicks sign in" },
+          { "id": "redirect", "label": "Redirect to provider" },
+          { "id": "consent", "label": "User consents" },
+          { "id": "back", "label": "Provider redirects back with code" },
+          { "id": "exchange", "label": "Exchange code for token" },
+          { "id": "store", "label": "Store session" },
+          { "id": "dash", "label": "Show dashboard" },
+          { "id": "error", "label": "Show error" }
+        ],
+        "edges": [
+          { "from": "click", "to": "redirect", "label": "" },
+          { "from": "redirect", "to": "consent", "label": "" },
+          { "from": "consent", "to": "back", "label": "" },
+          { "from": "back", "to": "exchange", "label": "" },
+          { "from": "exchange", "to": "store", "label": "ok" },
+          { "from": "store", "to": "dash", "label": "" },
+          { "from": "exchange", "to": "error", "label": "failed" },
+          { "from": "error", "to": "click", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "build-cache",
+      "size": "medium",
+      "prompt": "An incremental build. \"Read sources\" goes to \"Hash inputs\". \"Hash inputs\" goes to \"Cache lookup\". A hit goes to \"Restore outputs\". A miss goes to \"Compile\", which goes to \"Link\", which goes to \"Write cache\", which goes to \"Restore outputs\". \"Restore outputs\" goes to \"Run tests\". Passing tests go to \"Publish\"; failing tests go to \"Report failure\".",
+      "reference": {
+        "nodes": [
+          { "id": "read", "label": "Read sources" },
+          { "id": "hash", "label": "Hash inputs" },
+          { "id": "lookup", "label": "Cache lookup" },
+          { "id": "restore", "label": "Restore outputs" },
+          { "id": "compile", "label": "Compile" },
+          { "id": "link", "label": "Link" },
+          { "id": "write", "label": "Write cache" },
+          { "id": "tests", "label": "Run tests" },
+          { "id": "publish", "label": "Publish" },
+          { "id": "fail", "label": "Report failure" }
+        ],
+        "edges": [
+          { "from": "read", "to": "hash", "label": "" },
+          { "from": "hash", "to": "lookup", "label": "" },
+          { "from": "lookup", "to": "restore", "label": "hit" },
+          { "from": "lookup", "to": "compile", "label": "miss" },
+          { "from": "compile", "to": "link", "label": "" },
+          { "from": "link", "to": "write", "label": "" },
+          { "from": "write", "to": "restore", "label": "" },
+          { "from": "restore", "to": "tests", "label": "" },
+          { "from": "tests", "to": "publish", "label": "pass" },
+          { "from": "tests", "to": "fail", "label": "fail" }
+        ]
+      }
+    },
+    {
+      "name": "support-triage",
+      "size": "medium",
+      "prompt": "Support ticket triage. \"Ticket arrives\" goes to \"Classify\". A billing ticket goes to \"Billing queue\", a technical ticket goes to \"Technical queue\", and anything else goes to \"General queue\". \"Billing queue\" and \"General queue\" both go to \"First response\". \"Technical queue\" goes to \"Reproduce\", which goes to \"First response\" when reproduced and to \"Ask for details\" when not. \"Ask for details\" goes back to \"Reproduce\". \"First response\" goes to \"Resolve\", and \"Resolve\" goes to \"Close\".",
+      "reference": {
+        "nodes": [
+          { "id": "arrive", "label": "Ticket arrives" },
+          { "id": "classify", "label": "Classify" },
+          { "id": "billing", "label": "Billing queue" },
+          { "id": "technical", "label": "Technical queue" },
+          { "id": "general", "label": "General queue" },
+          { "id": "first", "label": "First response" },
+          { "id": "repro", "label": "Reproduce" },
+          { "id": "details", "label": "Ask for details" },
+          { "id": "resolve", "label": "Resolve" },
+          { "id": "close", "label": "Close" }
+        ],
+        "edges": [
+          { "from": "arrive", "to": "classify", "label": "" },
+          { "from": "classify", "to": "billing", "label": "billing" },
+          { "from": "classify", "to": "technical", "label": "technical" },
+          { "from": "classify", "to": "general", "label": "other" },
+          { "from": "billing", "to": "first", "label": "" },
+          { "from": "general", "to": "first", "label": "" },
+          { "from": "technical", "to": "repro", "label": "" },
+          { "from": "repro", "to": "first", "label": "reproduced" },
+          { "from": "repro", "to": "details", "label": "not reproduced" },
+          { "from": "details", "to": "repro", "label": "" },
+          { "from": "first", "to": "resolve", "label": "" },
+          { "from": "resolve", "to": "close", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "request-lifecycle",
+      "size": "medium",
+      "prompt": "The lifecycle of an HTTP request through a server. \"Client\" goes to \"Load balancer\", which goes to \"Rate limiter\". A request over the limit goes to \"Reject 429\". A request under the limit goes to \"Authenticate\". An unauthenticated request goes to \"Reject 401\". An authenticated request goes to \"Route\", which goes to \"Handler\". \"Handler\" goes to \"Database\" and to \"Cache\". Both go to \"Serialise response\", which goes to \"Client\".",
+      "reference": {
+        "nodes": [
+          { "id": "client", "label": "Client" },
+          { "id": "lb", "label": "Load balancer" },
+          { "id": "rate", "label": "Rate limiter" },
+          { "id": "r429", "label": "Reject 429" },
+          { "id": "auth", "label": "Authenticate" },
+          { "id": "r401", "label": "Reject 401" },
+          { "id": "route", "label": "Route" },
+          { "id": "handler", "label": "Handler" },
+          { "id": "db", "label": "Database" },
+          { "id": "cache", "label": "Cache" },
+          { "id": "ser", "label": "Serialise response" }
+        ],
+        "edges": [
+          { "from": "client", "to": "lb", "label": "" },
+          { "from": "lb", "to": "rate", "label": "" },
+          { "from": "rate", "to": "r429", "label": "over limit" },
+          { "from": "rate", "to": "auth", "label": "under limit" },
+          { "from": "auth", "to": "r401", "label": "anonymous" },
+          { "from": "auth", "to": "route", "label": "authenticated" },
+          { "from": "route", "to": "handler", "label": "" },
+          { "from": "handler", "to": "db", "label": "" },
+          { "from": "handler", "to": "cache", "label": "" },
+          { "from": "db", "to": "ser", "label": "" },
+          { "from": "cache", "to": "ser", "label": "" },
+          { "from": "ser", "to": "client", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "release-train",
+      "size": "medium",
+      "prompt": "A release train. \"Merge to main\" goes to \"Tag release candidate\". That goes to \"Run acceptance suite\". A green suite goes to \"Stage\"; a red suite goes to \"Revert\", which goes back to \"Merge to main\". \"Stage\" goes to \"Smoke test\". A passing smoke test goes to \"Promote to production\"; a failing one goes to \"Roll back stage\", which goes to \"Revert\". \"Promote to production\" goes to \"Announce\".",
+      "reference": {
+        "nodes": [
+          { "id": "merge", "label": "Merge to main" },
+          { "id": "tag", "label": "Tag release candidate" },
+          { "id": "acceptance", "label": "Run acceptance suite" },
+          { "id": "stage", "label": "Stage" },
+          { "id": "revert", "label": "Revert" },
+          { "id": "smoke", "label": "Smoke test" },
+          { "id": "promote", "label": "Promote to production" },
+          { "id": "rollback", "label": "Roll back stage" },
+          { "id": "announce", "label": "Announce" }
+        ],
+        "edges": [
+          { "from": "merge", "to": "tag", "label": "" },
+          { "from": "tag", "to": "acceptance", "label": "" },
+          { "from": "acceptance", "to": "stage", "label": "green" },
+          { "from": "acceptance", "to": "revert", "label": "red" },
+          { "from": "revert", "to": "merge", "label": "" },
+          { "from": "stage", "to": "smoke", "label": "" },
+          { "from": "smoke", "to": "promote", "label": "pass" },
+          { "from": "smoke", "to": "rollback", "label": "fail" },
+          { "from": "rollback", "to": "revert", "label": "" },
+          { "from": "promote", "to": "announce", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "data-ingest",
+      "size": "medium",
+      "prompt": "A data ingestion pipeline. \"Upload\" goes to \"Validate schema\". An invalid file goes to \"Quarantine\". A valid file goes to \"Normalise\", then \"Deduplicate\", then \"Enrich\", then \"Write warehouse\". \"Write warehouse\" goes to \"Refresh dashboards\" and to \"Emit metrics\". \"Quarantine\" goes to \"Notify owner\".",
+      "reference": {
+        "nodes": [
+          { "id": "upload", "label": "Upload" },
+          { "id": "validate", "label": "Validate schema" },
+          { "id": "quarantine", "label": "Quarantine" },
+          { "id": "normalise", "label": "Normalise" },
+          { "id": "dedupe", "label": "Deduplicate" },
+          { "id": "enrich", "label": "Enrich" },
+          { "id": "warehouse", "label": "Write warehouse" },
+          { "id": "dashboards", "label": "Refresh dashboards" },
+          { "id": "metrics", "label": "Emit metrics" },
+          { "id": "notify", "label": "Notify owner" }
+        ],
+        "edges": [
+          { "from": "upload", "to": "validate", "label": "" },
+          { "from": "validate", "to": "quarantine", "label": "invalid" },
+          { "from": "validate", "to": "normalise", "label": "valid" },
+          { "from": "normalise", "to": "dedupe", "label": "" },
+          { "from": "dedupe", "to": "enrich", "label": "" },
+          { "from": "enrich", "to": "warehouse", "label": "" },
+          { "from": "warehouse", "to": "dashboards", "label": "" },
+          { "from": "warehouse", "to": "metrics", "label": "" },
+          { "from": "quarantine", "to": "notify", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "compiler-stages",
+      "size": "medium",
+      "prompt": "The stages of a compiler. \"Source\" goes to \"Lexer\", then \"Parser\", then \"AST\". \"AST\" goes to \"Name resolution\", then \"Type check\". A type error goes to \"Report diagnostics\". A well-typed program goes to \"Lower to IR\", then \"Optimise\", then \"Verify IR\". \"Verify IR\" goes back to \"Optimise\" when it finds a problem and on to \"Code generation\" when it does not. \"Code generation\" goes to \"Object file\".",
+      "reference": {
+        "nodes": [
+          { "id": "source", "label": "Source" },
+          { "id": "lexer", "label": "Lexer" },
+          { "id": "parser", "label": "Parser" },
+          { "id": "ast", "label": "AST" },
+          { "id": "resolve", "label": "Name resolution" },
+          { "id": "typecheck", "label": "Type check" },
+          { "id": "diag", "label": "Report diagnostics" },
+          { "id": "ir", "label": "Lower to IR" },
+          { "id": "opt", "label": "Optimise" },
+          { "id": "verify", "label": "Verify IR" },
+          { "id": "codegen", "label": "Code generation" },
+          { "id": "obj", "label": "Object file" }
+        ],
+        "edges": [
+          { "from": "source", "to": "lexer", "label": "" },
+          { "from": "lexer", "to": "parser", "label": "" },
+          { "from": "parser", "to": "ast", "label": "" },
+          { "from": "ast", "to": "resolve", "label": "" },
+          { "from": "resolve", "to": "typecheck", "label": "" },
+          { "from": "typecheck", "to": "diag", "label": "type error" },
+          { "from": "typecheck", "to": "ir", "label": "well typed" },
+          { "from": "ir", "to": "opt", "label": "" },
+          { "from": "opt", "to": "verify", "label": "" },
+          { "from": "verify", "to": "opt", "label": "problem" },
+          { "from": "verify", "to": "codegen", "label": "clean" },
+          { "from": "codegen", "to": "obj", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "k8s-rollout",
+      "size": "large",
+      "prompt": "A Kubernetes rolling deployment. \"Apply manifest\" goes to \"API server\", which goes to \"Deployment controller\", which goes to \"New ReplicaSet\". \"New ReplicaSet\" goes to \"Create pod\". \"Create pod\" goes to \"Scheduler\", which goes to \"Bind to node\", which goes to \"Kubelet\", which goes to \"Pull image\". A pull failure goes to \"ImagePullBackOff\", which goes back to \"Pull image\". A successful pull goes to \"Start container\", then \"Readiness probe\". A failing probe goes to \"Restart container\", which goes back to \"Readiness probe\". A passing probe goes to \"Mark ready\", which goes to \"Scale down old ReplicaSet\", which goes to \"Rollout complete\".",
+      "reference": {
+        "nodes": [
+          { "id": "apply", "label": "Apply manifest" },
+          { "id": "api", "label": "API server" },
+          { "id": "controller", "label": "Deployment controller" },
+          { "id": "rs", "label": "New ReplicaSet" },
+          { "id": "create", "label": "Create pod" },
+          { "id": "sched", "label": "Scheduler" },
+          { "id": "bind", "label": "Bind to node" },
+          { "id": "kubelet", "label": "Kubelet" },
+          { "id": "pull", "label": "Pull image" },
+          { "id": "backoff", "label": "ImagePullBackOff" },
+          { "id": "start", "label": "Start container" },
+          { "id": "probe", "label": "Readiness probe" },
+          { "id": "restart", "label": "Restart container" },
+          { "id": "ready", "label": "Mark ready" },
+          { "id": "scaledown", "label": "Scale down old ReplicaSet" },
+          { "id": "complete", "label": "Rollout complete" }
+        ],
+        "edges": [
+          { "from": "apply", "to": "api", "label": "" },
+          { "from": "api", "to": "controller", "label": "" },
+          { "from": "controller", "to": "rs", "label": "" },
+          { "from": "rs", "to": "create", "label": "" },
+          { "from": "create", "to": "sched", "label": "" },
+          { "from": "sched", "to": "bind", "label": "" },
+          { "from": "bind", "to": "kubelet", "label": "" },
+          { "from": "kubelet", "to": "pull", "label": "" },
+          { "from": "pull", "to": "backoff", "label": "failure" },
+          { "from": "backoff", "to": "pull", "label": "" },
+          { "from": "pull", "to": "start", "label": "success" },
+          { "from": "start", "to": "probe", "label": "" },
+          { "from": "probe", "to": "restart", "label": "fail" },
+          { "from": "restart", "to": "probe", "label": "" },
+          { "from": "probe", "to": "ready", "label": "pass" },
+          { "from": "ready", "to": "scaledown", "label": "" },
+          { "from": "scaledown", "to": "complete", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "payment-settlement",
+      "size": "large",
+      "prompt": "Card payment settlement. \"Checkout\" goes to \"Create payment intent\", which goes to \"3-D Secure check\". A challenge goes to \"Issuer challenge\", which goes to \"Authorise\" when the customer passes and to \"Decline\" when they fail. No challenge goes straight to \"Authorise\". \"Authorise\" goes to \"Hold funds\" on success and to \"Decline\" on failure. \"Hold funds\" goes to \"Capture\". \"Capture\" goes to \"Settlement batch\", which goes to \"Acquirer payout\", which goes to \"Reconcile ledger\". \"Reconcile ledger\" goes to \"Mismatch alert\" when the totals disagree and to \"Settled\" when they agree. \"Decline\" goes to \"Notify customer\", which goes back to \"Checkout\".",
+      "reference": {
+        "nodes": [
+          { "id": "checkout", "label": "Checkout" },
+          { "id": "intent", "label": "Create payment intent" },
+          { "id": "tds", "label": "3-D Secure check" },
+          { "id": "challenge", "label": "Issuer challenge" },
+          { "id": "authorise", "label": "Authorise" },
+          { "id": "decline", "label": "Decline" },
+          { "id": "hold", "label": "Hold funds" },
+          { "id": "capture", "label": "Capture" },
+          { "id": "batch", "label": "Settlement batch" },
+          { "id": "payout", "label": "Acquirer payout" },
+          { "id": "reconcile", "label": "Reconcile ledger" },
+          { "id": "mismatch", "label": "Mismatch alert" },
+          { "id": "settled", "label": "Settled" },
+          { "id": "notify", "label": "Notify customer" }
+        ],
+        "edges": [
+          { "from": "checkout", "to": "intent", "label": "" },
+          { "from": "intent", "to": "tds", "label": "" },
+          { "from": "tds", "to": "challenge", "label": "challenge" },
+          { "from": "tds", "to": "authorise", "label": "no challenge" },
+          { "from": "challenge", "to": "authorise", "label": "passed" },
+          { "from": "challenge", "to": "decline", "label": "failed" },
+          { "from": "authorise", "to": "hold", "label": "approved" },
+          { "from": "authorise", "to": "decline", "label": "refused" },
+          { "from": "hold", "to": "capture", "label": "" },
+          { "from": "capture", "to": "batch", "label": "" },
+          { "from": "batch", "to": "payout", "label": "" },
+          { "from": "payout", "to": "reconcile", "label": "" },
+          { "from": "reconcile", "to": "mismatch", "label": "disagree" },
+          { "from": "reconcile", "to": "settled", "label": "agree" },
+          { "from": "decline", "to": "notify", "label": "" },
+          { "from": "notify", "to": "checkout", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "incident-response",
+      "size": "large",
+      "prompt": "Incident response. \"Alert fires\" goes to \"Page on-call\". \"Page on-call\" goes to \"Acknowledge\" when answered and to \"Escalate\" when it times out. \"Escalate\" goes to \"Page secondary\", which goes back to \"Acknowledge\". \"Acknowledge\" goes to \"Assess severity\". Severity one goes to \"Open war room\"; anything lower goes to \"Investigate\". \"Open war room\" also goes to \"Investigate\". \"Investigate\" goes to \"Identify cause\", which goes to \"Apply mitigation\". \"Apply mitigation\" goes to \"Verify recovery\". A failed verification goes back to \"Investigate\". A successful one goes to \"Declare resolved\", which goes to \"Write postmortem\", which goes to \"Track action items\".",
+      "reference": {
+        "nodes": [
+          { "id": "alert", "label": "Alert fires" },
+          { "id": "page", "label": "Page on-call" },
+          { "id": "ack", "label": "Acknowledge" },
+          { "id": "escalate", "label": "Escalate" },
+          { "id": "secondary", "label": "Page secondary" },
+          { "id": "assess", "label": "Assess severity" },
+          { "id": "warroom", "label": "Open war room" },
+          { "id": "investigate", "label": "Investigate" },
+          { "id": "cause", "label": "Identify cause" },
+          { "id": "mitigate", "label": "Apply mitigation" },
+          { "id": "verify", "label": "Verify recovery" },
+          { "id": "resolved", "label": "Declare resolved" },
+          { "id": "postmortem", "label": "Write postmortem" },
+          { "id": "actions", "label": "Track action items" }
+        ],
+        "edges": [
+          { "from": "alert", "to": "page", "label": "" },
+          { "from": "page", "to": "ack", "label": "answered" },
+          { "from": "page", "to": "escalate", "label": "timeout" },
+          { "from": "escalate", "to": "secondary", "label": "" },
+          { "from": "secondary", "to": "ack", "label": "" },
+          { "from": "ack", "to": "assess", "label": "" },
+          { "from": "assess", "to": "warroom", "label": "sev 1" },
+          { "from": "assess", "to": "investigate", "label": "sev 2+" },
+          { "from": "warroom", "to": "investigate", "label": "" },
+          { "from": "investigate", "to": "cause", "label": "" },
+          { "from": "cause", "to": "mitigate", "label": "" },
+          { "from": "mitigate", "to": "verify", "label": "" },
+          { "from": "verify", "to": "investigate", "label": "not recovered" },
+          { "from": "verify", "to": "resolved", "label": "recovered" },
+          { "from": "resolved", "to": "postmortem", "label": "" },
+          { "from": "postmortem", "to": "actions", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "content-moderation",
+      "size": "large",
+      "prompt": "Content moderation. \"Post submitted\" goes to \"Automated filter\". A clear post goes to \"Publish\". A flagged post goes to \"Queue for review\". \"Queue for review\" goes to \"Human reviewer\". The reviewer either goes to \"Approve\", to \"Remove\", or to \"Request second opinion\". \"Request second opinion\" goes to \"Senior reviewer\", which goes to \"Approve\" or \"Remove\". \"Approve\" goes to \"Publish\". \"Remove\" goes to \"Notify poster\", which goes to \"Appeal window\". An appeal goes to \"Appeal review\", which goes to \"Reinstate\" or \"Uphold removal\". \"Reinstate\" goes to \"Publish\". No appeal goes to \"Close case\", and \"Uphold removal\" also goes to \"Close case\".",
+      "reference": {
+        "nodes": [
+          { "id": "submit", "label": "Post submitted" },
+          { "id": "filter", "label": "Automated filter" },
+          { "id": "publish", "label": "Publish" },
+          { "id": "queue", "label": "Queue for review" },
+          { "id": "human", "label": "Human reviewer" },
+          { "id": "approve", "label": "Approve" },
+          { "id": "remove", "label": "Remove" },
+          { "id": "second", "label": "Request second opinion" },
+          { "id": "senior", "label": "Senior reviewer" },
+          { "id": "notify", "label": "Notify poster" },
+          { "id": "window", "label": "Appeal window" },
+          { "id": "appeal", "label": "Appeal review" },
+          { "id": "reinstate", "label": "Reinstate" },
+          { "id": "uphold", "label": "Uphold removal" },
+          { "id": "close", "label": "Close case" }
+        ],
+        "edges": [
+          { "from": "submit", "to": "filter", "label": "" },
+          { "from": "filter", "to": "publish", "label": "clear" },
+          { "from": "filter", "to": "queue", "label": "flagged" },
+          { "from": "queue", "to": "human", "label": "" },
+          { "from": "human", "to": "approve", "label": "" },
+          { "from": "human", "to": "remove", "label": "" },
+          { "from": "human", "to": "second", "label": "" },
+          { "from": "second", "to": "senior", "label": "" },
+          { "from": "senior", "to": "approve", "label": "" },
+          { "from": "senior", "to": "remove", "label": "" },
+          { "from": "approve", "to": "publish", "label": "" },
+          { "from": "remove", "to": "notify", "label": "" },
+          { "from": "notify", "to": "window", "label": "" },
+          { "from": "window", "to": "appeal", "label": "appealed" },
+          { "from": "window", "to": "close", "label": "no appeal" },
+          { "from": "appeal", "to": "reinstate", "label": "" },
+          { "from": "appeal", "to": "uphold", "label": "" },
+          { "from": "reinstate", "to": "publish", "label": "" },
+          { "from": "uphold", "to": "close", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "warehouse-etl",
+      "size": "large",
+      "prompt": "A nightly warehouse job. \"Scheduler\" goes to \"Extract orders\", \"Extract customers\" and \"Extract products\", all three in parallel. Each extract goes to \"Land in staging\". \"Land in staging\" goes to \"Row count check\". A failed check goes to \"Abort run\", which goes to \"Alert data team\". A passed check goes to \"Transform\", then \"Load facts\" and \"Load dimensions\". Both loads go to \"Rebuild aggregates\", which goes to \"Swap views\", which goes to \"Publish freshness metric\". \"Swap views\" also goes to \"Notify consumers\".",
+      "reference": {
+        "nodes": [
+          { "id": "scheduler", "label": "Scheduler" },
+          { "id": "orders", "label": "Extract orders" },
+          { "id": "customers", "label": "Extract customers" },
+          { "id": "products", "label": "Extract products" },
+          { "id": "staging", "label": "Land in staging" },
+          { "id": "rowcount", "label": "Row count check" },
+          { "id": "abort", "label": "Abort run" },
+          { "id": "alert", "label": "Alert data team" },
+          { "id": "transform", "label": "Transform" },
+          { "id": "facts", "label": "Load facts" },
+          { "id": "dims", "label": "Load dimensions" },
+          { "id": "aggregates", "label": "Rebuild aggregates" },
+          { "id": "swap", "label": "Swap views" },
+          { "id": "freshness", "label": "Publish freshness metric" },
+          { "id": "consumers", "label": "Notify consumers" }
+        ],
+        "edges": [
+          { "from": "scheduler", "to": "orders", "label": "" },
+          { "from": "scheduler", "to": "customers", "label": "" },
+          { "from": "scheduler", "to": "products", "label": "" },
+          { "from": "orders", "to": "staging", "label": "" },
+          { "from": "customers", "to": "staging", "label": "" },
+          { "from": "products", "to": "staging", "label": "" },
+          { "from": "staging", "to": "rowcount", "label": "" },
+          { "from": "rowcount", "to": "abort", "label": "fail" },
+          { "from": "abort", "to": "alert", "label": "" },
+          { "from": "rowcount", "to": "transform", "label": "pass" },
+          { "from": "transform", "to": "facts", "label": "" },
+          { "from": "transform", "to": "dims", "label": "" },
+          { "from": "facts", "to": "aggregates", "label": "" },
+          { "from": "dims", "to": "aggregates", "label": "" },
+          { "from": "aggregates", "to": "swap", "label": "" },
+          { "from": "swap", "to": "freshness", "label": "" },
+          { "from": "swap", "to": "consumers", "label": "" }
+        ]
+      }
+    },
+    {
+      "name": "onboarding-funnel",
+      "size": "large",
+      "prompt": "A product onboarding funnel. \"Landing page\" goes to \"Sign up\", which goes to \"Verify email\". An unverified address goes to \"Resend email\", which goes back to \"Verify email\". A verified address goes to \"Choose plan\". The free plan goes to \"Create workspace\"; a paid plan goes to \"Enter card\", which goes to \"Create workspace\" when the card is accepted and to \"Choose plan\" when it is refused. \"Create workspace\" goes to \"Invite team\", which goes to \"First project\". \"Create workspace\" also goes to \"First project\" when the user skips inviting. \"First project\" goes to \"Activated\". \"Activated\" goes to \"Weekly digest\", and \"Weekly digest\" goes back to \"First project\".",
+      "reference": {
+        "nodes": [
+          { "id": "landing", "label": "Landing page" },
+          { "id": "signup", "label": "Sign up" },
+          { "id": "verify", "label": "Verify email" },
+          { "id": "resend", "label": "Resend email" },
+          { "id": "plan", "label": "Choose plan" },
+          { "id": "card", "label": "Enter card" },
+          { "id": "workspace", "label": "Create workspace" },
+          { "id": "invite", "label": "Invite team" },
+          { "id": "project", "label": "First project" },
+          { "id": "activated", "label": "Activated" },
+          { "id": "digest", "label": "Weekly digest" }
+        ],
+        "edges": [
+          { "from": "landing", "to": "signup", "label": "" },
+          { "from": "signup", "to": "verify", "label": "" },
+          { "from": "verify", "to": "resend", "label": "unverified" },
+          { "from": "resend", "to": "verify", "label": "" },
+          { "from": "verify", "to": "plan", "label": "verified" },
+          { "from": "plan", "to": "workspace", "label": "free" },
+          { "from": "plan", "to": "card", "label": "paid" },
+          { "from": "card", "to": "workspace", "label": "accepted" },
+          { "from": "card", "to": "plan", "label": "refused" },
+          { "from": "workspace", "to": "invite", "label": "" },
+          { "from": "invite", "to": "project", "label": "" },
+          { "from": "workspace", "to": "project", "label": "skip" },
+          { "from": "project", "to": "activated", "label": "" },
+          { "from": "activated", "to": "digest", "label": "" },
+          { "from": "digest", "to": "project", "label": "" }
+        ]
+      }
+    }
+  ]
+}

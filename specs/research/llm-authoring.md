@@ -1,0 +1,102 @@
+# Why a model writes Mermaid, not SVG
+
+*Snapshot as of 2026-09-23.*
+
+Merlion's premise is that a model asked for a diagram should emit a graph and let a renderer place it. This document states the argument, the evidence for it, and the evidence against — and points at [benchmark.md](../benchmark.md#authoring), which measures it rather than asserting it.
+
+## The argument
+
+Mermaid asks a model for the graph: which nodes exist, which edges connect them, what each is called. SVG asks for the graph **and the geometry** — every coordinate, every text width, every arrow route. Three consequences follow, and each one is measurable.
+
+**Geometry needs a measurement the model cannot take, and it cannot check its own answer.** Text advance depends on the font the reader's browser resolves. A model generating SVG has to guess how wide `Assign a third reviewer as tie-breaker` renders at 14 px in Inter, and a label that overruns its box is unreadable whatever the reasoning that produced it. Merlion's core carries font metric tables for exactly this ([text-measurement.md](../text-measurement.md)); a model generating text has nothing equivalent. Worse, it cannot read the drawing back: asked to name the digit an SVG draws, GPT-4o scores 13.0% where chance is 10% (SGP-Bench, ICLR 2025). The guess is unchecked because the checking step is itself the thing models cannot do.
+
+**Geometry is expensive.** A node costs one line of Mermaid and a shape, a label, coordinates and a routed path in SVG. The cost is paid in output tokens on every generation, and output tokens are the slow, billed half of a request.
+
+**Geometry is not checkable by anyone else either.** A Mermaid source *states* its graph: a parser recovers exactly what the author declared, and a program compares that against the graph that was asked for, before anything is drawn. `merlion outline` is that surface, and it is exact. An SVG states coordinates; its graph has to be inferred back out of geometry — a painted shape holding a label is probably a node, a stroke between two shapes is probably an edge. The inference can be made good (`bench/src/svg/generic.ts` recovers every node and edge of Merlion's own drawings) but it is inference, and it only ever reads back what a reader could see, not what the author meant.
+
+The direction of the failure matters as much as the rate. SVG is forgiving markup, so a model's SVG nearly always parses — and an SVG that parses can still be unreadable, with nothing to say so. Mermaid has a grammar, so a model's Mermaid sometimes breaks it, loudly, at parse time, where a diagnostic can be fed back. Mermaid fails early and visibly; SVG fails late and silently.
+
+The third point is the one that compounds. A pipeline that generates diagrams needs to know when a diagram is wrong, and a format whose correctness is decidable by a parser can be corrected in a loop; a format whose correctness needs a renderer, a geometry heuristic or a vision model cannot be corrected with the same confidence. The same reason unit tests beat screenshots for checking generated code.
+
+## What the evidence supports
+
+Every row was read at the source; findings are quoted or taken from a numbered table.
+
+| \ | Source | Venue | Finding | Supports |
+|---|---|---|---|---|
+| 1 | Z. Qiu, W. Liu, H. Feng, Z. Liu, T. Z. Xiao, K. M. Collins, J. B. Tenenbaum, A. Weller, M. J. Black, B. Schölkopf. *Can Large Language Models Understand Symbolic Graphics Programs?* [arXiv:2408.08313](https://arxiv.org/abs/2408.08313) | ICLR 2025 Spotlight | 1,085 SVG programs and 4,340 questions answered from program text alone. On SGP-MNIST — name the digit an SVG draws, ten categories, so chance is 10% — **GPT-4o scores 13.0%**, GPT-4-turbo 10.6, Qwen-2-70B 11.3, Llama3-70B 10.0: "even the powerful GPT-4o can only achieve an accuracy slightly higher than the chance-level" | A model cannot see what its own SVG draws. There is no feedback loop to catch a label outside its box, because reading the drawing back out of the source is the thing models cannot do |
+| 2 | S. Li, Y. Cai, H. Chen, Y. Wang. *GeoSVG-RL: Geometry-Aware Reinforcement Learning for Layout-Constrained Text-to-SVG Diagram Generation.* [arXiv:2605.25447](https://arxiv.org/abs/2605.25447) | arXiv, 2026-05 | "Minor errors such as misaligned connector endpoints, text labels overlapping borders, or complex layouts drifting beyond the canvas boundaries render the resulting SVG files functionally unusable." Their Table 2 measures a code model asked for diagram SVG by prompt alone: **Text-In-Box Rate 44.6**, Render Success 72.4, Arrow Anchor Accuracy 31.7. Supervised fine-tuning on layout plans moves text containment nowhere (39.8); only reinforcement against a rendered drawing does (83.0 / 78.6), because "token imitation cannot directly optimize post-rendering constraints for structural usability". Even the 2026 systems they compare against overflow about one label in six (VFig 81.8, AutoFigure-Edit 81.6) | The cost of the missing feedback loop, priced. Prompted cold, a model puts **more than half its labels outside their boxes**, and no amount of imitation fixes it — only measuring the rendered result |
+| 3 | S. Chen et al. *SVGenius: Benchmarking LLMs in SVG Understanding, Editing and Generation.* [arXiv:2506.03139](https://arxiv.org/abs/2506.03139) | ACM MM 2025 | 2,377 queries over 22 models, stratified by path count (Easy 2.14 paths, Hard 16.02). Perceptual accuracy from Easy to Hard: GPT-4o 82.72 → 42.22, Claude-3.7-Sonnet 80.25 → 33.33, Gemini-2.0-Flash 77.78 → 31.11. "All model families exhibit systematic performance degradation as SVG complexity increases, indicating fundamental limitations in current approaches" | Geometry is the hard part and it does not come out with scale. Degradation tracks geometric density, which is what a dense diagram is |
+| 4 | X. Xing, J. Hu, G. Liang, J. Zhang, D. Xu, Q. Yu. *Empowering LLMs to Understand and Generate Complex Vector Graphics.* [arXiv:2412.11102](https://arxiv.org/abs/2412.11102) | CVPR 2025 | Names two mechanisms: "semantically ambiguous and tokenized representations within LLMs may result in hallucinations in vector primitive predictions", and "LLM training typically lacks modeling and understanding of the rendering sequence of vector paths, which can lead to occlusion between output vector primitives" | Why, not just that. A tokenizer splits coordinates into fragments carrying no geometric meaning, and SVG is painter's-algorithm ordered while a text model holds no representation of what ends up on top |
+| 5 | J. A. Rodriguez et al. *StarVector: Generating Scalable Vector Graphics Code from Images and Text.* [arXiv:2312.11556](https://arxiv.org/abs/2312.11556) | arXiv, 2023-12 (rev. 2025-05) | A model purpose-built for SVG generation: "StarVector is limited by its 16k token context, which is insufficient for highly complex SVGs", and its training data was filtered to "examples with up to 8,192 tokens", so the working limit is half the headline. Their **SVG-Diagrams** split averages **3,486 ± 1,918 tokens** per drawing against 1,822 ± 1,808 for SVG-Stack overall | Geometry is expensive, and diagrams are the expensive end of it — the second-longest category in the corpus, not the short one |
+| 6 | C. Liang, J. You. *DiagramEval: Evaluating LLM-Generated Diagrams via Graphs.* [arXiv:2510.25761](https://arxiv.org/abs/2510.25761) | EMNLP 2025 | Scores a generated SVG by extracting a graph from it — text to nodes, connections to edges — and aligning that against the intended graph | Geometry is not checkable directly. Checking an SVG means first inferring the graph back out of it, which is what [`bench/src/svg/generic.ts`](../../bench/src/svg/generic.ts) does and what the reader ceiling prices |
+| 7 | Y. Ni et al. *VisCoder2: Building Multi-Language Visualization Coding Agents.* [arXiv:2510.23642](https://arxiv.org/abs/2510.23642) | ICLR 2026 | VisPlotBench runs one task suite across eight output languages — Python, Vega-Lite, LilyPond, **Mermaid**, **SVG**, LaTeX, Asymptote, HTML — and measures a self-debug loop that feeds the renderer's own output back to the model. For GPT-4.1, **Mermaid goes 68.7% → 93.9%** execution over the rounds; **SVG goes 95.4% → 96.9%**. The paper notes across the suite that "execution success is high across most models, yet visual scores lag behind task scores" | The asymmetry in both directions at once, measured by someone else on the same tasks. SVG starts far higher because there is barely a grammar to break — and a repair loop then buys it 1.5 points, because what is wrong with a bad SVG is not something executing it reveals. Mermaid starts lower and gains 25 points, because its failures are the kind a check can name |
+| 8 | B. Shbita, F. Ahmed, C. DeLuca. *MermaidSeqBench: An Evaluation Benchmark for NL-to-Mermaid Sequence Diagram Generation.* [arXiv:2511.14967](https://arxiv.org/abs/2511.14967) | arXiv, 2025-11 (rev. 2026-08) | 132 human-verified cases scoring natural language to Mermaid on syntax correctness, activation handling and error handling; "significant capability gaps across models" | Diagram-generation research already treats Mermaid as the model's output format and measures it there. It also sets the size of the syntax problem Merlion's parser repairs ([parser.md](../parser.md)) |
+
+Row 7 is the closest thing to this benchmark that exists in the literature: the same tasks, the same model, Mermaid and SVG side by side, scored by running the renderer. It is also the reason the `authoring` corpus measures legibility in a browser rather than counting parse failures — on SVG, parsing says almost nothing.
+
+Rows 1 and 2 are the argument in two halves. A model cannot read back what its own SVG draws, so it has no way to notice the drawing is wrong; and the failures that follow are the ones a reader trips over — more than half the labels outside their boxes, two arrows in three landing somewhere other than the shape they point at, ink off the canvas. Row 2's ablation is the sharpest form of the point: imitating more correct SVG does not fix text containment, because the constraint being violated is not visible anywhere in the text being imitated. Only rendering it and measuring reveals it.
+
+GeoSVG-RL is also the closest external check on the `authoring` method, and it was reached independently. Its verifier retrieves text boxes with `getBBox()` in headless Chromium, which is what [`bench/src/authoring/probe.js`](../../bench/src/authoring/probe.js) does, for the reason it gives: "identical text may occupy different spatial dimensions depending on font size, anchoring, and alignment settings". Four of its six reward dimensions are metrics this benchmark scores — render success, canvas fit, text containment, and edge connectivity against the intended graph. Two groups measuring the same failure the same way, one to train against it and one to price it.
+
+## What the evidence does not support
+
+- **That models cannot draw SVG at all.** They draw simple figures well; SVGenius measures degradation *with complexity*, not failure at the floor, and GeoSVG-RL's render success rates sit above 90%. The claim here is about diagrams dense enough for layout to matter, and about what the failures cost.
+- **That Mermaid is the more reliable format on syntax.** It is not, and this cuts against the argument. Raw SVG is forgiving markup with no grammar to violate, so a model's SVG output almost always parses; Mermaid has a grammar and a model's output sometimes breaks it, which is why MermaidSeqBench scores syntax correctness at all and why Merlion's parser repairs rather than rejects. What SVG buys with that parse rate is the wrong kind of success: an SVG that parses can still be unreadable, and nothing says so. Mermaid fails loudly and early, SVG fails silently and late, and a pipeline can act on the first.
+- **A clean token ratio from an agentic provider.** `claude-cli` reports the whole run: every assistant turn's output summed, while only the last turn is the diagram. Its SVG rows carry two to eight tokens per emitted character, which no tokenizer produces, so that count measures the run and not the answer. The comparable figures are source bytes, which both models put at about 9×, and the answer-token count of a single-completion provider, which puts `google/gemma-4-31b` at 13×. No published source compares the two formats' token cost directly either.
+- **That a frontier model overflows its labels.** It is the failure the literature measures most sharply, and the `authoring` corpus barely reproduces it at the top of the range: over 18 diagrams `claude-sonnet-5` left **1 of its 257** SVG labels outside its shape, against none through Mermaid, and none of the four intersecting pairs of painted shapes in its output is two node boxes colliding — three are an edge-label chip clipping a box it sits beside, and the fourth is the same rectangle emitted twice. It sizes its boxes generously and picks a wide canvas, and the task written to stress text measurement with five long labels does not break it. `google/gemma-4-31b` leaves 24 of 253, so the failure is capability-dependent rather than absent. GeoSVG-RL's 44.6% Text-In-Box Rate is a 7B code model prompted cold, and that gap does not carry to the top of the capability range. What carries there is cost, and a smaller fidelity gap — the drawing is legible, it is just expensive and slightly wrong. That is its own finding ([below](#the-weaker-the-model-the-more-the-format-matters)).
+- **That constraining a model to a grammar is free.** Grammar-constrained decoding raises validity by construction, but its cost to the quality of what is generated is contested and was not resolved here. Merlion does not constrain decoding; it parses tolerantly after the fact, which sidesteps the question rather than answering it.
+- **That Mermaid is the best graph DSL for this.** Graphviz, D2 and others make the same trade. Mermaid is chosen for reach — it is what models already emit and what Markdown renderers already accept — not because it was measured against the alternatives.
+
+## The weaker the model, the more the format matters
+
+The two jobs a diagram request asks for have different difficulty curves.
+
+**Stating the graph scales with the diagram and with nothing else.** Naming six boxes and the six arrows between them is reading comprehension. It gets longer as the diagram grows; it never gets qualitatively harder, and a small model does it.
+
+**Placing the geometry has a floor.** Before any of it is usable a model must size text it cannot measure, keep hundreds of coordinates mutually consistent, route arrows to the right boundaries, and hold the painter's-algorithm order that decides what ends up on top. Below that floor the output is not a worse drawing — it is not a drawing. Labels sit outside their boxes, arrows land in empty space, and a reader cannot recover the graph the model was asked for.
+
+That floor is what the measurements straddle:
+
+| Model | Labels inside their box | Renders at all | Arrows anchored correctly |
+|---|---|---|---|
+| A 7B code model, prompted ([GeoSVG-RL](https://arxiv.org/abs/2605.25447) Table 2) | 44.6% | 72.4% | 31.7% |
+| `google/gemma-4-31b`, this corpus | 90.5% (24 of 253 overflow) | 100% | 98.5% |
+| `claude-sonnet-5`, this corpus | 99.6% (1 of 257 overflows) | 100% | 100% |
+
+SVGenius puts the same gap across 22 models in one sentence: proprietary models significantly outperform open-source ones, and every family degrades as geometric complexity rises. Direct SVG authoring is a capability that arrives late and then only holds for small diagrams.
+
+Nothing comparable separates the models on Mermaid. Over the same 18 diagrams:
+
+| | Mermaid | SVG |
+|---|---|---|
+| Edge F1, `claude-sonnet-5` | 1.000 | 1.000 |
+| Edge F1, `google/gemma-4-31b` | 0.912 | 0.870 |
+| **The weaker model's penalty** | **0.088** | **0.130** |
+| Labels overflowing, `claude-sonnet-5` | 0.0% | 0.4% |
+| Labels overflowing, `google/gemma-4-31b` | 0.0% | 12.0% |
+
+Dropping from a frontier model to one that runs on a laptop costs edge fidelity in both formats, half as much again in SVG, and takes label overflow from 0.4% to 12.0% while leaving it at zero in Mermaid. The two failures are not the same kind: the weaker model's Mermaid losses are syntax — one answer in eighteen that mermaid itself rejects, which a parser names and a repair loop fixes — while its SVG losses are geometry, which nothing in the source reveals and no diagnostic reports.
+
+So the choice of output format is worth **more** the less capable the model, not less. A frontier model writing SVG pays in tokens and a little fidelity. A small model writing SVG pays in usability, and there is no prompt that buys it back — GeoSVG-RL's own ablation shows supervised imitation moving text containment from 44.6 to 39.8, because the constraint being violated appears nowhere in the text being imitated.
+
+This is the range Merlion is for, and the corpus measures it rather than assuming it. A 31-billion-parameter model on a laptop states the graph nearly as well as a frontier model and draws it far worse; given Mermaid it publishes, given SVG it does not. The renderer is what makes a small model's diagram good, and it is the same renderer that makes a frontier model's diagram cheap.
+
+## Where SVG is the right answer
+
+The argument is narrow, and stating its boundary is part of stating it. A model should write SVG when the picture is not a graph: an illustration, an icon, a chart with a particular visual design, anything where the drawing itself is the content rather than a view of a structure. Mermaid has nothing to say about those, and a model's direct control of geometry is the point there rather than the problem.
+
+Mermaid's own costs are real too, and Merlion carries most of them:
+
+- **Syntax errors.** Models make small ones. Merlion's parser repairs what it can and renders the rest rather than failing the diagram ([parser.md](../parser.md)); the `llm` corpus measures parse rate and repair rate.
+- **Dialect drift.** Mermaid's grammar moves between releases, and a model's training data straddles several. The `compat` corpora pin mermaid 12.0.0 and measure what Merlion accepts against it.
+- **Limited expressivity.** A diagram Mermaid cannot state is a diagram this argument does not cover.
+
+## Applied in
+
+| Spec | How |
+|---|---|
+| [benchmark.md](../benchmark.md#authoring) | The `authoring` corpus: 18 diagrams asked of a model in both formats, scored on cost, validity, fidelity and legibility, against a reader ceiling |
+| [parser.md](../parser.md) | Error tolerance and repair, which is the cost of Mermaid being the input format |
+| [text-measurement.md](../text-measurement.md) | The measurement a model writing SVG cannot take |
+| [integrations.md](../integrations.md#cli) | `--json` and `outline`: diagnostics to feed back, and the graph to check against what was asked for |

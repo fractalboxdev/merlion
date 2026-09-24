@@ -135,9 +135,15 @@ pnpm install --ignore-workspace
 pnpm bench run --renderers merlion,mermaid-dagre,mermaid-elk
 pnpm bench report
 pnpm bench determinism [--corpus <name>] [--font link|embed|system]   # CLI --batch vs WASM, byte for byte
+pnpm bench authoring generate --provider claude-cli --model <m>       # record one model's answers
+pnpm bench authoring score                                            # Mermaid against SVG, same diagrams
 ```
 
 `pnpm bench determinism` renders a corpus with `merlion render --batch` and through the WASM module and fails on any difference. Five corpora: `compat`, `compat-sequence` and `compat-state` from the mermaid sources, and `sequence` and `state`, the core's own fixtures. CI runs every corpus in all three font modes.
+
+`pnpm bench authoring` measures the premise the project rests on: that a model asked for a diagram should write Mermaid rather than SVG. Eighteen diagrams stated in prose beside the graph each one means are asked of a model in both formats, under the same readability requirement, and the answers are scored on cost, validity, fidelity to the declared graph and whether the labels fit — the last measured in Chromium, because text advance is the quantity a model writing SVG cannot compute ([specs/benchmark.md](specs/benchmark.md#authoring), evidence in [specs/research/llm-authoring.md](specs/research/llm-authoring.md)).
+
+Two models are recorded. Writing SVG instead of Mermaid costs both of them about **nine times the source** (9.5× for `claude-sonnet-5`, 9.2× for `google/gemma-4-31b`), and, where the provider counts one completion rather than a whole agentic run, **13× the output tokens**. Fidelity moves the other way with model size: the frontier model keeps every edge right in both formats and loses only node fidelity in SVG (0.918 against 1.000), while `google/gemma-4-31b`, run locally, loses 0.088 of edge fidelity in Mermaid and 0.130 in SVG, and leaves 24 of 253 labels outside their shapes against Sonnet's 1 of 257. Stating a graph degrades gently as the model shrinks; placing geometry degrades faster, which is the case for the renderer, per [bench/results/2026-09-24-authoring.md](bench/results/2026-09-24-authoring.md).
 
 ## Licence
 
