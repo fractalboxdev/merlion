@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import rehypeMerlion from "@fractalbox/merlion-rehype";
+import { toHtml } from "hast-util-to-html";
 import merlion from "../index.js";
 
 // Runs the integration's config hook against a recording stand-in for Astro.
@@ -236,8 +237,9 @@ const vfile = (path, cwd) => ({
   },
 });
 
-const rawSvg = (node) =>
-  node.type === "raw" ? node.value : (node.children ?? []).map(rawSvg).find((v) => v !== undefined);
+/** The figure's SVG, serialised. */
+const svgHtml = (node) =>
+  node.tagName === "svg" ? toHtml(node, { space: "svg" }) : (node.children ?? []).map(svgHtml).find((v) => v !== undefined);
 
 test("the registered plugin renders a sequence diagram through the real WASM", async () => {
   const { updates } = setup({ width: 480, fontCss: true });
@@ -251,7 +253,7 @@ test("the registered plugin renders a sequence diagram through the real WASM", a
   assert.equal(figure.tagName, "figure", JSON.stringify(file.messages.map(String)));
   assert.deepEqual(figure.properties, { id: "diagram-1", className: ["merlion-figure"] });
   assert.equal(figure.children[0].tagName, "merlion-view");
-  const svg = rawSvg(figure);
+  const svg = svgHtml(figure);
   assert.ok(svg.includes('class="merlion merlion-sequence"'), svg.slice(0, 300));
   assert.ok(svg.includes('data-merlion-id="Customer"'), "participants carry their ids");
   assert.ok(svg.includes('class="merlion-cluster merlion-fragment'), "the alt fragment is drawn");
@@ -288,7 +290,7 @@ test("the registered plugin renders a state diagram through the real WASM", asyn
   const [figure] = tree.children;
   assert.equal(figure.tagName, "figure", JSON.stringify(file.messages.map(String)));
   assert.equal(figure.children[0].tagName, "merlion-view");
-  const svg = rawSvg(figure);
+  const svg = svgHtml(figure);
   assert.ok(svg.includes('class="merlion merlion-state"'), svg.slice(0, 300));
   assert.ok(svg.includes('data-merlion-id="Draft"'), "states carry their ids");
   assert.ok(svg.includes('class="merlion-cluster merlion-composite'), "the composite state is a cluster");

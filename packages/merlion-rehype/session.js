@@ -6,6 +6,7 @@ import { isAbsolute, relative, resolve, sep } from "node:path";
 import { cacheKey, contentHash, idPrefix } from "./fnv.js";
 import { CacheRefused, openCache, readEntry, writeEntry } from "./cache.js";
 import { readStylesheet, StylesheetRefused } from "./stylesheet.js";
+import { svgToHast } from "./svg-hast.js";
 
 const DEFAULTS = { width: 720, strict: false, source: "details", viewer: true, fontCss: false };
 
@@ -252,9 +253,20 @@ export const createSession = (options) => {
           rendered++;
           o.outline?.({ path: relPath, index: n, source, outline });
 
-          // The SVG is the core's output only; caption and source are text nodes the serialiser escapes.
-          const raw = { type: "raw", value: svg };
-          const children = [o.viewer ? el("merlion-view", {}, [raw]) : raw];
+          // The SVG is the core's output only, parsed into elements so hosts that compile
+          // hast rather than serialise it (MDX) accept it; caption and source are text
+          // nodes the serialiser escapes.
+          let graphic = svgToHast(svg);
+          if (graphic === null) {
+            graphic = { type: "raw", value: svg };
+            messages.push({
+              reason: "merlion: the SVG did not match the core's output grammar and is inlined as raw HTML, which MDX cannot compile",
+              ruleId: "svg-hast",
+              place: position,
+              fatal: false,
+            });
+          }
+          const children = [o.viewer ? el("merlion-view", {}, [graphic]) : graphic];
           const title = diagramTitle(source);
           if (title) children.push(el("figcaption", {}, [text(title)]));
           if (o.source === "details") {

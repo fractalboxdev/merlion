@@ -114,6 +114,8 @@ export default defineConfig({
 
 The integration registers the plugin with the configured Markdown processor: Astro 7's default Sätteri processor and `unified()` both get it at the front of their plugin list, so it claims mermaid blocks before a code highlighter such as Starlight's Expressive Code; Astro 5 and 6 read `markdown.rehypePlugins`. It imports `merlion-themes.css` and `merlion-font.css` on every page, compiles `stylesheet` once per build and imports the result after the theme tokens, and loads `<merlion-view>` only on pages that contain a diagram. Diagnostics go to the Astro logger with the Markdown file's line and column.
 
+`.mdx` pages work the same way: `@astrojs/mdx` inherits the plugin from `markdown.rehypePlugins`. Passing `rehypePlugins` to `mdx()` replaces that inherited list, so a config that sets it lists `rehypeMerlion` itself: `mdx({ rehypePlugins: [[rehypeMerlion, { fontCss: true }], ...] })`.
+
 This site is built that way. `docs/astro.config.mjs` registers the integration after Starlight with `stylesheet: "src/styles/diagrams.css"`, which maps Merlion's roles onto Starlight's colours; every diagram on the site, [the specs](/reference/specs/) included, is a ```` ```mermaid ```` block rendered at build time.
 
 ## Next

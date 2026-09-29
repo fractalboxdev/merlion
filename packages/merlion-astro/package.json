@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@fractalbox/merlion-rehype": "workspace:*",
-    "@fractalbox/merlion-view": "workspace:*"
+    "@fractalbox/merlion-view": "workspace:*",
+    "hast-util-to-html": "9.0.5"
   }
 }
