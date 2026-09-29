@@ -64,7 +64,11 @@ export const svgToHast = (svg) => {
     if (end > i) {
       const value = decode(svg.slice(i, end));
       if (value === null) return null;
-      stack[stack.length - 1].children.push({ type: "text", value });
+      const parent = stack[stack.length - 1];
+      // HTML serialisers write <style> text verbatim, so a decoded `<` there could close
+      // the element. The core never emits one; if it did, the escaped raw string is safe.
+      if (parent.tagName === "style" && value.includes("<")) return null;
+      parent.children.push({ type: "text", value });
     }
     if (lt === -1) break;
     TAG.lastIndex = lt;

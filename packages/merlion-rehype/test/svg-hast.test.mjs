@@ -70,6 +70,8 @@ test("rejects input outside the core's output grammar", () => {
     "<svg>&nbsp;</svg>",
     "<svg>a & b</svg>",
     "<svg>&#0;</svg>",
+    // Serialisers write <style> text verbatim: a decoded `<` would end the element.
+    "<svg><style>a{}&lt;/style&gt;&lt;script&gt;x()&lt;/script&gt;</style></svg>",
     "<svg></svg><svg></svg>",
     "<g></g>",
     "text",
