@@ -25,8 +25,12 @@ test("replaces pre>code.language-mermaid with the figure structure", async () =>
   const [view, details] = figure.children;
   assert.equal(view.tagName, "merlion-view");
   assert.equal(view.children.length, 1);
-  assert.equal(view.children[0].type, "raw");
-  assert.match(view.children[0].value, /^<svg /);
+  // The SVG arrives as elements, not a `raw` string, so MDX can compile it.
+  const [svg] = view.children;
+  assert.equal(svg.type, "element");
+  assert.equal(svg.tagName, "svg");
+  assert.deepEqual(svg.properties, { xmlns: "http://www.w3.org/2000/svg", id: calls[0].options.idPrefix, viewBox: "0 0 10 10" });
+  assert.deepEqual(svg.children, [el("title", { id: `${calls[0].options.idPrefix}-title` }, [text("Flowchart diagram")])]);
   // No accTitle or title: no figcaption.
   assert.equal(details.tagName, "details");
   const [summary, pre] = details.children;
@@ -85,7 +89,14 @@ test("source: 'none' drops the <details>; viewer: false drops <merlion-view>", a
   const { tree } = await run(root(mermaidBlock(SRC)), { render, source: "none", viewer: false });
   const figure = tree.children[0];
   assert.equal(figure.children.length, 1);
-  assert.equal(figure.children[0].type, "raw");
+  assert.equal(figure.children[0].tagName, "svg");
+});
+
+test("an SVG outside the core's grammar stays raw and is reported", async () => {
+  const render = () => ({ svg: "<svg><!-- x --></svg>", outline: null, diagnostics: [] });
+  const { tree, file } = await run(root(mermaidBlock(SRC)), { render, viewer: false });
+  assert.equal(tree.children[0].children[0].type, "raw");
+  assert.deepEqual(file.messages.map((m) => m.ruleId), ["svg-hast"]);
 });
 
 test("a parse error keeps the code block and reports through file.message", async () => {

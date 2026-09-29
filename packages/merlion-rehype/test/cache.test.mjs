@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, readdirSync, readFileSync, writeFileSync, symlinkSync, mkdirSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { toHtml } from "hast-util-to-html";
 import { VFile } from "vfile";
 import rehypeMerlion from "../index.js";
 import { cacheKey } from "../fnv.js";
@@ -45,7 +46,7 @@ test("an unchanged source renders again with the stored SVG as the layout hint",
   const b = await build(SRC, second.render);
   assert.equal(second.calls.length, 1);
   assert.equal(second.calls[0].options.hint, before.svg);
-  assert.equal(b.tree.children[0].children[0].children[0].value, a.tree.children[0].children[0].children[0].value);
+  assert.equal(toHtml(b.tree.children[0].children[0]), toHtml(a.tree.children[0].children[0]));
 });
 
 test("a planted entry whose hash matches never reaches the page", async () => {
@@ -58,7 +59,7 @@ test("a planted entry whose hash matches never reaches the page", async () => {
   const { tree } = await build(SRC, second.render);
   assert.equal(second.calls.length, 1);
   assert.equal(second.calls[0].options.hint, planted);
-  const inlined = tree.children[0].children[0].children[0].value;
+  const inlined = toHtml(tree.children[0].children[0]);
   assert.doesNotMatch(inlined, /script|onerror|foreignObject/);
 });
 
