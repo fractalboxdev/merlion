@@ -7,7 +7,7 @@
     "node": ">=20.6"
   },
   "scripts": {
-    "test": "pnpm -r --if-present test && node scripts/check-docs-alignment.mjs",
+    "test": "pnpm -r --if-present test && node scripts/check-docs-alignment.mjs && node scripts/release-check.mjs > /dev/null",
     "docs": "pnpm --filter docs dev",
     "docs:build": "pnpm --filter docs build",
     "docs:deploy": "pnpm --filter docs run deploy",
