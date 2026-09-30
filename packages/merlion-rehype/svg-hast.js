@@ -1,4 +1,4 @@
-// The core's SVG as hast elements (specs/integrations.md#fractalboxmerlion-rehype).
+// The core's SVG as hast elements (specs/integrations.md#fractalboxdevmerlion-rehype).
 //
 // A `raw` node works for Markdown serialised straight to HTML, but MDX compiles hast
 // to JSX and rejects `raw`, so the figure carries elements instead. The input is only
