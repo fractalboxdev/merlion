@@ -33,3 +33,5 @@ tools/fontgen/input/*.ttf
 
 # Local agent worktrees
 .claude/
+.env
+.env.*

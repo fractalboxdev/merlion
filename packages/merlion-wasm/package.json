@@ -1,5 +1,5 @@
 {
-  "name": "@fractalbox/merlion-wasm",
+  "name": "@fractalboxdev/merlion-wasm",
   "version": "0.1.0",
   "description": "Merlion's Mermaid-to-SVG renderer as WebAssembly, with hand-written glue and no dependencies.",
   "license": "MIT",
@@ -7,6 +7,9 @@
     "type": "git",
     "url": "git+https://github.com/fractalboxdev/merlion.git",
     "directory": "packages/merlion-wasm"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "type": "module",
   "main": "./index.js",
