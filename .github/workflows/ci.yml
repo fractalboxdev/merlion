@@ -65,7 +65,7 @@ jobs:
           node-version: 22
       - run: rustup toolchain install
       - name: Shellcheck
-        run: shellcheck packages/*/scripts/*.sh
+        run: shellcheck scripts/*.sh packages/*/scripts/*.sh
       - name: Build merlion.wasm and record its SHA-256
         run: sh packages/merlion-wasm/scripts/build-wasm.sh
       # Corepack provides the pnpm version pinned in package.json#packageManager.

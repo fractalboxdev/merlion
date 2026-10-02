@@ -10,7 +10,7 @@ if ! command -v rustup >/dev/null 2>&1; then
   installer=$(mktemp)
   trap 'rm -f "$installer"' EXIT HUP INT TERM
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o "$installer"
-  sh "$installer" -y --profile minimal --default-toolchain none
+  sh "$installer" -y --no-modify-path --profile minimal --default-toolchain none
   # shellcheck disable=SC1091
   . "${CARGO_HOME:-$HOME/.cargo}/env"
 fi
