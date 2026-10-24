@@ -44,6 +44,7 @@ fn wrap_is_not_applied_beyond_max_aspect() {
         &c,
         &RenderOptions {
             max_aspect: 0.05,
+            direction: DirectionOption::FromSource,
             ..RenderOptions::default()
         },
     )
@@ -51,6 +52,153 @@ fn wrap_is_not_applied_beyond_max_aspect() {
     .unwrap();
     assert!(g.edges.iter().all(|e| !e.wrap));
     assert!(g.width > 720.0);
+}
+
+fn labelled_charts() -> Vec<merlion_render::model::Flowchart> {
+    [
+        include_str!("fixtures/flowcharts/assurance-pipeline.mmd"),
+        include_str!("fixtures/flowcharts/assurance-backtest.mmd"),
+    ]
+    .iter()
+    .map(|source| {
+        let mut diags = merlion_render::Diagnostics::new(false);
+        let options = merlion_render::parse::ParseOptions {
+            strict: true,
+            limits: Default::default(),
+        };
+        let merlion_render::model::Diagram::Flowchart(chart) =
+            merlion_render::parse::parse(source, &options, &mut diags).unwrap()
+        else {
+            panic!("flowchart fixture")
+        };
+        assert!(!diags.has_errors());
+        chart
+    })
+    .collect()
+}
+
+#[test]
+fn default_orientation_keeps_labelled_branches_continuous_and_inside_the_container() {
+    use merlion_render::layout::{hint, metrics};
+    for mut chart in labelled_charts() {
+        for source_dir in [Direction::LR, Direction::RL] {
+            chart.direction = source_dir;
+            let opts = RenderOptions::default();
+            let g = run_with(&chart, &opts).0.unwrap();
+            check(&chart, &g);
+            assert_eq!(g.direction, Direction::TB);
+            assert!(g.width <= opts.target_width, "{}", g.width);
+            assert!(g.edges.iter().all(|e| !e.wrap));
+            assert_eq!(metrics::label_overlaps(&g), 0);
+            for edge in &g.edges {
+                assert!(
+                    edge.points.windows(2).all(|p| p[1].y >= p[0].y),
+                    "forward relationships never double back"
+                );
+            }
+            let ids: Vec<&str> = chart.nodes.iter().map(|n| n.id.as_str()).collect();
+            let previous = hint::format(g.direction, &g.layers, &ids);
+            let again = run_with(
+                &chart,
+                &RenderOptions {
+                    hint: Some(previous),
+                    ..opts
+                },
+            )
+            .0
+            .unwrap();
+            assert_eq!(again.direction, g.direction);
+            assert_eq!(again.nodes, g.nodes);
+            assert_eq!(again.edges, g.edges);
+        }
+    }
+}
+
+#[test]
+fn explicit_source_direction_keeps_horizontal_flow_and_separates_converging_labels() {
+    use merlion_render::layout::metrics;
+    for mut chart in labelled_charts() {
+        for dir in [Direction::LR, Direction::RL] {
+            chart.direction = dir;
+            let opts = RenderOptions {
+                direction: DirectionOption::FromSource,
+                target_width: f64::INFINITY,
+                ..RenderOptions::default()
+            };
+            let g = run_with(&chart, &opts).0.unwrap();
+            check(&chart, &g);
+            assert_eq!(g.direction, dir);
+            assert!(g.edges.iter().all(|e| !e.wrap));
+            assert_eq!(metrics::label_overlaps(&g), 0);
+        }
+    }
+}
+
+#[test]
+fn cached_folded_layout_can_switch_to_a_continuous_orientation() {
+    use merlion_render::layout::hint;
+    for chart in labelled_charts() {
+        let previous = run_with(
+            &chart,
+            &RenderOptions {
+                direction: DirectionOption::FromSource,
+                ..RenderOptions::default()
+            },
+        )
+        .0
+        .unwrap();
+        assert!(
+            previous.edges.iter().any(|e| e.wrap),
+            "legacy folded layout"
+        );
+        let ids: Vec<&str> = chart.nodes.iter().map(|n| n.id.as_str()).collect();
+        let previous_hint = hint::format(previous.direction, &previous.layers, &ids);
+        let g = run_with(
+            &chart,
+            &RenderOptions {
+                hint: Some(previous_hint),
+                ..RenderOptions::default()
+            },
+        )
+        .0
+        .unwrap();
+        check(&chart, &g);
+        assert_eq!(g.direction, Direction::TB);
+        assert!(g.width <= 720.0);
+        assert!(g.edges.iter().all(|e| !e.wrap));
+    }
+}
+
+#[test]
+fn default_orientation_keeps_every_source_direction_that_already_fits() {
+    for dir in [Direction::TB, Direction::BT, Direction::LR, Direction::RL] {
+        let mut chart = chain(3);
+        chart.direction = dir;
+        let g = run_with(&chart, &RenderOptions::default()).0.unwrap();
+        check(&chart, &g);
+        assert_eq!(g.direction, dir);
+        assert!(g.edges.iter().all(|e| !e.wrap));
+    }
+}
+
+#[test]
+fn disconnected_components_try_an_unwrapped_orientation_before_folding_each_component() {
+    let mut b = B::new().dir(Direction::LR);
+    for component in 0..2 {
+        let mut prev = None;
+        for i in 0..8 {
+            let v = b.node(&format!("stage {} {}", component, i));
+            if let Some(u) = prev {
+                b.edge(u, v);
+            }
+            prev = Some(v);
+        }
+    }
+    let g = run_with(&b.c, &RenderOptions::default()).0.unwrap();
+    check(&b.c, &g);
+    assert_eq!(g.direction, Direction::TB);
+    assert!(g.width <= 720.0);
+    assert!(g.edges.iter().all(|e| !e.wrap));
 }
 
 fn wide_fan(k: usize) -> B {
@@ -95,6 +243,7 @@ fn a_tb_split_that_does_not_fit_is_not_kept() {
     let opts = |target_width: f64| RenderOptions {
         target_width,
         max_aspect: 0.3,
+        direction: DirectionOption::FromSource,
         ..RenderOptions::default()
     };
     let plain = run_with(&b.c, &opts(1e9)).0.unwrap();
@@ -118,6 +267,7 @@ fn an_lr_wrap_that_does_not_fit_is_not_kept() {
     let opts = |target_width: f64| RenderOptions {
         target_width,
         max_aspect: 0.3,
+        direction: DirectionOption::FromSource,
         ..RenderOptions::default()
     };
     let plain = run_with(&c, &opts(1e9)).0.unwrap();
@@ -170,6 +320,7 @@ fn nothing_fits_leaves_the_drawing_wider() {
         &b.c,
         &RenderOptions {
             max_aspect: 0.01,
+            direction: DirectionOption::FromSource,
             ..RenderOptions::default()
         },
     )
@@ -212,6 +363,7 @@ fn polyline_wraps_stay_inside_the_drawing() {
     c.direction = Direction::RL;
     let opts = RenderOptions {
         edge_style: merlion_render::options::EdgeStyle::Polyline,
+        direction: DirectionOption::FromSource,
         ..RenderOptions::default()
     };
     let g = run_with(&c, &opts).0.unwrap();
@@ -250,6 +402,7 @@ fn labels_on_wrap_detours_clear_nodes_and_each_other() {
     .unwrap();
     let opts = RenderOptions {
         target_width: plain.width - 40.0,
+        direction: DirectionOption::FromSource,
         ..RenderOptions::default()
     };
     let g = run_with(&b.c, &opts).0.unwrap();

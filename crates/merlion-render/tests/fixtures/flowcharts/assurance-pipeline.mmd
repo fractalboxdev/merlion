@@ -1,0 +1,14 @@
+flowchart LR
+  SPEC["specification"] -->|"modelled clauses"| MODEL
+  subgraph lean["Lean packages"]
+    MODEL["Lean models"]
+  end
+  subgraph rust["Rust engine"]
+    ENGINE["store engine"]
+  end
+  MODEL -->|"theorems and assumptions"| AUDIT["assumption audit"]
+  MODEL -->|"reference answers"| DIFF["differential harness"]
+  ENGINE -->|"engine answers"| DIFF
+  AUDIT -->|"audit verdict"| GATE["CI gate"]
+  DIFF -->|"agreement verdict"| GATE
+  EVAL["quality harness"] -->|"retrieval scores"| GATE

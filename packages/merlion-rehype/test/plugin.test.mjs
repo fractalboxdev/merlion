@@ -198,6 +198,7 @@ test("without `render`, a missing WASM package fails with an install hint", asyn
 });
 
 test("rejects invalid options", () => {
+  assert.throws(() => rehypeMerlion({ direction: "up" }), /direction/);
   assert.throws(() => rehypeMerlion({ source: "inline" }), /source/);
   assert.throws(() => rehypeMerlion({ width: -1 }), /width/);
 });

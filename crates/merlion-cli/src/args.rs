@@ -4,7 +4,7 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-use merlion_render::{EdgeStyle, FontMode};
+use merlion_render::{DirectionOption, EdgeStyle, FontMode};
 
 pub const USAGE: &str = "\
 Usage:
@@ -41,7 +41,7 @@ pub struct RenderArgs {
     pub input: Option<PathBuf>,
     pub output: Option<PathBuf>,
     pub width: Option<f64>,
-    pub direction_auto: bool,
+    pub direction: Option<DirectionOption>,
     pub edge_style: Option<EdgeStyle>,
     pub font: Option<FontMode>,
     pub hint: Option<PathBuf>,
@@ -224,8 +224,8 @@ fn parse_render(mut it: impl Iterator<Item = Tok>) -> Result<RenderArgs, String>
                 }
             }
             "--direction" => match str_value(&name, inline, &mut it)?.as_str() {
-                "auto" => r.direction_auto = true,
-                "source" => r.direction_auto = false,
+                "auto" => r.direction = Some(DirectionOption::Auto),
+                "source" => r.direction = Some(DirectionOption::FromSource),
                 v => return Err(format!("`--direction` is `auto` or `source`, got `{v}`")),
             },
             "--edge-style" => {
@@ -382,6 +382,14 @@ mod tests {
     fn render_defaults_to_stdin_and_stdout() {
         assert_eq!(render(&["render"]), RenderArgs::default());
         assert_eq!(render(&["render", "-"]).input, None);
+        assert_eq!(
+            render(&["render", "--direction", "source"]).direction,
+            Some(DirectionOption::FromSource)
+        );
+        assert_eq!(
+            render(&["render", "--direction", "auto", "--direction", "source"]).direction,
+            Some(DirectionOption::FromSource)
+        );
     }
 
     #[test]
@@ -414,7 +422,7 @@ mod tests {
         assert_eq!(r.input, Some(PathBuf::from("in.mmd")));
         assert_eq!(r.output, Some(PathBuf::from("out.svg")));
         assert_eq!(r.width, Some(640.0));
-        assert!(r.direction_auto);
+        assert_eq!(r.direction, Some(DirectionOption::Auto));
         assert_eq!(r.edge_style, Some(EdgeStyle::Spline));
         assert_eq!(r.font, Some(FontMode::Embed));
         assert_eq!(r.hint, Some(PathBuf::from("prev.svg")));

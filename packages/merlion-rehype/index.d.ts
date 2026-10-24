@@ -30,7 +30,7 @@ declare module "vfile" {
 
 /** The options the plugin passes to `render`: a subset of the WASM `RenderOptions`. */
 export type PluginRenderOptions = Required<Pick<RenderOptions, "width" | "strict" | "idPrefix">> &
-  Pick<RenderOptions, "hint">;
+  Pick<RenderOptions, "hint" | "direction">;
 
 /**
  * A renderer with the signature of @fractalboxdev/merlion-wasm's `render`. Only `svg`,
@@ -55,6 +55,8 @@ export interface OutlineInfo {
 export interface Options {
   /** Container width in px (the WASM `RenderOptions.width`). Default 720. */
   width?: number;
+  /** Default "auto" tries the other orientation before wrapping; "source" fixes the source direction. */
+  direction?: RenderOptions["direction"];
   /** Promote warnings to errors and fail the file on any diagram error. Default false. */
   strict?: boolean;
   /** Keep the Mermaid source in a collapsed `<details>`. Default "details". */

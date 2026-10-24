@@ -98,6 +98,24 @@ test("a valid diagram renders with the camelCase options", () => {
   assert.deepEqual(Object.keys(r).sort(), ["diagnostics", "error", "fuelUsed", "outline", "svg"]);
 });
 
+test("default orientation keeps assurance relationships continuous and source is an explicit override", () => {
+  initSync(bytes);
+  for (const name of ["assurance-pipeline", "assurance-backtest"]) {
+    const source = readFileSync(new URL(`../../../crates/merlion-render/tests/fixtures/flowcharts/${name}.mmd`, import.meta.url), "utf8");
+    const automatic = render(source, { idPrefix: "orientation" });
+    assert.equal(automatic.error, null);
+    assert.match(automatic.svg, /data-merlion-layout="v1;TB;/);
+    assert.ok(!automatic.svg.includes('data-merlion-wrap="true"'));
+    const [, width] = automatic.svg.match(/viewBox="0 0 ([\d.]+) /);
+    assert.ok(Number(width) <= 720, width);
+    assert.equal(render(source, { idPrefix: "orientation", hint: automatic.svg }).svg, automatic.svg);
+    const fixed = render(source, { direction: "source" });
+    assert.equal(fixed.error, null);
+    assert.match(fixed.svg, /data-merlion-layout="v1;LR;/);
+    assert.equal(render(source, { idPrefix: "orientation", hint: fixed.svg }).svg, automatic.svg);
+  }
+});
+
 test("snake_case option names are rejected with the camelCase name", () => {
   assert.throws(() => render(VALID, { target_width: 600 }), /`target_width`.*`width`/);
   assert.throws(() => render(VALID, { id_prefix: "x" }), /`id_prefix`.*`idPrefix`/);

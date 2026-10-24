@@ -54,8 +54,10 @@ flowchart LR
 ```
 
 - An edge spanning several layers gets a label dummy in the layered graph, so phase 4 reserves the label's room like a node's.
-- Between neighbouring layers there is no dummy, so the gap between the layers grows to hold the chip and the arrow markers at both ends. When several such chips, centred between their edges' ends, would overlap, they **stack**: the gap grows to hold every chip of the group plus the markers, and each chip takes an equal slot of the part of the gap the markers leave free, on its own edge.
+- Between neighbouring layers there is no dummy, so the gap between the layers grows to hold the chip and the arrow markers at both ends. When several such chips, centred between their edges' ends, would overlap, they **stack**: the gap grows to hold every chip of the group plus the markers, and each chip takes a slot sized for it and its clearance, on its own edge.
 - Every other label starts at the midpoint of the edge's longest segment and moves along the edge until it overlaps no node, no cluster title, no other label and neither end marker (the last 10 px of the path).
+
+After routing an unwrapped candidate, the layout checks adjacent-layer chips for collisions that the midpoint estimates miss, such as labels converging at a shared target. Colliding chips take separate slots, and only their gaps grow when more room is needed. This repair runs once per candidate within the first routing pass's fuel limit.
 
 ## Clusters
 

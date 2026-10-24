@@ -1,0 +1,11 @@
+flowchart LR
+  CASES["case set"] -->|"resolution minus cutoff"| SEEN{"Resolved before reader cutoff?"}
+  SEEN -->|"before: exposed"| EXPOSED["exposed slice"]
+  SEEN -->|"after: unseen"| UNSEEN["unseen slice"]
+  REF["declared reference"] -->|"discontinuity or control"| EST["leakage estimate"]
+  EXPOSED -->|"scores"| EST
+  UNSEEN -->|"scores"| EST
+  CASES -->|"label intervals"| FOLD{"Where does the label fall?"}
+  FOLD -->|"overlaps a test label"| PURGED["purged cases"]
+  FOLD -->|"inside embargo span"| EMBARGOED["embargoed cases"]
+  FOLD -->|"clear of both"| TRAIN["training fold"]

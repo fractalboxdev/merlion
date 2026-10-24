@@ -8,7 +8,7 @@ use merlion_render::geometry::Geometry;
 use merlion_render::layout::measure::inside;
 use merlion_render::layout::{layout_flowchart, LayoutError};
 use merlion_render::model::{Arrow, Edge, Flowchart, Node, Shape, Stroke, Style, Subgraph};
-use merlion_render::options::{Direction, RenderOptions};
+use merlion_render::options::{Direction, DirectionOption, RenderOptions};
 
 pub struct B {
     pub c: Flowchart,
@@ -192,7 +192,15 @@ pub fn run_with(
 }
 
 pub fn run(c: &Flowchart) -> Geometry {
-    run_with(c, &RenderOptions::default()).0.expect("layout")
+    run_with(
+        c,
+        &RenderOptions {
+            direction: DirectionOption::FromSource,
+            ..RenderOptions::default()
+        },
+    )
+    .0
+    .expect("layout")
 }
 
 pub fn codes(d: &Diagnostics) -> Vec<&'static str> {

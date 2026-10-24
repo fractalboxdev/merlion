@@ -13,6 +13,40 @@ use std::sync::atomic::{AtomicU32, Ordering};
 const VALID: &str = "flowchart LR\nA-->B\n";
 const INVALID: &str = "this is not a diagram\n";
 
+#[test]
+fn default_orientation_avoids_wraps_and_source_remains_an_explicit_override() {
+    let dir = tempdir("orientation");
+    let source =
+        include_str!("../../merlion-render/tests/fixtures/flowcharts/assurance-pipeline.mmd");
+    let automatic = merlion(&dir, &["render"], Some(source));
+    assert!(automatic.status.success(), "{}", stderr(&automatic));
+    let svg = stdout(&automatic);
+    assert!(svg.contains("data-merlion-layout=\"v1;TB;"));
+    assert!(!svg.contains("data-merlion-wrap=\"true\""));
+    assert_eq!(
+        svg,
+        merlion_render::render(source, &Default::default())
+            .svg
+            .unwrap()
+    );
+
+    let fixed = merlion(&dir, &["render", "--direction", "source"], Some(source));
+    assert!(fixed.status.success(), "{}", stderr(&fixed));
+    let opts = merlion_render::RenderOptions {
+        direction: merlion_render::DirectionOption::FromSource,
+        ..Default::default()
+    };
+    assert!(stdout(&fixed).contains("data-merlion-layout=\"v1;LR;"));
+    assert_eq!(
+        stdout(&fixed),
+        merlion_render::render(source, &opts).svg.unwrap()
+    );
+    fs::write(dir.join("legacy.svg"), stdout(&fixed)).unwrap();
+    let migrated = merlion(&dir, &["render", "--hint", "legacy.svg"], Some(source));
+    assert!(migrated.status.success(), "{}", stderr(&migrated));
+    assert_eq!(stdout(&migrated), svg);
+}
+
 fn core_renders() -> bool {
     let ok = merlion_render::render(VALID, &Default::default())
         .svg

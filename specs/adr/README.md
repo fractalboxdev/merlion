@@ -12,5 +12,6 @@
 | [0008](0008-deterministic-work-budget.md) | Layout work bounded by fuel, not by time | Proposed |
 | [0009](0009-stylesheet.md) | One compiled stylesheet for web and standalone diagrams | Proposed |
 | [0010](0010-hover-interaction.md) | Hover interaction in two layers: bounded CSS in the SVG, full behaviour in the viewer | Proposed |
+| [0011](0011-continuous-container-fit.md) | Automatic orientation preserves continuous flow before wrapping | Proposed |
 
 A superseding decision is a new ADR; the old one keeps its text and changes status to `Superseded by <link>`.
