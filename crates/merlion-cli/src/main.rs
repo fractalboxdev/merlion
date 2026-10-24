@@ -17,8 +17,7 @@ use markdown::Block;
 use merlion_render::diag::{printable, Fix};
 use merlion_render::stylesheet::{self, Palette, Stylesheet, StylesheetLimits};
 use merlion_render::{
-    error_diagnostic, json, Diagnostic, DirectionOption, RenderError, RenderOptions, RenderResult,
-    Severity, Span,
+    error_diagnostic, json, Diagnostic, RenderError, RenderOptions, RenderResult, Severity, Span,
 };
 
 /// A Markdown file may hold many diagrams, each under the core's 1 MiB limit.
@@ -291,8 +290,8 @@ fn options(r: &RenderArgs, palette: Option<Palette>) -> RenderOptions {
     if let Some(w) = r.width {
         o.target_width = w;
     }
-    if r.direction_auto {
-        o.direction = DirectionOption::Auto;
+    if let Some(direction) = r.direction {
+        o.direction = direction;
     }
     if let Some(e) = r.edge_style {
         o.edge_style = e;

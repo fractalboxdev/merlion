@@ -30,5 +30,5 @@ export const cacheKey = (relPath, n) => fnv1a64(pair(relPath, n));
  * Hash of everything that decides a block's SVG apart from the hint: the source
  * and the render options the plugin passes. A change in either re-renders.
  */
-export const contentHash = (source, { width, strict }) =>
-  fnv1a64(JSON.stringify([1, source, width, strict]));
+export const contentHash = (source, { width, strict, direction }) =>
+  fnv1a64(JSON.stringify(direction === undefined ? [1, source, width, strict] : [1, source, width, strict, direction]));

@@ -145,6 +145,20 @@ test("renders a state diagram through the real WASM, with its outline", async ()
   assert.ok(outlines[0].outline.includes("Draft → Review [submit]"), outlines[0].outline);
 });
 
+test("documentation diagrams use automatic orientation with an explicit source override", async () => {
+  for (const name of ["assurance-pipeline", "assurance-backtest"]) {
+    const source = readFileSync(new URL(`../../../crates/merlion-render/tests/fixtures/flowcharts/${name}.mmd`, import.meta.url), "utf8");
+    const doc = "```mermaid\n" + source + "```\n";
+    const automatic = String(await pipeline({}).process(doc));
+    assert.match(automatic, /data-merlion-layout="v1;TB;/);
+    assert.ok(!automatic.includes('data-merlion-wrap="true"'));
+    const [, width] = automatic.match(/viewBox="0 0 ([\d.]+) /);
+    assert.ok(Number(width) <= 720, width);
+    const fixed = String(await pipeline({ direction: "source" }).process(doc));
+    assert.match(fixed, /data-merlion-layout="v1;LR;/);
+  }
+});
+
 test("strict fails the process on a parse error", async () => {
   const { render } = fakeRender();
   await assert.rejects(pipeline({ render, strict: true }).process(md), /1 Mermaid diagram failed/);

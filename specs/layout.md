@@ -8,7 +8,7 @@ Graph-shaped diagrams (flowchart, state, class, ER) use one layered layout engin
 |---|---|---|
 | `target_width` | `720` (px) | Width of the container the SVG will fill at scale 1 |
 | `max_aspect` | `1.6` | Maximum height / width that container fit may produce |
-| `direction` | From source; `TB` when absent | `auto` lets the engine choose `TB` or `LR` to fit `target_width` |
+| `direction` | `auto` | Keep the source direction (`TB` when absent) when it fits; otherwise try the other orientation before wrapping. `source` fixes the direction |
 | `edge_style` | `orthogonal` | `orthogonal`, `polyline`, or `spline` (sleeve routing) |
 | `node_spacing` / `rank_spacing` | `24` / `48` (px) | Minimum gaps between nodes and between layers |
 | `hint` | none | The previous layout ([Stable layout](#stable-layout)) |
@@ -49,7 +49,7 @@ A diagram with more than one weakly connected component is laid out one componen
 
 After coordinates are assigned, if the drawing's width exceeds `target_width`, the engine applies these steps in order and stops at the first that fits:
 
-1. With `direction: auto`, lay out in the other direction and keep whichever fits; if both fit, keep the smaller area; if neither fits, continue the steps below with the narrower one.
+1. With `direction: auto` (the default), keep the source or surviving hint direction when the unwrapped drawing fits. Otherwise lay out in the other orientation before wrapping or splitting. If that drawing fits, keep it; if neither fits, continue the steps below with the narrower one. For disconnected diagrams, this comparison uses unwrapped components packed in each orientation; component wrapping and splitting are attempted only after both packed candidates exceed the width. The continuity and compatibility trade-offs are recorded in [ADR-0011](adr/0011-continuous-container-fit.md).
 2. **`LR` / `RL` — wrap the layer sequence.** Layers are columns, so width grows with the number of layers. Split the sequence at the point closest to the midpoint where the fewest edges cross the split, and place the second part below the first. Repeat on the widest part while the result is still too wide and height / width stays at or below `max_aspect`; a wrap that would exceed `max_aspect` is not applied, and the step succeeds only when a wrap reaches `target_width`. Edges that cross a wrap are routed around the outside and marked `data-merlion-wrap="true"`.
 3. **`TB` / `BT` — split wide layers.** Layers are rows, so width grows with the widest layer. Split each layer wider than `target_width` into two sub-rows at the position that separates the fewest edges, inserting a pseudo-layer so that edges stay downward. Repeat under the same `max_aspect` rule as step 2.
 4. Reduce the label wrap width in steps of 20 px, down to 120 px, and lay out again.
@@ -62,7 +62,9 @@ Aspect ratio is a soft constraint, following ARCOL (Alsuwaykit et al., 2026).
 - `orthogonal`: horizontal and vertical segments through dummy-node positions, with rounded corners (radius 6 px), and ports spread evenly along the node side.
 - `polyline`: straight segments through dummy-node positions.
 - `spline`: sleeve routing (Nachmanson and Chen, 2026). Triangulate the free space with a constrained Delaunay triangulation, find a sequence of triangles (a "sleeve") from source to target in the dual graph, then take the shortest path through it with the funnel algorithm and smooth it into cubic Béziers. Used for dense diagrams and for edges that cross cluster boundaries. Routing consumes fuel; when it runs out, the remaining edges fall back to `polyline`. Until sleeve routing lands ([roadmap.md](roadmap.md) M5), every `spline` edge is routed and drawn exactly as `polyline`; smoothing the routed polyline alone would overshoot its vertices, leave the viewBox and cross clusters.
-- Edge labels sit at the midpoint of the longest segment, on an opaque label chip (`--merlion-edge-label-bg`), moved along the edge until they overlap no node, no cluster title, no other label and neither of the edge's own end markers (the last 10 px of the path, 10 px wide). Placement and the space reserved for a label use the chip's outer size, padding included; a gap crossed by a labelled edge also reserves 10 px per end marker. Labels of edges between neighbouring layers whose chips, centred between the edge's ends, would overlap are stacked: the gap between the layers grows to hold every chip of the group plus the markers at both ends, and each chip takes an equal slot of the part of the gap the markers leave free, on its own edge.
+- Edge labels sit at the midpoint of the longest segment, on an opaque label chip (`--merlion-edge-label-bg`), moved along the edge until they overlap no node, no cluster title, no other label and neither of the edge's own end markers (the last 10 px of the path, 10 px wide). Placement and the space reserved for a label use the chip's outer size, padding included; a gap crossed by a labelled edge also reserves 10 px per end marker. Labels of edges between neighbouring layers whose chips, centred between the edge's ends, would overlap are stacked: the gap between the layers grows to hold every chip of the group plus the markers at both ends, and each chip takes a slot sized for it and its clearance, on its own edge.
+
+After unwrapped routing, adjacent-layer label chips that still collide form a group with separate slots. Only affected gaps gain the additional space those chips require. Each layout candidate permits one such repair, with a fuel limit equal to its first routing pass; without that fuel, the original candidate stands.
 
 ### 7. Clusters (subgraphs)
 

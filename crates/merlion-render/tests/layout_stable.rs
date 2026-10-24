@@ -17,6 +17,7 @@ fn hint_of(c: &Flowchart, g: &Geometry) -> String {
 fn with_hint(h: &str) -> RenderOptions {
     RenderOptions {
         hint: Some(h.into()),
+        direction: DirectionOption::FromSource,
         ..RenderOptions::default()
     }
 }

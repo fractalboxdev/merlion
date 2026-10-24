@@ -123,7 +123,10 @@ impl Build {
 // ------------------------------------------------------------------- utilities
 
 fn opts() -> RenderOptions {
-    RenderOptions::default()
+    RenderOptions {
+        direction: DirectionOption::FromSource,
+        ..RenderOptions::default()
+    }
 }
 
 fn lowered(sm: &StateMachine) -> Lowering {

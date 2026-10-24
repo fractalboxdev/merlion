@@ -3,7 +3,7 @@ title: Container fit
 description: How Merlion makes a drawing fit the container width — component packing, direction choice, wrapping, layer splitting, narrower labels, and when it stops.
 ---
 
-Layout takes the container width, `width` (720 px by default), as an input. After phases 1–7 produce a first drawing, container fit tries a fixed sequence of alternatives and keeps the first one that fits. When none fits, it keeps the plain drawing and leaves the rest to [`<merlion-view>`](/guides/viewer/). Code: `crates/merlion-render/src/layout/pipeline.rs` (`run_one`, `fit_steps`, `reduce_wrap`), `fit.rs` and `pack.rs`.
+Layout takes the container width, `width` (720 px by default), as an input. Direction defaults to `auto`: the source direction stays when it fits, and the other orientation is tried before folding rows. Use `direction: "source"` (CLI: `--direction source`) to fix the source direction. After phases 1–7 produce a first drawing, container fit tries a fixed sequence of alternatives and keeps the first one that fits. When none fits, it keeps the plain drawing and leaves the rest to [`<merlion-view>`](/guides/viewer/). Code: `crates/merlion-render/src/layout/pipeline.rs` (`run_one`, `fit_steps`, `reduce_wrap`), `fit.rs` and `pack.rs`.
 
 ## Disconnected components
 
@@ -22,7 +22,7 @@ flowchart LR
   class rows,column output
 ```
 
-Components are packed in declaration order (by each component's first node), aligned on their layer-0 side, `node_spacing` apart and `rank_spacing` between rows. An edit therefore moves only its own component and the components after it in the same row. With `direction: auto`, both directions are packed, and the second replaces the first when it fits or is narrower.
+Components are packed in declaration order (by each component's first node), aligned on their layer-0 side, `node_spacing` apart and `rank_spacing` between rows. An edit therefore moves only its own component and the components after it in the same row. With `direction: auto`, components first stay unwrapped: when the first packed drawing exceeds the width, the other orientation is packed before any component folds. If neither orientation fits, component fit steps run in the narrower orientation; their result is kept only when the whole drawing fits.
 
 ## The steps
 

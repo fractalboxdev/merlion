@@ -51,7 +51,7 @@ Every diagram on this site, the one above included, is a ```` ```mermaid ```` bl
 | Runtime | Renders without a DOM or a browser; server and browser output are byte-identical for the same source, options and layout hint |
 | Dependencies | 0 runtime crates and 0 runtime npm packages |
 | Stability | Given the previous render as a layout hint, nodes that keep their layer across an edit keep their order and move at most `stability` (default 2) positions; the hint is dropped when fewer than half the nodes survive |
-| Fit | Layout takes the container width as an input and fits it |
+| Fit | Layout takes the container width as an input; automatic orientation keeps the source direction when it fits and tries the other orientation before wrapping. `direction: "source"` fixes the direction |
 
 ## Benchmark
 

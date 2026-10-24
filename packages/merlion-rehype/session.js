@@ -37,6 +37,9 @@ export const relPathOf = (path, cwd, root) => {
 export const normalise = (options) => {
   const o = { ...DEFAULTS, ...options };
   if (!(Number.isFinite(o.width) && o.width > 0)) throw new TypeError("merlion-rehype: `width` must be a positive number");
+  if (o.direction !== undefined && o.direction !== "auto" && o.direction !== "source") {
+    throw new TypeError('merlion-rehype: `direction` must be "auto" or "source"');
+  }
   if (o.source !== "details" && o.source !== "none") {
     throw new TypeError('merlion-rehype: `source` must be "details" or "none"');
   }
@@ -209,13 +212,15 @@ export const createSession = (options) => {
             messages.push(cacheMessage);
             cacheMessage = null;
           }
-          const hash = contentHash(source, { width, strict: o.strict });
+          const layoutOptions = { width, strict: o.strict };
+          if (o.direction !== undefined) layoutOptions.direction = o.direction;
+          const hash = contentHash(source, layoutOptions);
           const key = cacheKey(relPath, n);
           const prev = c ? readEntry(c, key) : null;
 
           // Cache entries are untrusted (specs/security.md): the stored SVG is only ever a
           // layout hint, never inlined, so every block renders on every build.
-          const ropts = { width, strict: o.strict, idPrefix: idPrefix(relPath, n) };
+          const ropts = { ...layoutOptions, idPrefix: idPrefix(relPath, n) };
           if (prev) ropts.hint = prev.svg;
           let res;
           try {

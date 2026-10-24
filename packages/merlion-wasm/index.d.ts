@@ -9,7 +9,8 @@ export interface RenderOptions {
   /** Container width in px the layout fits (`target_width`); default 720. */
   width?: number;
   /**
-   * `"auto"` lets the engine choose TB or LR to fit `width`; default `"source"`.
+   * Default `"auto"` keeps the source direction when it fits and tries the other
+   * orientation before wrapping. `"source"` keeps the source direction fixed.
    * A sequence draws its participants in source order whatever this says.
    */
   direction?: "auto" | "source";

@@ -24,7 +24,8 @@ impl Direction {
     }
 }
 
-/// `Auto` lets the engine choose TB or LR to fit `target_width`.
+/// `Auto` starts in the source direction and tries the other orientation before
+/// wrapping when the drawing exceeds `target_width`. `FromSource` keeps it fixed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DirectionOption {
     FromSource,
@@ -118,7 +119,7 @@ impl Default for RenderOptions {
         RenderOptions {
             target_width: 720.0,
             max_aspect: 1.6,
-            direction: DirectionOption::FromSource,
+            direction: DirectionOption::Auto,
             edge_style: EdgeStyle::Orthogonal,
             node_spacing: 24.0,
             rank_spacing: 48.0,

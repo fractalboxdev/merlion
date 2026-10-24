@@ -623,11 +623,14 @@ fn order_layers(
 }
 
 /// Phase 4 output in the layout frame.
+#[derive(Clone)]
 struct Coords {
     x: Vec<f64>,
     y: Vec<f64>,
     thick: Vec<f64>,
     boxes: Vec<Option<Rect>>,
+    /// Groups whose rendered chips collide despite separate midpoint estimates.
+    label_groups: GapLabelGroups,
 }
 
 fn coordinates(
@@ -675,17 +678,24 @@ fn coordinates(
     }
     let (y, thick) = coords::layer_y(g, &base.cl, &p, o.rank_spacing, &min_gap);
     let boxes = coords::cluster_boxes(g, &base.cl, &p, &x, &y);
-    Ok(Coords { x, y, thick, boxes })
+    Ok(Coords {
+        x,
+        y,
+        thick,
+        boxes,
+        label_groups: Vec::new(),
+    })
 }
 
 /// Chains of one gap whose labels share it: `(chain, chip thickness)` each.
 type LabelGroup = Vec<(usize, f64)>;
+type GapLabelGroups = Vec<(usize, LabelGroup)>;
 
 /// Labels of edges between neighbouring layers whose chips could collide: per gap,
 /// groups of two or more chains whose chips, centred between the chain's ends on the
 /// order axis, would overlap, each with its chip's layer-axis thickness. Groups keep the
 /// chains in order of their range's start.
-fn gap_label_groups(g: &LGraph, m: &Meas, dir: Direction, x: &[f64]) -> Vec<(usize, LabelGroup)> {
+fn gap_label_groups(g: &LGraph, m: &Meas, dir: Direction, x: &[f64]) -> GapLabelGroups {
     // (gap, lo, hi, chain, thickness)
     let mut items: Vec<(usize, f64, f64, usize, f64)> = Vec::new();
     for (ci, ch) in g.chains.iter().enumerate() {
@@ -1213,10 +1223,19 @@ fn finish(
         wrap: frame.as_ref(),
     });
 
-    // Stacked labels: each group of side-by-side labelled edges between neighbouring
-    // layers splits the gap into equal slots, one chip per slot, on its edge.
+    // Stacked labels take slots sized for their own chips and clearance.
     let mut stacked: Vec<Option<(f64, f64)>> = vec![None; g.chains.len()];
-    for (gap, group) in gap_label_groups(g, m, dir, &co.x) {
+    let mut label_groups = gap_label_groups(g, m, dir, &co.x);
+    label_groups.retain(|(gap, group)| {
+        !co.label_groups.iter().any(|(fixed_gap, fixed)| {
+            gap == fixed_gap
+                && group
+                    .iter()
+                    .any(|(ci, _)| fixed.iter().any(|(f, _)| ci == f))
+        })
+    });
+    label_groups.extend(co.label_groups.iter().cloned());
+    for (gap, group) in label_groups {
         if part(gap) != part(gap + 1) {
             continue;
         }
@@ -1227,9 +1246,13 @@ fn finish(
             top.get(gap + 1).copied().unwrap_or(lo) + sh(gap).1 - down,
             lo,
         );
-        let k = group.len() as f64;
-        for (i, &(ci, _)) in group.iter().enumerate() {
-            let yi = lo + (hi - lo) * (i as f64 + 0.5) / k;
+        let need: f64 = group.iter().map(|&(_, t)| t + 2.0 * LABEL_CLEAR).sum();
+        let extra = max(0.0, hi - lo - need) / group.len() as f64;
+        let mut cursor = lo;
+        for &(ci, t) in &group {
+            let slot = t + 2.0 * LABEL_CLEAR + extra;
+            let yi = cursor + slot / 2.0;
+            cursor += slot;
             if let (Some(slot), Some(r)) = (stacked.get_mut(ci), routed.get(ci)) {
                 *slot = at_layer_y(&r.points, yi);
             }
@@ -1570,10 +1593,103 @@ fn plain(
     fuel: &mut Fuel,
 ) -> Result<Cand, OutOfFuel> {
     apply_extents(&mut lay, base, m, dir);
-    let co = coordinates(base, m, &lay, dir, fuel)?;
+    let mut co = coordinates(base, m, &lay, dir, fuel)?;
     let zeros = vec![0usize; lay.g.layers.len()];
-    let geom = finish(base, m, &lay, dir, &co, &zeros, fuel)?;
+    let before = fuel.used();
+    let mut geom = finish(base, m, &lay, dir, &co, &zeros, fuel)?;
+    let unit = fuel.used() - before;
+    if let Some((extra, groups)) = colliding_gap_space(base, m, &lay.g, &co, &geom, dir, fuel) {
+        if !groups.is_empty() && fuel.remaining() >= unit {
+            let mut next = co.clone();
+            next.label_groups = groups;
+            let mut shift = 0.0;
+            for (l, y) in next.y.iter_mut().enumerate() {
+                *y += shift;
+                shift += extra[l];
+            }
+            next.boxes = coords::cluster_boxes(
+                &lay.g,
+                &base.cl,
+                &pads(m, dir, base.cl.len()),
+                &next.x,
+                &next.y,
+            );
+            // The optional repair is bounded by the first routing pass's work.
+            let mut repair_fuel = Fuel::new(unit);
+            let repaired = finish(base, m, &lay, dir, &next, &zeros, &mut repair_fuel);
+            fuel.burn_optional(repair_fuel.used())?;
+            if let Ok(repaired) = repaired {
+                co = next;
+                geom = repaired;
+            }
+        }
+    }
     Ok(Cand { geom, lay, co, dir })
+}
+
+/// Adjacent-layer labels can converge at a shared target even when their midpoint
+/// estimates are separate. Only gaps with colliding rendered chips grow.
+fn colliding_gap_space(
+    base: &Base,
+    m: &Meas,
+    g: &LGraph,
+    co: &Coords,
+    geom: &Geometry,
+    dir: Direction,
+    fuel: &mut Fuel,
+) -> Option<(Vec<f64>, GapLabelGroups)> {
+    fuel.burn_optional((g.chains.len() + g.layers.len()) as u64)
+        .ok()?;
+    let mut groups = vec![Vec::new(); g.layers.len()];
+    for (ci, ch) in g.chains.iter().enumerate() {
+        if ch.nodes.len() == 2 && m.edge_label[ch.edge].is_some() {
+            groups[g.nodes[ch.nodes[0]].layer].push(ci);
+        }
+    }
+    let mut extra = vec![0.0; g.layers.len()];
+    let mut repaired_groups = Vec::new();
+    for (gap, group) in groups.iter().enumerate().filter(|(_, g)| g.len() > 1) {
+        let n = group.len() as u64;
+        fuel.burn_optional(n * (n - 1) / 2 + n).ok()?;
+        let bounds = |ci: usize| {
+            geom.edges[g.chains[ci].edge].label.as_ref().map(|l| {
+                let (w, h) = chip_size(&l.label);
+                centred(l.x, l.y, w, h, 0.0)
+            })
+        };
+        let mut colliding = vec![false; group.len()];
+        for (i, &a) in group.iter().enumerate() {
+            for (j, &b) in group.iter().enumerate().skip(i + 1) {
+                if matches!((bounds(a), bounds(b)), (Some(a), Some(b)) if boxes_overlap(a, b)) {
+                    colliding[i] = true;
+                    colliding[j] = true;
+                }
+            }
+        }
+        if !colliding.iter().any(|&c| c) {
+            continue;
+        }
+        let labels: LabelGroup = group
+            .iter()
+            .enumerate()
+            .filter(|&(i, _)| colliding[i])
+            .map(|(_, &ci)| {
+                let (w, h) = chip_size(m.edge_label[g.chains[ci].edge].as_ref().unwrap());
+                (ci, axes(dir, w, h).1)
+            })
+            .collect();
+        let (up, down) = group_marker_room(base.chart, g, &labels);
+        let need = labels
+            .iter()
+            .map(|&(_, t)| t + 2.0 * LABEL_CLEAR)
+            .sum::<f64>()
+            + up
+            + down;
+        let gap_size = co.y[gap + 1] - co.thick[gap + 1] / 2.0 - co.y[gap] - co.thick[gap] / 2.0;
+        extra[gap] = max(need - gap_size, 0.0);
+        repaired_groups.push((gap, labels));
+    }
+    Some((extra, repaired_groups))
 }
 
 /// Step 2 (`LR`/`RL`): wrap the layer sequence while the drawing is too wide and the
@@ -1905,21 +2021,27 @@ fn run_packed(
     diags: &mut Diagnostics,
 ) -> Result<Geometry, LayoutError> {
     let o = Opts::new(opts);
-    let sub_opts = RenderOptions {
-        direction: DirectionOption::FromSource,
-        ..opts.clone()
-    };
     let hint_dir = parsed.and_then(|h| h.as_ref().ok()).map(|h| h.direction);
     let first_dir = match hint_dir {
         Some(d) if o.auto => d,
         _ => chart.direction,
     };
     let lay_out = |dir: Direction,
+                   fit_components: bool,
                    fuel: &mut Fuel,
                    diags: &mut Diagnostics|
      -> Result<(Geometry, HintStats), LayoutError> {
         let mut stats = HintStats::default();
         let mut geoms = Vec::with_capacity(comps.len());
+        let sub_opts = RenderOptions {
+            direction: DirectionOption::FromSource,
+            target_width: if fit_components {
+                o.target_width
+            } else {
+                f64::INFINITY
+            },
+            ..opts.clone()
+        };
         for c in comps {
             let sub = pack::sub_chart(chart, c, dir);
             geoms.push(run_one(
@@ -1950,7 +2072,7 @@ fn run_packed(
         );
         Ok((g, stats))
     };
-    let (mut geom, mut stats) = lay_out(first_dir, fuel, diags)?;
+    let (mut geom, mut stats) = lay_out(first_dir, !o.auto, fuel, diags)?;
     if o.auto && !fits(&geom, &o) {
         let other = if first_dir.is_horizontal() {
             Direction::TB
@@ -1958,9 +2080,16 @@ fn run_packed(
             Direction::LR
         };
         let mut scratch = Diagnostics::new(false);
-        if let Ok((g, s)) = lay_out(other, fuel, &mut scratch) {
+        if let Ok((g, s)) = lay_out(other, false, fuel, &mut scratch) {
             if fits(&g, &o) || g.width < geom.width {
                 (geom, stats) = (g, s);
+            }
+        }
+        if !fits(&geom, &o) {
+            if let Ok((g, s)) = lay_out(geom.direction, true, fuel, &mut scratch) {
+                if fits(&g, &o) {
+                    (geom, stats) = (g, s);
+                }
             }
         }
     }
