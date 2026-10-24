@@ -65,7 +65,7 @@ jobs:
           node-version: 22
       - run: rustup toolchain install
       - name: Shellcheck
-        run: shellcheck packages/*/scripts/*.sh
+        run: shellcheck scripts/*.sh packages/*/scripts/*.sh
       - name: Build merlion.wasm and record its SHA-256
         run: sh packages/merlion-wasm/scripts/build-wasm.sh
       # Corepack provides the pnpm version pinned in package.json#packageManager.
@@ -147,18 +147,14 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
-      - run: rustup toolchain install
       - run: corepack enable
-      - name: Build merlion.wasm
-        run: sh packages/merlion-wasm/scripts/build-wasm.sh
-      - name: Install workspace (no install scripts)
-        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build the docs site (Workers Builds entry point)
+        working-directory: docs
+        run: sh ../scripts/cf-build.sh
       - name: README and docs alignment
         run: node scripts/check-docs-alignment.mjs
       - name: Typecheck the docs site
         run: pnpm --filter docs check
-      - name: Build the docs site
-        run: pnpm --filter docs build
       - name: Every diagram rendered
         # A mermaid block the integration could not render stays a code block.
         run: |

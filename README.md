@@ -117,12 +117,28 @@ pnpm test                                               # every JS package over 
 
 ```sh
 sh packages/merlion-wasm/scripts/build-wasm.sh
+pnpm install --frozen-lockfile --ignore-scripts
 pnpm --filter docs dev                                  # http://localhost:4321/
 pnpm --filter docs build                                # docs/dist/
 pnpm --filter docs run deploy                           # build, then wrangler deploy to Cloudflare Workers
 ```
 
-`docs/scripts/prepare.mjs` runs before every dev server and build: it copies `merlion.wasm` and its glue into `docs/public/` for the playground and generates the gallery pages from the test fixtures and the benchmark corpus. Deploying needs `CLOUDFLARE_API_TOKEN` (Account → Workers Scripts:Edit) and `CLOUDFLARE_ACCOUNT_ID`, or `wrangler login`.
+`docs/scripts/prepare.mjs` runs before every dev server and build: it copies `merlion.wasm` and its glue into `docs/public/` for the playground and generates the gallery pages from the test fixtures and the benchmark corpus. Deploying by hand needs `pnpm --filter docs exec wrangler login` or `CLOUDFLARE_API_TOKEN` (Account → Workers Scripts:Edit) with `CLOUDFLARE_ACCOUNT_ID`.
+
+For automatic deployment, connect this repository to the `merlion-docs` Worker in Settings → Builds using these [Workers Builds settings](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/):
+
+| Setting | Value |
+|---|---|
+| Production branch | `main` |
+| Root directory | `docs` (contains `wrangler.jsonc`) |
+| Build command | `sh ../scripts/cf-build.sh` |
+| Deploy command | `pnpm exec wrangler deploy` |
+| Preview command (enable non-production branch builds) | `pnpm exec wrangler versions upload` |
+| Build variable `NODE_VERSION` | `22` (matches GitHub CI; Astro requires ≥22.12) |
+| Build variable `PNPM_VERSION` | `10.14.0` (matches `packageManager`) |
+| Build variable `SKIP_DEPENDENCY_INSTALL` | `true` |
+
+The build script runs from the repository root, installs the Rust toolchain and WASM target pinned in `rust-toolchain.toml`, compiles `merlion.wasm`, installs the workspace with `--frozen-lockfile --ignore-scripts`, and builds `docs/dist`. [Skipping Cloudflare's automatic dependency install](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/#skip-dependency-install) keeps installation under the script's control. Workers Builds supplies deployment credentials through its build connection; GitHub CI builds and dry-runs the Worker without deployment credentials. Production builds deploy on pushes to `main`; other branches upload a version for review without changing production traffic.
 
 ## Benchmark and determinism
 
