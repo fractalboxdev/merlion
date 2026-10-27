@@ -77,7 +77,7 @@ fn attr(out: &mut String, name: &str, value: &str) {
     out.push(' ');
     out.push_str(name);
     out.push_str("=\"");
-    push_escaped(out, value);
+    escape::push_escaped_attribute(out, value);
     out.push('"');
 }
 
@@ -723,6 +723,14 @@ fn push_node(out: &mut String, cx: &Ctx, i: usize, diags: &mut Diagnostics) {
     out.push_str("<g");
     attr(out, "class", &node_classes(i, cx));
     attr(out, "data-merlion-id", &node.id);
+    if let Some(text) = node
+        .link
+        .as_ref()
+        .and_then(|l| l.tooltip.as_deref())
+        .filter(|s| !s.is_empty())
+    {
+        attr(out, "data-merlion-description", text);
+    }
     let rank = if g.rank > MAX_RANK { MAX_RANK } else { g.rank };
     let _ = write!(out, " data-merlion-rank=\"{}\">", rank);
     let paint = node_paint(cx.chart, node, cx.roles.node(i), &cx.light);

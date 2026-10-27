@@ -44,6 +44,40 @@ flowchart LR
 - With `prefers-reduced-motion`, zoom and reset jump instead of animating.
 - The element fills the height its container gives it and centres the SVG; the controls sit in its top-right corner.
 
+## Hidden block details
+
+A Mermaid `click` statement supplies an explanation and a source link without adding
+text to the node. Select **Proof audit** to read what the check establishes:
+
+```mermaid
+flowchart LR
+  accTitle: Proof checks
+  SPEC[Specification] -->|modelled clauses| AUDIT[Proof audit]
+  AUDIT -->|audit verdict| GATE[Quality gate]
+  class AUDIT accent
+  class GATE ok
+  click SPEC href "/guides/diagrams-from-models/" "The specification names the decisions the model represents. Each claim identifies its scope and assumptions."
+  click AUDIT href "/guides/labels/" "Purpose: Inspect the assumptions behind compiled proofs.<br>Constraint: A successful build alone does not establish that every proof is complete.<br>Example: A proof hole fails the audit even when compilation succeeds."
+  click GATE href "/guides/diagnostics/" "The gate combines the checks required for a claim. A failed check includes evidence and the condition that failed."
+```
+
+```text
+click AUDIT href "/docs/proof-audit/" "Purpose: Inspect compiled proofs.<br>Example: A proof hole fails the audit."
+```
+
+Keep the node's title short. Put its purpose, constraints and an example in the quoted
+tooltip; `<br>` separates lines. The viewer displays that text with **Read more** and
+**Close details**, in place of the connection list. Arrow keys preview blocks, Enter
+pins one, and Escape closes it. Ctrl/⌘-click follows the source link directly.
+
+The explanation is plain text, capped by the label limit (4,096 bytes by default).
+HTML stays inert. Standalone SVGs and `interactive="off"` keep the node's ordinary
+link; their node labels stay unchanged. Mermaid.js also accepts this `click` syntax.
+
+Other Markdown viewers may display the diagram without its interactions. Their
+Mermaid renderer determines whether links and tooltips are available; the rich
+explanation panel belongs to Merlion's viewer.
+
 ## Semantic zoom
 
 When the reader zooms out past the fit view and labels would draw below 9 px on screen, the viewer adds the class `merlion-zoomed-out` to itself and sets `data-merlion-rank-limit="{0..15}"`. Rules in `merlion-themes.css` then hide the labels of nodes whose `data-merlion-rank` exceeds the limit. For flowcharts the rank is dominator depth, so entry points and the nodes that control the flow keep their labels longest.

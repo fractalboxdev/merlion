@@ -127,7 +127,7 @@ mermaid documents two limitations — a `classDef` reaches neither a start or en
 
 ### Links
 
-`click <id> href "<url>"` and `click <id> "<url>" "<tooltip>"` wrap the state's group in `<a href="…">` under the URL rules of [svg-output.md](svg-output.md#links), with `W013` for a rejected URL. The tooltip string is dropped with `W024`: a tooltip is page JavaScript's, and the SVG carries none.
+`click <id> href "<url>"` and `click <id> "<url>" "<tooltip>"` wrap the state's group in `<a href="…">` under the URL rules of [svg-output.md](svg-output.md#links), with `W013` for a rejected URL. The optional tooltip supplies hidden block details under [interaction.md](interaction.md#authored-details).
 
 ### Accessibility, title and comments
 
@@ -141,7 +141,7 @@ Codes shared with flowcharts keep their meaning: `E002`, `E004`, `E010`, `E011`,
 
 | Code | Severity | Meaning |
 |---|---|---|
-| `W024` StateStatementIgnored | Warning | `hide empty description`, `scale … width`, a floating note (`note "…" as <id>`), a `click` tooltip or text after a state id dropped |
+| `W024` StateStatementIgnored | Warning | `hide empty description`, `scale … width`, a floating note (`note "…" as <id>`) or text after a state id dropped |
 | `W025` StateKindRejected | Warning | `<<…>>` or `[[…]]` naming something other than `choice`, `fork` or `join`; the state stays `Simple` |
 | `R014` StateNotClosed | Repair | `state <id> {` without `}`; closed at end of input |
 | `R015` UnmatchedStateEnd | Repair | `}` with no open composite state; dropped |

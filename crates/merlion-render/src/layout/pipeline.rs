@@ -37,7 +37,7 @@ pub const CLUSTER_PAD: f64 = 12.0;
 pub const TITLE_TOP: f64 = CLUSTER_PAD / 2.0;
 /// Clearance kept around an edge-label chip when it is placed and when space is
 /// reserved for it.
-pub const LABEL_CLEAR: f64 = 4.0;
+pub const LABEL_CLEAR: f64 = 8.0;
 /// Length of an edge-end marker along its path: markers are 10 × 10 with the tip on
 /// the path's end (svg/mod.rs). Label chips keep off it.
 pub const MARKER_LEN: f64 = 10.0;
@@ -661,7 +661,18 @@ fn coordinates(
         let gap = g.nodes.get(ch.nodes[0]).map_or(0, |v| v.layer);
         if let Some(mg) = min_gap.get_mut(gap) {
             let (up, down) = marker_room(base.chart, ch);
-            *mg = max(*mg, t + 2.0 * LABEL_CLEAR + up + down);
+            let a = base.cl.chain(g.nodes[ch.nodes[0]].cluster);
+            let b = base.cl.chain(g.nodes[ch.nodes[1]].cluster);
+            let boundary: f64 = a
+                .iter()
+                .filter(|c| !b.contains(c))
+                .map(|&c| p[c].layer_after)
+                .sum::<f64>()
+                + b.iter()
+                    .filter(|c| !a.contains(c))
+                    .map(|&c| p[c].layer_before)
+                    .sum::<f64>();
+            *mg = max(*mg, 2.0 * t + 2.0 * LABEL_CLEAR + up + down + boundary);
         }
     }
     for (gap, group) in gap_label_groups(g, m, dir, &x) {
@@ -1001,7 +1012,12 @@ fn place_label(
         x1 = max(x1, p.0);
         y1 = max(y1, p.1);
     }
-    let area = (x0 - w, y0 - h, x1 + w, y1 + h);
+    let area = (
+        x0 - w - LABEL_CLEAR,
+        y0 - h - LABEL_CLEAR,
+        x1 + w + LABEL_CLEAR,
+        y1 + h + LABEL_CLEAR,
+    );
     let near: Vec<BoxF> = nodes
         .iter()
         .copied()
@@ -1021,6 +1037,7 @@ fn place_label(
     let mut node_free: Option<(f64, f64)> = None;
     let mut label_free: Option<(f64, f64)> = None;
     let mut any_free: Option<(f64, f64)> = None;
+    let mut beside: Option<(f64, f64)> = None;
     let mut k = 0usize;
     loop {
         let off = step * k.div_ceil(2) as f64;
@@ -1033,13 +1050,38 @@ fn place_label(
             continue;
         }
         if fuel
-            .burn_optional((near.len() + near_avoid.len() + near_labels.len()) as u64 + 1)
+            .burn_optional(3 * (near.len() + near_avoid.len() + near_labels.len()) as u64 + 1)
             .is_err()
         {
             break;
         }
         let p = at(s);
         let b = centred(p.0, p.1, w, h, LABEL_CLEAR / 2.0);
+        // A shared source or target can leave two connectors side by side for their
+        // full length. Keep a nearby position beside the route when no position on
+        // it can show the other connector. Node and label clearance still applies.
+        if beside.is_none() {
+            let next = at(min(s + 0.5, total));
+            let prev = at(max(s - 0.5, 0.0));
+            let horizontal = abs(next.0 - prev.0) >= abs(next.1 - prev.1);
+            for sign in [-1.0, 1.0] {
+                let q = if horizontal {
+                    (p.0, p.1 + sign * (h / 2.0 + LABEL_CLEAR))
+                } else {
+                    (p.0 + sign * (w / 2.0 + LABEL_CLEAR), p.1)
+                };
+                let b = centred(q.0, q.1, w, h, LABEL_CLEAR / 2.0);
+                if near
+                    .iter()
+                    .chain(&near_avoid)
+                    .chain(&near_labels)
+                    .all(|&o| !boxes_overlap(o, b))
+                {
+                    beside = Some(q);
+                    break;
+                }
+            }
+        }
         if near.iter().any(|&n| boxes_overlap(n, b)) {
             continue;
         }
@@ -1053,7 +1095,13 @@ fn place_label(
         }
         any_free.get_or_insert(p);
     }
-    Some(label_free.or(node_free).or(any_free).unwrap_or(mid))
+    Some(
+        beside
+            .or(label_free)
+            .or(node_free)
+            .or(any_free)
+            .unwrap_or(mid),
+    )
 }
 
 /// Phases 5 (wrap translation), 6 and 7 for one set of coordinates: node, edge,
@@ -1417,7 +1465,50 @@ fn finish(
         .filter(|c| c.label.width > 0.0)
         .map(|c| centred(c.label_x, c.label_y, c.label.width, c.label.height, 0.0))
         .collect();
+    let borders: Vec<BoxF> = clusters
+        .iter()
+        .flat_map(|c| {
+            let (x, y, r, b) = (c.x, c.y, c.x + c.w, c.y + c.h);
+            [
+                (x - 0.5, y, x + 0.5, b),
+                (r - 0.5, y, r + 0.5, b),
+                (x, y - 0.5, r, y + 0.5),
+                (x, b - 0.5, r, b + 0.5),
+            ]
+        })
+        .collect();
     let obstacles: Vec<BoxF> = node_boxes.iter().copied().chain(titles.clone()).collect();
+    // A chip masks its own connector deliberately; other connectors stay visible.
+    let route_boxes: Vec<(usize, BoxF)> = edge_pts
+        .iter()
+        .enumerate()
+        .flat_map(|(i, pts)| {
+            pts.windows(2).map(move |s| {
+                (
+                    i,
+                    (
+                        min(s[0].0, s[1].0) - 0.5,
+                        min(s[0].1, s[1].1) - 0.5,
+                        max(s[0].0, s[1].0) + 0.5,
+                        max(s[0].1, s[1].1) + 0.5,
+                    ),
+                )
+            })
+        })
+        .collect();
+    let avoid_for = |e: usize, fuel: &mut Fuel| {
+        let mut boxes = chart.edges.get(e).map_or_else(Vec::new, |edge| {
+            marker_boxes(&edge_pts[e], edge.arrow_start, edge.arrow_end)
+        });
+        if fuel
+            .burn_optional((borders.len() + route_boxes.len()) as u64)
+            .is_ok()
+        {
+            boxes.extend(borders.iter().copied());
+            boxes.extend(route_boxes.iter().filter(|(i, _)| *i != e).map(|(_, b)| *b));
+        }
+        boxes
+    };
 
     // A chip at a fixed position — a label dummy's slot, or a self-loop's — is placed
     // before the cluster boxes exist and without consulting the chips beside it, so it
@@ -1436,14 +1527,16 @@ fn finish(
             .filter(|(i, _)| *i != pi)
             .map(|(_, &b)| b)
             .collect();
-        let clashes = titles.iter().any(|&t| boxes_overlap(chip, t))
+        let markers = avoid_for(e, fuel);
+        let clear_chip = centred(l.x, l.y, cw, ch, LABEL_CLEAR / 2.0);
+        let clashes = obstacles
+            .iter()
+            .chain(&markers)
+            .any(|&t| boxes_overlap(clear_chip, t))
             || others.iter().any(|&o| boxes_overlap(chip, o));
         if !clashes || edge_pts[e].len() < 2 {
             continue;
         }
-        let markers = chart.edges.get(e).map_or_else(Vec::new, |edge| {
-            marker_boxes(&edge_pts[e], edge.arrow_start, edge.arrow_end)
-        });
         if let Some(p) = place_label(&edge_pts[e], cw, ch, &obstacles, &markers, &others, fuel) {
             placed[pi] = centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0);
             labels[e] = Some(EdgeLabelGeom {
@@ -1462,9 +1555,7 @@ fn finish(
             continue;
         };
         let (cw, ch) = chip_size(l);
-        let markers = chart.edges.get(e).map_or_else(Vec::new, |edge| {
-            marker_boxes(&edge_pts[e], edge.arrow_start, edge.arrow_end)
-        });
+        let markers = avoid_for(e, fuel);
         if let Some(p) = place_label(&edge_pts[e], cw, ch, &obstacles, &markers, &placed, fuel) {
             placed.push(centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0));
             labels[e] = Some(EdgeLabelGeom {

@@ -132,6 +132,11 @@ jobs:
       - name: Install Chromium for Playwright
         working-directory: bench
         run: pnpm exec playwright install --with-deps chromium
+      - name: Viewer XML and keyboard regressions
+        # The viewer tests use native browser scrolling and XML DOM parsing.
+        # Chromium and the native renderer are built by the preceding steps.
+        working-directory: bench
+        run: pnpm test:viewer
       - name: Stylesheet parity, compat corpus and role fixtures
         working-directory: bench
         run: pnpm bench parity --require-rsvg

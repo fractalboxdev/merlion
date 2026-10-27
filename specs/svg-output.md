@@ -233,6 +233,10 @@ The root rule resets the text properties that inline SVG would otherwise inherit
 
 `click <node> href "<url>" [_self|_blank]` wraps the node's group in `<a href="…">`. The URL is accepted only if, after removing ASCII tab, newline and carriage return (as browsers do before parsing), it is relative or its scheme, compared case-insensitively, is `https`, `http` or `mailto`. `_blank` adds `target="_blank" rel="noopener noreferrer"`. Any other URL is dropped with `W013 LinkRejected`. `click <node> <callback>` and `click <node> call <fn>()` are ignored with `I031 ClickCallbackIgnored`; the output never calls page JavaScript.
 
+An optional quoted tooltip after the URL supplies escaped `data-merlion-description`
+on the node group, under [Authored details](interaction.md#authored-details).
+It is hidden metadata; it contributes no node size or visible text.
+
 ## Caller hooks
 
 Hooks for maths, extended label formatting and icons ([ADR-0002](adr/0002-zero-runtime-dependencies.md)) return geometry, not markup: a width, a height, and a list of paths, each an SVG path `d` string plus a theme token or a colour from the accepted colour grammar. The core parses each `d` into commands and numbers and re-serialises it, so hook output is held to the same guarantees as the rest of the SVG.

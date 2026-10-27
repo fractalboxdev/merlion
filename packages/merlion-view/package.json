@@ -39,6 +39,7 @@
     "interact.js",
     "interact.d.ts",
     "interact-model.js",
+    "interact-details.js",
     "interact-seq.js",
     "interact-state.js"
   ],

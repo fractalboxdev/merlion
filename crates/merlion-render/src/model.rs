@@ -354,6 +354,8 @@ pub struct ClassDef {
 pub struct Link {
     pub url: String,
     pub target_blank: bool,
+    /// Authored explanation, hidden in the drawing and shown by the viewer.
+    pub tooltip: Option<String>,
 }
 
 /// A colour from the accepted grammar (specs/svg-output.md#source-styles-classdef-style-linkstyle).

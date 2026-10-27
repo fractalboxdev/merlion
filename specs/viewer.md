@@ -33,6 +33,9 @@ A custom element that adds pan, zoom and fullscreen to any SVG, and click-driven
 
 Label text is ordinary selectable text. No rule in the viewer, `merlion-themes.css` or the SVG's embedded style sets `user-select: none`.
 
+The viewer sets `user-select: text` on labels and disables native link dragging, so a
+linked node's label remains selectable by dragging across its text.
+
 What a primary pointer-down is over decides what its drag does. **Text** is any `<text>` or `<foreignObject>`; a **shape** is a Merlion node or edge group (or mermaid's `.node`, `.edgePath`, `.edgeLabel`); anything else, cluster boxes included, is **background**.
 
 | Pointer-down on | Drawing fits the box | Drawing larger than the box |

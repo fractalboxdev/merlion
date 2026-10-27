@@ -866,9 +866,9 @@ fn stroke_kinds() {
 #[test]
 fn edge_label_sits_on_a_chip() {
     let svg = draw(&sample()).svg;
-    // "yes" = 21 px wide, 17 px tall, centred on (240, 80); chip pads 4 × 2.
+    // "yes" = 21 px wide, 17 px tall, centred on (240, 80); chip pads 6 × 4.
     assert!(svg.contains(
-        "<g class=\"merlion-edge-label\"><rect class=\"merlion-edge-label-bg\" x=\"225.5\" y=\"69.5\" width=\"29\" height=\"21\" rx=\"3\" fill=\"#ffffff\"/>\
+        "<g class=\"merlion-edge-label\"><rect class=\"merlion-edge-label-bg\" x=\"223.5\" y=\"67.5\" width=\"33\" height=\"25\" rx=\"3\" fill=\"#ffffff\"/>\
          <text class=\"merlion-edge-text\" fill=\"#1f2328\"><tspan x=\"229.5\" y=\"84.5\">yes</tspan></text></g>"
     ), "{}", svg);
 }
@@ -952,10 +952,12 @@ fn cyclic_cluster_parents_do_not_hang() {
 fn links_wrap_the_node_group() {
     let mut c = sample();
     c.nodes[1].link = Some(Link {
+        tooltip: None,
         url: "https://example.com/?a=1&b=2".into(),
         target_blank: true,
     });
     c.nodes[2].link = Some(Link {
+        tooltip: None,
         url: "/docs".into(),
         target_blank: false,
     });
@@ -968,9 +970,26 @@ fn links_wrap_the_node_group() {
 }
 
 #[test]
+fn authored_details_are_inert_svg_metadata() {
+    let mut c = sample();
+    let plain = draw(&c);
+    c.nodes[1].link = Some(Link {
+        url: "/docs/audit".into(),
+        target_blank: false,
+        tooltip: Some("Rejects holes. <img src=x onerror=alert(1)> & reports evidence.".into()),
+    });
+    let out = draw(&c);
+    assert_eq!(out.outline, plain.outline);
+    assert!(out.svg.contains("data-merlion-description=\"Rejects holes. &lt;img src=x onerror=alert(1)&gt; &amp; reports evidence.\""));
+    assert!(!out.svg.contains("<img"));
+    assert_well_formed(&out.svg);
+}
+
+#[test]
 fn unsafe_link_is_dropped_with_w013() {
     let mut c = sample();
     c.nodes[1].link = Some(Link {
+        tooltip: None,
         url: " java\tscript:alert(1)".into(),
         target_blank: false,
     });
