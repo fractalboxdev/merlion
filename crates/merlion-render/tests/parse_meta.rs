@@ -23,7 +23,7 @@ fn front_matter_sets_meta() {
 
 #[test]
 fn front_matter_theme_and_unknown_keys() {
-    let src = "---\nconfig:\n  theme: forest\n  look: handDrawn\n  layout: circo\n  flowchart:\n    curve: wiggly\n    htmlLabels: false\ndisplayMode: compact\n---\nflowchart LR\nA[a]";
+    let src = "---\nconfig:\n  theme: forest\n  look: handDrawn\n  layout: circo\n  flowchart:\n    curve: wiggly\n    htmlLabels: false\nunsupportedSetting: compact\n---\nflowchart LR\nA[a]";
     let (f, d) = parse_ok(src);
     assert_eq!(
         codes(&d),

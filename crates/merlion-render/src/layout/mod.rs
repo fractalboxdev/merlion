@@ -20,6 +20,7 @@
 mod acyclic;
 mod coords;
 mod fit;
+pub mod gantt;
 pub mod hint;
 mod layering;
 mod lgraph;
@@ -38,6 +39,7 @@ use crate::geometry::Geometry;
 use crate::model::Flowchart;
 use crate::options::RenderOptions;
 
+pub use gantt::layout_gantt;
 pub use pipeline::{CLUSTER_PAD, MARGIN};
 pub use sequence::layout_sequence;
 pub use state::{layout_state, StateLayout};

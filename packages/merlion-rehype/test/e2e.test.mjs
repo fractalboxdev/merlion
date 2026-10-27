@@ -19,6 +19,21 @@ const pipeline = (options) =>
     .use(rehypeMerlion, { fontCss: true, ...options })
     .use(rehypeStringify, { allowDangerousHtml: true });
 
+test("Gantt Markdown fences render through the real WASM with an accessible outline", async () => {
+  const source = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/gantt/delivery.mmd", import.meta.url), "utf8");
+  const outlines = [];
+  const file = await pipeline({ width: 480, strict: true, outline: (info) => outlines.push(info) }).process(
+    new VFile({ value: `# Delivery\n\n\`\`\`mermaid\n${source}\`\`\`\n`, path: "/site/docs/delivery.md", cwd: "/site" }),
+  );
+  const html = String(file);
+  assert.ok(html.includes("merlion-gantt"), String(file.messages));
+  assert.ok(html.includes('data-merlion-id="review"'));
+  assert.ok(html.includes("<figcaption>Delivery milestones</figcaption>"));
+  assert.deepEqual(file.messages.filter((m) => m.fatal), []);
+  assert.equal(outlines.length, 1);
+  assert.ok(outlines[0].outline.includes("2026-10-13"));
+});
+
 const md = [
   "# Title",
   "",

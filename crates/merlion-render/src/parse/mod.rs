@@ -20,6 +20,7 @@ pub mod cursor;
 pub mod directive;
 pub mod flowchart;
 pub mod frontmatter;
+pub mod gantt;
 pub mod label;
 pub mod link;
 pub mod repair;
@@ -129,6 +130,7 @@ pub fn parse(
     }
     let header = source.get(header_start..c.pos).unwrap_or("");
     let result = match header {
+        "gantt" => gantt::parse_gantt(&idx, c.pos, meta, opts, diags).map(Diagram::Gantt),
         "flowchart" | "graph" | "flowchart-elk" => {
             flowchart::parse_flowchart(&idx, c.pos, meta, opts, diags).map(Diagram::Flowchart)
         }
