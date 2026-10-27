@@ -18,7 +18,7 @@ Documentation: <https://merlion-docs.debuggingfuturecors.workers.dev/> (source i
 
 ## Status
 
-Pre-1.0 ([roadmap](specs/roadmap.md)). Flowcharts, sequence diagrams, state diagrams and [Gantt schedules](docs/src/content/docs/guides/gantt-diagrams.md); any other header returns `E003`. The npm packages are workspace packages, not yet published. Over the 390 flowcharts of the mermaid 12.0.0 corpus, Merlion renders 384, fits 98.2% of them in 720 px (mermaid-dagre 81.0%, mermaid-elk 82.3%) and moves surviving nodes less after a one-line edit than either (mean 0.054, p95 0.253), per [bench/results/2026-09-22-round2.md](bench/results/2026-09-22-round2.md) at commit `5392e69`.
+Pre-1.0 ([roadmap](specs/roadmap.md)). Flowcharts, sequence diagrams, state diagrams and [Gantt schedules](docs/src/content/docs/guides/gantt-diagrams.md); any other header returns `E003`. The npm packages publish to GitHub Packages and require [registry authentication](specs/supply-chain.md#releases). Over the 390 flowcharts of the mermaid 12.0.0 corpus, Merlion renders 384, fits 98.2% of them in 720 px (mermaid-dagre 81.0%, mermaid-elk 82.3%) and moves surviving nodes less after a one-line edit than either (mean 0.054, p95 0.253), per [bench/results/2026-09-22-round2.md](bench/results/2026-09-22-round2.md) at commit `5392e69`.
 
 | Package | Path |
 |---|---|

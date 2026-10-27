@@ -1641,14 +1641,10 @@ impl P<'_, '_> {
             return Ok(());
         };
         let mut target_blank = false;
+        let mut tooltip = None;
         while let Some((as_, ae, q)) = self.click_token() {
             if q {
-                self.warn(
-                    "W024",
-                    as_,
-                    ae,
-                    "a `click` tooltip is dropped; the SVG carries no page JavaScript",
-                );
+                tooltip = Some(self.finish_label(self.src.get(as_..ae).unwrap_or(""), as_, ae));
                 continue;
             }
             match self.src.get(as_..ae).unwrap_or("") {
@@ -1670,7 +1666,11 @@ impl P<'_, '_> {
         match link::check_url(raw) {
             Some(url) => self.ops.push(Op::Click {
                 id,
-                link: Link { url, target_blank },
+                link: Link {
+                    url,
+                    target_blank,
+                    tooltip,
+                },
             }),
             None => self.warn(
                 "W013",

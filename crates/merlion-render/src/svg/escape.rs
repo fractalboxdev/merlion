@@ -22,8 +22,19 @@ pub fn is_dropped(c: char) -> bool {
 
 /// Appends `s` to `out` with `&`, `<`, `>`, `"`, `'` as entities and dropped characters removed.
 pub fn push_escaped(out: &mut String, s: &str) {
+    push_escaped_with(out, s, false);
+}
+
+/// Attribute whitespace uses references so an XML parser preserves its value.
+pub fn push_escaped_attribute(out: &mut String, s: &str) {
+    push_escaped_with(out, s, true);
+}
+
+fn push_escaped_with(out: &mut String, s: &str, attribute: bool) {
     for c in s.chars() {
         match c {
+            '\n' if attribute => out.push_str("&#10;"),
+            '\t' if attribute => out.push_str("&#9;"),
             '&' => out.push_str("&amp;"),
             '<' => out.push_str("&lt;"),
             '>' => out.push_str("&gt;"),
@@ -48,6 +59,17 @@ mod tests {
     #[test]
     fn five_specials_become_entities() {
         assert_eq!(escape(r#"a&b<c>d"e'f"#), "a&amp;b&lt;c&gt;d&quot;e&#39;f");
+    }
+
+    #[test]
+    fn attribute_line_breaks_and_tabs_survive_xml_normalization() {
+        let mut attribute = String::new();
+        push_escaped_attribute(&mut attribute, "First line.\nSecond\tline & <text>");
+        assert_eq!(
+            attribute,
+            "First line.&#10;Second&#9;line &amp; &lt;text&gt;"
+        );
+        assert_eq!(escape("First\nSecond\tline"), "First\nSecond\tline");
     }
 
     #[test]

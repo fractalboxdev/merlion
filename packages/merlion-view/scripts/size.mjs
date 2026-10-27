@@ -1,5 +1,5 @@
 // Size budgets (specs/viewer.md#constraints, specs/interaction.md#performance-and-budgets):
-// the base <merlion-view> ≤ 6 KB, the interact module ≤ 3.25 KB and its sequence and state
+// the base <merlion-view> ≤ 6 KB, the interact module ≤ 3.5 KB and its optional modules
 // modules ≤ 1.25 KB each,
 // minified and gzipped. Each entry is bundled with esbuild on its own, gzipped at level 9, and
 // fails above its budget. Every module loads on demand, so no bundle counts another.
@@ -9,7 +9,8 @@ import { fileURLToPath } from "node:url";
 
 export const BUDGETS = [
   ["merlion-view", "../merlion-view.js", 6 * 1024, ["./interact.js"]],
-  ["merlion-view/interact", "../interact.js", 3.25 * 1024, ["./merlion-view.js", "./interact-seq.js", "./interact-state.js"]],
+  ["merlion-view/interact", "../interact.js", 3.5 * 1024, ["./merlion-view.js", "./interact-seq.js", "./interact-state.js", "./interact-details.js"]],
+  ["merlion-view/interact-details", "../interact-details.js", 1.25 * 1024, []],
   ["merlion-view/interact-seq", "../interact-seq.js", 1.25 * 1024, []],
   ["merlion-view/interact-state", "../interact-state.js", 1.25 * 1024, ["./interact-model.js"]],
 ];

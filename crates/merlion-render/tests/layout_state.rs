@@ -1019,6 +1019,7 @@ fn classes_styles_and_links_reach_the_lowered_node_and_cluster() {
     sm.states[composite].classes.push(String::from("hot"));
     sm.states[member].classes.push(String::from("cold"));
     sm.states[member].link = Some(merlion_render::model::Link {
+        tooltip: None,
         url: String::from("https://example.com/"),
         target_blank: false,
     });
