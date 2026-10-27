@@ -65,7 +65,10 @@ mod tests {
     fn attribute_line_breaks_and_tabs_survive_xml_normalization() {
         let mut attribute = String::new();
         push_escaped_attribute(&mut attribute, "First line.\nSecond\tline & <text>");
-        assert_eq!(attribute, "First line.&#10;Second&#9;line &amp; &lt;text&gt;");
+        assert_eq!(
+            attribute,
+            "First line.&#10;Second&#9;line &amp; &lt;text&gt;"
+        );
         assert_eq!(escape("First\nSecond\tline"), "First\nSecond\tline");
     }
 

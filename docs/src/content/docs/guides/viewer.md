@@ -67,8 +67,9 @@ click AUDIT href "/docs/proof-audit/" "Purpose: Inspect compiled proofs.<br>Exam
 
 Keep the node's title short. Put its purpose, constraints and an example in the quoted
 tooltip; `<br>` separates lines. The viewer displays that text with **Read more** and
-**Close details**, in place of the connection list. Arrow keys preview blocks, Enter
-pins one, and Escape closes it. Ctrl/⌘-click follows the source link directly.
+**Close details**, in place of the connection list. With the diagram focused, arrow
+keys preview blocks and Enter pins one. Inside the panel, arrow keys scroll the
+explanation. Escape closes it. Ctrl/⌘-click follows the source link directly.
 
 The explanation is plain text, capped by the label limit (4,096 bytes by default).
 HTML stays inert. Standalone SVGs and `interactive="off"` keep the node's ordinary

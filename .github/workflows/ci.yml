@@ -74,6 +74,8 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
       - name: JS tests against the built merlion.wasm
         run: pnpm test
+      - name: Viewer size budgets
+        run: pnpm size
       - name: Bench typecheck
         run: pnpm --filter merlion-bench typecheck
 

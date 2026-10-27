@@ -197,6 +197,7 @@ The rules live in the base element's light-DOM sheet (`MerlionView.style`), a co
 - An unmodified click on a node with authored details opens its explanation instead of navigating. Ctrl/Meta/Shift/Alt-click keeps the link's normal behavior. Nodes without authored details keep their existing gestures.
 - The detail panel shows the node title, explanation, a **Read more** link to the node's validated URL, and **Close details**. It omits the connection list. Explanations use `textContent`; HTML is inert. Read-more URLs allow relative links, HTTP, HTTPS and mailto only.
 - The explanation panel is an accessible region with selectable text, clickable controls and scrolling. The live region announces the title and explanation. Arrow-key traversal previews details, Enter pins them, and Escape, background click, a second node click or **Close details** dismisses them.
+- Panel-originated keys retain native scrolling and control behavior; Escape remains available to dismiss details. The base viewer never pans or zooms in response to panel keys. The panel height stays within the visible box in normal and fullscreen views, including side placement.
 - Standalone SVGs, JavaScript-disabled pages and `interactive="off"` retain ordinary node links. Callback execution remains unsupported.
 - The optional `interact-details.js` module loads only for diagrams with authored details. Details belong to their SVG, so repeated source node ids on a page do not share content.
 

@@ -92,7 +92,11 @@ for (const fullscreen of [false, true]) {
       await page.keyboard.press("Escape");
       await close.waitFor({ state: "detached" });
       if (fullscreen) assert.equal(await page.locator("dialog").evaluate((dialog) => dialog.open), true);
-      else assert.equal(await page.locator("merlion-view").evaluate((host) => document.activeElement === host), true);
+      else {
+        assert.equal(await page.locator("merlion-view").evaluate((host) => document.activeElement === host), true);
+        await page.keyboard.press("Shift+ArrowRight");
+        assert.notEqual(await page.locator("merlion-view svg").first().evaluate((svg) => svg.style.transform), before.transform, "diagram keyboard panning remains available after closing details");
+      }
     } finally { await page.close(); }
   });
 }

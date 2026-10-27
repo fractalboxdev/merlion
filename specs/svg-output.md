@@ -236,6 +236,8 @@ The root rule resets the text properties that inline SVG would otherwise inherit
 An optional quoted tooltip after the URL supplies escaped `data-merlion-description`
 on the node group, under [Authored details](interaction.md#authored-details).
 It is hidden metadata; it contributes no node size or visible text.
+Attribute line breaks and tabs use XML character references (`&#10;` and `&#9;`),
+so parsing an SVG as XML preserves the authored description whitespace.
 
 ## Caller hooks
 
