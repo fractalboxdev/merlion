@@ -14,6 +14,7 @@ let bytes;
 
 const VALID = "flowchart LR\nA-->B\n";
 const INVALID = "this is not a diagram\n";
+const GANTT = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/gantt/delivery.mmd", import.meta.url), "utf8");
 
 before(() => {
   if (!process.env.MERLION_SKIP_WASM_BUILD) {
@@ -96,6 +97,18 @@ test("a valid diagram renders with the camelCase options", () => {
   assert.equal(r.error, null);
   assert.equal(typeof r.outline, "string");
   assert.deepEqual(Object.keys(r).sort(), ["diagnostics", "error", "fuelUsed", "outline", "svg"]);
+});
+
+test("Gantt render and check use the real WebAssembly core", () => {
+  initSync(bytes);
+  const result = render(GANTT, { width: 640, strict: true, font: "embed", idPrefix: "schedule" });
+  assert.equal(result.error, null, JSON.stringify(result.diagnostics));
+  assert.ok(result.svg.includes("merlion-gantt"));
+  assert.ok(result.svg.includes('data-merlion-id="release"'));
+  assert.ok(result.svg.includes("@font-face"));
+  assert.ok(result.outline.includes("2026-10-13"));
+  assert.equal(check(GANTT, { strict: true }).some((d) => d.severity === "error"), false);
+  assert.equal(render(GANTT, { width: 640, strict: true, font: "embed", idPrefix: "schedule" }).svg, result.svg);
 });
 
 test("default orientation keeps assurance relationships continuous and source is an explicit override", () => {

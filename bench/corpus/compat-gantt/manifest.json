@@ -1,0 +1,457 @@
+{
+  "corpus": "compat-gantt",
+  "repo": "https://github.com/mermaid-js/mermaid",
+  "tag": "mermaid@12.0.0",
+  "commit": "98a0945418c76238f15df2afaddbba4272656c3b",
+  "licence": "MIT (c) 2014 - 2022 Knut Sveidqvist; see bench/NOTICES.md",
+  "diagrams": [
+    {
+      "name": "demos-gantt-01",
+      "source": "demos/gantt.html",
+      "block": 1,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "e87b4f1070d14933c3bb595d5fa5f0915cba73ab1d7a5829a4b9dcb592022f3e"
+    },
+    {
+      "name": "demos-gantt-02",
+      "source": "demos/gantt.html",
+      "block": 2,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "abc9f221cb1d4db2ef8ffb170630839eca25326ca87aae54cf65ef15b7d723bf"
+    },
+    {
+      "name": "demos-gantt-03",
+      "source": "demos/gantt.html",
+      "block": 3,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "ae3255b37c6b965b3c27e10228ebca37013523250afa05e4fb20fc9b09d1e521"
+    },
+    {
+      "name": "demos-gantt-04",
+      "source": "demos/gantt.html",
+      "block": 4,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "eddb6eee2346873a7b0ebd1622763721bbac889a5079632031a1897c62cdb7cd"
+    },
+    {
+      "name": "demos-gantt-05",
+      "source": "demos/gantt.html",
+      "block": 5,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "ebe33cc94fb723dff657efac589287d7a59b1de3f4e502a062a5a431c6702eaf"
+    },
+    {
+      "name": "demos-gantt-06",
+      "source": "demos/gantt.html",
+      "block": 6,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "63fa8fe2b2ba315a4f1e4039d3ac18a3f0ba45a828c03df937258d94588e999c"
+    },
+    {
+      "name": "demos-gantt-07",
+      "source": "demos/gantt.html",
+      "block": 7,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "35accf2530c7ca0bf2e7e70176ac88a21ad92123a272969899924db254676b1e"
+    },
+    {
+      "name": "demos-gantt-08",
+      "source": "demos/gantt.html",
+      "block": 8,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "75d9741489c3f37712117e1478da1dafdb8c7a42416d64659e9e70a95e64fed3"
+    },
+    {
+      "name": "demos-gantt-09",
+      "source": "demos/gantt.html",
+      "block": 9,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "aa252ee10868a542b1cb3ff12a5770750e692c75a6074a25bc6c93b0892f6d13"
+    },
+    {
+      "name": "demos-gantt-10",
+      "source": "demos/gantt.html",
+      "block": 10,
+      "sourceBlob": "53ec2b6813f603d6eee4a668717114db95a60f6c",
+      "sha256": "95e2c965e4216a7dbebe526ba5a0b0b71dfb770439743be22db78bae50cb5abf"
+    },
+    {
+      "name": "docs-gantt-01",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 1,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "f955dfcd90a5f5108a3d8c895adf067c131574df1e1c8554c2bd3b7a61020d01"
+    },
+    {
+      "name": "docs-gantt-02",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 2,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "3a8334f724c0c007cb9537b95679e32f571c5d3c8c7b9565bc58ba99431a8d0d"
+    },
+    {
+      "name": "docs-gantt-03",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 3,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "30e74a57532f12799d1de707782d860f57e7a649e221d9fb55785a9948ea35d4"
+    },
+    {
+      "name": "docs-gantt-04",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 4,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "77be1562be196911255ed876636ef37d10b63678731e2e9b2b053db5ae17c07e"
+    },
+    {
+      "name": "docs-gantt-05",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 5,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "a44867e7717caef9e84830d85cd88b4bc02da5e6cd9f0de899271db756d6bbfd"
+    },
+    {
+      "name": "docs-gantt-06",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 6,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "2084c0bd4aa8a092595f0c471478666fa6d24acdf36ecf2d5e789fb73e7619d3"
+    },
+    {
+      "name": "docs-gantt-07",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 7,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "5431874d439b1a8fd65fb2babcede379246d0b88dc829540d1fc27bb9be21226"
+    },
+    {
+      "name": "docs-gantt-08",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 8,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "05e0f333d03436a166cf515428aa23df56ea35b1c9300bfb52b0cc15d29eaa07"
+    },
+    {
+      "name": "docs-gantt-09",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 9,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "1253d08efac1b0f48235f45358cdff58d9e476940b4397be4397412713359f91"
+    },
+    {
+      "name": "docs-gantt-10",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 10,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "5f6b015e8a7e452ade6dc8452b1d18fe85343ad558c3cf88d595120f20dbf2d0"
+    },
+    {
+      "name": "docs-gantt-11",
+      "source": "packages/mermaid/src/docs/syntax/gantt.md",
+      "block": 11,
+      "sourceBlob": "b1f935480172c0cd277bc3bb7f66909f712d2151",
+      "sha256": "9c882697ab50c71dc54828eb840aee71f81e3ea5a9f8d54c14baaaa104710770"
+    },
+    {
+      "name": "e2e-handle-multiline-section-titles-with-different-line-breaks",
+      "source": "e2e/diagrams/gantt/handle-multiline-section-titles-with-different-line-breaks.mmd",
+      "block": 1,
+      "sourceBlob": "9ec6be27a223c7922e4fbae03d53d2852111355d",
+      "sha256": "4cecefd6c8ba28812c5f23dc2ee330302067e3d269a9be25b9e86b7018306a6f"
+    },
+    {
+      "name": "e2e-multiple-dependencies-syntax",
+      "source": "e2e/diagrams/gantt/multiple-dependencies-syntax.mmd",
+      "block": 1,
+      "sourceBlob": "a1df3590f8f94472f37d0437ad42c327f00bfede",
+      "sha256": "f83c2d725af5aaf918f6985780b6cfb8da529b410e3355bcc46efb64ef3018bd"
+    },
+    {
+      "name": "e2e-should-default-to-showing-today-marker",
+      "source": "e2e/diagrams/gantt/should-default-to-showing-today-marker.mmd",
+      "block": 1,
+      "sourceBlob": "5a76336c1734c41f27cd9d254188ece1fe0b15e9",
+      "sha256": "77ecfde0200bab0af2eea5daa61a98e88e8b074ed6cf0e80b5acba03bc470566"
+    },
+    {
+      "name": "e2e-should-fail-rendering-a-gantt-chart-for-issue-1060-with-invalid-date",
+      "source": "e2e/diagrams/gantt/should-fail-rendering-a-gantt-chart-for-issue-1060-with-invalid-date.mmd",
+      "block": 1,
+      "sourceBlob": "6503a680a0924b609eac35ee9d31373eee62c64d",
+      "sha256": "2b676d7d5232c89c6c2ba59bd78c3911eb5100870a22a149f4f597212d8f6243"
+    },
+    {
+      "name": "e2e-should-handle-dates-with-year-typo-like-202-instead-of-2024-issue-5496",
+      "source": "e2e/diagrams/gantt/should-handle-dates-with-year-typo-like-202-instead-of-2024-issue-5496.mmd",
+      "block": 1,
+      "sourceBlob": "48c31dec710a14d588399a6e5641eb6d52315c87",
+      "sha256": "bc0b0047b2299a23da8d83d28551ba3e8b3a411a3b6707534bfa4fc7b2487a2f"
+    },
+    {
+      "name": "e2e-should-handle-milliseconds",
+      "source": "e2e/diagrams/gantt/should-handle-milliseconds.mmd",
+      "block": 1,
+      "sourceBlob": "72ba6dc9db31d225792062557e31a07b5158392c",
+      "sha256": "6e1cfe9296ee126666ead58d34aa5b9adf4396e071d9a5365c40255198ed656e"
+    },
+    {
+      "name": "e2e-should-handle-multiple-dependencies-syntax-with-after-and-until",
+      "source": "e2e/diagrams/gantt/should-handle-multiple-dependencies-syntax-with-after-and-until.mmd",
+      "block": 1,
+      "sourceBlob": "168a7ec48dcabdc011410c66dde460cf6ac6491d",
+      "sha256": "3740fd414348b29a0220f57b396d7665cc4e52cf52eb1fb0cef3630f17a0200c"
+    },
+    {
+      "name": "e2e-should-handle-numeric-timestamps-with-dateformat-x",
+      "source": "e2e/diagrams/gantt/should-handle-numeric-timestamps-with-dateformat-x.mmd",
+      "block": 1,
+      "sourceBlob": "0251eabcbcdc83accce7a5407f7493f92c1330e6",
+      "sha256": "7b85f98d55821f0bfc130d0142e2f905583ca9d9d9869413ffc3833a3cd6966f"
+    },
+    {
+      "name": "e2e-should-handle-numeric-timestamps-with-dateformat-x-2",
+      "source": "e2e/diagrams/gantt/should-handle-numeric-timestamps-with-dateformat-x-2.mmd",
+      "block": 1,
+      "sourceBlob": "9019ea9b66583ca69a53dbb4bf08ac60158fd7fd",
+      "sha256": "181daa37f971e447cab41e4ed14025f4992451420f641baf0eeb6a566617a6c8"
+    },
+    {
+      "name": "e2e-should-handle-seconds-only-format-with-tickinterval-issue-5496",
+      "source": "e2e/diagrams/gantt/should-handle-seconds-only-format-with-tickinterval-issue-5496.mmd",
+      "block": 1,
+      "sourceBlob": "883f1cb5c56153c2042aba48fd2d760c73d67034",
+      "sha256": "d802632c05ccaf9f7d263a18d2600e48c4b4f8d1c3a4651c12f259da82e87598"
+    },
+    {
+      "name": "e2e-should-hide-today-marker",
+      "source": "e2e/diagrams/gantt/should-hide-today-marker.mmd",
+      "block": 1,
+      "sourceBlob": "de9dc0d759f9eb609475927e0940cd8f516f0755",
+      "sha256": "a7ef89680e81b82df640532c244615aee207f8fb92b0624019b41a4b9efd047f"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-chart",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-chart.mmd",
+      "block": 1,
+      "sourceBlob": "f0ae361d6ab52dee701541732203337232867b59",
+      "sha256": "9e4e9ebff0a078d6e58320a86678c781c11e30d89a5cdb40d1b9097d965a0bf1"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-excluding-a-specific-date-in-yyyy-mm-dd-hh-mm-ss-format",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-excluding-a-specific-date-in-yyyy-mm-dd-hh-mm-ss-format.mmd",
+      "block": 1,
+      "sourceBlob": "45527010b40e4ed2e66cfc4ff37300e96b47b3a7",
+      "sha256": "2fa2a1fbef5766972f9154d1895320dabe43963ea775fda4f3ade362ead54278"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-excluding-friday-and-saturday",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-excluding-friday-and-saturday.mmd",
+      "block": 1,
+      "sourceBlob": "896e9467c2a8773723ece58f7fd444ce955ae3cf",
+      "sha256": "8cb2ccae7b9e24fd79959a87aa92642efb133cf36360f40f6b4e38f2f45b392f"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-excluding-friday-and-saturday-in-yyyy-mm-dd-hh-mm-ss-format",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-excluding-friday-and-saturday-in-yyyy-mm-dd-hh-mm-ss-format.mmd",
+      "block": 1,
+      "sourceBlob": "760be0506bb1ed3975406c2149ad29b30912a4d8",
+      "sha256": "1bc24f1b81dc3d00497ada7d6cef4f79ac51f9e50acfd1a07c32d20511fcd361"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-excluding-saturday-and-sunday",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-excluding-saturday-and-sunday.mmd",
+      "block": 1,
+      "sourceBlob": "6e6e9547bbf110e4eb48787e40f194e07e549644",
+      "sha256": "6c3733a3162ada9f3e68ae46f16063655d42f72cfcb1c97f4b02a902e841fcfd"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-excluding-saturday-and-sunday-in-yyyy-mm-dd-hh-mm-ss-format",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-excluding-saturday-and-sunday-in-yyyy-mm-dd-hh-mm-ss-format.mmd",
+      "block": 1,
+      "sourceBlob": "41e517575fed622e433cee7ed17d1ffdf0a12c57",
+      "sha256": "c68e88fa99d47512aa03e58f6e50e74174326f3f064b8fd0390f925e47d3fdff"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-a-vert-tag",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-a-vert-tag.mmd",
+      "block": 1,
+      "sourceBlob": "3100f5183e035fdaeb3a63b39eab7e7e683df042",
+      "sha256": "0159f13e564d4d89b5b715c19468aba2cd65e082896adadbe703cb2c828afa05"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-data-labels-at-the-top-when-topaxis-is-true",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-data-labels-at-the-top-when-topaxis-is-true.mmd",
+      "block": 1,
+      "sourceBlob": "8fc2d00e85c5caad995ae71d4ee05b34b6803234",
+      "sha256": "917128c5fe593dca5fd5ce53f8319bc901dc246b23d8ef4c326dbc2d71783cc3"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-1-day",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-1-day.mmd",
+      "block": 1,
+      "sourceBlob": "dca29774e374ca08d7b124a4711f00f793b9030e",
+      "sha256": "2547de30dade9bcce2df54b6ba86efc46c20d5be716262818483a88b92cc3d96"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-1-day-and-topaxis-is-true",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-1-day-and-topaxis-is-true.mmd",
+      "block": 1,
+      "sourceBlob": "a55606c29c13a15801183d9fa9921500c03ed427",
+      "sha256": "21d65c090772d8a503da4ed063bf2b6edb240b4efef0426b9db16df06c30822e"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-1-month",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-1-month.mmd",
+      "block": 1,
+      "sourceBlob": "6ad59e3c18d87c7de06776dcc4183425ff1f4737",
+      "sha256": "2bb4b87aa5dabaef2937db8151610ada55da4d6200302adaa5175c31d5aa4ac7"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-1-week",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-1-week.mmd",
+      "block": 1,
+      "sourceBlob": "1e23a09164f727bc933918981dfa0d081c75a90d",
+      "sha256": "2dc4ec3cf5a8d383944b50fb51f70bd1844aa6f7aa3e2b7ddd97e65358e3c4ce"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-1-week-with-the-day-starting-on-monday",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-1-week-with-the-day-starting-on-monday.mmd",
+      "block": 1,
+      "sourceBlob": "5dd45ec226f42f54e3b2a7d90c44e59e09981fa2",
+      "sha256": "1cb5da919bb45ad971f096f292f779d3408a8895661aa835220e435b8a3f76f8"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-15-minutes",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-15-minutes.mmd",
+      "block": 1,
+      "sourceBlob": "08aa73368fe1fdd5c4faa54ece10201d9a82d02a",
+      "sha256": "a09434ac514154a61f1886cfc66c2364e02903b29a1bee39f74097e8cadc70a5"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-2-milliseconds",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-2-milliseconds.mmd",
+      "block": 1,
+      "sourceBlob": "40ebbc4378834c7f4f2fed240da3c5bd6bb2b8fd",
+      "sha256": "2dd61affe59e16e084d9084488091bb27b49874b7063d6496fe3070904ee4520"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-2-seconds",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-2-seconds.mmd",
+      "block": 1,
+      "sourceBlob": "abd855dcc08b0e6e2c78698070460daa1807697e",
+      "sha256": "de894d64ffb37f2081044d6a8d62c4127abb8335b76fc84d3125404cd6b586cc"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-tick-is-6-hours",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-tick-is-6-hours.mmd",
+      "block": 1,
+      "sourceBlob": "094aaa8f39ff312d9d769188ec8f24ef851f23c3",
+      "sha256": "909dd43b344561d1104c0716087c1dc7ee4534f38851cfeb4aa66b317a420bb8"
+    },
+    {
+      "name": "e2e-should-render-a-gantt-diagram-with-very-large-intervals-skipping-excludes-if-interval-5-years",
+      "source": "e2e/diagrams/gantt/should-render-a-gantt-diagram-with-very-large-intervals-skipping-excludes-if-interval-5-years.mmd",
+      "block": 1,
+      "sourceBlob": "33488bf4acf4889e4ce44f4cd5bc919207bba4b6",
+      "sha256": "f05003adb7197d813cb458cd58cbd981b448547af1d6aee402678b07e6dda1f6"
+    },
+    {
+      "name": "e2e-should-render-done-task-inside-text-readable-in-dark-mode",
+      "source": "e2e/diagrams/gantt/should-render-done-task-inside-text-readable-in-dark-mode.mmd",
+      "block": 1,
+      "sourceBlob": "ce18d757e141b7cc27d4c0aa7558c46ab71bf8c3",
+      "sha256": "a19ad7b4fb37b3ace3c8d68e813f11853b6e821185c28f6dfccfff6db189ad85"
+    },
+    {
+      "name": "e2e-should-render-done-task-outside-text-readable-in-dark-mode-regression-7433",
+      "source": "e2e/diagrams/gantt/should-render-done-task-outside-text-readable-in-dark-mode-regression-7433.mmd",
+      "block": 1,
+      "sourceBlob": "587afd5d74623b54ba387aa188b070bb853c0544",
+      "sha256": "af19b289d0908c7cc6e3eb2c6ef47813d2fdf1e06258c53cfefb81ad35a7be0b"
+    },
+    {
+      "name": "e2e-should-render-done-tasks-with-readable-text-in-dark-mode",
+      "source": "e2e/diagrams/gantt/should-render-done-tasks-with-readable-text-in-dark-mode.mmd",
+      "block": 1,
+      "sourceBlob": "2241d5d4ec7c2f1c5308b896342742083579f4f2",
+      "sha256": "5962671ca115cf4dd83e86d86c4b5f313169265ffcfba7092b63eb1a9672e37a"
+    },
+    {
+      "name": "e2e-should-render-multi-line-excludes-issue-6270",
+      "source": "e2e/diagrams/gantt/should-render-multi-line-excludes-issue-6270.mmd",
+      "block": 1,
+      "sourceBlob": "f8d90c69838c160f5aa616892b7f6ea0991c9893",
+      "sha256": "961b68a114d6e58a8ea07b99cd1608584207cdb478fde44d21a7e99c5f2e8c53"
+    },
+    {
+      "name": "e2e-should-render-only-the-day-when-using-dateformat-d",
+      "source": "e2e/diagrams/gantt/should-render-only-the-day-when-using-dateformat-d.mmd",
+      "block": 1,
+      "sourceBlob": "722974ee08490da6c09222e665bb72fd7a710e99",
+      "sha256": "819c6328c8fc02b914ebea69bfb537d08fac863a12eba991fe4b01ff73700586"
+    },
+    {
+      "name": "e2e-should-render-vertical-markers-without-creating-extra-rows-and-show-their-labels",
+      "source": "e2e/diagrams/gantt/should-render-vertical-markers-without-creating-extra-rows-and-show-their-labels.mmd",
+      "block": 1,
+      "sourceBlob": "876d0d0e2ec779b73baf3051de140881dee3d3b0",
+      "sha256": "b5e48b5215ede116db3d265a2306ef1d8102c9cff8d34da57e0dfd2c2e00ef30"
+    },
+    {
+      "name": "e2e-should-render-when-compact-is-true",
+      "source": "e2e/diagrams/gantt/should-render-when-compact-is-true.mmd",
+      "block": 1,
+      "sourceBlob": "0066447b853f4e68b0c5c6c18fb3e06590cc8cec",
+      "sha256": "8a78b91125e56a88cf78021c7b55e8220bb18044679b17d46f2c942663110433"
+    },
+    {
+      "name": "e2e-should-render-when-theres-a-hashtag-in-a-section-is-true",
+      "source": "e2e/diagrams/gantt/should-render-when-theres-a-hashtag-in-a-section-is-true.mmd",
+      "block": 1,
+      "sourceBlob": "36fb9f03d5c5d53bb941ab7b5610b39b38968926",
+      "sha256": "2beae4fcbbf90d2cae4c3946a9be85089068a61296e8e6bab95b2b09210e196b"
+    },
+    {
+      "name": "e2e-should-render-when-theres-a-hashtag-in-the-task-data",
+      "source": "e2e/diagrams/gantt/should-render-when-theres-a-hashtag-in-the-task-data.mmd",
+      "block": 1,
+      "sourceBlob": "6d574923cfd9c79ebef87e33dc8c7cbcb287e93c",
+      "sha256": "2284f15f8a397876071659ca97394cda4f15a7774591f558a5f4263b0e7032a4"
+    },
+    {
+      "name": "e2e-should-render-when-theres-a-hashtag-in-the-title",
+      "source": "e2e/diagrams/gantt/should-render-when-theres-a-hashtag-in-the-title.mmd",
+      "block": 1,
+      "sourceBlob": "ddcc7fb8f00e277a9789d8f746e2468621f333e7",
+      "sha256": "5cf207da884a489594b41442b3e05fe368f64ae44228bae285218ce0512d209f"
+    },
+    {
+      "name": "e2e-should-render-when-theres-a-semicolon-in-a-section-is-true",
+      "source": "e2e/diagrams/gantt/should-render-when-theres-a-semicolon-in-a-section-is-true.mmd",
+      "block": 1,
+      "sourceBlob": "17b5bebc7cd06c130dad00066e55d0558ae04fd6",
+      "sha256": "cd66ead3f1a140fe72f0b230458779f5b233934e65500b1065ff7d43787c1944"
+    },
+    {
+      "name": "e2e-should-render-when-theres-a-semicolon-in-the-task-data",
+      "source": "e2e/diagrams/gantt/should-render-when-theres-a-semicolon-in-the-task-data.mmd",
+      "block": 1,
+      "sourceBlob": "0e26b85d8419ed162bbc8e94cdb4322dbd247a8d",
+      "sha256": "ee8e56a7b1b304593f2615868fbc5cdc8e823b7c6f8e52c61dd8b9b8a072a518"
+    },
+    {
+      "name": "e2e-should-render-when-theres-a-semicolon-in-the-title",
+      "source": "e2e/diagrams/gantt/should-render-when-theres-a-semicolon-in-the-title.mmd",
+      "block": 1,
+      "sourceBlob": "f179d41dfd25072423cff24643c20b2fb7895a85",
+      "sha256": "cf28347363f2c467a482cbc27bfd6d9297788ef8bb52e8e640205fb4a0a5aafb"
+    },
+    {
+      "name": "e2e-should-style-today-marker",
+      "source": "e2e/diagrams/gantt/should-style-today-marker.mmd",
+      "block": 1,
+      "sourceBlob": "f966fe2fdc7c6dcd36dd7f9cb5ef35ef2c55d34d",
+      "sha256": "9012d45a556493825864015fa39e0e59fd5411f109cb3df3512a96f306dddd1a"
+    }
+  ]
+}

@@ -29,13 +29,14 @@ export const dedent = (s: string): string => {
 };
 
 /** The corpora this module extracts: one per diagram type Merlion draws. */
-export type DiagramKind = "flowchart" | "sequence" | "state";
+export type DiagramKind = "flowchart" | "sequence" | "state" | "gantt";
 
 /** The header keyword of each kind. Mermaid's lexer reads the keyword case-insensitively. */
 const HEADER: Record<DiagramKind, RegExp> = {
   flowchart: /^(graph|flowchart|flowchart-elk)(\s|;|$)/,
   sequence: /^sequenceDiagram(\s|;|$)/i,
   state: /^stateDiagram(-v2)?(\s|;|$)/i,
+  gantt: /^gantt(\s|;|$)/i,
 };
 
 /**
@@ -78,10 +79,17 @@ export const isState = (src: string): boolean => {
   return h !== null && HEADER.state.test(h);
 };
 
+/** True when the diagram's header is `gantt`. */
+export const isGantt = (src: string): boolean => {
+  const h = header(src);
+  return h !== null && HEADER.gantt.test(h);
+};
+
 const isKind: Record<DiagramKind, (src: string) => boolean> = {
   flowchart: isFlowchart,
   sequence: isSequence,
   state: isState,
+  gantt: isGantt,
 };
 
 /** Contents of every `<pre class="… mermaid …">` block, entity-decoded and dedented. */
@@ -225,6 +233,8 @@ export const sourceSlug = (path: string): string => {
     [/^e2e\/rendering\/state\//, "e2e-state-"],
     [/^e2e\/diagrams\/state-diagram-v2\/(elk\/)?(v2-)?/, "e2e-v2-"],
     [/^e2e\/diagrams\/state-diagram\//, "e2e-"],
+    [/^e2e\/rendering\/gantt\//, "e2e-gantt-"],
+    [/^e2e\/diagrams\/gantt\//, "e2e-"],
   ];
   let s = path;
   for (const [re, prefix] of known) {
@@ -263,6 +273,10 @@ const SOURCES: Record<DiagramKind, (p: string) => boolean> = {
     p === "packages/mermaid/src/docs/syntax/stateDiagram.md" ||
     /^e2e\/rendering\/state\/[^/]+\.spec\.(js|ts)$/.test(p) ||
     /^e2e\/diagrams\/state-diagram(-v2)?\/.+\.mmd$/.test(p),
+  gantt: (p) =>
+    p === "packages/mermaid/src/docs/syntax/gantt.md" ||
+    /^e2e\/rendering\/gantt\/[^/]+\.spec\.(js|ts)$/.test(p) ||
+    /^e2e\/diagrams\/gantt\/.+\.mmd$/.test(p),
 };
 
 export const selectSourcePaths = (paths: readonly string[], kind: DiagramKind = "flowchart"): string[] =>

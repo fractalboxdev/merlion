@@ -21,6 +21,25 @@ const setup = (options, markdown = {}) => {
   return { integration, updates, scripts };
 };
 
+test("the registered Astro plugin renders Gantt through the real WASM", async () => {
+  const { updates } = setup({ width: 480, fontCss: true, strict: true });
+  const [plugin, opts] = updates.flatMap((u) => u.markdown?.rehypePlugins ?? [])[0];
+  const source = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/gantt/delivery.mmd", import.meta.url), "utf8");
+  const tree = mermaidTree(source);
+  const file = vfile("/site/src/content/docs/delivery.md", "/site");
+  const outlines = [];
+  await plugin({ ...opts, outline: (info) => outlines.push(info) })(tree, file);
+  const [figure] = tree.children;
+  assert.equal(figure.tagName, "figure", JSON.stringify(file.messages.map(String)));
+  assert.equal(figure.children[0].tagName, "merlion-view");
+  const svg = svgHtml(figure);
+  assert.ok(svg.includes("merlion-gantt"));
+  assert.ok(svg.includes('data-merlion-id="api"'));
+  assert.deepEqual(file.messages.filter((m) => m.fatal), []);
+  assert.equal(outlines.length, 1);
+  assert.ok(outlines[0].outline.includes("2026-10-13"));
+});
+
 test("registers the rehype plugin with the project root and the given options", () => {
   const { integration, updates } = setup({ width: 640, cacheDir: ".merlion", fontCss: true });
   assert.equal(integration.name, "@fractalboxdev/merlion-astro");

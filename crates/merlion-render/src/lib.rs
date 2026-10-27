@@ -246,6 +246,30 @@ pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
                 fuel_used: fuel.used(),
             }
         }
+        Diagram::Gantt(chart) => {
+            let geom = match layout::layout_gantt(chart, opts, &mut fuel, &mut diags) {
+                Ok(g) => g,
+                Err(layout::LayoutError::TooLarge { what }) => {
+                    return RenderResult::failed(
+                        RenderError::TooLarge { what },
+                        diags.items,
+                        fuel.used(),
+                    )
+                }
+            };
+            let id = diagram_id(source, opts, &svg::gantt::layout_hint(chart));
+            let out = svg::draw_gantt(chart, &geom, opts, &id, &mut diags);
+            if diags.has_errors() {
+                return RenderResult::failed(RenderError::Parse, diags.items, fuel.used());
+            }
+            RenderResult {
+                svg: Some(out.svg),
+                outline: Some(out.outline),
+                diagnostics: diags.items,
+                error: None,
+                fuel_used: fuel.used(),
+            }
+        }
         Diagram::State(sm) => {
             // Draw-time role work, charged before layout as a flowchart's is
             // (specs/state.md#fuel).
@@ -307,5 +331,6 @@ pub fn outline(source: &str) -> Result<String, RenderError> {
         Diagram::Flowchart(c) => Ok(svg::outline_flowchart(&c)),
         Diagram::Sequence(s) => Ok(svg::outline_sequence(&s)),
         Diagram::State(s) => Ok(svg::outline_state(&s)),
+        Diagram::Gantt(g) => Ok(svg::outline_gantt(&g)),
     }
 }

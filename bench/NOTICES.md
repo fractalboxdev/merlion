@@ -1,8 +1,8 @@
 # Third-party notices: benchmark corpora
 
-## mermaid (`corpus/compat/`, `corpus/compat-sequence/`, `corpus/compat-state/`, `corpus/edits/`)
+## mermaid (`corpus/compat/`, `corpus/compat-sequence/`, `corpus/compat-state/`, `corpus/compat-gantt/`, `corpus/edits/`)
 
-`corpus/compat/*.mmd`, `corpus/compat-sequence/*.mmd` and `corpus/compat-state/*.mmd`
+`corpus/compat/*.mmd`, `corpus/compat-sequence/*.mmd`, `corpus/compat-state/*.mmd` and `corpus/compat-gantt/*.mmd`
 are diagrams extracted verbatim (dedented) from the mermaid repository at tag
 `mermaid@12.0.0`, commit `98a0945418c76238f15df2afaddbba4272656c3b`.
 
@@ -11,10 +11,16 @@ are diagrams extracted verbatim (dedented) from the mermaid repository at tag
 | `compat` | `demos/*.html`, `packages/mermaid/src/docs/syntax/flowchart.md`, `e2e/rendering/flowchart/*.spec.*`, `e2e/diagrams/flowchart/**/*.mmd` except `handdrawn/` |
 | `compat-sequence` | `demos/*.html`, `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, `e2e/rendering/sequence/*.spec.*`, `e2e/diagrams/sequence/*.mmd` |
 | `compat-state` | `demos/*.html`, `packages/mermaid/src/docs/syntax/stateDiagram.md`, `e2e/rendering/state/*.spec.*`, `e2e/diagrams/state-diagram/**/*.mmd` and `e2e/diagrams/state-diagram-v2/**/*.mmd` except `handdrawn/` |
+| `compat-gantt` | `demos/*.html`, `packages/mermaid/src/docs/syntax/gantt.md`, `e2e/rendering/gantt/*.spec.*`, `e2e/diagrams/gantt/**/*.mmd` |
 
 Each corpus's `manifest.json` records every diagram's source path, the source
 file's git blob, and the diagram's sha256. `corpus/edits/*.json` are derived
 from the `compat` diagrams by fixed text edits (`src/corpus/edits.ts`).
+
+The Gantt corpus retains invalid dates, clock-dependent schedules and configuration
+features regardless of Merlion support. Content de-duplication follows source-path
+order, with the first occurrence retained. `pnpm bench fetch --kind gantt` refreshes
+only that corpus under the same extraction rules as the other diagram types.
 
 https://github.com/mermaid-js/mermaid
 

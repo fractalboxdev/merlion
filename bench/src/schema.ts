@@ -20,7 +20,7 @@ export class ManifestEntry extends Schema.Class<ManifestEntry>("ManifestEntry")(
 }) {}
 
 export class Manifest extends Schema.Class<Manifest>("Manifest")({
-  corpus: Schema.Literal("compat", "compat-sequence", "compat-state"),
+  corpus: Schema.Literal("compat", "compat-sequence", "compat-state", "compat-gantt"),
   repo: Schema.String,
   tag: Schema.String,
   commit: Schema.String,

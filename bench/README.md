@@ -12,6 +12,8 @@ pnpm bench report [--input results/<file>.json] [--out <file>.md]
 pnpm bench parity [--limit N] [--require-rsvg]   # stylesheet parity, after the release build
 pnpm bench sequence [--limit N] [--out-svgs]    # compat-sequence against mermaid, writes results/<date>-sequence-baseline.md
 pnpm bench state [--limit N] [--out-svgs]       # compat-state against mermaid, writes results/<date>-state-baseline.md
+pnpm bench gantt [--limit N] [--out-svgs] [--min-compat PERCENT] # complete Gantt schedule/content comparison
+pnpm bench fetch --kind gantt                 # refresh only the pinned Gantt corpus
 pnpm bench authoring generate --provider claude-cli --model <m> [--label <name>] [--limit N]
 pnpm bench authoring score [--out <dir>]        # writes results/<date>-authoring.md
 pnpm test && pnpm typecheck
@@ -26,6 +28,7 @@ pnpm test && pnpm typecheck
 | `compat` | mermaid at tag `mermaid@12.0.0` (commit `98a0945418c7`): `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/flowchart.md`, static template literals in `e2e/rendering/flowchart/*.spec.*`, and `e2e/diagrams/flowchart/**/*.mmd` except `handdrawn/`. Flowchart and graph diagrams only, de-duplicated by content | 390 |
 | `compat-sequence` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, static template literals in `e2e/rendering/sequence/*.spec.*`, and `e2e/diagrams/sequence/*.mmd`. `sequenceDiagram` sources only, de-duplicated by content | 216 |
 | `compat-state` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/stateDiagram.md`, static template literals in `e2e/rendering/state/*.spec.*`, and `e2e/diagrams/state-diagram/**/*.mmd` and `e2e/diagrams/state-diagram-v2/**/*.mmd`. `stateDiagram` and `stateDiagram-v2` sources only, de-duplicated by content | 117 |
+| `compat-gantt` | mermaid at the same commit: canonical demos, Gantt syntax documentation, rendering templates and all 43 Gantt `.mmd` fixture sources; unique diagrams retain invalid and clock-dependent examples | 64 |
 | `edits` | The first 30 `compat` diagrams (by name) with at least three simple edge lines, each edited four ways: add an isolated node, add an edge between the farthest-apart unconnected pair, remove the last simple edge (re-declaring endpoints it declared), rename the first `id[Label]` | 106 pairs |
 | `authoring` | 18 diagrams (5 to 16 nodes, 5 to 19 edges) stated in prose in `corpus/authoring/tasks.json` beside the graph each one means, and the recorded model answers in `corpus/authoring/outputs/` | 18 tasks |
 
@@ -43,7 +46,7 @@ Both mermaid adapters render with `htmlLabels: false`, so labels are `<text>` an
 
 ## Metrics
 
-All metrics are computed from the SVG alone (`src/svg/extract.ts`, `src/metrics/metrics.ts`), in viewBox units.
+Graph metrics are computed from the SVG alone (`src/svg/extract.ts`, `src/metrics/metrics.ts`), in viewBox units. Gantt additionally reads the reference scheduler's resolved task dates as described below.
 
 - **Extraction.** Merlion: `g.merlion-node[data-merlion-id]`, `g.merlion-edge[data-merlion-from][data-merlion-to]`, `g.merlion-cluster`. Mermaid: node groups (`g.node`, `g.rough-node`, or any group with a `…flowchart-<id>-<n>` id, which gives the node id), edge paths (`.flowchart-link`, endpoints from `data-id="L_<from>_<to>_<n>"` resolved against node and subgraph ids, else the nearest node box within 30 px; multi-stroke hand-drawn paths use `data-points`), `g.edgeLabel`. Node box: union of the node's shapes, transforms applied. Label: `<text>` content with line breaks as spaces, or, when a mermaid label has no `<text>` (the diagram's config sets `htmlLabels: true`), `<foreignObject>` content with a space at every `<br>` and block boundary; `fa:fa-*` icon tokens removed, whitespace collapsed. Curves are sampled at 12 segments.
 - **Crossings.** Proper intersections between the polylines of two distinct edges. For edges sharing an endpoint node, intersections within 8 px of that node's box are not counted. Also reported: the maximum over edges of crossings on one edge.
@@ -74,6 +77,14 @@ All metrics are computed from the SVG alone (`src/svg/extract.ts`, `src/metrics/
 - **Content compatibility** against the `mermaid-dagre` drawing of the same source: the same state labels, the same number of pseudo-states, the same transition count, the same non-empty transition labels and the same note texts, each a multiset with whitespace removed. A state is named by what a reader sees, because the two renderers generate different ids for one scope, so `[*]`, a choice diamond and a fork bar are counted rather than named.
 - **Extraction.** Merlion: `g.merlion-node[data-merlion-id]`, `g.merlion-edge[data-merlion-from][data-merlion-to]`, `g.merlion-cluster` — a concurrency region is `g.merlion-region` and is not one — and `g.merlion-note` with its `.merlion-note-box`. mermaid: `g.node` for the states, `g.statediagram-cluster` for the composites minus the `note-cluster` it wraps a noted state in, `path.transition` minus the `note-edge` that links a note to its state, and `g.statediagram-note` for the notes; the two node ids ending `----note` and `----parent` belong to that scaffolding and are dropped.
 - **Label overlaps** are reported twice: over the state boxes and transition-label chips, as for flowcharts, and again with the note boxes counted in.
+
+## Gantt diagrams
+
+`pnpm bench gantt --out-svgs` compares the complete `compat-gantt` corpus against pinned Mermaid in headless Chromium with a UTC timezone. The reference's scheduling database supplies task start/end dates; its SVG must also contain task marks and labels. Merlion's SVG supplies IDs, dates, flags and sections, together with actual marks and text. The comparison checks the complete task sequence, visible labels and marks, resolved schedules and a consistent geometric time scale. It does not claim pixel or axis/layout equivalence.
+
+Time-only formats normalize a common day origin. Day-of-month formats without month/year normalize a common first-month origin while preserving elapsed durations; unequal month lengths can still differ. Those matches appear separately from absolute UTC matches. Invalid sources, unsupported syntax and clock-dependent reference behavior stay in the full denominator. Rejections receive no render credit. Directives-only empty charts require valid SVG viewports. [The Gantt contract](../specs/gantt.md) records deterministic clock differences and syntax limits.
+
+`--min-compat PERCENT` exits unsuccessfully below that percentage of all retained sources; its default of `0` permits exploratory reports. A nonzero gate requires the complete corpus and rejects `--limit`. Reports are `results/<date>-gantt-baseline.{md,json}`; Markdown is committed and SVG/JSON outputs are local. `MERLION_BENCH_CHROMIUM` optionally selects an existing browser executable. `pnpm bench determinism --corpus gantt` and `--corpus compat-gantt` compare native/WASM bytes, including one-sided failures.
 
 ## Stylesheet parity
 

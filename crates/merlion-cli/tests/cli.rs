@@ -14,6 +14,35 @@ const VALID: &str = "flowchart LR\nA-->B\n";
 const INVALID: &str = "this is not a diagram\n";
 
 #[test]
+fn gantt_render_check_and_outline_share_the_public_core() {
+    let dir = tempdir("gantt");
+    let src = include_str!("../../merlion-render/tests/fixtures/gantt/delivery.mmd");
+    let rendered = merlion(&dir, &["render", "--strict"], Some(src));
+    assert!(rendered.status.success(), "{}", stderr(&rendered));
+    let svg = stdout(&rendered);
+    assert!(svg.contains("merlion-gantt"));
+    assert!(svg.contains("data-merlion-id=\"release\""));
+    let checked = merlion(&dir, &["check", "--strict"], Some(src));
+    assert!(checked.status.success(), "{}", stderr(&checked));
+    let outlined = merlion(&dir, &["outline"], Some(src));
+    assert!(outlined.status.success(), "{}", stderr(&outlined));
+    assert_eq!(
+        stdout(&outlined).trim_end(),
+        merlion_render::outline(src).unwrap()
+    );
+    fs::write(
+        dir.join("delivery.md"),
+        format!("# Schedule\n\n```mermaid\n{src}```\n"),
+    )
+    .unwrap();
+    let markdown = merlion(&dir, &["render", "delivery.md", "-o", "out"], None);
+    assert!(markdown.status.success(), "{}", stderr(&markdown));
+    assert!(fs::read_to_string(dir.join("out/delivery-1.svg"))
+        .unwrap()
+        .contains("merlion-gantt"));
+}
+
+#[test]
 fn default_orientation_avoids_wraps_and_source_remains_an_explicit_override() {
     let dir = tempdir("orientation");
     let source =

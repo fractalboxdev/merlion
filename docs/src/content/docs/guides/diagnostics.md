@@ -80,6 +80,10 @@ Through WASM, `check(source)` returns the same list, and each repair's `fix` is 
 | `I031` | ClickCallbackIgnored | A `click` callback or `call` dropped; the output never calls page JavaScript |
 | `I032` | StylesheetRulesIgnored | Count of stylesheet rules that declare no `--merlion-*` token |
 | `I033` | ToneMasked | A source colour overrides a stylesheet tone on the same element |
+| `I037` | NeutralCalendarOrigin | Omitted Gantt calendar components use the Unix epoch origin |
+| `I038` | TodayMarkerOmitted | The live Gantt today marker is omitted for deterministic output |
+| `I039` | AxisIntervalCoarsened | An overly dense Gantt axis uses an aligned multiple of the requested interval |
+| `I040` | ExclusionBandsOmitted | Gantt excluded weekdays are too dense to draw individually |
 
 A failed render always carries at least one error, so the CLI, the WASM module and the integrations report the same codes. The full table is in [parser.md](/reference/specs/parser/#codes); the limits behind `E004` are in [architecture.md](/reference/specs/architecture/#boundaries).
 
