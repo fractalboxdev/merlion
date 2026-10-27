@@ -7,6 +7,7 @@
 //! lower to a graph the flowchart engine lays out, so [`state`] wraps this [`Geometry`]
 //! and adds only the note boxes (specs/state.md#lowering).
 
+pub mod gantt;
 pub mod sequence;
 pub mod state;
 

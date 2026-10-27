@@ -1,0 +1,14 @@
+gantt
+  title Working days and release markers
+  dateFormat YYYY-MM-DD
+  axisFormat %b %d
+  todayMarker off
+  excludes weekends
+  includes 2026-10-03
+  topAxis
+  section Development
+  Implementation :done, implementation, 2026-10-01, 3d
+  Hardening :crit, hardening, after implementation, 4d
+  section Delivery
+  Release :milestone, release, after hardening, 0d
+  Review deadline :vert, deadline, 2026-10-08, 0d

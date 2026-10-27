@@ -15,6 +15,7 @@ use alloc::vec::Vec;
 
 use super::cursor::LineIndex;
 use crate::diag::{excerpt, Diagnostics, Severity};
+use crate::model::gantt::{calendar, DisplayMode};
 use crate::model::Meta;
 
 /// A parsed YAML or JSON value. YAML scalars are always strings.
@@ -73,6 +74,7 @@ pub fn apply_front_matter(
 ) {
     for e in entries {
         match e.key.as_str() {
+            "displayMode" => apply_gantt(core::slice::from_ref(e), idx, meta, diags),
             "title" | "accTitle" | "accDescr" => match &e.value {
                 Value::Str(v) => {
                     let slot = match e.key.as_str() {
@@ -127,6 +129,10 @@ pub fn apply_config(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: 
                 }
                 _ => bad_value(e, idx, diags, "a mapping"),
             },
+            "gantt" => match &e.value {
+                Value::Map(m) => apply_gantt(m, idx, meta, diags),
+                _ => bad_value(e, idx, diags, "a mapping"),
+            },
             "merlion" => match &e.value {
                 Value::Map(m) => {
                     for inner in m {
@@ -143,6 +149,42 @@ pub fn apply_config(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: 
                 _ => bad_value(e, idx, diags, "a mapping"),
             },
             _ => unknown_key(e, "", idx, diags),
+        }
+    }
+}
+
+fn apply_gantt(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: &mut Diagnostics) {
+    for e in entries {
+        let span = idx.span(e.start, e.end);
+        match (e.key.as_str(), &e.value) {
+            ("displayMode", Value::Str(value)) if value == "compact" || value == "default" => {
+                meta.gantt.display_mode = Some(if value == "compact" {
+                    DisplayMode::Compact
+                } else {
+                    DisplayMode::Default
+                })
+            }
+            ("topAxis", value) => match bool_value(value) {
+                Some(v) => meta.gantt.top_axis = Some(v),
+                None => bad_value(e, idx, diags, "a boolean"),
+            },
+            ("axisFormat", Value::Str(value))
+                if value.len() <= 4_096 && calendar::format_axis(0, value).is_some() =>
+            {
+                meta.gantt.axis_format = Some(value.clone());
+                meta.gantt.axis_format_span = span;
+            }
+            ("tickInterval", Value::Str(value)) if calendar::tick_interval(value).is_some() => {
+                meta.gantt.tick_interval = calendar::tick_interval(value);
+                meta.gantt.tick_interval_span = span;
+            }
+            ("displayMode" | "axisFormat" | "tickInterval", _) => diags.emit(
+                Severity::Error,
+                "E002",
+                span,
+                "invalid Gantt configuration value",
+            ),
+            _ => unknown_key(e, "gantt.", idx, diags),
         }
     }
 }
@@ -313,7 +355,7 @@ mod tests {
         let mut meta = Meta::default();
         let mut d = Diagnostics::new(true);
         let fm = alloc::vec![
-            entry("displayMode", s("compact")),
+            entry("unsupportedSetting", s("compact")),
             entry("title", Value::List(Vec::new())),
             entry("config", s("nope")),
         ];

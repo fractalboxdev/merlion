@@ -11,13 +11,16 @@ A hand-written recursive-descent parser per diagram type, with no parser-generat
 | State | `stateDiagram`, `stateDiagram-v2` | M4 ([state.md](state.md)) |
 | Class | `classDiagram` | M4 |
 | ER | `erDiagram` | M4 |
-| Gantt, timeline, pie, XY, packet, kanban | `gantt`, `timeline`, `pie`, `xychart-beta`/`xychart`, `packet-beta`/`packet`, `kanban` | M3 |
+| Gantt | `gantt` | M3 ([gantt.md](gantt.md)) |
+| Timeline, pie, XY, packet, kanban | `timeline`, `pie`, `xychart-beta`/`xychart`, `packet-beta`/`packet`, `kanban` | M3 |
 
 Any other header returns `UnsupportedDiagram { header }`, never a partial render.
 
 ## Compatibility
 
 Compatibility means rendering the same graph that mermaid 12.0.0 renders: the same nodes, edges, labels, clusters and directions. Pixel positions are not part of it. The benchmark reports the pass rate per diagram type against the mermaid repository's own demo and test diagrams ([benchmark.md](benchmark.md)).
+
+For Gantt, compatibility compares the resolved schedule and visible task content; dates, dependencies, statuses and deterministic calendar differences follow [gantt.md](gantt.md).
 
 mermaid 12's small symbol shapes (`@{ shape: … }` `sm-circ`, `f-circ`, `fr-circ`, `cross-circ`, `fork`, `hourglass`, `bolt` and their aliases) are drawn at a fixed size without their label, as mermaid draws them; the label stays in the model for the text alternative. The other expanded shapes (the document, stacked, cylinder, triangle, brace and process variants, `text` and `datastore`, with their aliases) are drawn with their own outline; `text` draws no outline and `datastore` only the lines above and below the label. `bang`, `cloud`, `folder`, `bucket`, `console`, `browser` and `person` become rectangles with `W015`, as does any other name.
 
@@ -30,6 +33,7 @@ Subgraph ids follow mermaid's resolution, which happens after the whole source i
 ## Front matter and directives
 
 - YAML front matter (`---` … `---`) accepts `title`, `config.flowchart.curve`, `config.layout`, `config.merlion.autoTone`, `accTitle`, `accDescr`.
+- Gantt also accepts top-level `displayMode` and `config.gantt` keys for display mode and axes ([gantt.md](gantt.md#directives-and-configuration)).
 - The front matter parser accepts a YAML subset: block mappings, plain and quoted scalars, and flow sequences. Anchors, aliases, tags, multi-document streams and duplicate keys are rejected with an `Error` (`E011 FrontMatterUnsupported`), which rules out alias-expansion attacks.
 - `%%{init: …}%%` accepts the same keys as JSON. The JSON parser rejects nesting deeper than 64 and strings longer than 4,096 bytes (`E012 DirectiveTooLarge`).
 - Every accepted key takes an enumerated or numeric value (`curve` is one of Mermaid's curve names, `layout` is `dagre`, `elk` or `merlion`, all laid out by Merlion's engine); a value outside its set is ignored with `W016`.
@@ -121,9 +125,14 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I032` StylesheetRulesIgnored | Info | Count of stylesheet rules declaring no `--merlion-*` token |
 | `I033` ToneMasked | Info | A source `style` colour, or a `classDef` colour whose token the stylesheet leaves unset, overrides a stylesheet tone on the same element |
 | `I034` DiagnosticsTruncated | Info | Count of diagnostics past `limits.diagnostics`, which are counted rather than kept; always the last diagnostic |
+| `I037` NeutralCalendarOrigin | Info | Gantt dates omit calendar components and use the Unix epoch origin instead of the current date |
+| `I038` TodayMarkerOmitted | Info | Gantt's live today marker is omitted for deterministic output |
+| `I039` AxisIntervalCoarsened | Info | An overly dense Gantt axis uses an aligned multiple of the requested interval; task dates stay unchanged |
+| `I040` ExclusionBandsOmitted | Info | Gantt weekday bands are too dense to draw individually at this time scale |
 | `R001`–`R008` | Repair | See [Error tolerance](#error-tolerance) |
 | `R009`–`R013` | Repair | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 | `R014`–`R019` | Repair | State diagrams ([state.md](state.md#diagnostics)) |
+| `R020` PaddedGanttDate | Repair | An unpadded ISO year, month or day becomes a valid zero-padded date; the numeric year stays unchanged ([gantt.md](gantt.md)) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
 

@@ -22,6 +22,7 @@
 mod auto;
 mod color;
 pub(crate) mod escape;
+pub mod gantt;
 mod label;
 mod link;
 mod outline;
@@ -55,6 +56,7 @@ use theme::{Role, Table};
 
 pub use color::is_valid_class_name;
 pub use escape::escape;
+pub use gantt::{draw_gantt, outline_gantt};
 pub use outline::plain_label;
 pub use sequence::{draw_sequence, outline_sequence};
 pub use shapes::ALL_SHAPES;

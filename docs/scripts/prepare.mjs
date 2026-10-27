@@ -13,6 +13,7 @@
 //          light and dark renders with the site stylesheet baked in (public/gallery/)
 //        - fixtures: every crates/merlion-render/tests/fixtures/flowcharts/*.mmd
 //        - state: every crates/merlion-render/tests/fixtures/state/*.mmd
+//        - gantt: every crates/merlion-render/tests/fixtures/gantt/*.mmd
 //        - compat: twelve curated diagrams of bench/corpus/compat/
 //      Each diagram is a ```mermaid block, rendered at build time by the Merlion
 //      integration like any other page.
@@ -29,6 +30,7 @@ const THEMES_CSS = join(REPO, "packages", "merlion-themes", "merlion-themes.css"
 const SITE_CSS = join(DOCS, "src", "styles", "diagrams.css");
 const FIXTURES = join(REPO, "crates", "merlion-render", "tests", "fixtures", "flowcharts");
 const STATE = join(REPO, "crates", "merlion-render", "tests", "fixtures", "state");
+const GANTT = join(REPO, "crates", "merlion-render", "tests", "fixtures", "gantt");
 const COMPAT = join(REPO, "bench", "corpus", "compat");
 const ROLES = join(REPO, "bench", "fixtures", "roles");
 const SHOWCASE = join(DOCS, "src", "gallery", "showcase.json");
@@ -129,6 +131,14 @@ export const gallerySections = () => {
         "The five `llm-` sources carry the mistakes a language model makes — `->` for `-->`, a transition label with no `:`, a composite state left open, a stray `}` — and render through the parser's repairs ([State diagrams](/guides/state-diagrams/#diagnostics)).",
       ].join("\n\n"),
       entries: mmd(STATE).map((f) => ({ title: titleOf(f.stem), source: f.source })),
+    },
+    {
+      slug: "gantt-diagrams",
+      from: "crates/merlion-render/tests/fixtures/gantt/",
+      title: "Gantt diagrams",
+      description: "Dated tasks, dependencies, sections and milestones from the Gantt acceptance fixtures.",
+      intro: "Every file in `crates/merlion-render/tests/fixtures/gantt/`, rendered through the same core used by the CLI and WASM. [Gantt diagrams](/guides/gantt-diagrams/) explains the schedule and date rules.",
+      entries: mmd(GANTT).map((f) => ({ title: titleOf(f.stem), source: f.source })),
     },
     {
       slug: "mermaid-corpus",

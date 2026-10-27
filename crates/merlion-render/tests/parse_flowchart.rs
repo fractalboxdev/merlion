@@ -41,7 +41,7 @@ fn unsupported_headers_name_the_header() {
     for (src, header) in [
         ("classDiagram", "classDiagram"),
         ("erDiagram", "erDiagram"),
-        ("gantt", "gantt"),
+        ("journey", "journey"),
         ("pie title Pets", "pie"),
         ("Graph TD", "Graph"),
         ("hello world", "hello"),

@@ -16,13 +16,25 @@ const el = (tagName, properties, children) => ({ type: "element", tagName, prope
 const unquote = (s) => (/^(["']).*\1$/.test(s) ? s.slice(1, -1) : s);
 
 /**
- * The diagram's caption: `accTitle`, else the front-matter `title`, else null
+ * The diagram's caption: `accTitle`, else a Gantt title, else the front-matter title
  * (specs/svg-output.md#text-alternative uses the same precedence for `<title>`).
  */
 export const diagramTitle = (source) => {
   const acc = /^[ \t]*accTitle[ \t]*:[ \t]*(.*?)[ \t]*$/m.exec(source);
   if (acc && acc[1]) return acc[1];
   const fm = /^﻿?---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(source);
+  const body = source.slice(fm?.[0].length ?? 0);
+  let directive = false;
+  const header = body.split(/\r?\n/).find((line) => {
+    const t = line.trim();
+    if (directive) { directive = !t.includes("}%%"); return false; }
+    if (t.startsWith("%%{")) { directive = !t.includes("}%%"); return false; }
+    return t && !t.startsWith("%%");
+  });
+  if (/^gantt(?:\s|$)/i.test(header?.trim() ?? "")) {
+    const ganttTitle = /^[ \t]*title[ \t]+(.+?)[ \t]*$/m.exec(body);
+    if (ganttTitle) return ganttTitle[1];
+  }
   const title = fm && /^title[ \t]*:[ \t]*(.*?)[ \t]*$/m.exec(fm[1]);
   return title && title[1] ? unquote(title[1]) : null;
 };

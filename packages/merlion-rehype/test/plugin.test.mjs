@@ -82,6 +82,9 @@ test("the figcaption carries accTitle, else the front-matter title, as a text no
   assert.equal(diagramTitle("---\ntitle: Plain\n---\nflowchart LR\n accTitle: Wins\n"), "Wins");
   assert.equal(diagramTitle("flowchart LR\n a-->b"), null);
   assert.equal(diagramTitle("flowchart LR\n title: not front matter"), null);
+  assert.equal(diagramTitle("gantt\n title Delivery milestones\n"), "Delivery milestones");
+  assert.equal(diagramTitle('---\ntitle: Fallback\n---\n%% comment\n%%{init: {}}%%\ngantt\n title Delivery\n'), "Delivery");
+  assert.equal(diagramTitle("gantt\n title Delivery\n accTitle: Accessible title\n"), "Accessible title");
 });
 
 test("source: 'none' drops the <details>; viewer: false drops <merlion-view>", async () => {

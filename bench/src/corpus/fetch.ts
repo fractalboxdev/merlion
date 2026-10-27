@@ -6,7 +6,7 @@
 import { FileSystem, HttpClient, HttpClientRequest, Path } from "@effect/platform";
 import { createHash } from "node:crypto";
 import { Config, Console, Effect, Option, Redacted, Schema } from "effect";
-import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, COMPAT_STATE_DIR, EDITS_DIR } from "../paths.ts";
+import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, COMPAT_STATE_DIR, COMPAT_GANTT_DIR, EDITS_DIR } from "../paths.ts";
 import { EditPairFile, Manifest, ManifestEntry, MERMAID_COMMIT, MERMAID_REPO, MERMAID_TAG } from "../schema.ts";
 import { makeEdits } from "./edits.ts";
 import { type DiagramKind, extractDiagrams, selectSourcePaths, sourceSlug } from "./sources.ts";
@@ -23,7 +23,7 @@ export class FetchError extends Schema.TaggedError<FetchError>()("FetchError", {
 
 const sha256 = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
 
-export const fetchCorpus = Effect.gen(function* () {
+const fetchCorpora = (onlyGantt = false) => Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const token = yield* Config.option(Config.redacted("GITHUB_TOKEN"));
@@ -73,7 +73,7 @@ export const fetchCorpus = Effect.gen(function* () {
 
   /** Rewrites a corpus directory from scratch so removed diagrams do not linger. */
   const write = (
-    corpus: "compat" | "compat-sequence" | "compat-state",
+    corpus: "compat" | "compat-sequence" | "compat-state" | "compat-gantt",
     dir: string,
     es: ReadonlyArray<{ entry: ManifestEntry; text: string }>,
   ) =>
@@ -93,6 +93,13 @@ export const fetchCorpus = Effect.gen(function* () {
       yield* fs.writeFileString(path.join(dir, "manifest.json"), `${JSON.stringify(encoded, null, 2)}\n`);
       yield* Console.log(`${corpus}: ${es.length} diagrams written to ${path.relative(process.cwd(), dir) || "."}`);
     });
+
+  const ganttSources = selectSourcePaths([...blobs.keys()], "gantt");
+  yield* Console.log(`${ganttSources.length} gantt source files at ${MERMAID_TAG}`);
+  const ganttContents = yield* Effect.forEach(ganttSources, fetchText, { concurrency: 8 });
+  const ganttEntries = collect("gantt", ganttContents);
+  yield* write("compat-gantt", COMPAT_GANTT_DIR, ganttEntries);
+  if (onlyGantt) return { ganttDiagrams: ganttEntries.length };
 
   const sources = selectSourcePaths([...blobs.keys()]);
   yield* Console.log(`${sources.length} flowchart source files at ${MERMAID_TAG} (${MERMAID_COMMIT.slice(0, 12)})`);
@@ -133,6 +140,11 @@ export const fetchCorpus = Effect.gen(function* () {
     diagrams: entries.length,
     sequenceDiagrams: seqEntries.length,
     stateDiagrams: stateEntries.length,
+    ganttDiagrams: ganttEntries.length,
     editPairs: pairs,
   };
 });
+
+export const fetchCorpus = fetchCorpora();
+/** Refreshes only Gantt sources, retaining every upstream case regardless of support. */
+export const fetchGanttCorpus = fetchCorpora(true);

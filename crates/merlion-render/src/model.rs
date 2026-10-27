@@ -4,12 +4,14 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+pub mod gantt;
 pub mod sequence;
 pub mod state;
 
 use crate::diag::Span;
 use crate::options::Direction;
 
+pub use gantt::Gantt;
 pub use sequence::Sequence;
 pub use state::StateMachine;
 
@@ -18,6 +20,7 @@ pub use state::StateMachine;
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Diagram {
+    Gantt(Gantt),
     Flowchart(Flowchart),
     /// specs/sequence.md
     Sequence(Sequence),
@@ -28,6 +31,7 @@ pub enum Diagram {
 impl Diagram {
     pub fn type_name(&self) -> &'static str {
         match self {
+            Diagram::Gantt(_) => "gantt",
             Diagram::Flowchart(_) => "flowchart",
             Diagram::Sequence(_) => "sequence",
             Diagram::State(_) => "state",
@@ -38,6 +42,7 @@ impl Diagram {
 /// Front matter, `%%{init}%%` and `acc*` statements (specs/parser.md#front-matter-and-directives).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Meta {
+    pub gantt: gantt::GanttConfig,
     pub title: Option<String>,
     pub acc_title: Option<String>,
     pub acc_descr: Option<String>,

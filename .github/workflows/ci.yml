@@ -99,7 +99,7 @@ jobs:
       - name: Every corpus, native vs WASM, every font mode
         working-directory: bench
         run: |
-          for corpus in compat sequence state; do
+          for corpus in compat compat-sequence compat-state compat-gantt sequence state gantt; do
             for font in link embed system; do
               pnpm bench determinism --corpus "$corpus" --font "$font"
             done
@@ -140,6 +140,9 @@ jobs:
       - name: Stylesheet parity, compat corpus and role fixtures
         working-directory: bench
         run: pnpm bench parity --require-rsvg
+      - name: Gantt schedule compatibility, complete pinned corpus
+        working-directory: bench
+        run: pnpm bench gantt --min-compat 90
 
   docs:
     # The docs site builds with every diagram rendered through the WASM build and every
