@@ -25,9 +25,10 @@ after(async () => { await browser?.close(); });
 const open = async (svg, wide = false) => {
   const page = await browser.newPage({ viewport: { width: 1100, height: 700 }, reducedMotion: "reduce" });
   page.setDefaultTimeout(5000);
-  await page.route("**/*", async (route) => {
+  await page.context().route("**/*", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === "/") return route.fulfill({ contentType: "text/html", body: '<!doctype html><style>merlion-view{display:block;width:440px;height:260px;margin:70px;--merlion-bg:white}</style><script type="module">import "/interact.js";window.ready=true;</script>' });
+    if (path === "/details") return route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Details</title>" });
     if (modules.has(path)) return route.fulfill({ contentType: "application/javascript", body: modules.get(path) });
     return route.abort();
   });
@@ -61,6 +62,14 @@ for (const header of ["flowchart LR\nA[Alpha] --> B[Beta]", 'stateDiagram-v2\nst
       await page.locator('[data-merlion-id="A"]').click();
       await page.getByRole("button", { name: "Close details" }).waitFor();
       assert.equal(await page.getByRole("region", { name: "Alpha details" }).locator("div").nth(1).textContent(), "First line.\nSecond line.");
+      assert.equal(await page.getByRole("link", { name: "Read more" }).getAttribute("href"), "http://merlion.test/details");
+      assert.equal(page.url(), "http://merlion.test/");
+      const [source] = await Promise.all([
+        page.context().waitForEvent("page"),
+        page.locator('[data-merlion-id="A"]').click({ modifiers: ["ControlOrMeta"] }),
+      ]);
+      try { await source.waitForURL("http://merlion.test/details"); }
+      finally { await source.close(); }
     } finally { await page.close(); }
   });
 }
