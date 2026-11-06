@@ -3,7 +3,7 @@ title: Getting started
 description: Render Mermaid flowcharts with the merlion CLI, the WebAssembly module, the rehype plugin or the Astro integration, from a checkout of the repository.
 ---
 
-Merlion ships four ways in, all over the same core and all producing the same bytes for the same input: the `merlion` CLI, the `@fractalboxdev/merlion-wasm` module, the `@fractalboxdev/merlion-rehype` plugin and the `@fractalboxdev/merlion-astro` integration. The npm packages are workspace packages of the repository and are not yet published, so every command below runs from a checkout.
+Merlion ships four ways in, all over the same core and all producing the same bytes for the same input: the `merlion` CLI, the `@fractalboxdev/merlion-wasm` module, the `@fractalboxdev/merlion-rehype` plugin and the `@fractalboxdev/merlion-astro` integration. The npm packages publish to GitHub Packages with [registry authentication](/reference/specs/supply-chain/#releases). Every command below runs from a checkout, where the packages link through the workspace.
 
 ```mermaid
 flowchart LR

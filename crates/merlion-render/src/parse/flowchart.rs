@@ -1916,10 +1916,12 @@ impl P<'_, '_> {
             return Ok(());
         };
         let mut target_blank = false;
+        let mut tooltip = None;
         while let Some((as_, ae, q)) = self.click_token() {
             let arg = self.src.get(as_..ae).unwrap_or("");
             if q {
-                continue; // tooltip
+                tooltip = Some(self.finish_label(arg, as_, ae));
+                continue;
             }
             match arg {
                 "_blank" => target_blank = true,
@@ -1940,7 +1942,11 @@ impl P<'_, '_> {
         match link::check_url(raw) {
             Some(url) => self.ops.push(Op::Click {
                 id,
-                link: Link { url, target_blank },
+                link: Link {
+                    url,
+                    target_blank,
+                    tooltip,
+                },
             }),
             None => self.warn(
                 "W013",

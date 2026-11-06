@@ -191,6 +191,16 @@ The rules live in the base element's light-DOM sheet (`MerlionView.style`), a co
 
 ## Detail popover
 
+### Authored details
+
+- A flowchart or state diagram's `click NODE href "URL" "Explanation"` stores the explanation in the node group's escaped `data-merlion-description`. It uses the label cleaning and byte limit, including `<br>` line breaks; it contributes no visible label, layout extent or connection-outline text.
+- An unmodified click on a node with authored details opens its explanation instead of navigating. Ctrl/Meta/Shift/Alt-click keeps the link's normal behavior. Nodes without authored details keep their existing gestures.
+- The detail panel shows the node title, explanation, a **Read more** link to the node's validated URL, and **Close details**. It omits the connection list. Explanations use `textContent`; HTML is inert. Read-more URLs allow relative links, HTTP, HTTPS and mailto only.
+- The explanation panel is an accessible region with selectable text, clickable controls and scrolling. The live region announces the title and explanation. Arrow-key traversal previews details, Enter pins them, and Escape, background click, a second node click or **Close details** dismisses them.
+- Panel-originated keys retain native scrolling and control behavior; Escape remains available to dismiss details. The base viewer never pans or zooms in response to panel keys. The panel height stays within the visible box in normal and fullscreen views, including side placement.
+- Standalone SVGs, JavaScript-disabled pages and `interactive="off"` retain ordinary node links. Callback execution remains unsupported.
+- The optional `interact-details.js` module loads only for diagrams with authored details. Details belong to their SVG, so repeated source node ids on a page do not share content.
+
 ### Content
 
 Built with `textContent` from [Text reconstruction](#text-reconstruction), top to bottom:
@@ -204,7 +214,7 @@ Built with `textContent` from [Text reconstruction](#text-reconstruction), top t
 | Incoming | One row per incoming edge: `← {source name}` and the label in brackets | — | — |
 
 - The popover is the base element's `part="tooltip"` element, in the host's shadow root, or inside the fullscreen `<dialog>` while it is open, since the modal dialog sits in the top layer above the host. `part` lets a page restyle it through `merlion-view::part(tooltip)` outside fullscreen.
-- It is `aria-hidden`, because the live region speaks the node's outline line ([Keyboard](#keyboard-and-screen-readers)), and it has `pointer-events: none`, so it never blocks a click or a text selection underneath.
+- Connection popovers are `aria-hidden`, because the live region speaks the node's outline line ([Keyboard](#keyboard-and-screen-readers)), and have `pointer-events: none`. Authored detail panels follow [Authored details](#authored-details).
 - Maximum width 320 px or 90% of the visible box, whichever is smaller; long words wrap with `overflow-wrap: anywhere`. Its style is inline (set through the CSSOM, so a strict CSP allows it): `--merlion-bg` background, `--merlion-fg` text, a translucent grey border, 6 px radius, 13 px system UI font regardless of zoom.
 - It is dismissed with the pin: tapping the target again, tapping the background, or Esc.
 
@@ -266,7 +276,8 @@ The popover never overlaps `E`. Every view change (zoom, pan, fullscreen, resize
 
 | Item | Budget |
 |---|---|
-| `@fractalboxdev/merlion-view/interact`, minified + gzip | ≤ 3.25 KB (3,293 B), enforced by `scripts/size.mjs` |
+| `@fractalboxdev/merlion-view/interact`, minified + gzip | ≤ 3.5 KB, enforced by `scripts/size.mjs` |
+| Its detail module, loaded only for authored details | ≤ 1.25 KB, enforced by the same script |
 | Its sequence module, loaded only for a sequence diagram | ≤ 1.25 KB (984 B), enforced by the same script |
 | Its state module, loaded only for a state diagram | ≤ 1.25 KB (1,054 B), enforced by the same script |
 | Base `<merlion-view>` with the hook and the shared chrome | ≤ 6 KB (4,953 B), enforced by the same script |

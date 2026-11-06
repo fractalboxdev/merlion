@@ -80,7 +80,7 @@ const exts = [];
 // by each host's root (document or shadow root) and extended through MerlionView.style. Adopted
 // sheets apply under a CSP without 'unsafe-inline'. Label text keeps the I-beam over a pannable
 // drawing, since a drag on text selects it (specs/viewer.md#gestures).
-let lightCss = "merlion-view :is(text,foreignObject){cursor:text}";
+let lightCss = "merlion-view :is(text,foreignObject){cursor:text;user-select:text}merlion-view a{-webkit-user-drag:none}";
 const light = globalThis.CSSStyleSheet && new CSSStyleSheet();
 light?.replaceSync(lightCss);
 
@@ -131,6 +131,8 @@ export class MerlionView extends Base {
     pop.part = "tooltip";
     pop.ariaHidden = "true"; // the live region speaks the same text
     pop.style.cssText = POP;
+    // Inspector controls and scrolling stay inside the panel.
+    for (const type of ["click", "pointerdown", "wheel"]) pop.addEventListener(type, (e) => e.stopPropagation());
     // A zoom animation moves the anchor; place the popover again once it ends.
     this.addEventListener("transitionend", (e) => e.target === this.#svg && this.#tip());
     this.#ctl.addEventListener("click", (e) => {
@@ -219,6 +221,10 @@ export class MerlionView extends Base {
     this.#anchor = el;
     if (!el) return this.#pop.remove();
     this.#pop.replaceChildren();
+    this.#pop.ariaHidden = "true";
+    this.#pop.removeAttribute("role");
+    this.#pop.removeAttribute("aria-label");
+    this.#pop.style.pointerEvents = "none";
     build(this.#pop);
     this.#tip();
   }
@@ -246,7 +252,8 @@ export class MerlionView extends Base {
     (box === this ? this.shadowRoot : box).append(p);
     const b = box.getBoundingClientRect();
     s.left = s.top = 0;
-    s.maxHeight = "";
+    // Side placement also caps height so long explanations remain scrollable.
+    s.maxHeight = `${b.height}px`;
     s.maxWidth = `${Math.min(320, b.width * 0.9)}px`;
     const q = place(el.getBoundingClientRect(), b, p.offsetWidth, p.offsetHeight);
     s.visibility = q ? "" : "hidden";
@@ -407,6 +414,8 @@ export class MerlionView extends Base {
   };
 
   #key = (e) => {
+    // Detail-panel keys retain native scrolling; the interaction captures Escape.
+    if (e.composedPath().includes(this.#pop)) return;
     // An extension that consumes a key (arrows between nodes) prevents its default.
     if (!this.#svg || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
     const v = keyView(e.key, this.#v, this.#box());

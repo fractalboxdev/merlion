@@ -4,25 +4,25 @@ version = 4
 
 [[package]]
 name = "fontgen"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ttf-parser",
 ]
 
 [[package]]
 name = "merlion-cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "merlion-render",
 ]
 
 [[package]]
 name = "merlion-render"
-version = "0.2.0"
+version = "0.3.0"
 
 [[package]]
 name = "merlion-wasm"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "merlion-render",
 ]

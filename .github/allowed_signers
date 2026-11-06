@@ -1,5 +1,6 @@
 # Keys allowed to sign release tags (specs/supply-chain.md#releases). The release
 # workflow reads this file from main, never from the tagged commit.
 # <principal> namespaces="git" <key type> <public key>
+1883877+debuggingfuture@users.noreply.github.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIfJTEh4caADIwpyFWVhtef4vDx7WntI+F3ilEio24C6
 1883877+debuggingfuture@users.noreply.github.com namespaces="git" ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMUZw/Z9dpKHP7an46tFT+qDLf/C/uOdflDrmtozL05iMWq9xSd9Iw3BDXUL/86/uLKb5LF/OgcvHSJ/jmhrBlA=
 1883877+debuggingfuture@users.noreply.github.com namespaces="git" ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMlOVTNC25RBtdpu9w88jFB+WvvcDU8mB8jYYuYqx9hoQ6k63n26kJjVRI5FladvDDx+hR116CUT77/Jp+lxGJk=

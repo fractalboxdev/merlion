@@ -113,6 +113,11 @@ export const interact = (host, svg) => {
   const visible = () => walk.filter((t) => !away(t));
 
   host.toggleAttribute("data-merlion-interactive", true);
+  let details;
+  let disposed = false;
+  if (nodes.some((n) => n.g.dataset.merlionDescription)) import("./interact-details.js").then((m) => {
+    if (!disposed) details = m.fillDetails, paint();
+  });
 
   // Popover content, built with textContent only (specs/interaction.md#content): a bold heading,
   // muted detail lines and cluster path, then outgoing and incoming edges with their labels.
@@ -130,6 +135,12 @@ export const interact = (host, svg) => {
     // A state that draws no label heads with the name its kind reads as, never with its generated id.
     add(ln ?? (e ? `${name(e.from)} ${e.g} ${name(e.to)}` : nameOf(n.L.filter((l) => !l.d)) || n.name || n.id), "font-weight:600");
     if (e) return ln || add(e.label);
+    const description = n.g.dataset.merlionDescription;
+    if (description) return details?.(pop, n.g, n.name, description, () => {
+      pin = active = null;
+      paint();
+      host.focus({ preventScroll: true });
+    });
     for (const l of n.L) if (l.d) add(l.t, "opacity:.7");
     add(n.path.join(" / "), "opacity:.7");
     for (const e of edges) if (e.from === n.id) add(`${e.g} ${name(e.to)}${lbl(e)}`);
@@ -151,7 +162,8 @@ export const interact = (host, svg) => {
     elOf(t).classList.add("merlion-primary");
     // The polite live region reads the target's outline line.
     const ln = (edges[t.e] ?? byId.get(t.n) ?? groups.get(t.c))?.line;
-    if (ln) host.say(ln);
+    const detail = byId.get(t.n)?.g.dataset.merlionDescription;
+    if (ln) host.say(detail ? `${name(t.n)}. ${detail}` : ln);
   };
 
   // Hide and collapse (specs/interaction.md#hide-and-collapse): classes, plus a "+N" badge per collapsed cluster.
@@ -193,14 +205,16 @@ export const interact = (host, svg) => {
   // Gestures (specs/interaction.md#gestures): the base decides what is a tap, the model what it does.
   const onClick = (e) => {
     const t = e.target;
-    if (!host.tap(e)) return;
     const g = t.closest?.(".merlion-node");
+    const inspect = g?.dataset.merlionDescription && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey;
+    if (inspect) e.preventDefault();
+    if (!host.tap(e)) return;
     const eg = !g && t.closest?.(".merlion-edge");
     const target = g ? { n: id(g) } : eg && { e: edgeEls.indexOf(eg) };
     const a = clickAction({
       hit: t.closest?.(".merlion-cluster-title")
           ? "title"
-          : t.closest?.("a")
+          : t.closest?.("a") && !inspect
             ? "link"
             : g
               ? "node"
@@ -232,6 +246,7 @@ export const interact = (host, svg) => {
   // skips a key this consumes (defaultPrevented), and Shift + arrows still pan.
   const onKey = (e) => {
     const k = e.key;
+    if (k !== "Escape" && e.composedPath().some((el) => el.getAttribute?.("part") === "tooltip")) return;
     const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[k];
     if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
     const vis = visible();
@@ -239,7 +254,10 @@ export const interact = (host, svg) => {
       const i = vis.findIndex((t) => same(t, active));
       active = vis[i < 0 ? (step > 0 ? 0 : vis.length - 1) : (i + step + vis.length) % vis.length];
     } else if (k === "Enter" && active) pin = same(pin, active) ? null : active;
-    else if (k === "Escape" && (pin || active)) pin = active = null;
+    else if (k === "Escape" && (pin || active)) {
+      pin = active = null;
+      host.focus({ preventScroll: true });
+    }
     else return;
     e.preventDefault();
     paint();
@@ -254,6 +272,7 @@ export const interact = (host, svg) => {
   apply();
 
   return () => {
+    disposed = true;
     on("removeEventListener");
     pin = active = null;
     showAll();

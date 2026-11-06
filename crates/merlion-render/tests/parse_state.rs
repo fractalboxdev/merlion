@@ -1099,10 +1099,13 @@ fn a_click_target_of_blank_is_kept() {
 }
 
 #[test]
-fn a_click_tooltip_is_dropped() {
+fn a_click_tooltip_preserves_authored_details() {
     let (s, d) = st_d("A\nclick A \"https://example.com/a\" \"a tooltip\"\n");
-    assert!(find(&s, "A").link.is_some());
-    assert_eq!(count(&d, "W024"), 1, "{:?}", codes(&d));
+    assert_eq!(
+        find(&s, "A").link.as_ref().unwrap().tooltip.as_deref(),
+        Some("a tooltip")
+    );
+    assert_eq!(count(&d, "W024"), 0, "{:?}", codes(&d));
 }
 
 #[test]

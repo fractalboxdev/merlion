@@ -42,7 +42,7 @@ pub struct NodeGeom {
 }
 
 /// Padding of an edge label chip around its text, in px (horizontal, vertical).
-pub const CHIP_PAD: (f64, f64) = (4.0, 2.0);
+pub const CHIP_PAD: (f64, f64) = (6.0, 4.0);
 
 /// Outer size of the chip drawn behind a label of `label`'s size.
 pub fn chip_size(label: &LabelLayout) -> (f64, f64) {

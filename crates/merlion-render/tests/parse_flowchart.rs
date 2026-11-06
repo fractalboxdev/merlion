@@ -1070,6 +1070,17 @@ fn click_links() {
 }
 
 #[test]
+fn click_tooltip_preserves_authored_details_without_changing_the_node_label() {
+    let (f, d) = parse_ok("flowchart TD\nA[Audit]\nclick A href \"/docs/audit\" \"Checks #quot;proofs#quot;.<br>Rejects holes.\"");
+    assert!(d.is_empty(), "{d:#?}");
+    assert_eq!(node(&f, "A").label, "Audit");
+    assert_eq!(
+        node(&f, "A").link.as_ref().unwrap().tooltip.as_deref(),
+        Some("Checks \"proofs\".\nRejects holes.")
+    );
+}
+
+#[test]
 fn click_rejected_urls() {
     for url in [
         "javascript:alert(1)",

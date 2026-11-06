@@ -184,6 +184,14 @@ fn push_state(out: &mut String, cx: &StateCtx, i: usize, diags: &mut Diagnostics
     out.push_str("<g");
     attr(out, "class", &class);
     attr(out, "data-merlion-id", &node.id);
+    if let Some(text) = node
+        .link
+        .as_ref()
+        .and_then(|l| l.tooltip.as_deref())
+        .filter(|s| !s.is_empty())
+    {
+        attr(out, "data-merlion-description", text);
+    }
     attr(out, "data-merlion-kind", kind.as_str());
     let rank = if g.rank > super::MAX_RANK {
         super::MAX_RANK

@@ -8,6 +8,7 @@
   "scripts": {
     "bench": "tsx src/main.ts",
     "test": "vitest run",
+    "test:viewer": "node --test test/viewer.browser.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

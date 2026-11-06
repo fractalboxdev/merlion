@@ -365,7 +365,7 @@ fn title_box(c: &ClusterGeom) -> Box2 {
 /// chip is inflated by the clearance the placer keeps around it, so a window the placer
 /// cannot use does not count as room.
 fn edge_has_room(edge: &merlion_render::geometry::EdgeGeom, obstacles: &[Box2]) -> bool {
-    const CLEAR: f64 = 2.0;
+    const CLEAR: f64 = 4.0;
     let Some(l) = edge.label.as_ref() else {
         return false;
     };

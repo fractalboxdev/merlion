@@ -163,6 +163,60 @@ fn crosses(a: (f64, f64), b: (f64, f64), r: Box4) -> bool {
 }
 
 #[test]
+fn labelled_branches_leave_cluster_borders_and_other_connectors_visible() {
+    let source = include_str!("fixtures/flowcharts/assurance-pipeline.mmd");
+    let o = RenderOptions::default();
+    let mut d = Diagnostics::new(false);
+    let Diagram::Flowchart(c) = parse(
+        source,
+        &ParseOptions {
+            strict: true,
+            limits: o.limits,
+        },
+        &mut d,
+    )
+    .unwrap() else {
+        panic!("flowchart")
+    };
+    let g = layout_flowchart(&c, &o, &mut Fuel::new(o.fuel), &mut d).unwrap();
+    assert_eq!(g.edges.iter().filter(|e| e.label.is_some()).count(), 7);
+    let mut hits = Vec::new();
+    for (i, e) in g.edges.iter().enumerate() {
+        let l = e.label.as_ref().unwrap();
+        let (w, h) = chip_size(&l.label);
+        let chip = (
+            l.x - w / 2.0 - 4.0,
+            l.y - h / 2.0 - 4.0,
+            l.x + w / 2.0 + 4.0,
+            l.y + h / 2.0 + 4.0,
+        );
+        for cl in &g.clusters {
+            let corners = [
+                (cl.x, cl.y),
+                (cl.x + cl.w, cl.y),
+                (cl.x + cl.w, cl.y + cl.h),
+                (cl.x, cl.y + cl.h),
+                (cl.x, cl.y),
+            ];
+            if corners.windows(2).any(|s| crosses(s[0], s[1], chip)) {
+                hits.push(format!("label {i} covers a cluster border"));
+            }
+        }
+        for (j, other) in g.edges.iter().enumerate() {
+            if i != j
+                && other
+                    .points
+                    .windows(2)
+                    .any(|s| crosses((s[0].x, s[0].y), (s[1].x, s[1].y), chip))
+            {
+                hits.push(format!("label {i} covers connector {j}"));
+            }
+        }
+    }
+    assert!(hits.is_empty(), "{}", hits.join("\n"));
+}
+
+#[test]
 fn chips_and_edges_keep_off_cluster_titles() {
     let mut chips = Vec::new();
     let mut edges = Vec::new();
