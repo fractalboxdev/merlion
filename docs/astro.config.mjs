@@ -7,7 +7,7 @@ import starlightLinksValidator from "starlight-links-validator";
 import { specLinks } from "./src/lib/specs.mjs";
 
 export default defineConfig({
-  site: "https://merlion-docs.debuggingfuturecors.workers.dev",
+  site: "https://merlion.fractalbox.dev",
   trailingSlash: "always",
   markdown: {
     // Relative links inside specs/ point at sibling files, as on GitHub; on the site they
