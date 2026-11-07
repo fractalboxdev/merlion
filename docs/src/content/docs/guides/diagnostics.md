@@ -8,7 +8,7 @@ Every render and check returns a list of diagnostics. Each has a severity, a sta
 | Severity | Codes | Effect |
 |---|---|---|
 | Error | `E0xx` | Nothing renders for this diagram |
-| Warning | `W0xx` | Renders; something in the source was dropped or changed |
+| Warning | `W0xx` | Renders; something in the source was dropped or changed, or a label carries no information |
 | Repair | `R0xx` | Renders; the parser fixed a common mistake and records the fix |
 | Info | `I0xx` | Renders; a fact worth knowing (a colour that ignores the theme, a discarded hint) |
 
@@ -71,6 +71,7 @@ Through WASM, `check(source)` returns the same list, and each repair's `fix` is 
 | `W017` | StylesheetRuleRejected | A stylesheet rule under a selector or at-rule outside the subset, or a role left out by the 16 KiB embedded-style cap |
 | `W018` | StylesheetDeclarationRejected | A property outside the token list, a font token, or a value outside its grammar |
 | `W019` | StylesheetReferenceInvalid | A `var()` naming an undefined token, forming a cycle, or nested deeper than 8 |
+| `W026` | LabelRepeatsEndpoint | An edge or transition label that names only the shapes it joins, such as `pause to on-hold` on `idle --> on_hold`; name the event, or remove the label |
 | `I010` | UnmeasuredGlyph | A code point outside the font's metric table |
 | `I011` | ThemeConfigIgnored | `theme`, `themeVariables` or `look` in the source; themes are CSS ([Theming](/guides/theming/)) |
 | `I020` | LayoutHintDiscarded | Fewer than half the nodes survive ([Stable layout](/guides/stable-layout/)) |
