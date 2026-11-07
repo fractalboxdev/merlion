@@ -13,11 +13,13 @@
 //! |---|---|---|
 //! | `W015` | Warning | `@{ shape: … }` shape or key Merlion does not draw; the node is a rectangle |
 //! | `W016` | Warning | Unknown configuration key, value outside its set, or malformed directive |
+//! | `W026` | Warning | Edge or transition label naming only its endpoints ([`endpoint_label`]) |
 //! | `I011` | Info | `theme`, `themeVariables` or `look` ignored: themes are CSS |
 
 pub mod config;
 pub mod cursor;
 pub mod directive;
+pub mod endpoint_label;
 pub mod flowchart;
 pub mod frontmatter;
 pub mod gantt;
@@ -148,6 +150,7 @@ pub fn parse(
     };
     match result {
         Ok(d) => {
+            endpoint_label::check(&d, diags);
             let failed = diags
                 .items
                 .get(first_diag..)

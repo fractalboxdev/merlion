@@ -74,6 +74,21 @@ The order of 2 and 3 is the contract, not an implementation detail. `#lt;br#gt;`
 
 The text stage splits a label at `\n` and at nothing else ([text-measurement.md](text-measurement.md)); `<br>` is source syntax, never model text.
 
+## Endpoint labels
+
+A flowchart edge or state transition label that names only the shapes it joins carries no information: the arrow already shows both ends. The parser records `W026` for each such label and draws it unchanged, since mermaid draws it too.
+
+A shape's names are its id and its label; a choice, fork or join state has only its id, and `[*]` has none. Labels and names are compared lower case, with each run of whitespace, `-` and `_` read as one space, and with `→`, `->`, `-->` and `=>` in a label read as ` to `. A label repeats its endpoints when it equals, for some name *t* of the target and some name *s* of the source:
+
+| Form | Example |
+|---|---|
+| *t* | `idle --> on_hold : on-hold` |
+| `to` *t* | `idle --> on_hold : to on-hold` |
+| *w* `to` *t*, *w* one word | `idle --> on_hold : pause to on-hold` |
+| *s* `to` *t* | `oh --> idle : on hold to idle`, with `state "on hold" as oh` |
+
+A label naming a trigger or a condition (`queue drains`), or the target with more words (`on-hold after three failures`), is quiet. `W026` has no fix: the right replacement is the event the label leaves out, or no label.
+
 ## Diagnostics
 
 ```
@@ -115,6 +130,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `W020` ClassesTruncated | Warning | An element given more than 32 classes; the rest are dropped |
 | `W021`–`W023` | Warning | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 | `W024`–`W025` | Warning | State diagrams ([state.md](state.md#diagnostics)) |
+| `W026` LabelRepeatsEndpoint | Warning | A flowchart edge or state transition label names only its endpoints ([Endpoint labels](#endpoint-labels)) |
 | `I010` UnmeasuredGlyph | Info | Code point outside the font table ([text-measurement.md](text-measurement.md)) |
 | `I011` ThemeConfigIgnored | Info | `theme`, `themeVariables` or `look` in front matter or `%%{init}%%` |
 | `I020` LayoutHintDiscarded | Info | Fewer than 50% of nodes survive ([layout.md](layout.md#stable-layout)) |
