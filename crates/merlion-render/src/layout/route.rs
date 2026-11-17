@@ -3,8 +3,9 @@
 //! lower layer. The caller transforms the points to the final direction.
 //!
 //! - `Orthogonal`: vertical runs through the dummy nodes' positions and horizontal jogs
-//!   in the gaps between layers. Jogs in one gap get distinct heights, spread evenly
-//!   across the gap, so parallel jogs never overlap, in the order that makes the fewest
+//!   in the gaps between layers. Jogs in one gap whose spans overlap get distinct
+//!   heights, spread evenly across the gap, so parallel jogs never overlap; jogs with
+//!   disjoint spans share a height ([`jog_tracks`]), in the order that makes the fewest
 //!   legs cross another jog ([`order_jogs`]). Ports are spread evenly along the
 //!   node side, ordered by the position of the edge's other end. The draw stage rounds
 //!   interior corners with a 6 px radius; the points here are the sharp corners.
@@ -19,7 +20,7 @@ use alloc::vec::Vec;
 
 use super::lgraph::{Kind, LGraph};
 use super::measure::{self, Side};
-use crate::math::{abs, hypot};
+use crate::math::{abs, hypot, max};
 use crate::model::Shape;
 use crate::options::{Direction, EdgeStyle};
 
@@ -162,6 +163,10 @@ pub struct RouteIn<'a> {
     /// Per model node.
     pub shapes: &'a [NodeShape],
     pub wrap: Option<&'a WrapFrame>,
+    /// Layer-axis room, clearance and end marker included, that each chain's label
+    /// chip needs on the run below its jog when the chain joins neighbouring layers
+    /// (0 otherwise). Empty means no chain needs room.
+    pub label_room: &'a [f64],
 }
 
 /// Route of one chain, from its upper to its lower endpoint, in the layout frame.
@@ -219,16 +224,24 @@ impl Jog {
         }
     }
 
-    /// Whether `x` lies strictly inside the jog's horizontal span.
+    /// Whether a vertical leg at `x` meets the jog: strictly inside its horizontal
+    /// span, or within [`LEG_CLEAR`] outside either end, where the leg would run
+    /// alongside the jog's own leg and read as one line. A leg exactly at an end
+    /// shares that port and is not a conflict.
     fn spans(&self, x: f64) -> bool {
         let hi = if self.from < self.to {
             self.to
         } else {
             self.from
         };
-        x > self.lo() + 1e-9 && x < hi - 1e-9
+        let lo = self.lo();
+        (x > lo - LEG_CLEAR && x < hi + LEG_CLEAR) && abs(x - lo) > 1e-9 && abs(x - hi) > 1e-9
     }
 }
+
+/// Vertical legs closer than this, in px, merge visually; [`Jog::spans`] treats a leg
+/// that close to a jog's end as meeting the jog.
+const LEG_CLEAR: f64 = 3.0;
 
 /// Crossings between jogs `a` and `b` when `a` runs above `b`: `a`'s downward leg
 /// crosses `b`'s jog when it starts inside `b`'s span, and `b`'s upper leg crosses
@@ -283,6 +296,40 @@ fn order_jogs(list: &[Jog]) -> Vec<Jog> {
         }
     }
     out
+}
+
+/// Smallest distance between distinct positions in `xs`; infinite with fewer than two.
+fn spacing(xs: &[f64]) -> f64 {
+    let mut v = xs.to_vec();
+    v.sort_by(|a, b| cmp_f(*a, *b));
+    v.dedup_by(|a, b| abs(*a - *b) < 1e-9);
+    v.windows(2)
+        .map(|w| w[1] - w[0])
+        .fold(f64::INFINITY, |a, b| if b < a { b } else { a })
+}
+
+/// Track (0 = top) of each jog in `ordered`, a top-to-bottom order from
+/// [`order_jogs`]. A jog sits one track below the lowest earlier jog whose span,
+/// widened by [`LEG_CLEAR`], overlaps its own; jogs with disjoint spans share a track,
+/// so both sides of a fan turn at matching heights. Overlapping jogs keep their order.
+fn jog_tracks(ordered: &[Jog]) -> Vec<usize> {
+    // Sharing costs quadratic time; past the ordering limit every jog keeps its own.
+    if ordered.len() > MAX_ORDERED_JOGS {
+        return (0..ordered.len()).collect();
+    }
+    let hi = |j: &Jog| if j.from < j.to { j.to } else { j.from };
+    let mut tracks: Vec<usize> = Vec::with_capacity(ordered.len());
+    for (i, j) in ordered.iter().enumerate() {
+        let t = ordered[..i]
+            .iter()
+            .zip(&tracks)
+            .filter(|(o, _)| o.lo() < hi(j) + LEG_CLEAR && j.lo() < hi(o) + LEG_CLEAR)
+            .map(|(_, &t)| t + 1)
+            .max()
+            .unwrap_or(0);
+        tracks.push(t);
+    }
+    tracks
 }
 
 /// Routes every chain of `inp.g`.
@@ -420,6 +467,8 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
     // Orthogonal jogs: collected per gap, then each given a distinct height spread
     // evenly across the gap so parallel jogs never overlap.
     let mut jogs: BTreeMap<usize, Vec<Jog>> = BTreeMap::new();
+    // Every chain's run through each gap, jogging or straight: `(from, to, chain)`.
+    let mut runs: BTreeMap<usize, Vec<(f64, f64, usize)>> = BTreeMap::new();
     if orthogonal {
         for (ci, c) in g.chains.iter().enumerate() {
             let c = &c.nodes;
@@ -432,6 +481,9 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
             let mut cur = start.0;
             for i in 1..n {
                 let tx = if i == n - 1 { end.0 } else { at(c[i]).0 };
+                if !wraps_at(c, i) {
+                    runs.entry(layer(c[i - 1])).or_default().push((cur, tx, ci));
+                }
                 if !wraps_at(c, i) && abs(tx - cur) > 1e-9 {
                     jogs.entry(layer(c[i - 1])).or_default().push(Jog {
                         from: cur,
@@ -448,11 +500,30 @@ pub fn route(inp: &RouteIn) -> Vec<Routed> {
     for (gap, list) in jogs.iter() {
         let top = inp.layer_bot.get(*gap).copied().unwrap_or(0.0);
         let bot = inp.layer_top.get(gap + 1).copied().unwrap_or(top);
-        let k = list.len();
-        for (s, j) in order_jogs(list).into_iter().enumerate() {
+        // A labelled chain's chip goes on its longest run. Keep the jogs to one side
+        // of the gap so the other holds the chips clear of the bends: the side where
+        // the runs stand further apart: below by default and for a fan-out, above
+        // for a fan-in, whose runs stand at least twice as far apart above.
+        let through = runs.get(gap).map_or(&[][..], Vec::as_slice);
+        let room = through
+            .iter()
+            .map(|r| inp.label_room.get(r.2).copied().unwrap_or(0.0))
+            .fold(0.0, max);
+        let ordered = order_jogs(list);
+        let tracks = jog_tracks(&ordered);
+        let k = tracks.iter().copied().max().map_or(0, |t| t + 1);
+        let band = max(bot - top - room, (bot - top) / 2.0);
+        let upper: Vec<f64> = through.iter().map(|r| r.0).collect();
+        let lower: Vec<f64> = through.iter().map(|r| r.1).collect();
+        let start = if room > 0.0 && spacing(&upper) > 2.0 * spacing(&lower) {
+            bot - band
+        } else {
+            top
+        };
+        for (j, t) in ordered.iter().zip(tracks) {
             jog_y.insert(
                 (j.chain, j.step),
-                top + (bot - top) * (s as f64 + 1.0) / (k as f64 + 1.0),
+                start + band * (t as f64 + 1.0) / (k as f64 + 1.0),
             );
         }
     }
@@ -731,6 +802,7 @@ mod tests {
             part: &part,
             shapes: &shapes,
             wrap: None,
+            label_room: &[],
         })
     }
 
@@ -782,6 +854,7 @@ mod tests {
                 part: &[0, 0, 1, 1],
                 shapes: &shapes,
                 wrap: Some(&wrap),
+                label_room: &[],
             });
             assert_eq!(
                 r.iter().map(|x| x.wrap).collect::<Vec<_>>(),
@@ -825,6 +898,7 @@ mod tests {
                 part: &[0, 1],
                 shapes: &shapes,
                 wrap: Some(&wrap),
+                label_room: &[],
             });
             assert!(r.iter().all(|x| x.wrap));
             assert_eq!(crossings(&r), 0, "{:?}", style);

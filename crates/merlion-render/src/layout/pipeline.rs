@@ -46,6 +46,22 @@ pub const LOOP_LABEL_GAP: f64 = 4.0;
 /// Container fit reduces the wrap width in these steps, down to [`MIN_WRAP_WIDTH`].
 pub const WRAP_STEP_PX: f64 = 20.0;
 pub const MIN_WRAP_WIDTH: f64 = 120.0;
+/// Widest wrap for an edge label at the default wrap width: a chip wider than this
+/// spans neighbouring connectors and reads as a caption rather than a label on one
+/// edge.
+pub const EDGE_LABEL_WRAP: f64 = 150.0;
+/// The default `wrap_width` (options.rs).
+const DEFAULT_WRAP: f64 = 200.0;
+
+/// Edge-label wrap for label wrap `wrap` under the configured `wrap_width`: capped at
+/// [`EDGE_LABEL_WRAP`] unless the diagram asks for a wider wrap than the default.
+fn edge_wrap(o: &Opts, wrap: f64) -> f64 {
+    if o.wrap_width > DEFAULT_WRAP {
+        wrap
+    } else {
+        min(wrap, EDGE_LABEL_WRAP)
+    }
+}
 /// Rounds of layer splitting (`TB`/`BT`) and of wrapping (`LR`/`RL`) per candidate.
 const MAX_FIT_ROUNDS: usize = 8;
 /// Label placement tries at most this many positions along an edge.
@@ -207,7 +223,10 @@ fn remeasure(
         }
         fuel.burn_optional(measure_cost(core::iter::once(t)))?;
         let style = measure::style_to_text(&edge.style, o.font_size);
-        m.edge_label[e] = Some(measured(o, text::layout_label(t, &style, wrap, diags)));
+        m.edge_label[e] = Some(measured(
+            o,
+            text::layout_label(t, &style, edge_wrap(o, wrap), diags),
+        ));
     }
     let base = TextStyle {
         font_size: o.font_size,
@@ -252,7 +271,7 @@ fn measure_all(chart: &Flowchart, o: &Opts, wrap: f64, diags: &mut Diagnostics) 
         .map(|e| {
             e.label.as_ref().filter(|t| !t.is_empty()).map(|t| {
                 let style = measure::style_to_text(&e.style, o.font_size);
-                clean_label(text::layout_label(t, &style, wrap, diags))
+                clean_label(text::layout_label(t, &style, edge_wrap(o, wrap), diags))
             })
         })
         .collect();
@@ -784,6 +803,77 @@ fn group_marker_room(chart: &Flowchart, g: &LGraph, group: &LabelGroup) -> (f64,
         .fold((0.0, 0.0), |a, b| (max(a.0, b.0), max(a.1, b.1)))
 }
 
+/// Bends a chip on edge `e` keeps off: only orthogonal routes, whose corners are
+/// rounded, and never a self-loop, whose chip sits beyond the loop by rule.
+fn own_bends(o: &Opts, chart: &Flowchart, e: usize, pts: &[(f64, f64)]) -> Vec<BoxF> {
+    let looped = chart.edges.get(e).is_some_and(|x| x.from == x.to);
+    if o.style != EdgeStyle::Orthogonal || looped {
+        return Vec::new();
+    }
+    bend_boxes(pts)
+}
+
+/// Boxes around the interior bends of `pts`, each covering the 6 px rounded corner
+/// plus 1 px. A chip over its own edge's bend hides which way the edge turns, so the
+/// bend is an obstacle for that edge's chip (specs/layout.md#6-edge-routing).
+fn bend_boxes(pts: &[(f64, f64)]) -> Vec<BoxF> {
+    const R: f64 = 7.0;
+    pts.windows(3)
+        .filter(|w| {
+            let (a, b) = (
+                (w[1].0 - w[0].0, w[1].1 - w[0].1),
+                (w[2].0 - w[1].0, w[2].1 - w[1].1),
+            );
+            abs(a.0 * b.1 - a.1 * b.0) > 1e-6 * (hypot(a.0, a.1) * hypot(b.0, b.1)).max(1e-9)
+        })
+        .map(|w| (w[1].0 - R, w[1].1 - R, w[1].0 + R, w[1].1 + R))
+        .collect()
+}
+
+/// Whether a chip centred at `p` clears nodes, `avoid`, `bends` and placed labels.
+fn fully_clear(
+    p: (f64, f64),
+    w: f64,
+    h: f64,
+    nodes: &[BoxF],
+    avoid: &[BoxF],
+    bends: &[BoxF],
+    placed: &[BoxF],
+) -> bool {
+    let b = centred(p.0, p.1, w, h, LABEL_CLEAR / 2.0);
+    nodes
+        .iter()
+        .chain(avoid)
+        .chain(bends)
+        .chain(placed)
+        .all(|&o| !boxes_overlap(o, b))
+}
+
+/// [`place_label`] with the edge's own bends as obstacles; when no spot clears them
+/// as well as everything else, the placement that ignores bends stands, so a chip
+/// covers its own corner rather than another connector.
+#[allow(clippy::too_many_arguments)]
+fn place_clear_of_bends(
+    points: &[(f64, f64)],
+    w: f64,
+    h: f64,
+    nodes: &[BoxF],
+    avoid: &[BoxF],
+    bends: &[BoxF],
+    placed: &[BoxF],
+    fuel: &mut Fuel,
+) -> Option<(f64, f64)> {
+    if !bends.is_empty() {
+        let with: Vec<BoxF> = avoid.iter().chain(bends).copied().collect();
+        if let Some(p) = place_label(points, w, h, nodes, &with, placed, fuel) {
+            if fully_clear(p, w, h, nodes, avoid, bends, placed) {
+                return Some(p);
+            }
+        }
+    }
+    place_label(points, w, h, nodes, avoid, placed, fuel)
+}
+
 /// Boxes covered by the end markers of an edge drawn along `pts` (screen frame): the
 /// last (first) [`MARKER_LEN`] px of the path, [`MARKER_LEN`] wide.
 fn marker_boxes(pts: &[(f64, f64)], start: Arrow, end: Arrow) -> Vec<BoxF> {
@@ -1259,6 +1349,17 @@ fn finish(
         })
         .collect();
 
+    // Chains between neighbouring layers carry their chip in the gap they jog in.
+    let label_room: Vec<f64> = g
+        .chains
+        .iter()
+        .map(|ch| {
+            if ch.nodes.len() != 2 {
+                return 0.0;
+            }
+            label_extent(m, dir, ch.edge).map_or(0.0, |x| x.thick + LABEL_CLEAR + MARKER_LEN)
+        })
+        .collect();
     let routed = route::route(&RouteIn {
         dir,
         style: o.style,
@@ -1269,6 +1370,7 @@ fn finish(
         part: part_of,
         shapes: &shapes,
         wrap: frame.as_ref(),
+        label_room: &label_room,
     });
 
     // Stacked labels take slots sized for their own chips and clearance.
@@ -1534,10 +1636,25 @@ fn finish(
             .chain(&markers)
             .any(|&t| boxes_overlap(clear_chip, t))
             || others.iter().any(|&o| boxes_overlap(chip, o));
-        if !clashes || edge_pts[e].len() < 2 {
+        let bends = own_bends(o, chart, e, &edge_pts[e]);
+        let on_bend = bends.iter().any(|&t| boxes_overlap(clear_chip, t));
+        if !clashes && !on_bend || edge_pts[e].len() < 2 {
             continue;
         }
-        if let Some(p) = place_label(&edge_pts[e], cw, ch, &obstacles, &markers, &others, fuel) {
+        // A chip that clashes takes the best spot; one that covers only its own bend
+        // moves only to a spot clear of everything, else stays where it is.
+        let found = place_clear_of_bends(
+            &edge_pts[e],
+            cw,
+            ch,
+            &obstacles,
+            &markers,
+            &bends,
+            &others,
+            fuel,
+        )
+        .filter(|&p| clashes || fully_clear(p, cw, ch, &obstacles, &markers, &bends, &others));
+        if let Some(p) = found {
             placed[pi] = centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0);
             labels[e] = Some(EdgeLabelGeom {
                 x: p.0,
@@ -1556,7 +1673,17 @@ fn finish(
         };
         let (cw, ch) = chip_size(l);
         let markers = avoid_for(e, fuel);
-        if let Some(p) = place_label(&edge_pts[e], cw, ch, &obstacles, &markers, &placed, fuel) {
+        let bends = own_bends(o, chart, e, &edge_pts[e]);
+        if let Some(p) = place_clear_of_bends(
+            &edge_pts[e],
+            cw,
+            ch,
+            &obstacles,
+            &markers,
+            &bends,
+            &placed,
+            fuel,
+        ) {
             placed.push(centred(p.0, p.1, cw, ch, LABEL_CLEAR / 2.0));
             labels[e] = Some(EdgeLabelGeom {
                 x: p.0,
