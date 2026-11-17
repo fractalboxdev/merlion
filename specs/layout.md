@@ -64,10 +64,13 @@ Aspect ratio is a soft constraint, following ARCOL (Alsuwaykit et al., 2026).
 - `spline`: sleeve routing (Nachmanson and Chen, 2026). Triangulate the free space with a constrained Delaunay triangulation, find a sequence of triangles (a "sleeve") from source to target in the dual graph, then take the shortest path through it with the funnel algorithm and smooth it into cubic Béziers. Used for dense diagrams and for edges that cross cluster boundaries. Routing consumes fuel; when it runs out, the remaining edges fall back to `polyline`. Until sleeve routing lands ([roadmap.md](roadmap.md) M5), every `spline` edge is routed and drawn exactly as `polyline`; smoothing the routed polyline alone would overshoot its vertices, leave the viewBox and cross clusters.
 - Edge labels sit at the midpoint of the longest segment, on an opaque label chip (`--merlion-edge-label-bg`), moved along the edge until they overlap no node, no cluster title, no other label and neither of the edge's own end markers (the last 10 px of the path, 10 px wide). Placement and the space reserved for a label use the chip's outer size, padding included; a gap crossed by a labelled edge also reserves 10 px per end marker. Labels of edges between neighbouring layers whose chips, centred between the edge's ends, would overlap are stacked: the gap between the layers grows to hold every chip of the group plus the markers at both ends, and each chip takes a slot sized for it and its clearance, on its own edge.
 
-Edge labels wrap at the diagram's wrap width or 150 px, whichever is narrower.
+Edge labels wrap at the label wrap width or 150 px, whichever is narrower; a
+diagram that sets a wrap width above the default 200 px wraps its edge labels at
+that width.
 Label chips have 6 px horizontal and 4 px vertical padding, with 4 px clearance
-from surrounding geometry. Placement keeps a chip off the bends of its own edge
-(each bend's 6 px rounded corner plus 1 px) when a position clear of everything
+from surrounding geometry. On an `orthogonal` route, placement keeps a chip off the
+bends of its own edge (each bend's 6 px rounded corner plus 1 px; self-loops
+excepted) when a position clear of everything
 else exists; otherwise a chip covers its own bend rather than another connector,
 a node or a label. Placement avoids cluster borders and other connectors;
 when no on-edge position clears them, a nearby position beside the connector takes

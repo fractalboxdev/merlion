@@ -313,6 +313,10 @@ fn spacing(xs: &[f64]) -> f64 {
 /// widened by [`LEG_CLEAR`], overlaps its own; jogs with disjoint spans share a track,
 /// so both sides of a fan turn at matching heights. Overlapping jogs keep their order.
 fn jog_tracks(ordered: &[Jog]) -> Vec<usize> {
+    // Sharing costs quadratic time; past the ordering limit every jog keeps its own.
+    if ordered.len() > MAX_ORDERED_JOGS {
+        return (0..ordered.len()).collect();
+    }
     let hi = |j: &Jog| if j.from < j.to { j.to } else { j.from };
     let mut tracks: Vec<usize> = Vec::with_capacity(ordered.len());
     for (i, j) in ordered.iter().enumerate() {

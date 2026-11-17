@@ -357,7 +357,10 @@ fn fan_out_legs_stay_apart_and_sides_turn_together() {
             }
         }
     }
-    let y: Vec<f64> = g.edges.iter().map(|e| jog_y(&e.points)).collect();
+    // Left to right by port, whatever the source order.
+    let mut by_port: Vec<_> = g.edges.iter().collect();
+    by_port.sort_by(|a, b| a.points[0].x.total_cmp(&b.points[0].x));
+    let y: Vec<f64> = by_port.iter().map(|e| jog_y(&e.points)).collect();
     assert!(
         (y[0] - y[3]).abs() < 1e-6,
         "outer edges turn at {} and {}",

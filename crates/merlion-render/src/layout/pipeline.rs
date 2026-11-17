@@ -46,12 +46,21 @@ pub const LOOP_LABEL_GAP: f64 = 4.0;
 /// Container fit reduces the wrap width in these steps, down to [`MIN_WRAP_WIDTH`].
 pub const WRAP_STEP_PX: f64 = 20.0;
 pub const MIN_WRAP_WIDTH: f64 = 120.0;
-/// Widest wrap for an edge label: a chip wider than this spans neighbouring
-/// connectors and reads as a caption rather than a label on one edge.
+/// Widest wrap for an edge label at the default wrap width: a chip wider than this
+/// spans neighbouring connectors and reads as a caption rather than a label on one
+/// edge.
 pub const EDGE_LABEL_WRAP: f64 = 150.0;
+/// The default `wrap_width` (options.rs).
+const DEFAULT_WRAP: f64 = 200.0;
 
-fn edge_wrap(wrap: f64) -> f64 {
-    min(wrap, EDGE_LABEL_WRAP)
+/// Edge-label wrap for label wrap `wrap` under the configured `wrap_width`: capped at
+/// [`EDGE_LABEL_WRAP`] unless the diagram asks for a wider wrap than the default.
+fn edge_wrap(o: &Opts, wrap: f64) -> f64 {
+    if o.wrap_width > DEFAULT_WRAP {
+        wrap
+    } else {
+        min(wrap, EDGE_LABEL_WRAP)
+    }
 }
 /// Rounds of layer splitting (`TB`/`BT`) and of wrapping (`LR`/`RL`) per candidate.
 const MAX_FIT_ROUNDS: usize = 8;
@@ -216,7 +225,7 @@ fn remeasure(
         let style = measure::style_to_text(&edge.style, o.font_size);
         m.edge_label[e] = Some(measured(
             o,
-            text::layout_label(t, &style, edge_wrap(wrap), diags),
+            text::layout_label(t, &style, edge_wrap(o, wrap), diags),
         ));
     }
     let base = TextStyle {
@@ -262,7 +271,7 @@ fn measure_all(chart: &Flowchart, o: &Opts, wrap: f64, diags: &mut Diagnostics) 
         .map(|e| {
             e.label.as_ref().filter(|t| !t.is_empty()).map(|t| {
                 let style = measure::style_to_text(&e.style, o.font_size);
-                clean_label(text::layout_label(t, &style, edge_wrap(wrap), diags))
+                clean_label(text::layout_label(t, &style, edge_wrap(o, wrap), diags))
             })
         })
         .collect();
@@ -794,8 +803,16 @@ fn group_marker_room(chart: &Flowchart, g: &LGraph, group: &LabelGroup) -> (f64,
         .fold((0.0, 0.0), |a, b| (max(a.0, b.0), max(a.1, b.1)))
 }
 
-/// Boxes covered by the end markers of an edge drawn along `pts` (screen frame): the
-/// last (first) [`MARKER_LEN`] px of the path, [`MARKER_LEN`] wide.
+/// Bends a chip on edge `e` keeps off: only orthogonal routes, whose corners are
+/// rounded, and never a self-loop, whose chip sits beyond the loop by rule.
+fn own_bends(o: &Opts, chart: &Flowchart, e: usize, pts: &[(f64, f64)]) -> Vec<BoxF> {
+    let looped = chart.edges.get(e).is_some_and(|x| x.from == x.to);
+    if o.style != EdgeStyle::Orthogonal || looped {
+        return Vec::new();
+    }
+    bend_boxes(pts)
+}
+
 /// Boxes around the interior bends of `pts`, each covering the 6 px rounded corner
 /// plus 1 px. A chip over its own edge's bend hides which way the edge turns, so the
 /// bend is an obstacle for that edge's chip (specs/layout.md#6-edge-routing).
@@ -857,6 +874,8 @@ fn place_clear_of_bends(
     place_label(points, w, h, nodes, avoid, placed, fuel)
 }
 
+/// Boxes covered by the end markers of an edge drawn along `pts` (screen frame): the
+/// last (first) [`MARKER_LEN`] px of the path, [`MARKER_LEN`] wide.
 fn marker_boxes(pts: &[(f64, f64)], start: Arrow, end: Arrow) -> Vec<BoxF> {
     let mut out = Vec::new();
     let mut add = |tip: (f64, f64), from: (f64, f64)| {
@@ -1335,7 +1354,7 @@ fn finish(
         .chains
         .iter()
         .map(|ch| {
-            if ch.nodes.len() != 2 || ch.label.is_some() {
+            if ch.nodes.len() != 2 {
                 return 0.0;
             }
             label_extent(m, dir, ch.edge).map_or(0.0, |x| x.thick + LABEL_CLEAR + MARKER_LEN)
@@ -1617,7 +1636,7 @@ fn finish(
             .chain(&markers)
             .any(|&t| boxes_overlap(clear_chip, t))
             || others.iter().any(|&o| boxes_overlap(chip, o));
-        let bends = bend_boxes(&edge_pts[e]);
+        let bends = own_bends(o, chart, e, &edge_pts[e]);
         let on_bend = bends.iter().any(|&t| boxes_overlap(clear_chip, t));
         if !clashes && !on_bend || edge_pts[e].len() < 2 {
             continue;
@@ -1654,7 +1673,7 @@ fn finish(
         };
         let (cw, ch) = chip_size(l);
         let markers = avoid_for(e, fuel);
-        let bends = bend_boxes(&edge_pts[e]);
+        let bends = own_bends(o, chart, e, &edge_pts[e]);
         if let Some(p) = place_clear_of_bends(
             &edge_pts[e],
             cw,
