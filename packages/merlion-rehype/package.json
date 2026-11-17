@@ -1,6 +1,6 @@
 {
   "name": "@fractalboxdev/merlion-rehype",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "rehype plugin rendering Mermaid code blocks to static, themeable, accessible SVG at build time.",
   "license": "MIT",
   "repository": {
@@ -43,7 +43,7 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@fractalboxdev/merlion-wasm": "0.3.0"
+    "@fractalboxdev/merlion-wasm": "0.3.1"
   },
   "peerDependenciesMeta": {
     "@fractalboxdev/merlion-wasm": {

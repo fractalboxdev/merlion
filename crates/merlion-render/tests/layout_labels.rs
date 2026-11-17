@@ -256,3 +256,119 @@ fn chips_and_edges_keep_off_cluster_titles() {
         edges
     );
 }
+
+fn layout(src: &str) -> (Flowchart, Geometry) {
+    let o = RenderOptions::default();
+    let po = ParseOptions {
+        strict: false,
+        limits: o.limits,
+    };
+    let mut d = Diagnostics::new(false);
+    let Ok(Diagram::Flowchart(c)) = parse(src, &po, &mut d) else {
+        panic!("not a flowchart");
+    };
+    let mut fuel = Fuel::new(o.fuel);
+    let g = layout_flowchart(&c, &o, &mut fuel, &mut d).expect("layout");
+    (c, g)
+}
+
+/// Interior bends of an edge, the corners its rounded path turns at.
+fn bends(pts: &[merlion_render::geometry::Point]) -> Vec<(f64, f64)> {
+    pts.windows(3)
+        .filter(|w| {
+            let (ax, ay) = (w[1].x - w[0].x, w[1].y - w[0].y);
+            let (bx, by) = (w[2].x - w[1].x, w[2].y - w[1].y);
+            (ax * by - ay * bx).abs() > 1e-6
+        })
+        .map(|w| (w[1].x, w[1].y))
+        .collect()
+}
+
+fn chips_on_own_bend(g: &Geometry) -> usize {
+    g.edges
+        .iter()
+        .filter(|eg| {
+            eg.label.as_ref().is_some_and(|l| {
+                let (w, h) = chip_size(&l.label);
+                bends(&eg.points)
+                    .iter()
+                    .any(|&(x, y)| (x - l.x).abs() < w / 2.0 && (y - l.y).abs() < h / 2.0)
+            })
+        })
+        .count()
+}
+
+/// A chip over its own edge's bend hides which way the edge turns.
+#[test]
+fn no_chip_covers_a_bend_of_its_own_edge() {
+    let bad: Vec<(String, usize)> = corpus()
+        .into_iter()
+        .filter_map(|(name, c)| {
+            let o = RenderOptions::default();
+            let mut fuel = Fuel::new(o.fuel);
+            let mut d = Diagnostics::new(false);
+            let g = layout_flowchart(&c, &o, &mut fuel, &mut d).ok()?;
+            let k = chips_on_own_bend(&g);
+            (k > 0).then_some((name, k))
+        })
+        .collect();
+    assert!(bad.is_empty(), "chips on their own bend: {bad:?}");
+}
+
+const FAN: &str = "flowchart TD
+  v3{Needs x86-64-v3?} -->|no| ros[Runs, 1.33-1.36x CPU]
+  v3 -->|Docker Desktop 4.58.1| ddok[Runs, measured]
+  v3 -->|OrbStack 2.2.4| f2[Fails, measured]
+  v3 -->|Apple container| unk[Not measured]
+";
+
+/// Vertical runs `(x, y0, y1)` of an edge, top to bottom.
+fn verticals(pts: &[merlion_render::geometry::Point]) -> Vec<(f64, f64, f64)> {
+    pts.windows(2)
+        .filter(|s| (s[0].x - s[1].x).abs() < 1e-6 && (s[0].y - s[1].y).abs() > 4.0)
+        .map(|s| (s[0].x, s[0].y.min(s[1].y), s[0].y.max(s[1].y)))
+        .collect()
+}
+
+/// First horizontal jog height of an edge.
+fn jog_y(pts: &[merlion_render::geometry::Point]) -> f64 {
+    pts.windows(2)
+        .find(|s| (s[0].y - s[1].y).abs() < 1e-6 && (s[0].x - s[1].x).abs() > 1e-6)
+        .map_or(f64::NAN, |s| s[0].y)
+}
+
+/// A fan's legs never run alongside each other, and the two sides of the fan turn
+/// at matching heights (specs/layout.md#6-edge-routing).
+#[test]
+fn fan_out_legs_stay_apart_and_sides_turn_together() {
+    let (_, g) = layout(FAN);
+    let vs: Vec<_> = g.edges.iter().map(|e| verticals(&e.points)).collect();
+    for i in 0..vs.len() {
+        for j in i + 1..vs.len() {
+            for a in &vs[i] {
+                for b in &vs[j] {
+                    let dx = (a.0 - b.0).abs();
+                    let overlap = a.2.min(b.2) - a.1.max(b.1);
+                    assert!(
+                        !(dx > 1e-6 && dx < 3.0 && overlap > 4.0),
+                        "edges {i} and {j} run {dx:.2} px apart for {overlap:.0} px"
+                    );
+                }
+            }
+        }
+    }
+    let y: Vec<f64> = g.edges.iter().map(|e| jog_y(&e.points)).collect();
+    assert!(
+        (y[0] - y[3]).abs() < 1e-6,
+        "outer edges turn at {} and {}",
+        y[0],
+        y[3]
+    );
+    assert!(
+        (y[1] - y[2]).abs() < 1e-6,
+        "inner edges turn at {} and {}",
+        y[1],
+        y[2]
+    );
+    assert_eq!(chips_on_own_bend(&g), 0);
+}
