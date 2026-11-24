@@ -19,7 +19,7 @@ A custom element that adds pan, zoom and fullscreen to any SVG, and click-driven
 | Double-click / double-tap on the background | Reset to fit |
 | `+` / `-` / `0` when focused | Zoom in, zoom out, reset |
 | Arrow keys when focused | Pan by 10%; with the interaction module, `Shift` + arrows pan and plain arrows move between nodes |
-| Fullscreen button | Moves the SVG element into a modal `<dialog>`, sized to the viewport, and moves it back when the dialog closes; `Esc` closes it. The SVG is moved, never cloned, so its ids stay unique on the page |
+| Fullscreen button | Moves the SVG element into a modal `<dialog>`, sized to the viewport, and moves it back when the dialog closes; `Esc` or the dialog's close button closes it. The SVG is moved, never cloned, so its ids stay unique on the page. The dialog carries its own zoom in, zoom out and reset buttons, because the host's controls sit under the modal's top layer; focus starts on the close button |
 
 - Zooming applies a CSS `transform` to the SVG element and never re-rasterises, so text stays vector-sharp.
 - The controls (zoom in, zoom out, reset, fullscreen) are `<button>` elements with `aria-label`s, shown on hover or focus and always shown on touch devices.

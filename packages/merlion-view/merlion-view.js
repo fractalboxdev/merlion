@@ -52,6 +52,13 @@ button:focus-visible{outline:2px solid var(--merlion-accent,#0969da);outline-off
 button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .sr{position:absolute;clip-path:inset(50%)}`;
 
+// Fullscreen dialog controls: the zoom actions of BUTTONS, styled inline like the popover.
+const DIALOG_ACTIONS = ["+", "-", "0"];
+const DIALOG_BUTTON =
+  "display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid var(--merlion-border,#d0d7de);border-radius:8px;background:var(--merlion-bg,#fff);color:inherit;cursor:pointer";
+const DIALOG_ICON =
+  "width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round";
+
 // The popover's style is inline (CSSOM, allowed under a strict CSP), because in fullscreen it
 // lives in the light-DOM dialog, out of reach of the shadow style.
 const POP =
@@ -436,14 +443,32 @@ export class MerlionView extends Base {
       d.className = "merlion-view-dialog";
       d.style.cssText =
         "width:100vw;height:100vh;max-width:none;max-height:none;margin:0;padding:0;border:0;overflow:hidden;background:var(--merlion-bg,#fff);color:var(--merlion-fg,#1f2328)";
-      const close = document.createElement("button");
-      close.type = "button";
-      close.setAttribute("aria-label", "Close fullscreen");
+      // The host's controls sit in its shadow root, under the modal's top layer, so the
+      // dialog carries its own: zoom in, zoom out, reset, then close. Inline style, as
+      // the dialog is light DOM out of reach of the shadow sheet.
+      const bar = document.createElement("div");
+      bar.className = "merlion-view-dialog-controls";
+      bar.style.cssText = "position:absolute;top:12px;right:12px;z-index:10;display:flex;gap:6px";
+      const button = (label, run) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("aria-label", label);
+        b.title = label;
+        b.style.cssText = DIALOG_BUTTON;
+        b.addEventListener("click", run);
+        bar.append(b);
+        return b;
+      };
+      for (const [a, label, path] of BUTTONS.filter(([a]) => DIALOG_ACTIONS.includes(a))) {
+        button(label, () => this.#set(keyView(a, this.#v, this.#box()), true)).innerHTML = icon(path);
+      }
+      const close = button("Close fullscreen", () => this.#restore());
       close.textContent = "×";
-      close.style.cssText =
-        "position:absolute;top:12px;right:12px;width:36px;height:36px;font:24px/1 system-ui,sans-serif;border:1px solid var(--merlion-border,#d0d7de);border-radius:8px;background:var(--merlion-bg,#fff);color:inherit;cursor:pointer";
-      close.addEventListener("click", () => this.#restore());
-      d.append(close);
+      close.style.font = "24px/1 system-ui,sans-serif";
+      // showModal focuses the first focusable element; keep that on close, as before.
+      close.autofocus = true;
+      for (const s of bar.querySelectorAll("svg")) s.style.cssText = DIALOG_ICON;
+      d.append(bar);
       // Esc fires `cancel` synchronously; `close` covers a dialog closed by script.
       // #restore is idempotent and closes the dialog itself.
       d.addEventListener("close", () => this.#restore());
