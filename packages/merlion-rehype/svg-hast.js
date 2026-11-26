@@ -14,6 +14,7 @@
 const PROPERTY = {
   class: "className",
   "aria-labelledby": "ariaLabelledBy",
+  "fill-opacity": "fillOpacity",
   "font-family": "fontFamily",
   "font-size": "fontSize",
   "font-style": "fontStyle",
@@ -21,6 +22,8 @@ const PROPERTY = {
   "marker-end": "markerEnd",
   "marker-start": "markerStart",
   "stroke-dasharray": "strokeDashArray",
+  "stroke-linecap": "strokeLineCap",
+  "stroke-linejoin": "strokeLineJoin",
   "stroke-width": "strokeWidth",
   "text-anchor": "textAnchor",
 };
