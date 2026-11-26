@@ -24,7 +24,7 @@ The core renders a second input format, the `merlion-chart/1` JSON spec ([chart.
 | Mermaid `xychart` only | Renders everywhere Mermaid does | Bar and line only; no ranges, reference lines, spans or dots; values as floats, so `-2.40` prints as `-2.4` |
 | **JSON spec rendered by the core** | Rows and fields: a value is written once, validated against a schema with JSON Pointer paths, and carried into the SVG as written; the core's determinism, metrics, theming and accessibility apply unchanged | A second input format to maintain; not Mermaid, so no other renderer draws it; GitHub shows the spec as code |
 | A third-party grammar: Vega-Lite with vega's headless renderer or vl-convert; Observable Plot with a DOM shim; ECharts' SVG server renderer | Mature grammars and many chart types | Runtime JavaScript (vl-convert embeds a JavaScript engine), so the `no_std` core cannot call them and the zero-dependency rule fails ([ADR-0002](0002-zero-runtime-dependencies.md)). Each brings its own text measurement, so label widths differ from the diagrams on the same page; vega estimates widths from character counts without a canvas. Colours are literals or JavaScript theme objects, not `--merlion-*` tokens |
-| A chart renderer inside each host (report viewer, application) | No change to Merlion | Several renderers with different metrics, themes and output; no shared determinism guarantee |
+| A chart renderer inside each host page or application | No change to Merlion | Several renderers with different metrics, themes and output; no shared determinism guarantee |
 
 ## Criteria
 
