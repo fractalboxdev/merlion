@@ -91,7 +91,7 @@ fn run(cmd: Command) -> u8 {
             let base = options(&r, palette);
             if let Some(dir) = &r.batch {
                 render_batch(&r, &base, dir, &cwd, &mut status);
-            } else if r.input.as_deref().is_some_and(markdown::is_markdown_path) {
+            } else if !r.chart && r.input.as_deref().is_some_and(markdown::is_markdown_path) {
                 if r.outline.is_some() || r.hint.is_some() {
                     return usage_error(
                         "`--outline` and `--hint` apply to one diagram, not to a Markdown file",
@@ -339,7 +339,7 @@ fn load_hint(path: &Path, cwd: &Path, follow: bool) -> Result<Option<String>, ()
 
 /// `--hint` defaults to the existing output file; `--no-hint` forces a fresh layout.
 fn default_hint(target: &Path, r: &RenderArgs, cwd: &Path) -> Result<Option<String>, ()> {
-    if r.no_hint || !target.is_file() {
+    if r.no_hint || r.chart || !target.is_file() {
         return Ok(None);
     }
     load_hint(target, cwd, r.follow_symlinks)
@@ -371,6 +371,7 @@ fn render_single(r: &RenderArgs, base: &RenderOptions, cwd: &Path, status: &mut 
         follow: r.follow_symlinks,
     };
     let result = match read_input(r.input.as_deref(), opts.limits.input_bytes as u64, guard) {
+        Ok(Input::Text(src)) if r.chart => merlion_render::render_chart(&src, &opts),
         Ok(Input::Text(src)) => merlion_render::render(&src, &opts),
         Ok(Input::TooLarge) => RenderResult::from_error(too_large()),
         Err(()) => return status.failed = true,
@@ -704,7 +705,9 @@ fn check(c: &CheckArgs, cwd: &Path, status: &mut Status) {
         let Some(text) = read_or_record(input, input_cap(input), guard, status) else {
             continue;
         };
-        let diags: Vec<Diagnostic> = if input.is_some_and(markdown::is_markdown_path) {
+        let diags: Vec<Diagnostic> = if c.chart {
+            merlion_render::check_chart(&text, c.strict)
+        } else if input.is_some_and(markdown::is_markdown_path) {
             markdown::mermaid_blocks(&text)
                 .iter()
                 .flat_map(|b| {

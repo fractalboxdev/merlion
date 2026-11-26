@@ -1,0 +1,49 @@
+{
+  "chart": 1,
+  "title": "Every region lost users in week 47; the south lost the most",
+  "x": {
+    "type": "linear",
+    "label": "Change in weekly active users, %",
+    "format": {
+      "suffix": "%"
+    }
+  },
+  "y": {
+    "type": "band"
+  },
+  "data": [
+    {
+      "region": "North",
+      "change": "-1.8"
+    },
+    {
+      "region": "East",
+      "change": "-2.40"
+    },
+    {
+      "region": "West",
+      "change": "-0.6"
+    },
+    {
+      "region": "Central",
+      "change": "0.9"
+    },
+    {
+      "region": "South",
+      "change": "-6.25"
+    },
+    {
+      "region": "Islands",
+      "change": "-3.1"
+    }
+  ],
+  "marks": [
+    {
+      "type": "bar",
+      "x": "change",
+      "y": "region",
+      "label": "change",
+      "tone": "neutral"
+    }
+  ]
+}

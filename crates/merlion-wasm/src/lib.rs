@@ -7,6 +7,8 @@
 //!   result buffer: a `u32` little-endian byte length, then that many bytes of UTF-8 JSON.
 //!   `render` gives `{svg, outline, diagnostics, fuel_used, error}` (the shape of
 //!   `merlion render --json`); `check` gives `{diagnostics, error}`.
+//! - `render_chart(…)` and `check_chart(…)` take a `merlion-chart/1` JSON spec
+//!   (specs/chart.md) in place of Mermaid source and return the same shapes.
 //! - `compile_stylesheet(css_ptr, css_len, opts_ptr, opts_len) -> ptr` returns
 //!   `{css, palette, diagnostics, error}`: the compiled page CSS, the palette JSON of
 //!   the chosen themes (`index.d.ts` `Palette`) and the compiler's diagnostics.
@@ -44,6 +46,19 @@ fn render_failure(kind: &str, message: &str) -> String {
 
 /// The JSON of `render` for already-copied inputs.
 pub fn render_json(src: &[u8], opts: &[u8]) -> String {
+    render_json_with(src, opts, merlion_render::render)
+}
+
+/// The JSON of `render_chart` for already-copied inputs: the same shape as `render`.
+pub fn render_chart_json(src: &[u8], opts: &[u8]) -> String {
+    render_json_with(src, opts, merlion_render::render_chart)
+}
+
+fn render_json_with(
+    src: &[u8],
+    opts: &[u8],
+    renderer: fn(&str, &merlion_render::RenderOptions) -> RenderResult,
+) -> String {
     let Ok(source) = core::str::from_utf8(src) else {
         return render_failure("invalid_input", "source is not UTF-8");
     };
@@ -66,7 +81,7 @@ pub fn render_json(src: &[u8], opts: &[u8]) -> String {
             fix: None,
         });
     }
-    let mut result: RenderResult = merlion_render::render(source, &options);
+    let mut result: RenderResult = renderer(source, &options);
     if !pre.is_empty() {
         pre.append(&mut result.diagnostics);
         result.diagnostics = pre;
@@ -76,6 +91,15 @@ pub fn render_json(src: &[u8], opts: &[u8]) -> String {
 
 /// The JSON of `check` for already-copied inputs. Only `strict` is read from the options.
 pub fn check_json(src: &[u8], opts: &[u8]) -> String {
+    check_json_with(src, opts, merlion_render::check)
+}
+
+/// The JSON of `check_chart` for already-copied inputs.
+pub fn check_chart_json(src: &[u8], opts: &[u8]) -> String {
+    check_json_with(src, opts, merlion_render::check_chart)
+}
+
+fn check_json_with(src: &[u8], opts: &[u8], checker: fn(&str, bool) -> Vec<Diagnostic>) -> String {
     let fail = |kind: &str, msg: &str| {
         format!(
             r#"{{"diagnostics":[],"error":{}}}"#,
@@ -90,7 +114,7 @@ pub fn check_json(src: &[u8], opts: &[u8]) -> String {
         Err(msg) => return fail("invalid_options", &msg),
     };
     let mut out = String::from(r#"{"diagnostics":"#);
-    json::push_diagnostics(&mut out, &merlion_render::check(source, strict));
+    json::push_diagnostics(&mut out, &checker(source, strict));
     out.push_str(r#","error":null}"#);
     out
 }
@@ -326,6 +350,39 @@ pub unsafe extern "C" fn check(
     into_result(check_json(src, opts))
 }
 
+/// Renders one `merlion-chart/1` JSON spec (specs/chart.md); returns a result buffer
+/// with the shape of [`render`]'s.
+///
+/// # Safety
+/// As for [`render`].
+#[no_mangle]
+pub unsafe extern "C" fn render_chart(
+    src_ptr: *const u8,
+    src_len: usize,
+    opts_ptr: *const u8,
+    opts_len: usize,
+) -> *mut u8 {
+    // SAFETY: forwarded caller contract.
+    let (src, opts) = unsafe { (host_bytes(src_ptr, src_len), host_bytes(opts_ptr, opts_len)) };
+    into_result(render_chart_json(src, opts))
+}
+
+/// Checks a chart spec without drawing it; returns `{diagnostics, error}`.
+///
+/// # Safety
+/// As for [`render`].
+#[no_mangle]
+pub unsafe extern "C" fn check_chart(
+    src_ptr: *const u8,
+    src_len: usize,
+    opts_ptr: *const u8,
+    opts_len: usize,
+) -> *mut u8 {
+    // SAFETY: forwarded caller contract.
+    let (src, opts) = unsafe { (host_bytes(src_ptr, src_len), host_bytes(opts_ptr, opts_len)) };
+    into_result(check_chart_json(src, opts))
+}
+
 /// Compiles a stylesheet; returns a result buffer with `{css, palette, diagnostics,
 /// error}`.
 ///
@@ -343,7 +400,8 @@ pub unsafe extern "C" fn compile_stylesheet(
     into_result(compile_stylesheet_json(css, opts))
 }
 
-/// Frees a result buffer from `render`, `check` or `compile_stylesheet`. Null is a no-op.
+/// Frees a result buffer from `render`, `check`, `render_chart`, `check_chart` or
+/// `compile_stylesheet`. Null is a no-op.
 ///
 /// # Safety
 /// `ptr` must be a result buffer not yet freed.
@@ -426,6 +484,16 @@ mod tests {
         let opts = format!(r#"{{"hint":"{hint}"}}"#);
         let j = render_json(b"not a diagram", opts.as_bytes());
         assert!(j.contains(r#""code":"I022""#), "{j}");
+    }
+
+    #[test]
+    fn render_chart_json_has_the_render_shape() {
+        let spec = br#"{"chart":1,"title":"t","x":{"type":"band"},"y":{"type":"linear"},"data":[{"a":"x","v":"1.5"}],"marks":[{"type":"bar","x":"a","y":"v"}]}"#;
+        let out = render_chart_json(spec, b"");
+        assert!(out.starts_with(r#"{"svg":"<svg"#), "{out}");
+        assert!(out.contains(r#""error":null"#), "{out}");
+        let bad = check_chart_json(br#"{"chart":2}"#, b"");
+        assert!(bad.contains(r#""code":"E021""#), "{bad}");
     }
 
     #[test]

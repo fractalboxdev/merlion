@@ -159,7 +159,7 @@ fn first_tick(ms: i64, interval: AxisInterval, week: u8) -> Option<i64> {
     }
 }
 
-fn automatic_interval(span: i128, width: f64) -> TickInterval {
+pub(crate) fn automatic_interval(span: i128, width: f64) -> TickInterval {
     use TimeUnit::*;
     let need = span as f64 / max(width / 120.0, 1.0);
     let choices = [
@@ -197,6 +197,12 @@ fn automatic_interval(span: i128, width: f64) -> TickInterval {
         count: years.max(1),
         unit: Year,
     }
+}
+
+/// The first boundary of `interval` at or after `ms`, weeks starting on `week`
+/// (0 = Sunday); shared with the chart time axis.
+pub(crate) fn first_aligned(ms: i64, interval: TickInterval, week: u8) -> Option<i64> {
+    first_tick(ms, AxisInterval::from(interval), week)
 }
 
 /// Measures and lays out a deterministic UTC schedule. Explicit intervals retain

@@ -1,0 +1,76 @@
+{
+  "chart": 1,
+  "title": "Scores fell most where the baseline was highest",
+  "description": "Dumbbell chart of six teams' scores in January and in June.",
+  "x": {
+    "type": "linear",
+    "label": "Score"
+  },
+  "y": {
+    "type": "band"
+  },
+  "data": [
+    {
+      "team": "Atlas",
+      "jan": 82,
+      "jun": 61
+    },
+    {
+      "team": "Birch",
+      "jan": 77,
+      "jun": 70
+    },
+    {
+      "team": "Cedar",
+      "jan": 64,
+      "jun": 66
+    },
+    {
+      "team": "Delta",
+      "jan": 59,
+      "jun": 41
+    },
+    {
+      "team": "Ember",
+      "jan": 51,
+      "jun": 49
+    },
+    {
+      "team": "Fjord",
+      "jan": 45,
+      "jun": 52
+    }
+  ],
+  "series": {
+    "domain": [
+      "January",
+      "June"
+    ]
+  },
+  "marks": [
+    {
+      "type": "interval",
+      "y": "team",
+      "x": "jan",
+      "x2": "jun",
+      "tone": "neutral"
+    },
+    {
+      "type": "dot",
+      "y": "team",
+      "x": "jan",
+      "series": {
+        "value": "January"
+      }
+    },
+    {
+      "type": "dot",
+      "y": "team",
+      "x": "jun",
+      "series": {
+        "value": "June"
+      },
+      "label": "jun"
+    }
+  ]
+}

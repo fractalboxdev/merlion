@@ -9,6 +9,7 @@
 
 extern crate alloc;
 
+pub mod chart;
 pub mod color;
 pub mod diag;
 pub mod fuel;
@@ -304,6 +305,17 @@ pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
             }
         }
     }
+}
+
+/// Renders a `merlion-chart/1` JSON spec (specs/chart.md). Never panics; failures are
+/// reported in `error` and `diagnostics`.
+pub fn render_chart(spec: &str, opts: &RenderOptions) -> RenderResult {
+    chart::render(spec, opts)
+}
+
+/// Checks a chart spec without drawing it.
+pub fn check_chart(spec: &str, strict: bool) -> Vec<Diagnostic> {
+    chart::check(spec, strict)
 }
 
 /// Parses without rendering (`merlion check`).
