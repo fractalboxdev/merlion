@@ -3,7 +3,7 @@
  * quadrant labels, axis labels and points as the mermaid drawing, each placed the same
  * way relative to the plot.
  */
-import { hexColour, type QuadrantDrawing } from "../svg/quadrant.ts";
+import { hexColour, paintColour, type QuadrantDrawing } from "../svg/quadrant.ts";
 
 /** Largest difference in a recovered 0–1 coordinate that still matches. */
 const COORDINATE_TOLERANCE = 0.002;
@@ -25,14 +25,21 @@ export const quadrantCompat = (reference: QuadrantDrawing, candidate: QuadrantDr
   if (!candidate.validSvg) d.push("candidate has no valid SVG viewport");
   if (visible(reference.title) !== visible(candidate.title)) d.push(`title ${JSON.stringify(candidate.title)}, expected ${JSON.stringify(reference.title)}`);
   if (candidate.quadrants.length !== 4) d.push(`${candidate.quadrants.length} quadrant boxes, expected 4`);
+  for (const n of [1, 2, 3, 4]) {
+    const count = candidate.quadrants.filter((q) => q.n === n).length;
+    if (count !== 1) d.push(`quadrant ${n} has ${count} boxes, expected 1`);
+  }
   for (const r of reference.quadrants) {
     const c = candidate.quadrants.find((q) => q.n === r.n);
     if (c === undefined) continue;
     if (visible(r.label) !== visible(c.label)) d.push(`quadrant ${r.n} label differs`);
     if (r.label.trim() !== "" && r.placement !== c.placement) d.push(`quadrant ${r.n} label at ${c.placement}, expected ${r.placement}`);
-    // Fills are compared where the source sets them; the default quadrant colours are
-    // each renderer's theme.
-    if (new RegExp(`quadrant${r.n}Fill`).test(source) && hexColour(r.fill) !== hexColour(c.fill)) d.push(`quadrant ${r.n} fill ${c.fill}, expected ${r.fill}`);
+  }
+  for (const k of new Set([...Object.keys(reference.themePaints), ...Object.keys(candidate.themePaints)])) {
+    if (!new RegExp(`\\b${k}\\b`).test(source)) continue;
+    const r = (reference.themePaints[k] ?? []).map(paintColour).sort();
+    const c = (candidate.themePaints[k] ?? []).map(paintColour).sort();
+    if (JSON.stringify(r) !== JSON.stringify(c)) d.push(`${k} paint differs`);
   }
   const key = (a: { axis: string; end: string }) => `${a.axis}-${a.end}`;
   const refAxes = new Map(reference.axes.map((a) => [key(a), a]));

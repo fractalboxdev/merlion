@@ -120,6 +120,48 @@ describe("quadrant comparison", () => {
     expect(hexColour("hsl(240, 100%, NaN%)")).toBeNull();
   });
 
+  it("rejects missing and duplicated quadrant positions even with four rectangles", () => {
+    const overlapping = merlionSvg.replace(/<rect\b[^>]*\/>/g, '<rect x="10" y="10" width="100" height="100"/>');
+    const result = quadrantCompat(candidate, extractQuadrant(overlapping), source);
+    expect(result.pass).toBe(false);
+    expect(result.differences.join(";")).toMatch(/quadrant 1 has 0 boxes/);
+    expect(result.differences.join(";")).toMatch(/quadrant 3 has 4 boxes/);
+  });
+
+  it("detects a lost paint for every supported theme variable", () => {
+    const keys = [
+      ...[1, 2, 3, 4].flatMap((n) => [`quadrant${n}Fill`, `quadrant${n}TextFill`]),
+      "quadrantPointFill", "quadrantPointTextFill", "quadrantXAxisTextFill", "quadrantYAxisTextFill",
+      "quadrantInternalBorderStrokeFill", "quadrantExternalBorderStrokeFill", "quadrantTitleFill",
+    ];
+    const colours = Object.fromEntries(keys.map((k, i) => [k, `#${(0x123450 + i).toString(16)}`]));
+    const attr = (tag: string, name: string, value: string) => tag.includes(`${name}="`)
+      ? tag.replace(new RegExp(`${name}="[^"]*"`), `${name}="${value}"`)
+      : tag.replace(/\/?$/, (end) => ` ${name}="${value}"${end}`);
+    let themed = merlionSvg.replace(/(<g class="merlion-quadrant-region merlion-quadrant-(\d)">)([\s\S]*?)(<\/g>)/g,
+      (_, open, n, inner: string, close) => open + inner
+        .replace(/<rect\b[^>]*(?=>)/, (tag) => attr(tag, "fill", colours[`quadrant${n}Fill`]!))
+        .replace(/<text\b[^>]*(?=>)/, (tag) => attr(tag, "fill", colours[`quadrant${n}TextFill`]!)) + close);
+    themed = themed.replace(/<(?:circle|text)\b[^>]*(?=>)/g, (tag) => {
+      const key = tag.includes("merlion-quadrant-dot") ? "quadrantPointFill"
+        : tag.includes("merlion-quadrant-point-label") ? "quadrantPointTextFill"
+        : tag.includes("merlion-quadrant-axis-x") ? "quadrantXAxisTextFill"
+        : tag.includes("merlion-quadrant-axis-y") ? "quadrantYAxisTextFill"
+        : tag.includes("merlion-quadrant-title") ? "quadrantTitleFill" : null;
+      return key === null ? tag : attr(tag, "fill", colours[key]!);
+    });
+    themed = themed.replace("</svg>", `${[...Array(6)].map((_, i) => `<line class="merlion-quadrant-${i < 4 ? "border" : "divider"}" stroke="${colours[i < 4 ? "quadrantExternalBorderStrokeFill" : "quadrantInternalBorderStrokeFill"]}"/>`).join("")}</svg>`);
+    const original = extractQuadrant(themed);
+    const themeSource = keys.join(" ");
+    expect(quadrantCompat(original, original, themeSource).pass).toBe(true);
+    for (const key of keys) {
+      const changed = extractQuadrant(themed.replaceAll(colours[key]!, "#111111"));
+      const result = quadrantCompat(original, changed, themeSource);
+      expect(result.pass, key).toBe(false);
+      expect(result.differences.join(";"), key).toContain(`${key} paint differs`);
+    }
+  });
+
   it("gates on the complete corpus", () => {
     expect(quadrantOutcome("bad", "bad", null)).toBe("both rejected");
     expect(quadrantOutcome("bad", null, null)).toBe("reference rejected");

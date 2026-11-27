@@ -44,6 +44,8 @@ export interface QuadrantPoint {
 }
 
 export interface QuadrantDrawing {
+  /** Paints by Mermaid theme key, one entry per painted element. */
+  readonly themePaints: Readonly<Record<string, readonly (string | null)[]>>;
   readonly title: string | null;
   readonly plot: Box | null;
   readonly quadrants: readonly QuadrantBox[];
@@ -99,7 +101,8 @@ const centre = (b: Box) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
 
 /** A paint as written, lower-cased; `null` when absent. */
 const paint = (e: XmlElement | undefined, name: string): string | null => {
-  const v = e?.attrs[name]?.trim().toLowerCase();
+  const inline = new RegExp(`(?:^|;)\\s*${name}\\s*:\\s*([^;]+)`).exec(e?.attrs["style"] ?? "")?.[1];
+  const v = (inline ?? e?.attrs[name])?.trim().toLowerCase();
   return v === undefined || v === "" ? null : v;
 };
 
@@ -110,6 +113,17 @@ export const hexColour = (v: string | null): string | null => {
   if (m === null) return null;
   const h = m[1]!.toLowerCase();
   return `#${h.length === 3 ? [...h].map((c) => c + c).join("") : h}`;
+};
+
+/** Normalises literal paints, including Chromium's serialisation of border colours. */
+export const paintColour = (v: string | null): string | null => {
+  if (v === null) return null;
+  const compact = v.toLowerCase().replace(/\s+/g, "");
+  const hex = hexColour(compact);
+  if (hex !== null) return hex;
+  const rgb = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(compact);
+  if (rgb !== null) return `#${rgb.slice(1).map((n) => Number(n).toString(16).padStart(2, "0")).join("")}`;
+  return compact;
 };
 
 const strokeWidth = (e: XmlElement): number => {
@@ -129,7 +143,7 @@ export const extractQuadrant = (svg: string): QuadrantDrawing => {
   try {
     root = parseXml(svg);
   } catch {
-    return { title: null, plot: null, quadrants: [], axes: [], points: [], validSvg: false, fits720: false };
+    return { themePaints: {}, title: null, plot: null, quadrants: [], axes: [], points: [], validSvg: false, fits720: false };
   }
   const ctx = buildCtx(root);
   const view = parseViewBox(root);
@@ -217,5 +231,27 @@ export const extractQuadrant = (svg: string): QuadrantDrawing => {
     }];
   });
   const validSvg = view !== null && view.w > 0 && view.h > 0 && Number.isFinite(view.w + view.h);
-  return { title, plot, quadrants, axes, points, validSvg, fits720: validSvg && view!.w <= 720 };
+  const themePaints: Record<string, Array<string | null>> = {};
+  const add = (key: string, e: XmlElement | undefined, attribute = "fill") => {
+    if (e !== undefined) (themePaints[key] ??= []).push(paint(e, attribute));
+  };
+  for (const b of boxes) {
+    if (plot === null || b.box === null) continue;
+    const n = quadrantNumber(b.box, plot);
+    add(`quadrant${n}Fill`, b.rect);
+    add(`quadrant${n}TextFill`, b.text);
+  }
+  for (const a of axisTexts) add(a.axis === "x" ? "quadrantXAxisTextFill" : "quadrantYAxisTextFill", a.text);
+  for (const g of pointGroups) {
+    add("quadrantPointFill", collect(g, (e) => e.name === "circle")[0]);
+    add("quadrantPointTextFill", collect(g, (e) => e.name === "text")[0]);
+  }
+  add("quadrantTitleFill", titleEl);
+  const borders = merlion
+    ? collect(root, (e) => e.name === "line" && (hasClass(e, "merlion-quadrant-border") || hasClass(e, "merlion-quadrant-divider")))
+    : collect(root, (e) => e.name === "g" && hasClass(e, "border")).flatMap((g) => collect(g, (e) => e.name === "line"));
+  borders.forEach((line, i) => add(merlion
+    ? hasClass(line, "merlion-quadrant-border") ? "quadrantExternalBorderStrokeFill" : "quadrantInternalBorderStrokeFill"
+    : i < 4 ? "quadrantExternalBorderStrokeFill" : "quadrantInternalBorderStrokeFill", line, "stroke"));
+  return { themePaints, title, plot, quadrants, axes, points, validSvg, fits720: validSvg && view!.w <= 720 };
 };

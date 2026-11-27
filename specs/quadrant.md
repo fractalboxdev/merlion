@@ -15,11 +15,11 @@ The reference is Mermaid `mermaid@12.0.0`, commit `98a0945418c76238f15df2afaddbb
 
 `pnpm --dir bench bench quadrant` renders every source with Merlion and with pinned mermaid in headless Chromium and compares the two drawings:
 
-- the title, and each quadrant's label, by the quadrant its box occupies;
+- the title, exactly one box in each quadrant, and each quadrant's label, by the quadrant its box occupies;
 - where each quadrant label sits: in the top band of its quadrant or at its vertical centre;
 - each axis label's text, the side of the plot it sits on, and whether it is centred on its half of the axis or starts at the low end;
 - every point, matched by label: its coordinates recovered from the circle's position inside the plot (±0.002), its radius, its stroke width, its fill and stroke where mermaid draws a hex colour, and whether its label sits below it;
-- each quadrant fill the source sets through `themeVariables`.
+- every colour the source sets through the fifteen supported `themeVariables` keys: quadrant fills and text, points and their labels, axis labels, internal and external borders, and title.
 
 Default colours are each renderer's theme and are not compared. A text compares with whitespace removed, and mermaid's one-sided axis marker `⟶` compares equal to Merlion's `→`. A source passes when both render and the drawings agree; rejected sources stay in the denominator and two rejections earn no credit.
 
@@ -27,7 +27,7 @@ The run on the pinned corpus matches 23 of 24 sources (95.8%), per [`bench/resul
 
 ## Syntax
 
-The header is `quadrantChart`, matched case-sensitively as mermaid's detector matches it. Statements end at a line break or at `;` outside a double-quoted string; `title`, `accTitle` and `accDescr` take the rest of their line. Keywords match in any case, as mermaid's lexer reads them. `%%` starts a comment outside a quoted string.
+The header is `quadrantChart`, matched case-sensitively as mermaid's detector matches it. Statements end at a line break or at `;` outside a double-quoted string; `title`, `accTitle` and colon-form `accDescr` take the rest of their line, including literal `%%`. A block-form `accDescr { … }` preserves `%%` inside its braces and resumes ordinary statements after its closing brace. Keywords match in any case, as mermaid's lexer reads them. `%%` starts a comment outside a quoted string or metadata body.
 
 | Statement | Meaning |
 |---|---|

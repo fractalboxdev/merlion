@@ -2,7 +2,7 @@
 
 Pinned mermaid mermaid@12.0.0 (98a0945418c76238f15df2afaddbba4272656c3b) in headless Chromium; 24 of 24 retained unique sources. See `bench/NOTICES.md` for provenance.
 
-Compatibility compares the title, the four quadrant labels and where each sits in its quadrant, each axis label with its side of the plot and its alignment, and every point: its label, its 0–1 coordinates recovered from the circle's position in the plot, its radius, its stroke width, its explicit fill and stroke colours, and its label below the point. Quadrant fills are compared where the source sets them. Default colours are each renderer's theme and are not compared. This is content and placement compatibility, not pixel equivalence.
+Compatibility compares the title, exactly one box in each quadrant, the four quadrant labels and where each sits in its quadrant, each axis label with its side of the plot and its alignment, and every point: its label, its 0–1 coordinates recovered from the circle's position in the plot, its radius, its stroke width, its explicit fill and stroke colours, and its label below the point. Every authored quadrant theme colour is compared on its painted elements: quadrant fills and text, points and their labels, axis labels, internal and external borders, and title. Default colours are each renderer's theme and are not compared. This is content and placement compatibility, not pixel equivalence.
 
 | Measure | Result |
 |---|---|
