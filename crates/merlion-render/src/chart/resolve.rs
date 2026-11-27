@@ -59,6 +59,32 @@ pub struct Item {
     /// Index into [`Resolved::series`].
     pub series: Option<usize>,
     pub label: Option<String>,
+    /// Where the item sits in its stack, for an item of a stacked mark.
+    pub segment: Option<Segment>,
+}
+
+/// A stacked item's extent along the value axis (specs/chart.md#stacking): the correctly
+/// rounded binary64 values of the exact sums before and after it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Segment {
+    pub start: f64,
+    pub end: f64,
+    /// A nonzero segment lies between this one and zero.
+    pub inner: bool,
+    /// A nonzero segment lies beyond this one.
+    pub outer: bool,
+}
+
+/// The sum of one stacked bar, written beyond the end of its stack.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StackTotal {
+    /// Index into the category axis.
+    pub category: usize,
+    /// The exact sum of the stack's written values.
+    pub text: String,
+    /// The end of the stack on the side of the total's sign.
+    pub end: f64,
+    pub negative: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -74,6 +100,9 @@ pub struct MarkData {
     pub thickness: Option<f64>,
     pub dash: bool,
     pub has_labels: bool,
+    pub stack: bool,
+    /// Stack totals, in category order, for a stacked bar with `total`.
+    pub totals: Vec<StackTotal>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -429,8 +458,10 @@ pub fn resolve(
     for mark in &spec.marks {
         fuel.burn(1)
             .map_err(|_| RenderError::TooLarge { what: "fuel" })?;
+        // A stacked item's second unit covers its running sum and its share of the total.
+        let per_item = if mark.stack { 2 } else { 1 };
         let mut charge_item = |row: Option<&Row>| {
-            fuel.burn(1)
+            fuel.burn(per_item)
                 .map_err(|_| RenderError::TooLarge { what: "fuel" })?;
             text_bytes = text_bytes.saturating_add(item_text_bytes(mark, row));
             if text_bytes > MAX_DRAWN_TEXT_BYTES {
@@ -448,10 +479,31 @@ pub fn resolve(
             charge_item(None)?;
         }
     }
-    Ok(resolve_values(src, spec, diags))
+    // A total's length depends on its sum, so totals draw on what the items leave of the
+    // text limit, each checked before it is built.
+    let mut budget = TextBudget {
+        left: (MAX_DRAWN_TEXT_BYTES - text_bytes) as u64,
+        exceeded: false,
+    };
+    let resolved = resolve_values(src, spec, diags, &mut budget);
+    if budget.exceeded {
+        return Err(RenderError::TooLarge { what: "chart text" });
+    }
+    Ok(resolved)
 }
 
-fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolved> {
+/// Drawn item text left for stack totals.
+struct TextBudget {
+    left: u64,
+    exceeded: bool,
+}
+
+fn resolve_values(
+    src: &str,
+    spec: &Spec,
+    diags: &mut Diagnostics,
+    budget: &mut TextBudget,
+) -> Option<Resolved> {
     let mut cx = Ctx {
         positions: json::Positions::new(src),
         diags,
@@ -627,6 +679,7 @@ fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Res
                 y2: None,
                 series: None,
                 label: None,
+                segment: None,
             };
             let mut missing = false;
             for (ci, ch) in [Ch::X, Ch::Y, Ch::X2, Ch::Y2].into_iter().enumerate() {
@@ -769,6 +822,8 @@ fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Res
             thickness: m.thickness,
             dash: m.dash,
             has_labels: m.label.is_some(),
+            stack: m.stack,
+            totals: Vec::new(),
         });
     }
     if cx.diags.has_errors() {
@@ -846,11 +901,24 @@ fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Res
     if cx.diags.has_errors() {
         return None;
     }
+    for (mi, m) in marks.iter_mut().enumerate() {
+        if m.stack {
+            let dom = if m.horizontal { x_domain } else { y_domain };
+            stack(&mut cx, spec, mi, m, &series, dom, budget);
+        }
+    }
+    if cx.diags.has_errors() {
+        return None;
+    }
     // An authored domain is a promise about every value: a value outside it would draw
     // past the plot edge or be clipped, and a clipped bar misstates its value.
     for (axis_name, dom, on_x) in [("x", x_domain, true), ("y", y_domain, false)] {
         let Some((d0, d1)) = dom else { continue };
         for (mi, m) in marks.iter().enumerate() {
+            // A stack's extents were checked against the value axis as it was built.
+            if m.stack && m.horizontal == on_x {
+                continue;
+            }
             for it in &m.items {
                 let vals = if on_x {
                     [&it.x, &it.x2]
@@ -899,6 +967,247 @@ fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Res
         x_domain,
         y_domain,
     })
+}
+
+/// Stacks a stacked mark's items (specs/chart.md#stacking): per category of a bar, or
+/// per x of an area, segments in series order, values at or above zero up from zero and
+/// negative values down from it. Each extent comes from the exact sum of the written
+/// values before it; every item keeps its own value.
+fn stack(
+    cx: &mut Ctx,
+    spec: &Spec,
+    mi: usize,
+    m: &mut MarkData,
+    series: &[Rc<str>],
+    dom: Option<(f64, f64)>,
+    budget: &mut TextBudget,
+) {
+    use super::decimal::Dec;
+    let horizontal = m.horizontal;
+    let area = m.kind == MarkType::Area;
+    let with_total = spec.marks.get(mi).is_some_and(|s| s.total);
+    let mark_span = spec.marks.get(mi).map_or((0, 0), |s| (s.start, s.end));
+    let row_span = |row: Option<usize>| {
+        row.and_then(|r| spec.data.get(r))
+            .map_or(mark_span, |r| (r.start, r.end))
+    };
+    let key_of = |it: &Item| {
+        if horizontal {
+            it.y.clone()
+        } else {
+            it.x.clone()
+        }
+    };
+    let value_of = |it: &Item| {
+        if horizontal {
+            it.x.clone()
+        } else {
+            it.y.clone()
+        }
+    };
+    let name = |k: Option<usize>| {
+        k.and_then(|k| series.get(k))
+            .map_or_else(String::new, |s| String::from(s.as_ref()))
+    };
+    let keys: Vec<Option<Val>> = m.items.iter().map(key_of).collect();
+    let key_num = |i: usize| keys[i].as_ref().map(|v| v.pos.num());
+    let mut order: Vec<usize> = (0..m.items.len()).filter(|&i| keys[i].is_some()).collect();
+    order.sort_by(|&a, &b| {
+        key_num(a)
+            .unwrap_or(0.0)
+            .total_cmp(&key_num(b).unwrap_or(0.0))
+            .then(m.items[a].series.cmp(&m.items[b].series))
+            .then(a.cmp(&b))
+    });
+    let mut groups: Vec<core::ops::Range<usize>> = Vec::new();
+    let mut first = 0;
+    for i in 1..=order.len() {
+        if i == order.len() || key_num(order[i]) != key_num(order[first]) {
+            groups.push(first..i);
+            first = i;
+        }
+    }
+    let key_text = |i: usize| {
+        keys[i]
+            .as_ref()
+            .map_or_else(String::new, |v| crate::diag::excerpt(&v.raw))
+    };
+
+    // One value per series in each stack; an area also needs every series at every x.
+    let mut gaps: Vec<(usize, usize, usize)> = Vec::new();
+    for g in &groups {
+        let idx = &order[g.clone()];
+        for w in idx.windows(2) {
+            if m.items[w[0]].series == m.items[w[1]].series {
+                let it = &m.items[w[1]];
+                let (s, e) = row_span(it.row);
+                cx.error(
+                    E_VALUE,
+                    s,
+                    e,
+                    alloc::format!(
+                        "`/data/{}`: series \"{}\" already has a value at \"{}\" in the stacked mark `/marks/{}`",
+                        it.row.unwrap_or(0),
+                        crate::diag::excerpt(&name(it.series)),
+                        key_text(w[1]),
+                        mi
+                    ),
+                );
+            }
+        }
+        if area {
+            for &k in &m.series {
+                if !idx.iter().any(|&i| m.items[i].series == Some(k)) {
+                    match gaps.iter_mut().find(|g| g.0 == k) {
+                        Some(gap) => gap.2 += 1,
+                        None => gaps.push((k, idx[0], 1)),
+                    }
+                }
+            }
+        }
+    }
+    for (k, at, count) in gaps {
+        let more = if count > 1 {
+            alloc::format!(" and {} more", count - 1)
+        } else {
+            String::new()
+        };
+        cx.error(
+            E_VALUE,
+            mark_span.0,
+            mark_span.1,
+            alloc::format!(
+                "`/marks/{}`: a stacked area needs a value for every series at every x; series \"{}\" has none at \"{}\"{} (write 0 for none)",
+                mi,
+                crate::diag::excerpt(&name(Some(k))),
+                key_text(at),
+                more
+            ),
+        );
+    }
+    if cx.diags.has_errors() {
+        return;
+    }
+
+    // Totals print with the most fractional digits any of the mark's values has, so a
+    // column of totals shares one precision.
+    let mut written = Vec::with_capacity(m.items.len());
+    let mut places = 0u32;
+    for it in &m.items {
+        let w = value_of(it).and_then(|v| {
+            let w = Dec::parse(&v.raw);
+            if w.is_none() {
+                let (s, e) = row_span(it.row);
+                cx.error(
+                    E_VALUE,
+                    s,
+                    e,
+                    alloc::format!(
+                        "`/marks/{}`: \"{}\" is not a decimal value and cannot stack",
+                        mi,
+                        crate::diag::excerpt(&v.raw)
+                    ),
+                );
+            }
+            w
+        });
+        if let Some(w) = &w {
+            places = places.max(w.places);
+        }
+        written.push(w);
+    }
+    let axis_name = if horizontal { "x" } else { "y" };
+    for g in &groups {
+        let idx = &order[g.clone()];
+        let mut sums = [Dec::zero(), Dec::zero()];
+        let mut parts: Vec<(usize, usize, Dec, Dec)> = Vec::with_capacity(idx.len());
+        for &i in idx {
+            let Some(w) = &written[i] else {
+                continue;
+            };
+            let side = usize::from(w.value.is_negative());
+            let start = sums[side].clone();
+            sums[side] = sums[side].add(&w.value);
+            parts.push((i, side, start, sums[side].clone()));
+        }
+        let mut reported = [false; 2];
+        for (i, side, start, end) in parts {
+            let segment = Segment {
+                start: start.to_f64(),
+                end: end.to_f64(),
+                inner: !start.is_zero(),
+                outer: end != sums[side],
+            };
+            let (s, e) = row_span(m.items[i].row);
+            if !segment.end.is_finite() {
+                if !reported[side] {
+                    reported[side] = true;
+                    cx.error(
+                        E_VALUE,
+                        s,
+                        e,
+                        alloc::format!(
+                            "`/marks/{}`: the stack at \"{}\" sums past the binary64 range",
+                            mi,
+                            key_text(i)
+                        ),
+                    );
+                }
+                continue;
+            }
+            if let Some((d0, d1)) = dom {
+                if (segment.end < d0 || segment.end > d1) && !reported[side] {
+                    reported[side] = true;
+                    cx.error(
+                        E_VALUE,
+                        s,
+                        e,
+                        alloc::format!(
+                            "`/marks/{}`: the stack at \"{}\" reaches {} with series \"{}\", outside `/{}/domain`",
+                            mi,
+                            key_text(i),
+                            sum_text(&end, places),
+                            crate::diag::excerpt(&name(m.items[i].series)),
+                            axis_name
+                        ),
+                    );
+                }
+            }
+            m.items[i].segment = Some(segment);
+        }
+        let category = idx
+            .first()
+            .and_then(|&i| match keys[i].as_ref().map(|v| v.pos) {
+                Some(Pos::Cat(c)) => Some(c),
+                _ => None,
+            });
+        if let (true, false, Some(category)) = (with_total, area, category) {
+            let [up, down] = &sums;
+            let net = up.add(down);
+            let negative = net.is_negative();
+            let len = net.plain_len(places);
+            if budget.exceeded || len > budget.left {
+                budget.exceeded = true;
+                return;
+            }
+            budget.left -= len;
+            m.totals.push(StackTotal {
+                category,
+                text: net.to_plain(places),
+                end: if negative { down.to_f64() } else { up.to_f64() },
+                negative,
+            });
+        }
+    }
+}
+
+/// A sum for a diagnostic: exact when short, else its binary64 value.
+fn sum_text(sum: &super::decimal::Dec, places: u32) -> String {
+    if sum.plain_len(places) <= 40 {
+        sum.to_plain(places)
+    } else {
+        alloc::format!("{:e}", sum.to_f64())
+    }
 }
 
 /// The authored `[min, max]` of a linear or time axis.

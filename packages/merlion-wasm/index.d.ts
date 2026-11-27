@@ -167,6 +167,13 @@ export interface ChartMark {
   /** Interval or rule stroke width, 1 to 40 px. */
   thickness?: number;
   dash?: boolean;
+  /**
+   * Bar or area: stack series in series order, values at or above zero up from zero and
+   * negative values down. Needs `series`; an area with `y2` cannot stack.
+   */
+  stack?: boolean;
+  /** Stacked bar: write each stack's exact total beyond its end. */
+  total?: boolean;
 }
 
 /** `merlion-chart/1` (specs/chart.md). Unknown members are errors. */

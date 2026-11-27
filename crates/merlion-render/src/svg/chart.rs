@@ -53,6 +53,31 @@ pub fn outline_chart(spec: &Spec, r: &Resolved) -> String {
             }
         }
     }
+    // Each stacked bar with `total` adds its totals as a table of its own.
+    for (m, sm) in r.marks.iter().zip(&spec.marks) {
+        if m.totals.is_empty() {
+            continue;
+        }
+        let (axis, channel) = if m.horizontal {
+            (&r.y, &sm.y)
+        } else {
+            (&r.x, &sm.x)
+        };
+        out.push('\n');
+        match channel {
+            Some(crate::chart::spec::Channel::Field(f)) => out.push_str(&plain_label(f)),
+            _ => out.push_str("category"),
+        }
+        out.push_str(" | total");
+        for t in &m.totals {
+            out.push('\n');
+            out.push_str(&plain_label(
+                axis.categories.get(t.category).map_or("", AsRef::as_ref),
+            ));
+            out.push_str(" | ");
+            out.push_str(&t.text);
+        }
+    }
     out
 }
 
@@ -60,7 +85,11 @@ pub fn outline_chart(spec: &Spec, r: &Resolved) -> String {
 fn summary(spec: &Spec, r: &Resolved) -> String {
     let mut kinds: Vec<&str> = Vec::new();
     for m in &spec.marks {
-        let k = m.kind.as_str();
+        let k = match (m.kind, m.stack) {
+            (MarkType::Bar, true) => "stacked bar",
+            (MarkType::Area, true) => "stacked area",
+            (kind, _) => kind.as_str(),
+        };
         if !matches!(m.kind, MarkType::Rule | MarkType::Span) && !kinds.contains(&k) {
             kinds.push(k);
         }
@@ -113,7 +142,7 @@ fn paint(table: &Table, tone: Tone, kind: MarkType, series: Option<usize>) -> (S
     }
 }
 
-fn rules(t: &Table, small: f64) -> Vec<SourceRule> {
+fn rules(t: &Table, small: f64, layers: bool) -> Vec<SourceRule> {
     let mut px = String::new();
     push_num(&mut px, small);
     let rule = |selector: &str, body: String| SourceRule {
@@ -198,6 +227,16 @@ fn rules(t: &Table, small: f64) -> Vec<SourceRule> {
             ),
         ),
     ];
+    // The layer rule appears only in a chart with a stacked area.
+    if layers {
+        out.push(rule(
+            ".merlion-chart-layer",
+            alloc::format!(
+                "fill:currentColor;fill-opacity:0.85;stroke:{};stroke-width:1;stroke-linejoin:round;",
+                t.var(Role::Bg, false)
+            ),
+        ));
+    }
     for k in 1..=crate::chart::MAX_SERIES as u8 {
         out.push(rule(
             &alloc::format!(".merlion-chart-s{}", k),
@@ -228,8 +267,18 @@ fn pt(d: &mut String, cmd: char, x: f64, y: f64) {
     push_num(d, y);
 }
 
-/// A bar path with its data end rounded and its baseline end square.
-fn bar_path(r: Rect, end: End) -> String {
+/// A bar path with its data end rounded, when `round`, and its baseline end square.
+fn bar_path(r: Rect, end: End, round: bool) -> String {
+    if !round {
+        let (x0, y0, x1, y1) = (r.x, r.y, r.x + r.w, r.y + r.h);
+        let mut d = String::new();
+        pt(&mut d, 'M', x0, y0);
+        pt(&mut d, 'L', x1, y0);
+        pt(&mut d, 'L', x1, y1);
+        pt(&mut d, 'L', x0, y1);
+        d.push('Z');
+        return d;
+    }
     let rad = min(3.0, min(r.w, r.h) / 2.0).max(0.0);
     let (x0, y0, x1, y1) = (r.x, r.y, r.x + r.w, r.y + r.h);
     let mut d = String::new();
@@ -307,15 +356,27 @@ fn item(
     }
     out.push_str("</title>");
     match &it.shape {
-        Shape::Bar { rect, end } => {
+        Shape::Bar { rect, end, round } => {
             out.push_str("<path class=\"merlion-chart-fill\"");
-            attr(out, "d", &bar_path(*rect, *end));
+            attr(out, "d", &bar_path(*rect, *end, *round));
             attr(out, "fill", colour);
             out.push_str("/>");
         }
-        Shape::Path { d, fill, points } => {
+        Shape::Path {
+            d,
+            fill,
+            stacked,
+            points,
+        } => {
             out.push_str("<path");
-            if *fill {
+            if *fill && *stacked {
+                attr(out, "class", "merlion-chart-layer");
+                attr(out, "d", d);
+                attr(out, "fill", colour);
+                out.push_str(" fill-opacity=\"0.85\"");
+                attr(out, "stroke", bg);
+                out.push_str(" stroke-width=\"1\" stroke-linejoin=\"round\"");
+            } else if *fill {
                 attr(out, "class", "merlion-chart-area");
                 attr(out, "d", d);
                 attr(out, "fill", colour);
@@ -407,8 +468,13 @@ pub fn draw_chart(
         .as_ref()
         .and_then(|p| p.dark.as_ref())
         .map(|p| Layer::new(Some(p), builtins));
-    let light_rules = rules(&light.table, geom.small);
-    let dark_rules = dark.as_ref().map(|d| rules(&d.table, geom.small));
+    let layers = geom.marks.iter().any(|m| {
+        m.items
+            .iter()
+            .any(|it| matches!(it.shape, Shape::Path { stacked: true, .. }))
+    });
+    let light_rules = rules(&light.table, geom.small, layers);
+    let dark_rules = dark.as_ref().map(|d| rules(&d.table, geom.small, layers));
     let t = &light.table;
 
     let mut out = String::new();
@@ -610,6 +676,14 @@ pub fn draw_chart(
             if let Some(l) = &it.label {
                 text(&mut out, l, &small("merlion-chart-label"), &fg);
             }
+        }
+        for t in &m.totals {
+            text(
+                &mut out,
+                t,
+                &small("merlion-chart-label merlion-chart-total"),
+                &fg,
+            );
         }
     }
     out.push_str("</g>\n");

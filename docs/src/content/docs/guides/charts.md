@@ -51,12 +51,75 @@ const { svg, outline, diagnostics } = renderChart(spec, { width: 640 });
 
 | Mark | Draws |
 |---|---|
-| `bar` | A bar from zero on one band and one linear axis; several series sit side by side |
-| `line`, `area` | A series through its rows in `x` order; an area fills to zero or to `y2` |
+| `bar` | A bar from zero on one band and one linear axis; several series sit side by side, or stack with `stack` |
+| `line`, `area` | A series through its rows in `x` order; an area fills to zero or to `y2`, or stacks with `stack` |
 | `dot` | A point on any axes |
 | `interval` | A segment between two values: ranges, dumbbells, scenario bands |
 | `rule` | A reference line across the plot, with an optional note |
 | `span` | A shaded window across the plot, with an optional note |
+
+## Stacks
+
+`"stack": true` on a `bar` or an `area` stacks its series: you write each part, and Merlion sums them. Series stack in the order of `series.domain`. Values at or above zero stack up from zero, negative values down from it. Each segment's tooltip, `data-merlion-*` attributes and outline line keep the value you wrote, never the running sum.
+
+### A stacked area with a reference line
+
+Monthly costs by category, with a dashed budget line on the same axis and a shaded window:
+
+```json
+{
+  "chart": 1,
+  "title": "Monthly costs stayed under budget",
+  "x": { "type": "time", "format": "%b %Y" },
+  "y": { "type": "linear", "label": "Cost, $k per month" },
+  "data": [
+    { "month": "2026-01", "category": "Staff", "cost": "118.0" },
+    { "month": "2026-01", "category": "Rent", "cost": "38.0" },
+    { "month": "2026-02", "category": "Staff", "cost": "118.9" },
+    { "month": "2026-02", "category": "Rent", "cost": "46.5" },
+    { "month": "2026-01", "budget": "180.0", "name": "Budget" },
+    { "month": "2026-02", "budget": "180.0", "name": "Budget" }
+  ],
+  "series": { "domain": ["Staff", "Rent"] },
+  "marks": [
+    { "type": "span", "x": { "value": "2026-01-15" }, "x2": { "value": "2026-02" }, "text": "Office move" },
+    { "type": "area", "x": "month", "y": "cost", "series": "category", "stack": true },
+    { "type": "line", "x": "month", "y": "budget", "tone": "neutral", "dash": true, "label": "name" }
+  ]
+}
+```
+
+- Every series needs a value at every `x` of the stack. A missing month fails with `E022` naming the series and the month; write `0` where a series has nothing.
+- The line is not stacked: it reads its own rows, and its `label` names it at its last point.
+
+### Horizontal stacked bars with totals
+
+Hours per team, split by activity, with each team's total beyond its bar:
+
+```json
+{
+  "chart": 1,
+  "title": "Build work takes the largest share of every team's hours",
+  "x": { "type": "linear", "label": "Hours per week" },
+  "y": { "type": "band" },
+  "data": [
+    { "team": "Platform", "activity": "Design", "hours": "12.5" },
+    { "team": "Platform", "activity": "Build", "hours": "48.0" },
+    { "team": "Platform", "activity": "Test", "hours": "16.25" },
+    { "team": "Payments", "activity": "Design", "hours": "9.0" },
+    { "team": "Payments", "activity": "Build", "hours": "36.5" },
+    { "team": "Payments", "activity": "Test", "hours": "21.0" }
+  ],
+  "series": { "domain": ["Design", "Build", "Test"] },
+  "marks": [
+    { "type": "bar", "y": "team", "x": "hours", "series": "activity", "stack": true, "total": true }
+  ]
+}
+```
+
+- `total` prints the exact sum of the written values, `76.75` and `66.50` here: every total takes as many decimals as the most precise value in the mark, and the sum never passes through floating point.
+- Segments sit 2 px apart, and only the outer end of each stack is rounded.
+- A stacked bar takes no `label`: hover a segment for its value, or read the outline.
 
 ## Values that fail loudly
 
@@ -67,5 +130,7 @@ A chart that draws a wrong number is worse than one that does not draw. These fa
 - A member the spec does not define, such as `"colour"` (`E021`).
 - A value outside an authored `domain` (`E022`): Merlion never clips a mark.
 - A ninth series (`E023`): fold the smallest into "Other" or split the chart.
+- A stack that reaches past an authored `domain` (`E022`): the message names the stack and the sum it reaches.
+- `stack` without `series`, or on an area with `y2` (`E021`).
 
 `merlion check --chart` and `checkChart` report every problem at once, each with its line and column.

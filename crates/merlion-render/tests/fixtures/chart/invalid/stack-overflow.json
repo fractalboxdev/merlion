@@ -1,0 +1,31 @@
+{
+  "chart": 1,
+  "title": "Stacks stay finite",
+  "x": {
+    "type": "band"
+  },
+  "y": {
+    "type": "linear"
+  },
+  "data": [
+    {
+      "site": "North",
+      "kind": "Solar",
+      "mwh": 1.5e+308
+    },
+    {
+      "site": "North",
+      "kind": "Wind",
+      "mwh": 1.5e+308
+    }
+  ],
+  "marks": [
+    {
+      "type": "bar",
+      "x": "site",
+      "y": "mwh",
+      "series": "kind",
+      "stack": true
+    }
+  ]
+}
