@@ -1,0 +1,36 @@
+{
+  "chart": 1,
+  "title": "Build work takes the largest share of every team's hours",
+  "x": {"type": "linear", "label": "Hours per week"},
+  "y": {"type": "band"},
+  "data": [
+    {"team": "Platform", "activity": "Design", "hours": "12.5"},
+    {"team": "Platform", "activity": "Build", "hours": "48.0"},
+    {"team": "Platform", "activity": "Test", "hours": "16.25"},
+    {"team": "Platform", "activity": "Review", "hours": "8.0"},
+    {"team": "Platform", "activity": "Support", "hours": "6.5"},
+    {"team": "Platform", "activity": "Admin", "hours": "4.0"},
+    {"team": "Payments", "activity": "Design", "hours": "9.0"},
+    {"team": "Payments", "activity": "Build", "hours": "36.5"},
+    {"team": "Payments", "activity": "Test", "hours": "21.0"},
+    {"team": "Payments", "activity": "Review", "hours": "11.5"},
+    {"team": "Payments", "activity": "Support", "hours": "14.0"},
+    {"team": "Payments", "activity": "Admin", "hours": "3.5"},
+    {"team": "Mobile", "activity": "Design", "hours": "15.5"},
+    {"team": "Mobile", "activity": "Build", "hours": "30.0"},
+    {"team": "Mobile", "activity": "Test", "hours": "12.0"},
+    {"team": "Mobile", "activity": "Review", "hours": "6.0"},
+    {"team": "Mobile", "activity": "Support", "hours": "9.5"},
+    {"team": "Mobile", "activity": "Admin", "hours": "5.0"},
+    {"team": "Data", "activity": "Design", "hours": "6.0"},
+    {"team": "Data", "activity": "Build", "hours": "22.5"},
+    {"team": "Data", "activity": "Test", "hours": "8.5"},
+    {"team": "Data", "activity": "Review", "hours": "4.5"},
+    {"team": "Data", "activity": "Support", "hours": "18.0"},
+    {"team": "Data", "activity": "Admin", "hours": "2.75"}
+  ],
+  "series": {"domain": ["Design", "Build", "Test", "Review", "Support", "Admin"]},
+  "marks": [
+    {"type": "bar", "y": "team", "x": "hours", "series": "activity", "stack": true, "total": true}
+  ]
+}

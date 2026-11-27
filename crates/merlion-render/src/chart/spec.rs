@@ -111,6 +111,10 @@ pub struct Mark {
     pub tone: Tone,
     pub thickness: Option<f64>,
     pub dash: bool,
+    /// `stack: true`: segments of one category or x stack from zero in series order.
+    pub stack: bool,
+    /// `total: true` on a stacked bar: each stack's sum is written beyond its end.
+    pub total: bool,
     pub start: usize,
     pub end: usize,
 }
@@ -516,6 +520,8 @@ impl Reader<'_> {
                 "tone",
                 "thickness",
                 "dash",
+                "stack",
+                "total",
             ],
             path,
         );
@@ -555,6 +561,8 @@ impl Reader<'_> {
             tone: Tone::Series,
             thickness: None,
             dash: false,
+            stack: false,
+            total: false,
             start: v.start,
             end: v.end,
         };
@@ -581,6 +589,8 @@ impl Reader<'_> {
                 },
                 "thickness" => mark.thickness = self.number(v, &p, 1.0, 40.0),
                 "dash" => mark.dash = self.boolean(v, &p).unwrap_or(false),
+                "stack" => mark.stack = self.boolean(v, &p).unwrap_or(false),
+                "total" => mark.total = self.boolean(v, &p).unwrap_or(false),
                 _ => {}
             }
         }
@@ -603,9 +613,11 @@ impl Reader<'_> {
             }
         };
         let allowed: &[&str] = match mark.kind {
-            Bar => &["type", "x", "y", "series", "label", "tone"],
+            Bar => &[
+                "type", "x", "y", "series", "label", "tone", "stack", "total",
+            ],
             Line => &["type", "x", "y", "series", "label", "tone", "dash"],
-            Area => &["type", "x", "y", "y2", "series", "tone"],
+            Area => &["type", "x", "y", "y2", "series", "tone", "stack"],
             Dot => &["type", "x", "y", "series", "label", "tone"],
             Interval => &[
                 "type",
@@ -635,6 +647,8 @@ impl Reader<'_> {
                     "tone",
                     "thickness",
                     "dash",
+                    "stack",
+                    "total",
                 ]
                 .contains(&k.as_str())
             {
@@ -646,6 +660,7 @@ impl Reader<'_> {
                 );
             }
         }
+        self.check_stack(mark, m, path);
         match mark.kind {
             Bar | Line | Area | Dot => {
                 require(self, "x");
@@ -686,6 +701,49 @@ impl Reader<'_> {
                         "a span mark needs `x` and `x2`, or `y` and `y2`",
                     );
                 }
+            }
+        }
+    }
+
+    /// Which marks can stack (specs/chart.md#stacking). Members on marks that do not
+    /// take them at all are reported by [`Self::check_mark`].
+    fn check_stack(&mut self, mark: &Mark, m: &[(String, Value)], path: &str) {
+        let member = |k: &str| m.iter().find(|(n, _)| n == k).map(|(_, v)| v);
+        if !matches!(mark.kind, MarkType::Bar | MarkType::Area) {
+            return;
+        }
+        if mark.stack {
+            let at = member("stack").map_or((mark.start, mark.end), |v| (v.start, v.end));
+            let p = child(path, "stack");
+            if mark.series.is_none() {
+                self.error(
+                    at.0,
+                    at.1,
+                    &p,
+                    "stacking needs `series`: series set the order segments stack in",
+                );
+            }
+            if mark.kind == MarkType::Area && mark.y2.is_some() {
+                self.error(
+                    at.0,
+                    at.1,
+                    &p,
+                    "an area with `y2` spans two values, so it cannot stack",
+                );
+            }
+            if mark.kind == MarkType::Bar && mark.label.is_some() {
+                if let Some(v) = member("label") {
+                    self.error(
+                        v.start,
+                        v.end,
+                        &child(path, "label"),
+                        "a stacked bar does not take `label`; `total` writes each stack's sum",
+                    );
+                }
+            }
+        } else if mark.total {
+            if let Some(v) = member("total") {
+                self.error(v.start, v.end, &child(path, "total"), "needs `stack: true`");
             }
         }
     }

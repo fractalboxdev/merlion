@@ -1,0 +1,46 @@
+{
+  "chart": 1,
+  "title": "An area band cannot stack",
+  "x": {
+    "type": "time"
+  },
+  "y": {
+    "type": "linear"
+  },
+  "data": [
+    {
+      "month": "2026-01",
+      "kind": "Solar",
+      "mwh": "3.5",
+      "lo": "3.0"
+    },
+    {
+      "month": "2026-01",
+      "kind": "Wind",
+      "mwh": "5.0",
+      "lo": "4.5"
+    },
+    {
+      "month": "2026-02",
+      "kind": "Solar",
+      "mwh": "4.0",
+      "lo": "3.5"
+    },
+    {
+      "month": "2026-02",
+      "kind": "Wind",
+      "mwh": "4.5",
+      "lo": "4.0"
+    }
+  ],
+  "marks": [
+    {
+      "type": "area",
+      "x": "month",
+      "y": "mwh",
+      "series": "kind",
+      "y2": "lo",
+      "stack": true
+    }
+  ]
+}

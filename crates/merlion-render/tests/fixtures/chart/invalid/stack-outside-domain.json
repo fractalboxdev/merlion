@@ -1,0 +1,45 @@
+{
+  "chart": 1,
+  "title": "Stacks stay inside the domain",
+  "x": {
+    "type": "band"
+  },
+  "y": {
+    "type": "linear",
+    "domain": [
+      "0",
+      "10"
+    ]
+  },
+  "data": [
+    {
+      "site": "North",
+      "kind": "Solar",
+      "mwh": "4.5"
+    },
+    {
+      "site": "North",
+      "kind": "Wind",
+      "mwh": "6.25"
+    },
+    {
+      "site": "South",
+      "kind": "Solar",
+      "mwh": "7.0"
+    },
+    {
+      "site": "South",
+      "kind": "Wind",
+      "mwh": "2.5"
+    }
+  ],
+  "marks": [
+    {
+      "type": "bar",
+      "x": "site",
+      "y": "mwh",
+      "series": "kind",
+      "stack": true
+    }
+  ]
+}

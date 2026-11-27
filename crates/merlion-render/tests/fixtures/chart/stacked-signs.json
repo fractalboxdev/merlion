@@ -1,0 +1,28 @@
+{
+  "chart": 1,
+  "title": "Price added most to revenue growth until Q3",
+  "x": {"type": "band"},
+  "y": {"type": "linear", "label": "Contribution to growth, pts", "format": {"decimals": 1}},
+  "data": [
+    {"quarter": "Q1", "driver": "Price", "pts": "2.10"},
+    {"quarter": "Q1", "driver": "Volume", "pts": "-0.85"},
+    {"quarter": "Q1", "driver": "Mix", "pts": "0.40"},
+    {"quarter": "Q1", "driver": "Currency", "pts": "-0.30"},
+    {"quarter": "Q2", "driver": "Price", "pts": "1.45"},
+    {"quarter": "Q2", "driver": "Volume", "pts": "0.60"},
+    {"quarter": "Q2", "driver": "Mix", "pts": "-0.25"},
+    {"quarter": "Q2", "driver": "Currency", "pts": "-0.90"},
+    {"quarter": "Q3", "driver": "Price", "pts": "-0.70"},
+    {"quarter": "Q3", "driver": "Volume", "pts": "-1.35"},
+    {"quarter": "Q3", "driver": "Mix", "pts": "0.15"},
+    {"quarter": "Q3", "driver": "Currency", "pts": "-0.40"},
+    {"quarter": "Q4", "driver": "Price", "pts": "0.95"},
+    {"quarter": "Q4", "driver": "Volume", "pts": "1.20"},
+    {"quarter": "Q4", "driver": "Mix", "pts": "0.30"},
+    {"quarter": "Q4", "driver": "Currency", "pts": "0.25"}
+  ],
+  "series": {"domain": ["Price", "Volume", "Mix", "Currency"]},
+  "marks": [
+    {"type": "bar", "x": "quarter", "y": "pts", "series": "driver", "stack": true, "total": true}
+  ]
+}

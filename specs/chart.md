@@ -59,9 +59,9 @@
 
 | `type` | Members | Axes | Draws |
 |---|---|---|---|
-| `bar` | `x`, `y`; `series`, `label`, `tone` | One `band`, one `linear` | A bar from zero to the value. The value axis always includes zero; `zero: false` on it fails with `E021`. Bars of several series in one category sit side by side in series order |
+| `bar` | `x`, `y`; `series`, `label`, `tone`, `stack`, `total` | One `band`, one `linear` | A bar from zero to the value. The value axis always includes zero; `zero: false` on it fails with `E021`. Bars of several series in one category sit side by side in series order, or stack with `stack` ([Stacking](#stacking)) |
 | `line` | `x`, `y`; `series`, `label`, `tone`, `dash` | `y` linear | One 2 px polyline per series through its rows in `x` order |
-| `area` | `x`, `y`; `y2`, `series`, `tone` | `y` linear | A filled region between `y` and `y2`, or between `y` and zero without `y2` |
+| `area` | `x`, `y`; `y2`, `series`, `tone`, `stack` | `y` linear | A filled region between `y` and `y2`, or between `y` and zero without `y2`, or one layer of a stack with `stack` |
 | `dot` | `x`, `y`; `series`, `label`, `tone` | Any | A circle of radius 4.5 px with a 1.5 px ring in the background colour |
 | `interval` | `x`, `y`, and exactly one of `x2`, `y2`; `series`, `label`, `tone`, `thickness` | The `x2` or `y2` axis linear or time | A segment from the value to the second value, with round caps |
 | `rule` | Exactly one of `x`, `y`; `text`, `tone`, `dash`, `thickness` | That axis linear or time | A line across the whole plot at the value |
@@ -75,6 +75,22 @@
 - `thickness` is the stroke width in px, 1–40. An interval defaults to 2 px when `neutral`, else 45% of the band width up to 12 px; a rule defaults to 1.25 px.
 - A member a mark type does not accept fails with `E021`, as does a mark missing a required member.
 
+## Stacking
+
+`"stack": true` on a `bar` or an `area` stacks the mark's items: a stacked bar has one stack per category, a stacked area one per `x` value. Each stacked mark stacks only its own items.
+
+- A stacked mark needs `series` (`E021` at `/marks/{i}/stack`). An area with `y2` cannot stack (`E021` at `/marks/{i}/stack`). `stack` on any other mark type fails with `E021`.
+- Segments stack in series order ([Series and colour](#series-and-colour)). Values at or above zero stack up from zero and negative values stack down from zero, each side on its own.
+- A segment runs from the sum of the values below it on its side to that sum plus its own value. Sums use exact decimal arithmetic on the values as written; a position is the correctly rounded binary64 value of its sum, so `0.1` and `0.2` end exactly on an authored bound of `0.3`. A sum beyond the finite binary64 range fails with `E022`.
+- A stack holds one value per series. A second row of the same series at the same category or `x` fails with `E022` at that row.
+- A stacked area needs every series it draws at every `x` that any of its series has. A missing point, from an absent row or a row the mark skips for a missing or `null` value, fails with `E022` naming the series and the first `x` it lacks. Write `0` where a series has nothing.
+- Every segment keeps its own value: its `<title>`, its `data-merlion-*` attributes and its outline line carry the value as written, never a running sum.
+- A computed value domain spans every stack. Every stack must lie inside an authored domain (`E022`, naming the stack and the sum it reaches). The zero rule of bars and areas without `y2` applies unchanged.
+- A stacked bar takes its category's whole bar width. Segments next to each other in one stack are separated by a 2 px gap; the outermost segment on each side of zero has the rounded end and the others are square.
+- A stacked area draws its layers in series order at 85% opacity, each outlined 1 px in the background colour, so the boundary between two layers shows.
+- `"total": true` on a stacked bar writes each stack's total beyond the stack's end: the exact sum of all its values, both signs, in plain decimal notation with as many fractional digits as the mark's most precise value. A total at or above zero sits beyond the positive end, a negative total beyond the negative end. `total` without `stack: true` fails with `E021`; an area takes no `total`.
+- A stacked bar takes no `label` (`E021` at `/marks/{i}/label`): its segments are too short to hold a label beside each, and their values are in the tooltips and the outline.
+
 ## Series and colour
 
 - Series take colours `--merlion-series-1` … `-8` in order: `series.domain` when given, else first appearance in marks, then rows. A series name outside `series.domain` fails with `E022`.
@@ -85,15 +101,15 @@
 ## Layout
 
 - The chart is `target_width` px wide (at least 240). The text of ticks, labels, notes, titles and the legend is drawn at 6/7 of `font_size` (12 px at the default 14 px) and measured with the same font tables as diagram labels ([text-measurement.md](text-measurement.md)).
-- Margins come from measured text: the widest `y` tick label or category label sets the left margin, and a mark that labels beyond its end gets a gutter of its widest label on that side, so no label crosses the plot edge.
+- Margins come from measured text: the widest `y` tick label or category label sets the left margin, and a mark that labels beyond its end, including a stacked bar's totals, gets a gutter of its widest label on that side, so no label crosses the plot edge.
 - A linear axis has about one tick per 56 px of height or 90 px of width, between 2 and 10, at the 1-2-5 steps of Heckbert's nice numbers. A tick label is printed from the integer multiple of its step, so it is exact. If widening to a whole step exceeds the finite binary64 range, the computed domain keeps that finite endpoint. A time axis uses the Gantt automatic interval for one tick per 90 px, aligned to UTC boundaries.
-- A band axis divides its length evenly among categories. A bar fills 72% of its category's step, at most 48 px per series on a vertical chart and 22 px per series on a horizontal one; bars of one category are separated by a 2 px gap. A horizontal chart gives each category at least 28 px. Category labels wrap: below a vertical chart to their step, beside a horizontal chart to 180 px or 32% of the width.
+- A band axis divides its length evenly among categories. A bar fills 72% of its category's step, at most 48 px per series on a vertical chart and 22 px per series on a horizontal one, where a stacked bar counts as one series; bars of one category are separated by a 2 px gap. A horizontal chart gives each category at least 28 px. Category labels wrap: below a vertical chart to their step, beside a horizontal chart to 180 px or 32% of the width.
 - Without `height`, a chart whose `y` axis is not `band` has a plot of `clamp(round(0.45 × width), 180, 380)` px.
 - Grid lines run from each tick of a linear or time axis across the plot. A zero line runs across the value axis of bars and areas, else across a linear `y` axis that spans zero.
 
 ## SVG
 
-- The root has `class="merlion merlion-chart"` and `data-merlion-chart="1"`. `<title>` holds `title`; `<desc>` holds `description` or a generated sentence naming the mark types, axes, row count and series count.
+- The root has `class="merlion merlion-chart"` and `data-merlion-chart="1"`. `<title>` holds `title`; `<desc>` holds `description` or a generated sentence naming the mark types (`stacked bar`, `stacked area` for stacked marks), axes, row count and series count.
 - Each mark is a `<g class="merlion-chart-mark merlion-chart-{type}" data-merlion-mark="{index}">`. Each item inside is a `<g class="merlion-chart-item …">` with a `<title>` tooltip and these attributes:
 
 | Attribute | Value |
@@ -103,18 +119,19 @@
 | `data-merlion-series` | The series name |
 | `data-merlion-points` | On a line or area path: the number of points |
 
-- Each line or area path contains a `merlion-chart-point` group per source point with its row index, raw channel and series attributes, and value tooltip. A transparent circle of radius 6 px at the point exposes that tooltip without adding a visible mark; an area's tooltip includes `y2` when present.
-- Grid lines carry `data-merlion-value` with the tick label; the zero line carries `data-merlion-value="0"`. Tick labels are `merlion-chart-tick`, item labels `merlion-chart-label`, notes `merlion-chart-note`, axis titles `merlion-chart-title`.
+- Each line or area path contains a `merlion-chart-point` group per source point with its row index, raw channel and series attributes, and value tooltip. A transparent circle of radius 6 px at the point exposes that tooltip without adding a visible mark; an area's tooltip includes `y2` when present. On a stacked area the circle sits on the layer's upper edge.
+- A stacked area's path has the class `merlion-chart-layer`; the stylesheet carries that rule only when the chart has a stacked area.
+- Grid lines carry `data-merlion-value` with the tick label; the zero line carries `data-merlion-value="0"`. Tick labels are `merlion-chart-tick`, item labels `merlion-chart-label`, stack totals `merlion-chart-label merlion-chart-total`, notes `merlion-chart-note`, axis titles `merlion-chart-title`.
 - Items paint with `currentColor`. The class `merlion-chart-s{k}` sets `color` from `--merlion-series-{k}`; `merlion-chart-neutral` from `--merlion-line`; `merlion-chart-accent` from `--merlion-accent`. Every element also carries its literal colour as a presentation attribute. A `palette` bakes literals and a dark variant exactly as for diagrams.
-- The outline is `Chart. {title}. {n} rows.`, the series list, then one line per row with the fields the marks read, band fields first, joined by ` | `, `-` for a missing value.
+- The outline is `Chart. {title}. {n} rows.`, the series list, then one line per row with the fields the marks read, band fields first, joined by ` | `, `-` for a missing value. Each stacked bar with `total` then adds a `{category field} | total` line and one `{category} | {total}` line per stack, in category order.
 
 ## Diagnostics
 
 | Code | Severity | Meaning |
 |---|---|---|
 | `E020` | Error | The input is not valid JSON, exceeds a nesting, object-member or array-item limit, or repeats a member name |
-| `E021` | Error | The spec's shape: an unknown or missing member, a wrong type, a mark on the wrong axes, a field no row has |
-| `E022` | Error | A value: not a decimal or date, outside an authored domain, a category or series outside its domain |
+| `E021` | Error | The spec's shape: an unknown or missing member, a wrong type, a mark on the wrong axes, a field no row has, a stack without `series` or on an area with `y2`, `total` without `stack`, `label` on a stacked bar |
+| `E022` | Error | A value: not a decimal or date, outside an authored domain, a category or series outside its domain; a stack outside an authored domain or past the binary64 range, two values of one series in one stack, a stacked area missing a series at an `x` |
 | `E023` | Error | More than eight series |
 | `I041` | Info | Rows a mark skips for a missing or `null` value |
 
@@ -130,17 +147,17 @@
 | Categories per band axis | 500 |
 | Series | 8 |
 | Ticks per axis | 64 |
-| Fuel | One unit per drawn item (each line or area point counts once) plus one per mark, against `fuel` |
-| Drawn item text | 8 MiB before XML escaping: position and series values count twice (attribute and tooltip), labels once, rule and span notes twice |
+| Fuel | One unit per drawn item (each line or area point counts once), a second unit per item of a stacked mark for its sum and total, plus one per mark, against `fuel` |
+| Drawn item text | 8 MiB before XML escaping: position and series values count twice (attribute and tooltip), labels once, rule and span notes twice, stack totals once |
 
-The fuel and drawn-text checks precede resolved-item allocation; exceeding either fails with `E004`. The text limit bounds repeated constants in SVG metadata and tooltips. Empty marks cost one unit; an all-constant mark costs two units. Missing or `null` fields consume no item unit. Resolved source text shares each constant across its rows; geometry and tooltip parts share that same text until SVG serialization.
+The fuel and drawn-text checks precede resolved-item allocation; exceeding either fails with `E004`. A total's length depends on its sum, so each stack total counts toward the text limit once summed, before its text is built. The text limit bounds repeated constants in SVG metadata and tooltips. Empty marks cost one unit; an all-constant mark costs two units. Missing or `null` fields consume no item unit. Resolved source text shares each constant across its rows; geometry and tooltip parts share that same text until SVG serialization.
 
 ## Out of scope
 
-Stacked bars, facets and small multiples, a second value axis, logarithmic scales, and annotations other than `rule` and `span`. A second value axis is excluded by design: two measures with different units get two charts or an index to a common base.
+Stacks normalised to 100%, labels inside stack segments, facets and small multiples, a second value axis, logarithmic scales, and annotations other than `rule` and `span`. A second value axis is excluded by design: two measures with different units get two charts or an index to a common base.
 
 ## Validation
 
-- `crates/merlion-render/tests/chart_acceptance.rs` renders every fixture in `tests/fixtures/chart/` strictly, checks byte-identical repeats, source values in `data-merlion-*` attributes and the outline, the zero line, the legend rule, and each error code with its JSON path.
-- `packages/merlion-wasm/test/glue.test.mjs` renders a fixture through `renderChart` from a string and from an object, and checks errors through `checkChart`.
+- `crates/merlion-render/tests/chart_acceptance.rs` renders every fixture in `tests/fixtures/chart/` strictly, checks byte-identical repeats, source values in `data-merlion-*` attributes and the outline, the zero line, the legend rule, stack geometry and totals, and each error code with its JSON path, including one fixture per stacking error in `tests/fixtures/chart/invalid/`. It records each fixture's SVG and outline digest (FNV-1a 64, `data-merlion-version` blanked) in `tests/fixtures/chart-digests.txt`.
+- `packages/merlion-wasm/test/glue.test.mjs` renders a fixture through `renderChart` from a string and from an object, checks errors through `checkChart`, and renders every fixture in `chart-digests.txt` through the WASM build to the recorded native digests.
 - `crates/merlion-cli/tests/cli.rs` checks that `merlion render --chart` writes the same bytes as the core.

@@ -5,6 +5,7 @@
 //! outline line drawn from it shows the same text. The pipeline mirrors the diagram
 //! pipeline: read → resolve → layout → draw, each a pure function of its inputs.
 
+pub mod decimal;
 pub mod json;
 pub mod layout;
 pub mod resolve;

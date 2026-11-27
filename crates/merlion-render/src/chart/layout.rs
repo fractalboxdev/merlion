@@ -43,15 +43,19 @@ pub enum End {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Shape {
-    /// A bar whose data end is `end`; that end is rounded, the baseline end is square.
+    /// A bar whose data end is `end`; with `round`, that end is rounded. The baseline end,
+    /// and both ends of a segment inside a stack, are square.
     Bar {
         rect: Rect,
         end: End,
+        round: bool,
     },
-    /// A line (`fill: false`) or an area outline (`fill: true`) in SVG path syntax.
+    /// A line (`fill: false`) or an area outline (`fill: true`) in SVG path syntax; a
+    /// `stacked` area is one layer of a stack.
     Path {
         d: String,
         fill: bool,
+        stacked: bool,
         points: Vec<PointGeom>,
     },
     Dot {
@@ -101,6 +105,8 @@ pub struct MarkGeom {
     pub items: Vec<ItemGeom>,
     /// The mark's `text`, once per item for a rule or span.
     pub notes: Vec<TextGeom>,
+    /// Stack totals of a stacked bar with `total`, beyond each stack's end.
+    pub totals: Vec<TextGeom>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -189,9 +195,24 @@ fn values_on(r: &Resolved, on_x: bool) -> Vec<f64> {
                     out.push(n);
                 }
             }
+            // A stacked item spans its stack's extent along the value axis.
+            if let Some(s) = it.segment.filter(|_| m.horizontal == on_x) {
+                out.push(s.start);
+                out.push(s.end);
+            }
         }
     }
     out
+}
+
+/// Bar slots per category: one per series, or one for a stacked bar.
+fn bar_groups(r: &Resolved) -> usize {
+    r.marks
+        .iter()
+        .filter(|m| m.kind == MarkType::Bar)
+        .map(|m| if m.stack { 1 } else { m.series.len().max(1) })
+        .max()
+        .unwrap_or(1)
 }
 
 fn continuous(
@@ -397,6 +418,34 @@ pub fn layout(
     let mut top_gutter = 0.0f64;
     let mut bottom_gutter = 0.0f64;
     for m in &r.marks {
+        if m.totals.is_empty() {
+            continue;
+        }
+        let side_width = |ms: &mut Measure, negative: bool| {
+            m.totals
+                .iter()
+                .filter(|t| t.negative == negative)
+                .fold(None, |w: Option<f64>, t| {
+                    Some(max(w.unwrap_or(0.0), ms.text(&t.text, 1e9).width))
+                })
+        };
+        if m.horizontal {
+            if let Some(w) = side_width(&mut ms, false) {
+                right_gutter = max(right_gutter, w + LABEL_GAP);
+            }
+            if let Some(w) = side_width(&mut ms, true) {
+                left_gutter = max(left_gutter, w + LABEL_GAP);
+            }
+        } else {
+            if m.totals.iter().any(|t| !t.negative) {
+                top_gutter = max(top_gutter, line_h + LABEL_GAP);
+            }
+            if m.totals.iter().any(|t| t.negative) {
+                bottom_gutter = max(bottom_gutter, line_h + LABEL_GAP);
+            }
+        }
+    }
+    for m in &r.marks {
         if !m.has_labels {
             continue;
         }
@@ -457,13 +506,7 @@ pub fn layout(
         let cats: Vec<LabelLayout> = r.y.categories.iter().map(|c| ms.text(c, wrap)).collect();
         let cat_w = cats.iter().fold(0.0f64, |a, l| max(a, l.width));
         let cat_h = cats.iter().fold(0.0f64, |a, l| max(a, l.height));
-        let groups = r
-            .marks
-            .iter()
-            .filter(|m| m.kind == MarkType::Bar)
-            .map(|m| m.series.len().max(1))
-            .max()
-            .unwrap_or(1);
+        let groups = bar_groups(r);
         let step = max(max(MIN_ROW, cat_h + 10.0), groups as f64 * 12.0 / BAR_SHARE);
         let n = r.y.categories.len().max(1);
         let plot_y = top + max(top_gutter, small / 2.0);
@@ -592,13 +635,7 @@ pub fn layout(
         let label_top = plot.y + plot.h + bottom_gutter + TICK_GAP;
         if r.x.scale == ScaleType::Band {
             let n = r.x.categories.len().max(1);
-            let groups = r
-                .marks
-                .iter()
-                .filter(|m| m.kind == MarkType::Bar)
-                .map(|m| m.series.len().max(1))
-                .max()
-                .unwrap_or(1);
+            let groups = bar_groups(r);
             let step = plot.w / n as f64;
             let band = Band {
                 start: plot.x,
@@ -669,6 +706,15 @@ pub fn layout(
             _ => plot.y + plot.h,
         }
     };
+    // A stack extent on a continuous axis.
+    let pxn = |n: f64| match &x_cont {
+        Some(c) => scale::map(n, c.d0, c.d1, plot.x, plot.x + plot.w),
+        None => plot.x,
+    };
+    let pyn = |n: f64| match &y_cont {
+        Some(c) => scale::map(n, c.d0, c.d1, plot.y + plot.h, plot.y),
+        None => plot.y + plot.h,
+    };
     let zero_x = x_cont
         .filter(|c| r.x.scale == ScaleType::Linear && c.d0 <= 0.0 && c.d1 >= 0.0)
         .map(|c| scale::map(0.0, c.d0, c.d1, plot.x, plot.x + plot.w));
@@ -723,6 +769,7 @@ pub fn layout(
             dash: m.dash,
             items: Vec::new(),
             notes: Vec::new(),
+            totals: Vec::new(),
         };
         let name = |k: Option<usize>| k.and_then(|k| r.series.get(k)).cloned();
         let data_of = |it: &Item| {
@@ -771,13 +818,14 @@ pub fn layout(
         };
         match m.kind {
             MarkType::Bar => {
-                let groups = m.series.len().max(1);
+                let groups = if m.stack { 1 } else { m.series.len().max(1) };
                 for it in &m.items {
                     let (Some(xv), Some(yv)) = (&it.x, &it.y) else {
                         continue;
                     };
                     let slot = it
                         .series
+                        .filter(|_| !m.stack)
                         .and_then(|s| m.series.iter().position(|&k| k == s))
                         .unwrap_or(0);
                     let (band, cat, value) = if m.horizontal {
@@ -792,9 +840,29 @@ pub fn layout(
                     let a = centre - band.width / 2.0 + slot as f64 * sub + gap / 2.0;
                     let thick = max(sub - gap, 1.0);
                     let positive = value.pos.num() >= 0.0;
+                    // A segment spans its stack extent; neighbouring segments leave a
+                    // FILL_GAP between them, taken half from each.
+                    let along = |z: f64, e: f64| match it.segment {
+                        None => (z, e),
+                        Some(s) => {
+                            let dir = if e >= z { 1.0 } else { -1.0 };
+                            let half = FILL_GAP / 2.0;
+                            let a = z + if s.inner { dir * half } else { 0.0 };
+                            let b = e - if s.outer { dir * half } else { 0.0 };
+                            if (b - a) * dir < 0.0 {
+                                let mid = (z + e) / 2.0;
+                                (mid, mid)
+                            } else {
+                                (a, b)
+                            }
+                        }
+                    };
+                    let round = it.segment.is_none_or(|s| !s.outer);
                     let (rect, end, label) = if m.horizontal {
-                        let z = zero_x.unwrap_or(plot.x);
-                        let e = px(value);
+                        let (z, e) = match it.segment {
+                            Some(s) => along(pxn(s.start), pxn(s.end)),
+                            None => (zero_x.unwrap_or(plot.x), px(value)),
+                        };
                         let rect = Rect {
                             x: min(z, e),
                             y: a,
@@ -816,8 +884,10 @@ pub fn layout(
                         });
                         (rect, if positive { End::Right } else { End::Left }, label)
                     } else {
-                        let z = zero_y.unwrap_or(plot.y + plot.h);
-                        let e = py(value);
+                        let (z, e) = match it.segment {
+                            Some(s) => along(pyn(s.start), pyn(s.end)),
+                            None => (zero_y.unwrap_or(plot.y + plot.h), py(value)),
+                        };
                         let rect = Rect {
                             x: a,
                             y: min(z, e),
@@ -842,11 +912,34 @@ pub fn layout(
                     g.items.push(ItemGeom {
                         row: it.row,
                         series: it.series,
-                        shape: Shape::Bar { rect, end },
+                        shape: Shape::Bar { rect, end, round },
                         label,
                         tip: tip_of(it),
                         data: data_of(it),
                     });
+                }
+                for t in &m.totals {
+                    let label = ms.text(&t.text, 1e9);
+                    let geom = if m.horizontal {
+                        let Some(band) = &y_band else { continue };
+                        let e = pxn(t.end);
+                        let off = LABEL_GAP + label.width / 2.0;
+                        TextGeom {
+                            x: if t.negative { e - off } else { e + off },
+                            y: band.centre(t.category),
+                            label,
+                        }
+                    } else {
+                        let Some(band) = &x_band else { continue };
+                        let e = pyn(t.end);
+                        let off = LABEL_GAP + label.height / 2.0;
+                        TextGeom {
+                            x: band.centre(t.category),
+                            y: if t.negative { e + off } else { e - off },
+                            label,
+                        }
+                    };
+                    g.totals.push(geom);
                 }
             }
             MarkType::Line | MarkType::Area => {
@@ -855,6 +948,10 @@ pub fn layout(
                     if !keys.contains(&it.series) {
                         keys.push(it.series);
                     }
+                }
+                // Layers of a stack draw in series order, as they stack.
+                if m.stack {
+                    keys.sort_unstable();
                 }
                 for key in keys {
                     let mut pts: Vec<&Item> =
@@ -868,6 +965,9 @@ pub fn layout(
                         .iter()
                         .filter_map(|it| {
                             let (x, y) = (it.x.as_ref()?, it.y.as_ref()?);
+                            if let Some(s) = it.segment {
+                                return Some((px(x), pyn(s.end), pyn(s.start)));
+                            }
                             let base = match (&it.y2, zero_y) {
                                 (Some(y2), _) => py(y2),
                                 (None, Some(z)) => z,
@@ -929,7 +1029,12 @@ pub fn layout(
                     g.items.push(ItemGeom {
                         row: None,
                         series: key,
-                        shape: Shape::Path { d, fill, points },
+                        shape: Shape::Path {
+                            d,
+                            fill,
+                            stacked: m.stack,
+                            points,
+                        },
                         label,
                         tip: alloc::vec![name(key).unwrap_or_else(|| Rc::from(spec.title.as_str()))],
                         data,

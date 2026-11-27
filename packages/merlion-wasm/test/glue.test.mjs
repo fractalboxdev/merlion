@@ -124,6 +124,32 @@ test("renderChart takes a JSON string or an object and returns the render shape"
   assert.equal(checkChart(CHART, { strict: true }).some((d) => d.severity === "error"), false);
 });
 
+/** FNV-1a 64 as 16 hex digits, as `chart_acceptance.rs` records it. */
+function fnv1a64(text) {
+  let h = 0xcbf29ce484222325n;
+  for (const b of new TextEncoder().encode(text)) {
+    h ^= BigInt(b);
+    h = (h * 0x100000001b3n) & 0xffffffffffffffffn;
+  }
+  return h.toString(16).padStart(16, "0");
+}
+
+test("every chart fixture renders the native bytes recorded in chart-digests.txt", () => {
+  initSync(bytes);
+  const fixtures = new URL("../../../crates/merlion-render/tests/fixtures/", import.meta.url);
+  const lines = readFileSync(new URL("chart-digests.txt", fixtures), "utf8").trim().split("\n");
+  assert.ok(lines.some((l) => l.startsWith("stacked-")), "stacked fixtures are recorded");
+  for (const line of lines) {
+    const [name, svgDigest, outlineDigest] = line.split(" ");
+    const spec = readFileSync(new URL(`chart/${name}`, fixtures), "utf8");
+    const result = renderChart(spec);
+    assert.equal(result.error, null, `${name}: ${JSON.stringify(result.diagnostics)}`);
+    const blanked = result.svg.replace(/data-merlion-version="[^"]*"/, 'data-merlion-version=""');
+    assert.equal(fnv1a64(blanked), svgDigest, name);
+    assert.equal(fnv1a64(result.outline), outlineDigest, name);
+  }
+});
+
 test("checkChart reports spec errors with their JSON path", () => {
   initSync(bytes);
   const d = checkChart({ chart: 1, title: "t", x: { type: "band" }, y: { type: "linear" }, data: [{ a: "x", v: "1,5" }], marks: [{ type: "bar", x: "a", y: "v" }] });
