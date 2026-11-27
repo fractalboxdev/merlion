@@ -263,3 +263,31 @@ fn extreme_numeric_values_render_inside_the_svg() {
         assert!(render_chart(&src, &strict()).svg.is_none());
     }
 }
+
+#[test]
+fn skipped_rows_do_not_register_or_validate_series() {
+    let mut rows: Vec<_> = (0..8)
+        .map(|i| format!(r#"{{"a":"x","v":null,"s":"skip{i}"}}"#))
+        .collect();
+    rows.push(String::from(r#"{"a":"x","v":7,"s":"drawn"}"#));
+    for domain in ["", r#", "series":{"domain":["drawn"]}"#] {
+        let src = format!(
+            r#"{{"chart":1,"title":"t","x":{{"type":"band"}},"y":{{"type":"linear"}},"data":[{}],"marks":[{{"type":"bar","x":"a","y":"v","series":"s"}}]{domain}}}"#,
+            rows.join(",")
+        );
+        let out = render_chart(&src, &strict());
+        assert_eq!(out.error, None, "{:?}", out.diagnostics);
+        let skipped: Vec<_> = out
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == "I041")
+            .collect();
+        assert_eq!(skipped.len(), 1);
+        assert!(skipped[0].message.contains("8 of 9 rows"));
+        let svg = out.svg.unwrap();
+        assert_eq!(svg.matches("class=\"merlion-chart-item ").count(), 1);
+        assert!(svg.contains("data-merlion-series=\"drawn\""));
+        assert!(!svg.contains("merlion-chart-legend"));
+        assert!(!svg.contains("data-merlion-series=\"skip"));
+    }
+}

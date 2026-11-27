@@ -592,6 +592,10 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                     Ch::Y2 => item.y2 = Some(v),
                 }
             }
+            if missing {
+                skipped += 1;
+                continue;
+            }
             let named: Option<(String, usize, usize, String)> = match (&m.series, r) {
                 (Some(Channel::Const(l)), _) => Some((
                     l.text.clone(),
@@ -618,6 +622,10 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                 }
                 _ => None,
             };
+            if missing {
+                skipped += 1;
+                continue;
+            }
             if let Some((name, s, e, path)) = named {
                 match series.iter().position(|n| *n == name) {
                     Some(k) => item.series = Some(k),
@@ -644,10 +652,6 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                     .get(f)
                     .and_then(|(c, ..)| cell_text(c))
                     .map(|(t, _)| String::from(t));
-            }
-            if missing {
-                skipped += 1;
-                continue;
             }
             items.push(item);
         }
