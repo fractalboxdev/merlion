@@ -217,6 +217,15 @@ fn read_value(
             } else {
                 decimal(text)
             };
+            let v = v.filter(|v| {
+                *v != 0.0
+                    || !text
+                        .split(['e', 'E'])
+                        .next()
+                        .unwrap_or("")
+                        .bytes()
+                        .any(|b| matches!(b, b'1'..=b'9'))
+            });
             match v {
                 Some(v) => Pos::Num(v),
                 None => {
@@ -225,7 +234,7 @@ fn read_value(
                         at.0,
                         at.1,
                         alloc::format!(
-                            "`{}`: expected a number or a decimal string such as \"-3.15\", found \"{}\"",
+                            "`{}`: expected a finite binary64 number or decimal string without underflow such as \"-3.15\", found \"{}\"",
                             path,
                             crate::diag::excerpt(text)
                         ),

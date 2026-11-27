@@ -200,7 +200,7 @@ fn continuous(
 ) -> Continuous {
     let count = clamp(round(length / per_tick), 2.0, 10.0);
     if let Some((d0, d1)) = authored {
-        let step = (scale_type == ScaleType::Linear).then(|| scale::nice_step(d1 - d0, count));
+        let step = (scale_type == ScaleType::Linear).then(|| scale::domain_step(d0, d1, count));
         return Continuous { d0, d1, step };
     }
     let mut lo = f64::INFINITY;
@@ -229,12 +229,12 @@ fn continuous(
         hi = max(hi, 0.0);
     }
     let (lo, hi) = scale::widen(lo, hi);
-    let step = scale::nice_step(hi - lo, count);
+    let step = scale::domain_step(lo, hi, count);
     let (d0, d1) = scale::nice_domain(lo, hi, step);
     Continuous {
         d0,
         d1,
-        step: Some(scale::nice_step(d1 - d0, count)),
+        step: Some(scale::domain_step(d0, d1, count)),
     }
 }
 

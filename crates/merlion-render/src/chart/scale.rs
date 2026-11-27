@@ -7,10 +7,9 @@
 
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::fmt::Write;
 
 use super::spec::NumberFormat;
-use crate::math::{abs, ceil, floor};
+use crate::math::{abs, ceil, clamp, floor};
 use crate::model::gantt::{calendar, TickInterval, TimeUnit};
 
 /// Exact powers of ten up to 10^22, the largest exactly representable in `f64`.
@@ -22,11 +21,36 @@ const POW10: [f64; 23] = [
 /// `m × 10^e` as an `f64`, correctly rounded: a negative exponent divides by an exact
 /// power instead of multiplying by an inexact one.
 pub fn scaled(m: i64, e: i32) -> f64 {
-    let p = POW10[e.unsigned_abs().min(22) as usize];
+    scaled_coefficient(i128::from(m), e)
+}
+
+fn scaled_coefficient(m: i128, e: i32) -> f64 {
+    if e.unsigned_abs() > 22 {
+        return alloc::format!("{}e{}", m, e).parse().unwrap_or(f64::NAN);
+    }
+    let p = POW10[e.unsigned_abs() as usize];
     if e >= 0 {
         m as f64 * p
     } else {
         m as f64 / p
+    }
+}
+
+/// Scales before dividing by the mantissa, without an overflowing reciprocal for
+/// subnormal steps. The final value is in tick units, at most 2^57 for f64 domains.
+fn scale_float(mut v: f64, mut e: i32) -> f64 {
+    while e > 22 {
+        v *= POW10[22];
+        e -= 22;
+    }
+    while e < -22 {
+        v /= POW10[22];
+        e += 22;
+    }
+    if e >= 0 {
+        v * POW10[e as usize]
+    } else {
+        v / POW10[(-e) as usize]
     }
 }
 
@@ -44,29 +68,46 @@ impl Step {
 
     /// `v / step`, computed as `v × 10^-e / m` so exact decimals stay exact.
     fn units(self, v: f64) -> f64 {
-        let p = POW10[self.exponent.unsigned_abs().min(22) as usize];
-        if self.exponent >= 0 {
-            v / p / self.mantissa as f64
-        } else {
-            v * p / self.mantissa as f64
+        if self.value() < f64::MIN_POSITIVE {
+            return v / self.value();
         }
+        scale_float(v, -self.exponent) / self.mantissa as f64
     }
 }
 
 /// The nice step for `span` divided into about `count` intervals.
 pub fn nice_step(span: f64, count: f64) -> Step {
-    let raw = span / count.max(1.0);
+    step_for_raw((span / count.max(1.0)).max(f64::from_bits(1)))
+}
+
+/// A step for finite domain endpoints, including a span larger than f64::MAX.
+pub fn domain_step(lo: f64, hi: f64, count: f64) -> Step {
+    let span = hi - lo;
+    if span.is_finite() {
+        nice_step(span, count)
+    } else {
+        step_for_raw(hi / count.max(2.0) - lo / count.max(2.0))
+    }
+}
+
+fn step_for_raw(raw: f64) -> Step {
     if !(raw.is_finite() && raw > 0.0) {
         return Step {
             mantissa: 1,
             exponent: 0,
         };
     }
+    if raw < 1e-323 {
+        return Step {
+            mantissa: 5,
+            exponent: -324,
+        };
+    }
     let mut e: i32 = 0;
-    while e > -15 && scaled(1, e) > raw {
+    while e > -323 && scaled(1, e) > raw {
         e -= 1;
     }
-    while e < 21 && scaled(1, e + 1) <= raw {
+    while e < 308 && scaled(1, e + 1) <= raw {
         e += 1;
     }
     let f = raw / scaled(1, e);
@@ -80,9 +121,17 @@ pub fn nice_step(span: f64, count: f64) -> Step {
     } else {
         (1, e)
     };
-    Step {
+    let step = Step {
         mantissa: m,
         exponent: e,
+    };
+    if step.value().is_finite() {
+        step
+    } else {
+        Step {
+            mantissa: 1,
+            exponent: 308,
+        }
     }
 }
 
@@ -93,9 +142,12 @@ const SNAP: f64 = 1e-9;
 pub fn nice_domain(lo: f64, hi: f64, step: Step) -> (f64, f64) {
     let a = floor(step.units(lo) + SNAP);
     let b = ceil(step.units(hi) - SNAP);
+    let d0 = scaled_coefficient(a as i128 * i128::from(step.mantissa), step.exponent);
+    let d1 = scaled_coefficient(b as i128 * i128::from(step.mantissa), step.exponent);
+    // A finite extent keeps its endpoint when the next whole step is infinite.
     (
-        scaled(a as i64 * step.mantissa, step.exponent),
-        scaled(b as i64 * step.mantissa, step.exponent),
+        if d0.is_finite() { d0.min(lo) } else { lo },
+        if d1.is_finite() { d1.max(hi) } else { hi },
     )
 }
 
@@ -113,11 +165,12 @@ pub fn ticks(lo: f64, hi: f64, step: Step, max: usize) -> Vec<Tick> {
     let mut out = Vec::new();
     let mut k = a;
     while k <= b && out.len() < max {
-        out.push(Tick {
-            value: scaled(k * step.mantissa, step.exponent),
-            k,
-        });
-        k += 1;
+        let value = scaled_coefficient(i128::from(k) * i128::from(step.mantissa), step.exponent);
+        if value.is_finite() && value >= lo && value <= hi {
+            out.push(Tick { value, k });
+        }
+        let Some(next) = k.checked_add(1) else { break };
+        k = next;
     }
     out
 }
@@ -138,34 +191,56 @@ fn push_grouped(out: &mut String, digits: &str, group: bool) {
 pub fn tick_label(t: Tick, step: Step, format: &NumberFormat) -> String {
     let natural = (-step.exponent).max(0) as u32;
     let decimals = format.decimals.map_or(natural, u32::from);
-    // The tick's exact value is (k × m) × 10^e; express it as an integer of
-    // `decimals` fractional digits.
-    let mut units: i128 = i128::from(t.k) * i128::from(step.mantissa);
+    // Decimal digits keep the exact integer coefficient even when the expanded
+    // value has more than 128 bits or hundreds of fractional places.
+    let units = i128::from(t.k) * i128::from(step.mantissa);
+    let mut digits = alloc::format!("{}", units.unsigned_abs());
     let shift = step.exponent + decimals as i32;
-    if shift >= 0 {
-        units *= 10i128.pow(shift as u32);
-    } else {
-        let d = 10i128.pow((-shift) as u32);
-        let q = units / d;
-        let r = units % d;
-        units = if r.abs() * 2 >= d {
-            q + units.signum()
+    if shift >= 0 && units != 0 {
+        for _ in 0..shift {
+            digits.push('0');
+        }
+    } else if shift < 0 {
+        let drop = (-shift) as usize;
+        let round_up = if drop <= digits.len() {
+            digits.as_bytes()[digits.len() - drop] >= b'5'
         } else {
-            q
+            false
         };
+        digits.truncate(digits.len().saturating_sub(drop));
+        if round_up {
+            let mut bytes = digits.into_bytes();
+            let mut carry = true;
+            for d in bytes.iter_mut().rev() {
+                if *d < b'9' {
+                    *d += 1;
+                    carry = false;
+                    break;
+                }
+                *d = b'0';
+            }
+            if carry {
+                bytes.insert(0, b'1');
+            }
+            digits = String::from_utf8(bytes).unwrap_or_default();
+        }
+    }
+    if digits.is_empty() {
+        digits.push('0');
+    }
+    while digits.len() <= decimals as usize {
+        digits.insert(0, '0');
     }
     let mut out = String::new();
-    if units < 0 {
+    if units < 0 && digits.bytes().any(|b| b != b'0') {
         out.push('-');
     }
     out.push_str(&format.prefix);
-    let mag = units.unsigned_abs();
-    let p = 10u128.pow(decimals);
-    let mut int = String::new();
-    let _ = write!(int, "{}", mag / p);
-    push_grouped(&mut out, &int, format.group);
+    let split = digits.len() - decimals as usize;
+    push_grouped(&mut out, &digits[..split], format.group);
     if decimals > 0 {
-        let _ = write!(out, ".{:0width$}", mag % p, width = decimals as usize);
+        out.push('.');
+        out.push_str(&digits[split..]);
     }
     out.push_str(&format.suffix);
     out
@@ -221,7 +296,13 @@ pub fn map(v: f64, d0: f64, d1: f64, r0: f64, r1: f64) -> f64 {
     if d1 == d0 {
         return (r0 + r1) / 2.0;
     }
-    r0 + (v - d0) / (d1 - d0) * (r1 - r0)
+    let span = d1 - d0;
+    let fraction = if span.is_finite() {
+        (v - d0) / span
+    } else {
+        (v / 2.0 - d0 / 2.0) / (d1 / 2.0 - d0 / 2.0)
+    };
+    r0 + clamp(fraction, 0.0, 1.0) * (r1 - r0)
 }
 
 /// The data extent widened for a degenerate span: ±1, or ±10% of a nonzero value.
@@ -229,8 +310,12 @@ pub fn widen(lo: f64, hi: f64) -> (f64, f64) {
     if hi > lo {
         return (lo, hi);
     }
-    let pad = if lo == 0.0 { 1.0 } else { abs(lo) / 10.0 };
-    (lo - pad, hi + pad)
+    let pad = if lo == 0.0 {
+        1.0
+    } else {
+        (abs(lo) / 10.0).max(f64::from_bits(1))
+    };
+    ((lo - pad).max(-f64::MAX), (hi + pad).min(f64::MAX))
 }
 
 #[cfg(test)]
@@ -363,5 +448,61 @@ mod tests {
         assert!(!t.is_empty());
         assert!(t.iter().all(|t| t.ms >= lo && t.ms <= hi));
         assert!(t.iter().all(|t| t.ms % calendar::DAY_MS == 0));
+    }
+
+    #[test]
+    fn finite_extremes_keep_domains_ticks_and_positions_finite() {
+        for (lo, hi) in [
+            (1e100, 2e100),
+            (-2e100, -1e100),
+            (1e-100, 2e-100),
+            (-2e-300, -1e-300),
+            (-f64::MAX, f64::MAX),
+            (1e20, 1e20 + 16_384.0),
+            (0.0, f64::from_bits(2)),
+        ] {
+            let step = domain_step(lo, hi, 5.0);
+            let (d0, d1) = nice_domain(lo, hi, step);
+            assert!(d0.is_finite() && d1.is_finite(), "{lo}..{hi}");
+            assert!(d0 <= lo && d1 >= hi && d0 < d1, "{lo}..{hi}");
+            let ticks = ticks(d0, d1, domain_step(d0, d1, 5.0), 64);
+            assert!(!ticks.is_empty(), "{lo}..{hi}");
+            for value in [lo, hi].into_iter().chain(ticks.iter().map(|t| t.value)) {
+                assert!((20.0..=320.0).contains(&map(value, d0, d1, 20.0, 320.0)));
+            }
+        }
+        for v in [f64::MAX, -f64::MAX, f64::from_bits(1)] {
+            let (lo, hi) = widen(v, v);
+            assert!(lo.is_finite() && hi.is_finite() && lo < hi);
+            assert!(lo <= v && hi >= v);
+        }
+    }
+
+    #[test]
+    fn decimal_tick_labels_cover_the_binary64_exponent_range() {
+        let format = NumberFormat::default();
+        for (mantissa, exponent, k, expected) in [
+            (1, 100, 0, String::from("0")),
+            (1, 100, 2, alloc::format!("2{}", "0".repeat(100))),
+            (5, -324, 1, alloc::format!("0.{}5", "0".repeat(323))),
+            (1, -100, -2, alloc::format!("-0.{}2", "0".repeat(99))),
+        ] {
+            let step = Step { mantissa, exponent };
+            assert_eq!(tick_label(Tick { value: 0.0, k }, step, &format), expected);
+        }
+        assert_eq!(
+            tick_label(
+                Tick { value: 0.0, k: -1 },
+                Step {
+                    mantissa: 5,
+                    exponent: -100
+                },
+                &NumberFormat {
+                    decimals: Some(6),
+                    ..format
+                }
+            ),
+            "0.000000"
+        );
     }
 }

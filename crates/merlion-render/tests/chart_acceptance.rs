@@ -200,3 +200,66 @@ fn authored_domains_include_implicit_zero_baselines() {
         assert_eq!(render_chart(&src, &strict()).error, None, "{mark}");
     }
 }
+
+#[test]
+fn extreme_numeric_values_render_inside_the_svg() {
+    for values in [
+        "1e100,2e100",
+        "-2e100,-1e100",
+        "1e-100,2e-100",
+        "-2e-300,-1e-300",
+        "-1.7976931348623157e308,1.7976931348623157e308",
+        "5e-324,1e-323",
+        "100000000000000000000,100000000000000016384",
+    ] {
+        let rows: Vec<_> = values
+            .split(',')
+            .enumerate()
+            .map(|(i, value)| format!(r#"{{"x":{i},"v":{value}}}"#))
+            .collect();
+        let src = format!(
+            r#"{{"chart":1,"title":"t","x":{{"type":"linear"}},"y":{{"type":"linear"}},"data":[{}],"marks":[{{"type":"dot","x":"x","y":"v"}}]}}"#,
+            rows.join(",")
+        );
+        let out = render_chart(&src, &strict());
+        assert_eq!(out.error, None, "{values}: {:?}", out.diagnostics);
+        let svg = out.svg.unwrap();
+        let viewbox = svg
+            .split("viewBox=\"")
+            .nth(1)
+            .unwrap()
+            .split('"')
+            .next()
+            .unwrap();
+        let dimensions: Vec<f64> = viewbox
+            .split_whitespace()
+            .map(|v| v.parse().unwrap())
+            .collect();
+        let circles: Vec<_> = svg.split("<circle ").skip(1).collect();
+        assert_eq!(circles.len(), 2, "{values}");
+        for circle in circles {
+            for (attr, bound) in [("cx", dimensions[2]), ("cy", dimensions[3])] {
+                let coordinate: f64 = circle
+                    .split(&format!("{attr}=\""))
+                    .nth(1)
+                    .unwrap()
+                    .split('"')
+                    .next()
+                    .unwrap()
+                    .parse()
+                    .unwrap();
+                assert!(
+                    (0.0..=bound).contains(&coordinate),
+                    "{values}: {attr}={coordinate}"
+                );
+            }
+        }
+    }
+    for value in ["1e309", "-1e309", "1e-999", "-1e-999"] {
+        let src = format!(
+            r#"{{"chart":1,"title":"t","x":{{"type":"linear"}},"y":{{"type":"linear"}},"data":[{{"x":0,"v":{value}}}],"marks":[{{"type":"dot","x":"x","y":"v"}}]}}"#
+        );
+        assert_eq!(codes(&src), ["E022"], "{value}");
+        assert!(render_chart(&src, &strict()).svg.is_none());
+    }
+}

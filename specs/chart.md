@@ -50,6 +50,7 @@
 | Band | A string, or a number's text as written | — |
 
 - Every drawn item keeps the exact text its values were written as. The SVG carries it in `data-merlion-*` attributes and the outline prints it, so `"-2.40"` stays `-2.40` and a reader can check each mark against its row.
+- Linear values must be representable as finite IEEE 754 binary64 numbers, including subnormal values. A nonzero value that rounds to zero, or a value that rounds to infinity, fails with `E022` before layout.
 - A mark that names a field no row has fails with `E021`.
 - A row whose field is missing or `null` for a mark is not drawn by that mark; the render adds one `I041` per mark with the count.
 
@@ -84,7 +85,7 @@
 
 - The chart is `target_width` px wide (at least 240). The text of ticks, labels, notes, titles and the legend is drawn at 6/7 of `font_size` (12 px at the default 14 px) and measured with the same font tables as diagram labels ([text-measurement.md](text-measurement.md)).
 - Margins come from measured text: the widest `y` tick label or category label sets the left margin, and a mark that labels beyond its end gets a gutter of its widest label on that side, so no label crosses the plot edge.
-- A linear axis has about one tick per 56 px of height or 90 px of width, between 2 and 10, at the 1-2-5 steps of Heckbert's nice numbers. A tick label is printed from the integer multiple of its step, so it is exact. A time axis uses the Gantt automatic interval for one tick per 90 px, aligned to UTC boundaries.
+- A linear axis has about one tick per 56 px of height or 90 px of width, between 2 and 10, at the 1-2-5 steps of Heckbert's nice numbers. A tick label is printed from the integer multiple of its step, so it is exact. If widening to a whole step exceeds the finite binary64 range, the computed domain keeps that finite endpoint. A time axis uses the Gantt automatic interval for one tick per 90 px, aligned to UTC boundaries.
 - A band axis divides its length evenly among categories. A bar fills 72% of its category's step, at most 48 px per series on a vertical chart and 22 px per series on a horizontal one; bars of one category are separated by a 2 px gap. A horizontal chart gives each category at least 28 px. Category labels wrap: below a vertical chart to their step, beside a horizontal chart to 180 px or 32% of the width.
 - Without `height`, a chart whose `y` axis is not `band` has a plot of `clamp(round(0.45 × width), 180, 380)` px.
 - Grid lines run from each tick of a linear or time axis across the plot. A zero line runs across the value axis of bars and areas, else across a linear `y` axis that spans zero.
