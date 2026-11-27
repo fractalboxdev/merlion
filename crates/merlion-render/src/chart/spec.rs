@@ -154,27 +154,27 @@ pub struct Spec {
 }
 
 /// Limits of one spec (specs/chart.md#limits).
-pub const MAX_ROWS: usize = 10_000;
+pub const MAX_ROWS: usize = json::MAX_ITEMS;
 pub const MAX_MARKS: usize = 16;
-pub const MAX_FIELDS: usize = 64;
+pub const MAX_FIELDS: usize = json::MAX_MEMBERS;
 pub const MAX_TITLE: usize = 200;
 pub const MAX_DESCRIPTION: usize = 2_000;
 pub const MAX_LABEL: usize = 80;
 pub const MAX_AFFIX: usize = 8;
 
 struct Reader<'a> {
-    src: &'a str,
+    positions: json::Positions<'a>,
     diags: &'a mut Diagnostics,
 }
 
 impl Reader<'_> {
     fn error(&mut self, start: usize, end: usize, path: &str, message: &str) {
-        self.diags.emit(
-            Severity::Error,
-            E_SPEC,
-            json::span(self.src, start, end),
-            alloc::format!("`{}`: {}", path, message),
-        );
+        self.diags.emit_lazy(Severity::Error, E_SPEC, || {
+            (
+                self.positions.span(start, end),
+                alloc::format!("`{}`: {}", path, message),
+            )
+        });
     }
 
     fn members<'v>(&mut self, v: &'v Value, path: &str) -> Option<&'v [(String, Value)]> {
@@ -196,19 +196,16 @@ impl Reader<'_> {
     fn known(&mut self, members: &[(String, Value)], known: &[&str], path: &str) {
         for (k, v) in members {
             if !known.contains(&k.as_str()) {
-                let mut list = String::new();
-                for (i, n) in known.iter().enumerate() {
-                    if i > 0 {
-                        list.push_str(", ");
-                    }
-                    list.push_str(n);
-                }
-                self.error(
-                    v.start,
-                    v.end,
-                    &child(path, k),
-                    &alloc::format!("unknown member; expected one of {}", list),
-                );
+                self.diags.emit_lazy(Severity::Error, E_SPEC, || {
+                    (
+                        self.positions.span(v.start, v.end),
+                        alloc::format!(
+                            "`{}`: unknown member; expected one of {}",
+                            child(path, k),
+                            known.join(", ")
+                        ),
+                    )
+                });
             }
         }
     }
@@ -765,7 +762,10 @@ pub fn read(src: &str, max_depth: usize, diags: &mut Diagnostics) -> Option<Spec
             return None;
         }
     };
-    let mut r = Reader { src, diags };
+    let mut r = Reader {
+        positions: json::Positions::new(src),
+        diags,
+    };
     let m = r.members(&root, "")?;
     r.known(
         m,

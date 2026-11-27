@@ -535,3 +535,55 @@ fn repeated_source_text_is_bounded_before_layout_and_serialization() {
     assert!(out.diagnostics.iter().any(|d| d.code == "E004"));
     assert!(check_chart(&src, true).iter().any(|d| d.code == "E004"));
 }
+
+#[test]
+fn adversarial_diagnostics_keep_the_cap_count_and_source_positions() {
+    let unknown: Vec<_> = (0..50).map(|i| format!(r#""é{i}":{i}"#)).collect();
+    let src = format!(
+        r#"{{{},"chart":1,"title":"é😀","x":{{"type":"linear"}},"y":{{"type":"linear"}},"data":[{{"x":0,"v":1}}],"marks":[{{"type":"dot","x":"x","y":"v"}}]}}"#,
+        unknown.join(",")
+    );
+    let mut opts = strict();
+    opts.fuel = 0;
+    opts.limits.diagnostics = 2;
+    let out = render_chart(&src, &opts);
+    assert!(out.svg.is_none());
+    assert_eq!(out.diagnostics.len(), 2);
+    assert_eq!(out.diagnostics[0].code, "E021");
+    assert!(out.diagnostics[0].message.starts_with("`/é0`:"));
+    assert_eq!(out.diagnostics[1].code, "I034");
+    assert!(out.diagnostics[1]
+        .message
+        .starts_with("49 further diagnostics"));
+    for diagnostic in &out.diagnostics {
+        let start = diagnostic.span.byte_start as usize;
+        assert_eq!(
+            diagnostic.span.column as usize,
+            src[..start].chars().count() + 1
+        );
+    }
+
+    let rows = vec![r#"{"x":0,"v":"bad"}"#; 1_000].join(",");
+    let src = format!(
+        r#"{{"chart":1,"title":"é😀","x":{{"type":"linear"}},"y":{{"type":"linear"}},"data":[{rows}],"marks":[{{"type":"dot","x":"x","y":"v"}}]}}"#
+    );
+    opts.fuel = 1_001;
+    opts.limits.diagnostics = 8;
+    let out = render_chart(&src, &opts);
+    assert!(out.svg.is_none());
+    assert_eq!(out.diagnostics.len(), 8);
+    assert_eq!(out.diagnostics[6].code, "E022");
+    assert!(out.diagnostics[6].message.starts_with("`/data/6/v`:"));
+    assert_eq!(out.diagnostics[7].code, "I034");
+    assert!(out.diagnostics[7]
+        .message
+        .starts_with("993 further diagnostics"));
+    for diagnostic in &out.diagnostics {
+        let start = diagnostic.span.byte_start as usize;
+        assert_eq!(
+            diagnostic.span.column as usize,
+            src[..start].chars().count() + 1
+        );
+        assert_eq!(&src[start..diagnostic.span.byte_end as usize], r#""bad""#);
+    }
+}

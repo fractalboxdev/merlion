@@ -181,18 +181,15 @@ pub fn iso_time(s: &str) -> Option<i64> {
 }
 
 struct Ctx<'a> {
-    src: &'a str,
+    positions: json::Positions<'a>,
     diags: &'a mut Diagnostics,
 }
 
 impl Ctx<'_> {
     fn error(&mut self, code: &'static str, start: usize, end: usize, message: String) {
-        self.diags.emit(
-            Severity::Error,
-            code,
-            json::span(self.src, start, end),
-            message,
-        );
+        self.diags.emit_lazy(Severity::Error, code, || {
+            (self.positions.span(start, end), message)
+        });
     }
 }
 
@@ -455,7 +452,10 @@ pub fn resolve(
 }
 
 fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolved> {
-    let mut cx = Ctx { src, diags };
+    let mut cx = Ctx {
+        positions: json::Positions::new(src),
+        diags,
+    };
     if spec.x.scale == spec.y.scale && spec.x.scale != ScaleType::Linear {
         cx.error(
             super::spec::E_SPEC,
@@ -731,7 +731,7 @@ fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Res
                             alloc::format!(
                                 "`{}`: series \"{}\" is not in `/series/domain`",
                                 path,
-                                crate::diag::excerpt(&name)
+                                crate::diag::excerpt(name)
                             ),
                         );
                     }
@@ -744,17 +744,17 @@ fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Res
             items.push(item);
         }
         if skipped > 0 {
-            cx.diags.emit(
-                Severity::Info,
-                I_SKIPPED,
-                json::span(src, m.start, m.end),
-                alloc::format!(
-                    "`/marks/{}`: {} of {} rows have no value for this mark and are not drawn",
-                    mi,
-                    skipped,
-                    spec.data.len()
-                ),
-            );
+            cx.diags.emit_lazy(Severity::Info, I_SKIPPED, || {
+                (
+                    cx.positions.span(m.start, m.end),
+                    alloc::format!(
+                        "`/marks/{}`: {} of {} rows have no value for this mark and are not drawn",
+                        mi,
+                        skipped,
+                        spec.data.len()
+                    ),
+                )
+            });
         }
         let mut used: Vec<usize> = items.iter().filter_map(|it| it.series).collect();
         used.sort_unstable();

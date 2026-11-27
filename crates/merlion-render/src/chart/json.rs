@@ -6,10 +6,15 @@
 //! `max_depth`, so the recursion is bounded too. A duplicate object key is an error,
 //! because two readers of the same document must not see two different charts.
 
+use alloc::collections::BTreeSet;
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::diag::Span;
+
+/// The largest object and array shapes allowed by a chart: a row and the data array.
+pub const MAX_MEMBERS: usize = 64;
+pub const MAX_ITEMS: usize = 10_000;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Kind {
@@ -77,6 +82,57 @@ pub fn span(src: &str, start: usize, end: usize) -> Span {
         column: col,
         byte_start: u32::try_from(start).unwrap_or(u32::MAX),
         byte_end: u32::try_from(end).unwrap_or(u32::MAX),
+    }
+}
+
+/// Indexed source positions for repeated diagnostics. ASCII columns need only line
+/// starts; multibyte characters carry cumulative extra bytes for scalar columns.
+pub(super) struct Positions<'a> {
+    src: &'a str,
+    lines: Vec<usize>,
+    wide: Vec<(usize, usize)>,
+}
+
+impl<'a> Positions<'a> {
+    pub fn new(src: &'a str) -> Self {
+        let mut lines = alloc::vec![0];
+        let mut wide = Vec::new();
+        let mut extra = 0usize;
+        for (at, c) in src.char_indices() {
+            if c == '\n' {
+                lines.push(at + 1);
+            }
+            if c.len_utf8() > 1 {
+                extra += c.len_utf8() - 1;
+                wide.push((at + c.len_utf8(), extra));
+            }
+        }
+        Self { src, lines, wide }
+    }
+
+    fn extra_bytes(&self, at: usize) -> usize {
+        let n = self.wide.partition_point(|&(end, _)| end <= at);
+        n.checked_sub(1).map_or(0, |i| self.wide[i].1)
+    }
+
+    pub fn span(&self, start: usize, end: usize) -> Span {
+        let start = start.min(self.src.len());
+        let end = end.clamp(start, self.src.len());
+        let line = self.lines.partition_point(|&at| at <= start) - 1;
+        let line_start = self.lines[line];
+        let mut scalar_end = start;
+        while !self.src.is_char_boundary(scalar_end) {
+            scalar_end += 1;
+        }
+        let column =
+            scalar_end - line_start - (self.extra_bytes(scalar_end) - self.extra_bytes(line_start))
+                + 1;
+        Span {
+            line: u32::try_from(line + 1).unwrap_or(u32::MAX),
+            column: u32::try_from(column).unwrap_or(u32::MAX),
+            byte_start: u32::try_from(start).unwrap_or(u32::MAX),
+            byte_end: u32::try_from(end).unwrap_or(u32::MAX),
+        }
     }
 }
 
@@ -181,6 +237,7 @@ impl Parser<'_> {
         let start = self.pos;
         self.pos += 1;
         let mut members: Vec<(String, Value)> = Vec::new();
+        let mut names = BTreeSet::new();
         self.ws();
         if self.eat(b'}') {
             return Ok(Value {
@@ -196,10 +253,16 @@ impl Parser<'_> {
             }
             let key_at = self.pos;
             let key = self.string()?;
-            if members.iter().any(|(k, _)| *k == key) {
+            if !names.insert(key.clone()) {
                 return Err(JsonError {
                     at: key_at,
                     message: alloc::format!("duplicate member `{}`", crate::diag::excerpt(&key)),
+                });
+            }
+            if members.len() == MAX_MEMBERS {
+                return Err(JsonError {
+                    at: key_at,
+                    message: alloc::format!("object exceeds the limit of {} members", MAX_MEMBERS),
                 });
             }
             self.ws();
@@ -239,6 +302,9 @@ impl Parser<'_> {
         }
         loop {
             self.ws();
+            if items.len() == MAX_ITEMS {
+                return Err(self.err("array exceeds the limit of 10000 items"));
+            }
             items.push(self.value(depth)?);
             self.ws();
             if self.eat(b',') {
@@ -421,5 +487,44 @@ mod tests {
         let src = "{\n  \"a\": é1\n}";
         let s = span(src, 9, 10);
         assert_eq!((s.line, s.column), (2, 8));
+    }
+
+    #[test]
+    fn indexed_spans_match_scalar_columns_at_every_byte() {
+        for src in ["ascii", "é😀x\nαβ\n", "\n\né\r\nx"] {
+            let positions = Positions::new(src);
+            for start in 0..=src.len() + 2 {
+                assert_eq!(
+                    positions.span(start, start + 1),
+                    span(src, start, start + 1),
+                    "{src:?}:{start}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn object_and_array_limits_reject_before_reading_the_excess_values() {
+        let members: Vec<_> = (0..16_000)
+            .map(|i| alloc::format!("\"k{}\":0", i))
+            .collect();
+        let src = alloc::format!("{{{}}}", members.join(","));
+        let error = parse(&src, 64).unwrap_err();
+        assert_eq!(error.at, src.find("\"k64\"").unwrap());
+        assert!(error.message.contains("64 members"));
+        assert!(parse(
+            &alloc::format!("{{{}}}", members[..MAX_MEMBERS].join(",")),
+            64
+        )
+        .is_ok());
+        let duplicate = alloc::format!("{{{},\"k0\":1}}", members[..MAX_MEMBERS].join(","));
+        assert!(parse(&duplicate, 64)
+            .unwrap_err()
+            .message
+            .contains("duplicate"));
+
+        let src = alloc::format!("[{}]", alloc::vec!["0"; MAX_ITEMS + 1].join(","));
+        let error = parse(&src, 64).unwrap_err();
+        assert_eq!(error.at, 1 + 2 * MAX_ITEMS);
     }
 }

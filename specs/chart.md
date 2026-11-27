@@ -6,6 +6,7 @@
 
 - The input is one UTF-8 JSON document (RFC 8259) of at most `limits.input_bytes` (1 MiB); a larger one fails with `E004`.
 - Nesting deeper than `limits.nesting` (64) fails with `E020`.
+- An object with more than 64 members, or an array with more than 10,000 items, fails with `E020` before the excess value is read. Schema-specific limits also apply.
 - Invalid JSON fails with `E020` at the byte where reading stopped. A duplicate member name in one object fails with `E020`.
 - A member the spec does not define fails with `E021` naming its JSON Pointer path (`/marks/0/colour`), so a misspelt member never draws a different chart.
 - Every spec error carries its line, column and byte span in the input.
@@ -111,7 +112,7 @@
 
 | Code | Severity | Meaning |
 |---|---|---|
-| `E020` | Error | The input is not valid JSON, nests deeper than the limit, or repeats a member name |
+| `E020` | Error | The input is not valid JSON, exceeds a nesting, object-member or array-item limit, or repeats a member name |
 | `E021` | Error | The spec's shape: an unknown or missing member, a wrong type, a mark on the wrong axes, a field no row has |
 | `E022` | Error | A value: not a decimal or date, outside an authored domain, a category or series outside its domain |
 | `E023` | Error | More than eight series |
