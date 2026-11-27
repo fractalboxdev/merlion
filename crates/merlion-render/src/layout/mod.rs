@@ -29,6 +29,7 @@ pub mod metrics;
 mod order;
 mod pack;
 mod pipeline;
+pub mod quadrant;
 mod route;
 pub mod sequence;
 pub mod state;
@@ -41,6 +42,7 @@ use crate::options::RenderOptions;
 
 pub use gantt::layout_gantt;
 pub use pipeline::{CLUSTER_PAD, MARGIN};
+pub use quadrant::layout_quadrant;
 pub use sequence::layout_sequence;
 pub use state::{layout_state, StateLayout};
 

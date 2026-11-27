@@ -9,6 +9,8 @@
 //! | `I011` | Info | `theme`, `themeVariables` or `look` ignored: themes are CSS |
 //!
 //! Merlion's own keys live under `merlion`: `merlion.autoTone` (`true` | `false`).
+//! `quadrantChart` and the quadrant colours of `themeVariables` configure quadrant
+//! charts (specs/quadrant.md#configuration).
 
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -16,6 +18,7 @@ use alloc::vec::Vec;
 use super::cursor::LineIndex;
 use crate::diag::{excerpt, Diagnostics, Severity};
 use crate::model::gantt::{calendar, DisplayMode};
+use crate::model::quadrant::{XAxisPosition, YAxisPosition, NUMERIC_KEYS};
 use crate::model::Meta;
 
 /// A parsed YAML or JSON value. YAML scalars are always strings.
@@ -99,7 +102,8 @@ pub fn apply_front_matter(
 pub fn apply_config(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: &mut Diagnostics) {
     for e in entries {
         match e.key.as_str() {
-            "theme" | "themeVariables" | "look" => diags.emit(
+            "themeVariables" => apply_theme_variables(e, idx, meta),
+            "theme" | "look" => diags.emit(
                 Severity::Info,
                 "I011",
                 idx.span(e.start, e.end),
@@ -108,6 +112,10 @@ pub fn apply_config(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: 
                     excerpt(&e.key)
                 ),
             ),
+            "quadrantChart" => match &e.value {
+                Value::Map(m) => apply_quadrant(m, idx, meta, diags),
+                _ => bad_value(e, idx, diags, "a mapping"),
+            },
             "layout" => match enum_value(&e.value, LAYOUTS) {
                 Some(v) => meta.layout = Some(v),
                 None => bad_value(e, idx, diags, "one of `dagre`, `elk` or `merlion`"),
@@ -186,6 +194,150 @@ fn apply_gantt(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: &mut 
             ),
             _ => unknown_key(e, "gantt.", idx, diags),
         }
+    }
+}
+
+/// The `I011` message for `themeVariables`, which names the quadrant colours it keeps.
+pub(crate) fn theme_variables_ignored(quadrant_keys: bool) -> &'static str {
+    if quadrant_keys {
+        "`themeVariables` is ignored except its quadrant chart colours: Merlion themes are CSS custom properties"
+    } else {
+        "`themeVariables` is ignored: Merlion themes are CSS custom properties"
+    }
+}
+
+/// `themeVariables`: the quadrant chart colours are read (specs/quadrant.md#theme-variables);
+/// any other key is ignored with `I011`. A mapping of quadrant colours alone defers its
+/// `I011` to the header, which shows whether a quadrant chart reads them.
+fn apply_theme_variables(e: &Entry, idx: &LineIndex, meta: &mut Meta) {
+    let mut other = !matches!(e.value, Value::Map(_));
+    let mut quadrant_keys = false;
+    if let Value::Map(m) = &e.value {
+        for inner in m {
+            let Some(slot) = meta.quadrant.theme.slot(&inner.key) else {
+                other = true;
+                continue;
+            };
+            quadrant_keys = true;
+            match &inner.value {
+                Value::Str(v) => match quadrant_colour(v) {
+                    Some(c) => {
+                        *slot = Some(c);
+                        meta.quadrant
+                            .theme
+                            .span
+                            .get_or_insert(idx.span(inner.start, inner.end));
+                    }
+                    None => meta
+                        .quadrant
+                        .theme
+                        .pending_invalid
+                        .push((idx.span(inner.start, inner.end), excerpt(&inner.key))),
+                },
+                _ => meta
+                    .quadrant
+                    .theme
+                    .pending_invalid
+                    .push((idx.span(inner.start, inner.end), excerpt(&inner.key))),
+            }
+        }
+    }
+    let span = idx.span(e.start, e.end);
+    meta.quadrant.theme.pending_other |= other || !quadrant_keys;
+    meta.quadrant.theme.pending_ignored.get_or_insert(span);
+}
+
+/// Applies theme diagnostics after the header determines which keys have an effect.
+pub(crate) fn finish_theme_variables(meta: &mut Meta, quadrant: bool, diags: &mut Diagnostics) {
+    let theme = &mut meta.quadrant.theme;
+    if quadrant {
+        for (span, key) in theme.pending_invalid.drain(..) {
+            diags.emit(
+                Severity::Warning,
+                "W016",
+                span,
+                alloc::format!("`{key}` must be a colour; ignored"),
+            );
+        }
+    } else {
+        theme.pending_invalid.clear();
+    }
+    if let Some(span) = theme
+        .pending_ignored
+        .take()
+        .filter(|_| !quadrant || theme.pending_other)
+    {
+        diags.emit(
+            Severity::Info,
+            "I011",
+            span,
+            theme_variables_ignored(quadrant && theme.span.is_some()),
+        );
+    }
+    theme.pending_other = false;
+}
+
+/// A quadrant colour: the accepted colour grammar, or three or six hex digits without
+/// the `#`, which mermaid's point styles also accept.
+pub(crate) fn quadrant_colour(v: &str) -> Option<crate::model::Color> {
+    let v = v.trim();
+    let bare = matches!(v.len(), 3 | 6) && v.bytes().all(|b| b.is_ascii_hexdigit());
+    if bare {
+        super::style::parse_color(&alloc::format!("#{}", v))
+    } else {
+        super::style::parse_color(v)
+    }
+}
+
+/// `config.quadrantChart` (specs/quadrant.md#configuration).
+fn apply_quadrant(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: &mut Diagnostics) {
+    for e in entries {
+        match e.key.as_str() {
+            "xAxisPosition" => match enum_value(&e.value, &["top", "bottom"]).as_deref() {
+                Some("top") => meta.quadrant.x_axis_position = Some(XAxisPosition::Top),
+                Some(_) => meta.quadrant.x_axis_position = Some(XAxisPosition::Bottom),
+                None => bad_value(e, idx, diags, "`top` or `bottom`"),
+            },
+            "yAxisPosition" => match enum_value(&e.value, &["left", "right"]).as_deref() {
+                Some("left") => meta.quadrant.y_axis_position = Some(YAxisPosition::Left),
+                Some(_) => meta.quadrant.y_axis_position = Some(YAxisPosition::Right),
+                None => bad_value(e, idx, diags, "`left` or `right`"),
+            },
+            "useMaxWidth" => match bool_value(&e.value) {
+                Some(true) => {}
+                Some(false) => diags.emit(
+                    Severity::Warning,
+                    "W016",
+                    idx.span(e.start, e.end),
+                    "`useMaxWidth: false` has no effect: Merlion's SVG always scales to its container; ignored",
+                ),
+                None => bad_value(e, idx, diags, "`true` or `false`"),
+            },
+            name => match NUMERIC_KEYS.iter().find(|k| k.name == name) {
+                Some(k) => {
+                    let v = number_value(&e.value).filter(|v| *v >= k.min && *v <= k.max);
+                    match (v, meta.quadrant.numeric(name)) {
+                        (Some(v), Some(slot)) => *slot = Some(v),
+                        _ => bad_value(
+                            e,
+                            idx,
+                            diags,
+                            &alloc::format!("a number from {} to {}", k.min, k.max),
+                        ),
+                    }
+                }
+                None => unknown_key(e, "quadrantChart.", idx, diags),
+            },
+        }
+    }
+}
+
+/// A finite number: a JSON number, or a YAML scalar in the plain decimal grammar.
+fn number_value(v: &Value) -> Option<f64> {
+    match v {
+        Value::Num(n) if n.is_finite() => Some(*n),
+        Value::Str(s) => super::style::parse_number(s.trim()),
+        _ => None,
     }
 }
 
@@ -333,17 +485,18 @@ mod tests {
             entry("flowchart", s("x")),
         ];
         apply_config(&cfg, &idx, &mut meta, &mut d);
+        finish_theme_variables(&mut meta, false, &mut d);
         assert_eq!(
             codes(&d),
             alloc::vec![
                 ("I011", Severity::Info),
                 ("I011", Severity::Info),
+                ("W016", Severity::Warning),
+                ("W016", Severity::Warning),
+                ("W016", Severity::Warning),
+                ("W016", Severity::Warning),
+                ("W016", Severity::Warning),
                 ("I011", Severity::Info),
-                ("W016", Severity::Warning),
-                ("W016", Severity::Warning),
-                ("W016", Severity::Warning),
-                ("W016", Severity::Warning),
-                ("W016", Severity::Warning),
             ]
         );
         assert_eq!(meta, Meta::default());

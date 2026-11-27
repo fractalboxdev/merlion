@@ -5,6 +5,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 pub mod gantt;
+pub mod quadrant;
 pub mod sequence;
 pub mod state;
 
@@ -12,6 +13,7 @@ use crate::diag::Span;
 use crate::options::Direction;
 
 pub use gantt::Gantt;
+pub use quadrant::Quadrant;
 pub use sequence::Sequence;
 pub use state::StateMachine;
 
@@ -22,6 +24,8 @@ pub use state::StateMachine;
 pub enum Diagram {
     Gantt(Gantt),
     Flowchart(Flowchart),
+    /// specs/quadrant.md
+    Quadrant(Quadrant),
     /// specs/sequence.md
     Sequence(Sequence),
     /// specs/state.md
@@ -33,6 +37,7 @@ impl Diagram {
         match self {
             Diagram::Gantt(_) => "gantt",
             Diagram::Flowchart(_) => "flowchart",
+            Diagram::Quadrant(_) => "quadrant",
             Diagram::Sequence(_) => "sequence",
             Diagram::State(_) => "state",
         }
@@ -43,6 +48,8 @@ impl Diagram {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Meta {
     pub gantt: gantt::GanttConfig,
+    /// `config.quadrantChart` and the quadrant keys of `themeVariables`.
+    pub quadrant: quadrant::QuadrantConfig,
     pub title: Option<String>,
     pub acc_title: Option<String>,
     pub acc_descr: Option<String>,

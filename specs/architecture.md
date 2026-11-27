@@ -26,7 +26,7 @@ The stylesheet compiler is outside the pipeline: `stylesheet::compile` turns CSS
 
 Charts enter through `render_chart` as a `merlion-chart/1` JSON spec, not Mermaid source ([chart.md](chart.md), [ADR-0012](adr/0012-chart-spec.md)). Their pipeline reads and resolves the spec in place of Parse, then measures, lays out and draws with the same text tables, emitter, theme tokens and fuel.
 
-The diagram model is one tagged enum per diagram type (`Flowchart`, `Sequence`, `State`, `Class`, `Er`, `Gantt`, …). Graph-shaped types (flowchart, state, class, ER) lower to a shared `LayeredGraph` and share one layout engine. Types with a fixed geometry (sequence, gantt, timeline, pie, XY, packet, kanban) have their own layout modules and do no graph layout.
+The diagram model is one tagged enum per diagram type (`Flowchart`, `Sequence`, `State`, `Class`, `Er`, `Gantt`, `Quadrant`, …). Graph-shaped types (flowchart, state, class, ER) lower to a shared `LayeredGraph` and share one layout engine. Types with a fixed geometry (sequence, gantt, quadrant, timeline, pie, XY, packet, kanban) have their own layout modules and do no graph layout.
 
 ## Packages
 

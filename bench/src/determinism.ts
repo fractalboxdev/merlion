@@ -7,9 +7,9 @@
  * as a layout hint), and through `packages/merlion-wasm` loaded with `initSync`. Fails when
  * any diagram differs, including one that renders on one target and fails on the other.
  *
- * One corpus per diagram type on each side: `compat`, `compat-sequence`, `compat-state`
- * and `compat-gantt` are the mermaid sources; `sequence`, `state` and `gantt` are the core's own
- * fixtures.
+ * One corpus per diagram type on each side: `compat`, `compat-sequence`, `compat-state`,
+ * `compat-gantt` and `compat-quadrant` are the mermaid sources; `sequence`, `state`, `gantt`
+ * and `quadrant` are the core's own fixtures.
  */
 import { Command, FileSystem, Path } from "@effect/platform";
 import { Console, Effect, Schema } from "effect";
@@ -19,9 +19,11 @@ import {
   COMPAT_SEQUENCE_DIR,
   COMPAT_STATE_DIR,
   COMPAT_GANTT_DIR,
+  COMPAT_QUADRANT_DIR,
   GANTT_DIR,
   MERLION_BIN,
   MERLION_WASM_DIR,
+  QUADRANT_DIR,
   REPO_DIR,
   SEQUENCE_DIR,
   STATE_DIR,
@@ -36,9 +38,11 @@ export const CORPORA = {
   "compat-sequence": COMPAT_SEQUENCE_DIR,
   "compat-state": COMPAT_STATE_DIR,
   "compat-gantt": COMPAT_GANTT_DIR,
+  "compat-quadrant": COMPAT_QUADRANT_DIR,
   sequence: SEQUENCE_DIR,
   state: STATE_DIR,
   gantt: GANTT_DIR,
+  quadrant: QUADRANT_DIR,
 } as const;
 export const CORPUS_NAMES = Object.keys(CORPORA) as [Corpus, ...Corpus[]];
 export type Corpus = keyof typeof CORPORA;

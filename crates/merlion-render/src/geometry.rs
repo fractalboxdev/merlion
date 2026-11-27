@@ -8,6 +8,7 @@
 //! and adds only the note boxes (specs/state.md#lowering).
 
 pub mod gantt;
+pub mod quadrant;
 pub mod sequence;
 pub mod state;
 

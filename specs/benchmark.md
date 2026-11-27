@@ -23,6 +23,8 @@ Baselines are run, never modified or vendored ([licensing.md](licensing.md)).
 | `compat` | Flowcharts from the mermaid repository's demos, syntax documentation and end-to-end tests, pinned commit | MIT, vendored with the notice |
 | `compat-sequence` | The same sources' sequence diagrams | MIT, vendored with the notice |
 | `compat-state` | The same sources' `stateDiagram` and `stateDiagram-v2` diagrams | MIT, vendored with the notice |
+| `compat-gantt` | The same sources' `gantt` diagrams ([gantt.md](gantt.md#reference-and-compatibility)) | MIT, vendored with the notice |
+| `compat-quadrant` | The same sources' `quadrantChart` diagrams, plus mermaid's examples package and the quadrant parser's unit tests ([quadrant.md](quadrant.md#reference-and-compatibility)) | MIT, vendored with the notice |
 | `docs` | 200+ real diagrams collected from public MIT/Apache/CC-BY documentation repositories, each with its source and licence recorded | Per diagram |
 | `llm` | MermaidSeqBench (132 cases) plus generated diagrams with known syntax errors | Apache-2.0, fetched at run time |
 | `edits` | Pairs (diagram, diagram after a one-line edit): add node, add edge, remove edge, rename label | Original |

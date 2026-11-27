@@ -26,6 +26,7 @@ Merlion renders Mermaid diagrams to static, themeable, accessible SVG. It is a R
 | [state.md](state.md) | `stateDiagram-v2`: syntax, model, lowering onto the layered engine, SVG contract |
 | [chart.md](chart.md) | `merlion-chart/1`: data charts from a JSON spec of rows and marks, scales, layout, SVG contract |
 | [gantt.md](gantt.md) | `gantt`: UTC scheduling, dependencies, calendar exclusions, time-axis layout and SVG contract |
+| [quadrant.md](quadrant.md) | `quadrantChart`: syntax, point styles, configuration, layout and SVG contract |
 | [svg-output.md](svg-output.md) | The SVG contract: CSS variables, roles, the stylesheet subset and baked palettes, accessibility, ids, data attributes, escaping |
 | [security.md](security.md) | Threat model, output safety, resource bounds, fuzzing |
 | [viewer.md](viewer.md) | `<merlion-view>` pan, zoom, semantic zoom |

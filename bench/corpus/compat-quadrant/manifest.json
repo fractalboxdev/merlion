@@ -1,0 +1,177 @@
+{
+  "corpus": "compat-quadrant",
+  "repo": "https://github.com/mermaid-js/mermaid",
+  "tag": "mermaid@12.0.0",
+  "commit": "98a0945418c76238f15df2afaddbba4272656c3b",
+  "licence": "MIT (c) 2014 - 2022 Knut Sveidqvist; see bench/NOTICES.md",
+  "diagrams": [
+    {
+      "name": "demos-quadrantchart-01",
+      "source": "demos/quadrantchart.html",
+      "block": 1,
+      "sourceBlob": "aec759d868e6c7996a3322146ce5213017a3c5c3",
+      "sha256": "52c3bebf4575154c802f2ea17e03d1a81230f0fe63ae07731a95df36cad4677f"
+    },
+    {
+      "name": "demos-quadrantchart-02",
+      "source": "demos/quadrantchart.html",
+      "block": 2,
+      "sourceBlob": "aec759d868e6c7996a3322146ce5213017a3c5c3",
+      "sha256": "a0fc48cea7a3c03173d21ce8eb21cd89d9df56af916be967bd66b7a47d723c75"
+    },
+    {
+      "name": "docs-quadrantchart-02",
+      "source": "packages/mermaid/src/docs/syntax/quadrantChart.md",
+      "block": 2,
+      "sourceBlob": "8c83360f1edd37a77acf4213ea30a34ccd61f560",
+      "sha256": "9de768ec30909b7feb3f85d426c1e0a88211ded0b564573306f1fa82bb6653fe"
+    },
+    {
+      "name": "docs-quadrantchart-03",
+      "source": "packages/mermaid/src/docs/syntax/quadrantChart.md",
+      "block": 3,
+      "sourceBlob": "8c83360f1edd37a77acf4213ea30a34ccd61f560",
+      "sha256": "980c8901e505c06556566bc03575f4ff47c228b18700903c32fd6dcdb001e87f"
+    },
+    {
+      "name": "e2e-it-should-render-data-points-with-styles",
+      "source": "e2e/diagrams/quadrant-chart/it-should-render-data-points-with-styles.mmd",
+      "block": 1,
+      "sourceBlob": "4ef97f527e890e5c9609603e657978d135957c65",
+      "sha256": "83247296330a9ead85d134cbef2d3eb53676e381bfa7137a2b54bcce00f1078d"
+    },
+    {
+      "name": "e2e-it-should-render-data-points-with-styles-classes",
+      "source": "e2e/diagrams/quadrant-chart/it-should-render-data-points-with-styles-classes.mmd",
+      "block": 1,
+      "sourceBlob": "0829f1337f5b2714f14c348fa4893c63fd94f22f",
+      "sha256": "57e605ae8119a967088cd3dff10ce377d289edcbc9cecde29cb5cfeb2e08b538"
+    },
+    {
+      "name": "e2e-should-able-to-render-x-axis-on-bottom",
+      "source": "e2e/diagrams/quadrant-chart/should-able-to-render-x-axis-on-bottom.mmd",
+      "block": 1,
+      "sourceBlob": "ca2d27aaa7e246c62f429c39e3b8031c3e8c3206",
+      "sha256": "d66e113f4b187f9fab17826caa847a768d05eb9c15a279ff203d929ffd637722"
+    },
+    {
+      "name": "e2e-should-able-to-render-x-axis-on-bottom-and-y-axis-on-right",
+      "source": "e2e/diagrams/quadrant-chart/should-able-to-render-x-axis-on-bottom-and-y-axis-on-right.mmd",
+      "block": 1,
+      "sourceBlob": "ca9e24b701fabb020b0a9699c4f395f3fa71c65b",
+      "sha256": "360d53ac042346179ef9502c7bec5f1ca2f7f0d68c063a4bac2040f72a4a1715"
+    },
+    {
+      "name": "e2e-should-able-to-render-y-axis-on-right-side",
+      "source": "e2e/diagrams/quadrant-chart/should-able-to-render-y-axis-on-right-side.mmd",
+      "block": 1,
+      "sourceBlob": "fce55054b9c8dc4f04ffb603c2524257a7a3b5fc",
+      "sha256": "5f9ee1a31943be4220bfb4a8bd17a06368d55bd4a386114937cde1222ce0cf93"
+    },
+    {
+      "name": "e2e-should-render-a-complete-quadrant-chart",
+      "source": "e2e/diagrams/quadrant-chart/should-render-a-complete-quadrant-chart.mmd",
+      "block": 1,
+      "sourceBlob": "ea94de114a2eebfdb0b5a71f53fdc85909179a10",
+      "sha256": "6a8ea001fab7106657a716f4b9c5a090f2c334dfd3dfd2701ba4c0a9167b8e91"
+    },
+    {
+      "name": "e2e-should-render-both-axes-labels-on-the-left-and-bottom-if-both-axes-have-only-one-label",
+      "source": "e2e/diagrams/quadrant-chart/should-render-both-axes-labels-on-the-left-and-bottom-if-both-axes-have-only-one-label.mmd",
+      "block": 1,
+      "sourceBlob": "b49d0fc4c7e8d1bce147db671e7a7a236399a5ae",
+      "sha256": "8e5d570970668bfe671393b88c4ade15021db3ebf1dd9588ca95d1c163e25202"
+    },
+    {
+      "name": "e2e-should-render-without-points",
+      "source": "e2e/diagrams/quadrant-chart/should-render-without-points.mmd",
+      "block": 1,
+      "sourceBlob": "78a7ed817ab6622851bd1024f60f1cedee4479d5",
+      "sha256": "c316639e700a4c540b2f39ff662227f6a7bbb6c46be1405b50aa7d3e5467be03"
+    },
+    {
+      "name": "e2e-should-render-without-title",
+      "source": "e2e/diagrams/quadrant-chart/should-render-without-title.mmd",
+      "block": 1,
+      "sourceBlob": "e9eff1098ee77356d8a87a26d7dc660dde493b83",
+      "sha256": "530587aca7e8283688da82a7732e7347130b49b592ca8eecf3db95fe283cceef"
+    },
+    {
+      "name": "e2e-should-render-x-axis-labels-in-the-center-if-x-axis-has-two-labels",
+      "source": "e2e/diagrams/quadrant-chart/should-render-x-axis-labels-in-the-center-if-x-axis-has-two-labels.mmd",
+      "block": 1,
+      "sourceBlob": "44ed3188060c37d1d60e9ec10cdae601f20cbd65",
+      "sha256": "4248ac9dd7cbed91987e1d785b255b9a977dafccdbdacf05eb018c62a78dff77"
+    },
+    {
+      "name": "e2e-should-render-y-axis-labels-in-the-center-if-y-axis-has-two-labels",
+      "source": "e2e/diagrams/quadrant-chart/should-render-y-axis-labels-in-the-center-if-y-axis-has-two-labels.mmd",
+      "block": 1,
+      "sourceBlob": "732835ecfcce389dc02de8293b6e68e425c860fa",
+      "sha256": "f20569aa70f28ccbcd9bf7a44b0aa8ae2a7368bd98f796924d718e0e76c56e36"
+    },
+    {
+      "name": "e2e-should-use-all-the-config",
+      "source": "e2e/diagrams/quadrant-chart/should-use-all-the-config.mmd",
+      "block": 1,
+      "sourceBlob": "af4a5a9a62e651bc667d46b2d386f94c5b43501c",
+      "sha256": "4b0682e39f8f871fb72b24a45c60e129e9dfd1aaa80c95c26622d03ff4ee0c18"
+    },
+    {
+      "name": "e2e-should-use-all-the-theme-variable",
+      "source": "e2e/diagrams/quadrant-chart/should-use-all-the-theme-variable.mmd",
+      "block": 1,
+      "sourceBlob": "418a7cfc16efb8eb9b59016abb9812d05eea75ad",
+      "sha256": "3761756197f17179ffb7e5a4c5907dba7d08de2e3dc684ae498b21afb015f2b2"
+    },
+    {
+      "name": "examples-quadrant-chart-01",
+      "source": "packages/examples/src/examples/quadrant-chart.ts",
+      "block": 1,
+      "sourceBlob": "a1f81b93c4de487dfe3fb86b1183630bd3447518",
+      "sha256": "ab68741da71fae260c045fd990343c00fdd656747ad9624dda13e1872446c4f2"
+    },
+    {
+      "name": "examples-quadrant-chart-02",
+      "source": "packages/examples/src/examples/quadrant-chart.ts",
+      "block": 2,
+      "sourceBlob": "a1f81b93c4de487dfe3fb86b1183630bd3447518",
+      "sha256": "7ac1065c5b45823d741387eebef36bf73b4ad35fc87592b32b9cea9d524d47b6"
+    },
+    {
+      "name": "unit-quadrant-jison-01",
+      "source": "packages/mermaid/src/diagrams/quadrant-chart/parser/quadrant.jison.spec.ts",
+      "block": 1,
+      "sourceBlob": "6a756c6dcbf55c8916cb89a47e2d99827f32381e",
+      "sha256": "d461dfbf9c8b175b74e64179a14eacc0d9548eaa2357ce64860e99d4abfea64d"
+    },
+    {
+      "name": "unit-quadrant-jison-02",
+      "source": "packages/mermaid/src/diagrams/quadrant-chart/parser/quadrant.jison.spec.ts",
+      "block": 2,
+      "sourceBlob": "6a756c6dcbf55c8916cb89a47e2d99827f32381e",
+      "sha256": "da977a09c5ceafc029bce9cd5b9124bb911e296d412f49e883f2f8785dce26b8"
+    },
+    {
+      "name": "unit-quadrant-jison-03",
+      "source": "packages/mermaid/src/diagrams/quadrant-chart/parser/quadrant.jison.spec.ts",
+      "block": 3,
+      "sourceBlob": "6a756c6dcbf55c8916cb89a47e2d99827f32381e",
+      "sha256": "856c8f79e1ea197cbad4213a4f7977299c95ddd4ebc9739bba5d6cd6a42d04fb"
+    },
+    {
+      "name": "unit-quadrant-jison-04",
+      "source": "packages/mermaid/src/diagrams/quadrant-chart/parser/quadrant.jison.spec.ts",
+      "block": 4,
+      "sourceBlob": "6a756c6dcbf55c8916cb89a47e2d99827f32381e",
+      "sha256": "79b4171873e75c426dc80a2a4d93ce027098351a31ea6971579b875c77fd8790"
+    },
+    {
+      "name": "unit-quadrant-jison-05",
+      "source": "packages/mermaid/src/diagrams/quadrant-chart/parser/quadrant.jison.spec.ts",
+      "block": 5,
+      "sourceBlob": "6a756c6dcbf55c8916cb89a47e2d99827f32381e",
+      "sha256": "f2dc5cde65626f97b0777ce013b1be3c14fab99906dd89e324a78bdad8f5b7e9"
+    }
+  ]
+}

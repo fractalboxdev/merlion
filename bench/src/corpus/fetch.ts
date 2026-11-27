@@ -1,12 +1,12 @@
 /**
- * `bench fetch`: downloads the `compat`, `compat-sequence` and `compat-state` corpora
- * from the mermaid repository at the pinned commit and derives the `edits` corpus from
- * the flowcharts (specs/benchmark.md#corpora, specs/licensing.md rule 5).
+ * `bench fetch`: downloads the `compat`, `compat-sequence`, `compat-state`, `compat-gantt`
+ * and `compat-quadrant` corpora from the mermaid repository at the pinned commit and
+ * derives the `edits` corpus from the flowcharts (specs/benchmark.md#corpora, specs/licensing.md rule 5).
  */
 import { FileSystem, HttpClient, HttpClientRequest, Path } from "@effect/platform";
 import { createHash } from "node:crypto";
 import { Config, Console, Effect, Option, Redacted, Schema } from "effect";
-import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, COMPAT_STATE_DIR, COMPAT_GANTT_DIR, EDITS_DIR } from "../paths.ts";
+import { COMPAT_DIR, COMPAT_SEQUENCE_DIR, COMPAT_STATE_DIR, COMPAT_GANTT_DIR, COMPAT_QUADRANT_DIR, EDITS_DIR } from "../paths.ts";
 import { EditPairFile, Manifest, ManifestEntry, MERMAID_COMMIT, MERMAID_REPO, MERMAID_TAG } from "../schema.ts";
 import { makeEdits } from "./edits.ts";
 import { type DiagramKind, extractDiagrams, selectSourcePaths, sourceSlug } from "./sources.ts";
@@ -23,7 +23,7 @@ export class FetchError extends Schema.TaggedError<FetchError>()("FetchError", {
 
 const sha256 = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
 
-const fetchCorpora = (onlyGantt = false) => Effect.gen(function* () {
+const fetchCorpora = (only: "gantt" | "quadrant" | null = null) => Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const token = yield* Config.option(Config.redacted("GITHUB_TOKEN"));
@@ -73,7 +73,7 @@ const fetchCorpora = (onlyGantt = false) => Effect.gen(function* () {
 
   /** Rewrites a corpus directory from scratch so removed diagrams do not linger. */
   const write = (
-    corpus: "compat" | "compat-sequence" | "compat-state" | "compat-gantt",
+    corpus: "compat" | "compat-sequence" | "compat-state" | "compat-gantt" | "compat-quadrant",
     dir: string,
     es: ReadonlyArray<{ entry: ManifestEntry; text: string }>,
   ) =>
@@ -94,12 +94,23 @@ const fetchCorpora = (onlyGantt = false) => Effect.gen(function* () {
       yield* Console.log(`${corpus}: ${es.length} diagrams written to ${path.relative(process.cwd(), dir) || "."}`);
     });
 
+  let quadrantDiagrams = 0;
+  if (only !== "gantt") {
+    const quadrantSources = selectSourcePaths([...blobs.keys()], "quadrant");
+    yield* Console.log(`${quadrantSources.length} quadrant source files at ${MERMAID_TAG}`);
+    const quadrantContents = yield* Effect.forEach(quadrantSources, fetchText, { concurrency: 8 });
+    const quadrantEntries = collect("quadrant", quadrantContents);
+    quadrantDiagrams = quadrantEntries.length;
+    yield* write("compat-quadrant", COMPAT_QUADRANT_DIR, quadrantEntries);
+    if (only === "quadrant") return { quadrantDiagrams };
+  }
+
   const ganttSources = selectSourcePaths([...blobs.keys()], "gantt");
   yield* Console.log(`${ganttSources.length} gantt source files at ${MERMAID_TAG}`);
   const ganttContents = yield* Effect.forEach(ganttSources, fetchText, { concurrency: 8 });
   const ganttEntries = collect("gantt", ganttContents);
   yield* write("compat-gantt", COMPAT_GANTT_DIR, ganttEntries);
-  if (onlyGantt) return { ganttDiagrams: ganttEntries.length };
+  if (only === "gantt") return { ganttDiagrams: ganttEntries.length };
 
   const sources = selectSourcePaths([...blobs.keys()]);
   yield* Console.log(`${sources.length} flowchart source files at ${MERMAID_TAG} (${MERMAID_COMMIT.slice(0, 12)})`);
@@ -141,10 +152,13 @@ const fetchCorpora = (onlyGantt = false) => Effect.gen(function* () {
     sequenceDiagrams: seqEntries.length,
     stateDiagrams: stateEntries.length,
     ganttDiagrams: ganttEntries.length,
+    quadrantDiagrams,
     editPairs: pairs,
   };
 });
 
 export const fetchCorpus = fetchCorpora();
 /** Refreshes only Gantt sources, retaining every upstream case regardless of support. */
-export const fetchGanttCorpus = fetchCorpora(true);
+export const fetchGanttCorpus = fetchCorpora("gantt");
+/** Refreshes only quadrant chart sources, retaining every upstream case regardless of support. */
+export const fetchQuadrantCorpus = fetchCorpora("quadrant");

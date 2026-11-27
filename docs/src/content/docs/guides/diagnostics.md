@@ -26,6 +26,7 @@ The parser recovers from the mistakes people and LLMs make most, applies the rep
 | `R004` | A reserved word as a node id (`end`, `graph`, `subgraph`) | Rename it to `end_` and keep the original text as the label |
 | `R005` | An edge to a node id that is never declared | Declare the node with its id as the label |
 | `R006` | A Markdown code fence left inside the source | Strip it |
+| `R021` | A quadrant chart coordinate in 0–1 that mermaid cannot read, such as `1.0` or `.5` | Rewrite it as `1` or `0.5` |
 
 This diagram deliberately carries two mistakes. It renders anyway, with `R001` for the parenthesised label and `R004` for the node named `end`:
 
@@ -61,6 +62,7 @@ Through WASM, `check(source)` returns the same list, and each repair's `fix` is 
 | `E011` | FrontMatterUnsupported | YAML outside the accepted subset (anchors, aliases, tags, duplicate keys), or nested beyond 64 |
 | `E012` | DirectiveTooLarge | `%%{init}%%` JSON nested beyond 64 or with a string over 4,096 bytes |
 | `E013` | StylesheetTooLarge | A stylesheet over one of its [limits](/guides/roles-and-stylesheets/#what-the-subset-accepts) |
+| `E024` | QuadrantValueOutOfRange | A quadrant chart point coordinate outside 0–1 ([Quadrant charts](/guides/quadrant-charts/)) |
 | `W010` | StyleRejected | A `style`/`classDef` property or value outside the accepted set |
 | `W011` | ClassNameRejected | A class or role name outside `[A-Za-z_][A-Za-z0-9_-]{0,63}` |
 | `W012` | LabelTruncated | A label over 4,096 bytes |
@@ -72,7 +74,7 @@ Through WASM, `check(source)` returns the same list, and each repair's `fix` is 
 | `W018` | StylesheetDeclarationRejected | A property outside the token list, a font token, or a value outside its grammar |
 | `W019` | StylesheetReferenceInvalid | A `var()` naming an undefined token, forming a cycle, or nested deeper than 8 |
 | `I010` | UnmeasuredGlyph | A code point outside the font's metric table |
-| `I011` | ThemeConfigIgnored | `theme`, `themeVariables` or `look` in the source; themes are CSS ([Theming](/guides/theming/)) |
+| `I011` | ThemeConfigIgnored | `theme`, `themeVariables` or `look` in the source; themes are CSS ([Theming](/guides/theming/)). A quadrant chart reads the quadrant colours of `themeVariables` |
 | `I020` | LayoutHintDiscarded | Fewer than half the nodes survive ([Stable layout](/guides/stable-layout/)) |
 | `I021` | LayoutHintPartial | Some nodes are treated as new |
 | `I022` | LayoutHintInvalid | The hint is malformed, of an unknown version, or too large |

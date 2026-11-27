@@ -91,6 +91,22 @@ pub fn push_label(
     fill: &str,
     detail_fill: &str,
 ) {
+    push_label_with(out, label, cx, cy, class, fill, detail_fill, "");
+}
+
+/// [`push_label`] with `attrs` (already escaped, each with its leading space) added to
+/// the `<text>` element: a quadrant chart's `font-size` and `font-weight`.
+#[allow(clippy::too_many_arguments)]
+pub fn push_label_with(
+    out: &mut String,
+    label: &LabelLayout,
+    cx: f64,
+    cy: f64,
+    class: &str,
+    fill: &str,
+    detail_fill: &str,
+    attrs: &str,
+) {
     if label
         .lines
         .iter()
@@ -104,7 +120,9 @@ pub fn push_label(
     out.push_str(class);
     out.push_str("\" fill=\"");
     out.push_str(fill);
-    out.push_str("\">");
+    out.push('"');
+    out.push_str(attrs);
+    out.push('>');
     // A label with detail lines has lines of different heights; a uniform label keeps
     // the `i × line_height` form.
     let tiered = label.lines.iter().any(|l| l.detail);

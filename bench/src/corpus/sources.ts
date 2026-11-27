@@ -29,7 +29,7 @@ export const dedent = (s: string): string => {
 };
 
 /** The corpora this module extracts: one per diagram type Merlion draws. */
-export type DiagramKind = "flowchart" | "sequence" | "state" | "gantt";
+export type DiagramKind = "flowchart" | "sequence" | "state" | "gantt" | "quadrant";
 
 /** The header keyword of each kind. Mermaid's lexer reads the keyword case-insensitively. */
 const HEADER: Record<DiagramKind, RegExp> = {
@@ -37,6 +37,8 @@ const HEADER: Record<DiagramKind, RegExp> = {
   sequence: /^sequenceDiagram(\s|;|$)/i,
   state: /^stateDiagram(-v2)?(\s|;|$)/i,
   gantt: /^gantt(\s|;|$)/i,
+  // mermaid's detector matches `quadrantChart` case-sensitively.
+  quadrant: /^quadrantChart(\s|;|$)/,
 };
 
 /**
@@ -85,11 +87,18 @@ export const isGantt = (src: string): boolean => {
   return h !== null && HEADER.gantt.test(h);
 };
 
+/** True when the diagram's header is `quadrantChart`. */
+export const isQuadrant = (src: string): boolean => {
+  const h = header(src);
+  return h !== null && HEADER.quadrant.test(h);
+};
+
 const isKind: Record<DiagramKind, (src: string) => boolean> = {
   flowchart: isFlowchart,
   sequence: isSequence,
   state: isState,
   gantt: isGantt,
+  quadrant: isQuadrant,
 };
 
 /** Contents of every `<pre class="… mermaid …">` block, entity-decoded and dedented. */
@@ -235,6 +244,9 @@ export const sourceSlug = (path: string): string => {
     [/^e2e\/diagrams\/state-diagram\//, "e2e-"],
     [/^e2e\/rendering\/gantt\//, "e2e-gantt-"],
     [/^e2e\/diagrams\/gantt\//, "e2e-"],
+    [/^e2e\/diagrams\/quadrant-chart\//, "e2e-"],
+    [/^packages\/examples\/src\/examples\//, "examples-"],
+    [/^packages\/mermaid\/src\/diagrams\/quadrant-chart\/(parser\/)?/, "unit-"],
   ];
   let s = path;
   for (const [re, prefix] of known) {
@@ -277,6 +289,13 @@ const SOURCES: Record<DiagramKind, (p: string) => boolean> = {
     p === "packages/mermaid/src/docs/syntax/gantt.md" ||
     /^e2e\/rendering\/gantt\/[^/]+\.spec\.(js|ts)$/.test(p) ||
     /^e2e\/diagrams\/gantt\/.+\.mmd$/.test(p),
+  // mermaid has no quadrant rendering spec; its examples package and the parser's and
+  // database's unit tests hold the other quadrant charts it ships.
+  quadrant: (p) =>
+    p === "packages/mermaid/src/docs/syntax/quadrantChart.md" ||
+    p === "packages/examples/src/examples/quadrant-chart.ts" ||
+    /^packages\/mermaid\/src\/diagrams\/quadrant-chart\/.+\.spec\.ts$/.test(p) ||
+    /^e2e\/diagrams\/quadrant-chart\/.+\.mmd$/.test(p),
 };
 
 export const selectSourcePaths = (paths: readonly string[], kind: DiagramKind = "flowchart"): string[] =>

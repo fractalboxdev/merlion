@@ -16,6 +16,7 @@ const VALID = "flowchart LR\nA-->B\n";
 const INVALID = "this is not a diagram\n";
 const CHART = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/chart/dumbbell.json", import.meta.url), "utf8");
 const GANTT = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/gantt/delivery.mmd", import.meta.url), "utf8");
+const QUADRANT = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/quadrant/campaigns.mmd", import.meta.url), "utf8");
 
 before(() => {
   if (!process.env.MERLION_SKIP_WASM_BUILD) {
@@ -130,6 +131,19 @@ test("checkChart reports spec errors with their JSON path", () => {
   assert.ok(e, JSON.stringify(d));
   assert.ok(e.message.includes("/data/0/v"));
   assert.throws(() => renderChart(42), TypeError);
+});
+
+test("quadrant chart render and check use the real WebAssembly core", () => {
+  initSync(bytes);
+  const result = render(QUADRANT, { width: 640, strict: true, font: "embed", idPrefix: "matrix" });
+  assert.equal(result.error, null, JSON.stringify(result.diagnostics));
+  assert.ok(result.svg.includes("merlion-quadrant"));
+  assert.ok(result.svg.includes('data-merlion-id="Spring launch"'));
+  assert.ok(result.outline.includes("Quadrant 1, top right: Expand"));
+  assert.equal(check(QUADRANT, { strict: true }).some((d) => d.severity === "error"), false);
+  const outOfRange = check("quadrantChart\n  A: [1.5, 0.5]\n");
+  assert.ok(outOfRange.some((d) => d.code === "E024" && d.severity === "error"));
+  assert.equal(render(QUADRANT, { width: 640, strict: true, font: "embed", idPrefix: "matrix" }).svg, result.svg);
 });
 
 test("default orientation keeps assurance relationships continuous and source is an explicit override", () => {

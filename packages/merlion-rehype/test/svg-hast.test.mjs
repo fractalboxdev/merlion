@@ -19,6 +19,7 @@ const CORPORA = [
   "bench/corpus/compat-sequence",
   "bench/corpus/compat-state",
   "bench/corpus/compat-gantt",
+  "bench/corpus/compat-quadrant",
   "crates/merlion-render/tests/fixtures",
 ];
 
