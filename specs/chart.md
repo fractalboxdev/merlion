@@ -128,7 +128,10 @@
 | Categories per band axis | 500 |
 | Series | 8 |
 | Ticks per axis | 64 |
-| Fuel | One unit per drawn item plus one per mark, against `fuel` |
+| Fuel | One unit per drawn item (each line or area point counts once) plus one per mark, against `fuel` |
+| Drawn item text | 8 MiB before XML escaping: position and series values count twice (attribute and tooltip), labels once, rule and span notes twice |
+
+The fuel and drawn-text checks precede resolved-item allocation; exceeding either fails with `E004`. The text limit bounds repeated constants in SVG metadata and tooltips. Empty marks cost one unit; an all-constant mark costs two units. Missing or `null` fields consume no item unit. Resolved source text shares each constant across its rows; geometry and tooltip parts share that same text until SVG serialization.
 
 ## Out of scope
 

@@ -5,6 +5,7 @@
 //! marks get gutters, so no text overlaps the plot edge it belongs to. Every position is
 //! a pure function of the spec and the options.
 
+use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -12,7 +13,6 @@ use super::resolve::{Item, MarkData, Pos, Resolved, Val};
 use super::scale::{self, Step};
 use super::spec::{MarkType, ScaleType, Spec, Tone};
 use crate::diag::Diagnostics;
-use crate::fuel::Fuel;
 use crate::geometry::gantt::{Rect, TextGeom};
 use crate::layout::LayoutError;
 use crate::math::{clamp, max, min, round};
@@ -77,9 +77,9 @@ pub struct ItemGeom {
     pub shape: Shape,
     pub label: Option<TextGeom>,
     /// The item's native tooltip text.
-    pub tip: String,
+    pub tip: Vec<Rc<str>>,
     /// `data-merlion-*` attributes: the exact values the item was drawn from.
-    pub data: Vec<(&'static str, String)>,
+    pub data: Vec<(&'static str, Rc<str>)>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -154,11 +154,6 @@ struct Continuous {
     d0: f64,
     d1: f64,
     step: Option<Step>,
-}
-
-fn burn(fuel: &mut Fuel, n: u64) -> Result<(), LayoutError> {
-    fuel.burn(n)
-        .map_err(|_| LayoutError::TooLarge { what: "fuel" })
 }
 
 /// Whether some bar or area uses axis `x` (true) or `y` (false) as its value axis.
@@ -281,11 +276,8 @@ pub fn layout(
     spec: &Spec,
     r: &Resolved,
     opts: &RenderOptions,
-    fuel: &mut Fuel,
     diags: &mut Diagnostics,
 ) -> Result<ChartGeometry, LayoutError> {
-    let rows: usize = r.marks.iter().map(|m| m.items.len()).sum();
-    burn(fuel, rows as u64 + 1)?;
     let base = if opts.font_size.is_finite() && opts.font_size > 0.0 {
         opts.font_size
     } else {
@@ -314,7 +306,7 @@ pub fn layout(
         let mut x = PAD;
         let mut row_h = 0.0f64;
         for &k in &drawn {
-            let label = ms.text(r.series.get(k).map_or("", String::as_str), 200.0);
+            let label = ms.text(r.series.get(k).map_or("", AsRef::as_ref), 200.0);
             let w = 10.0 + 6.0 + label.width;
             if x > PAD && x + w > width - PAD {
                 x = PAD;
@@ -484,7 +476,11 @@ pub fn layout(
         for (i, label) in cats.into_iter().enumerate() {
             y_ticks.push(AxisTick {
                 pos: band.centre(i),
-                value: r.y.categories.get(i).cloned().unwrap_or_default(),
+                value: r
+                    .y
+                    .categories
+                    .get(i)
+                    .map_or_else(String::new, |s| String::from(s.as_ref())),
                 text: TextGeom {
                     x: plot.x - left_gutter - 10.0 - label.width / 2.0,
                     y: band.centre(i),
@@ -602,7 +598,11 @@ pub fn layout(
             for (i, label) in x_labels.into_iter().enumerate() {
                 x_ticks.push(AxisTick {
                     pos: band.centre(i),
-                    value: r.x.categories.get(i).cloned().unwrap_or_default(),
+                    value: r
+                        .x
+                        .categories
+                        .get(i)
+                        .map_or_else(String::new, |s| String::from(s.as_ref())),
                     text: TextGeom {
                         x: band.centre(i),
                         y: label_top + label.height / 2.0,
@@ -706,7 +706,6 @@ pub fn layout(
 
     marks_geom = Vec::with_capacity(r.marks.len());
     for (index, m) in r.marks.iter().enumerate() {
-        burn(fuel, m.items.len() as u64)?;
         let mut g = MarkGeom {
             index,
             kind: m.kind,
@@ -717,7 +716,7 @@ pub fn layout(
         };
         let name = |k: Option<usize>| k.and_then(|k| r.series.get(k)).cloned();
         let data_of = |it: &Item| {
-            let mut d: Vec<(&'static str, String)> = Vec::new();
+            let mut d: Vec<(&'static str, Rc<str>)> = Vec::new();
             if let Some(v) = &it.x {
                 d.push(("data-merlion-x", v.raw.clone()));
             }
@@ -736,21 +735,27 @@ pub fn layout(
             d
         };
         let tip_of = |it: &Item| {
-            let mut t = String::new();
-            if let Some(s) = name(it.series) {
-                t.push_str(&s);
-                t.push_str(": ");
+            let mut t = Vec::new();
+            if matches!(m.kind, MarkType::Rule | MarkType::Span) {
+                if let Some(note) = &m.text {
+                    t.push(Rc::from(note.as_str()));
+                    t.push(Rc::from(": "));
+                }
             }
-            let parts: Vec<&str> = [&it.x, &it.x2, &it.y, &it.y2]
+            if let Some(s) = name(it.series) {
+                t.push(s);
+                t.push(Rc::from(": "));
+            }
+            let parts: Vec<_> = [&it.x, &it.x2, &it.y, &it.y2]
                 .into_iter()
                 .flatten()
-                .map(|v| v.raw.as_str())
+                .map(|v| v.raw.clone())
                 .collect();
             for (i, p) in parts.iter().enumerate() {
                 if i > 0 {
-                    t.push_str(if i == 1 { ", " } else { " to " });
+                    t.push(Rc::from(if i == 1 { ", " } else { " to " }));
                 }
-                t.push_str(p);
+                t.push(p.clone());
             }
             t
         };
@@ -896,13 +901,16 @@ pub fn layout(
                     if let Some(s) = name(key) {
                         data.push(("data-merlion-series", s));
                     }
-                    data.push(("data-merlion-points", alloc::format!("{}", coords.len())));
+                    data.push((
+                        "data-merlion-points",
+                        Rc::from(alloc::format!("{}", coords.len())),
+                    ));
                     g.items.push(ItemGeom {
                         row: None,
                         series: key,
                         shape: Shape::Path { d, fill },
                         label,
-                        tip: name(key).unwrap_or_else(|| String::from(spec.title.as_str())),
+                        tip: alloc::vec![name(key).unwrap_or_else(|| Rc::from(spec.title.as_str()))],
                         data,
                     });
                 }
@@ -1076,10 +1084,7 @@ pub fn layout(
                         series: None,
                         shape,
                         label: None,
-                        tip: match &m.text {
-                            Some(t) => alloc::format!("{}: {}", t, tip_of(it)),
-                            None => tip_of(it),
-                        },
+                        tip: tip_of(it),
                         data: data_of(it),
                     });
                 }
@@ -1120,10 +1125,7 @@ pub fn layout(
                         series: None,
                         shape: Shape::Shade { rect },
                         label: None,
-                        tip: match &m.text {
-                            Some(t) => alloc::format!("{}: {}", t, tip_of(it)),
-                            None => tip_of(it),
-                        },
+                        tip: tip_of(it),
                         data: data_of(it),
                     });
                 }

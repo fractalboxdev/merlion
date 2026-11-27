@@ -46,14 +46,16 @@ pub fn render(src: &str, opts: &RenderOptions) -> RenderResult {
     let Some(spec) = spec::read(src, opts.limits.nesting, &mut diags) else {
         return failed(RenderError::Parse, diags, 0);
     };
-    let Some(resolved) = resolve::resolve(src, &spec, &mut diags) else {
-        return failed(RenderError::Parse, diags, 0);
+    let mut fuel = crate::fuel::Fuel::new(opts.fuel);
+    let resolved = match resolve::resolve(src, &spec, &mut diags, &mut fuel) {
+        Ok(Some(resolved)) => resolved,
+        Ok(None) => return failed(RenderError::Parse, diags, fuel.used()),
+        Err(error) => return failed(error, diags, fuel.used()),
     };
     if diags.has_errors() {
         return failed(RenderError::Parse, diags, 0);
     }
-    let mut fuel = crate::fuel::Fuel::new(opts.fuel);
-    let geom = match layout::layout(&spec, &resolved, opts, &mut fuel, &mut diags) {
+    let geom = match layout::layout(&spec, &resolved, opts, &mut diags) {
         Ok(g) => g,
         Err(crate::layout::LayoutError::TooLarge { what }) => {
             return failed(RenderError::TooLarge { what }, diags, fuel.used())
@@ -89,7 +91,10 @@ pub fn check(src: &str, strict: bool) -> Vec<Diagnostic> {
         return diags.items;
     }
     if let Some(spec) = spec::read(src, opts.limits.nesting, &mut diags) {
-        let _ = resolve::resolve(src, &spec, &mut diags);
+        let mut fuel = crate::fuel::Fuel::new(opts.fuel);
+        if let Err(error) = resolve::resolve(src, &spec, &mut diags, &mut fuel) {
+            diags.items.push(crate::error_diagnostic(&error));
+        }
     }
     diags.items
 }

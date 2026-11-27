@@ -347,3 +347,144 @@ fn field_diagnostics_escape_json_pointer_segments() {
         }
     }
 }
+
+#[test]
+fn fuel_charges_each_drawn_item_and_mark_once() {
+    for (data, marks, required) in [
+        (
+            r#"[{"a":"x","v":1},{"a":"y","v":2}]"#,
+            r#"[{"type":"bar","x":"a","y":"v"}]"#,
+            3,
+        ),
+        (
+            r#"[{"a":"x","v":null},{"a":"y","v":null}]"#,
+            r#"[{"type":"bar","x":"a","y":"v"}]"#,
+            1,
+        ),
+        (
+            r#"[{"a":"x","v":1},{"a":"y","v":2}]"#,
+            r#"[{"type":"rule","y":{"value":1}}]"#,
+            2,
+        ),
+        (
+            r#"[{"a":"x","v":1},{"a":"y","v":2}]"#,
+            r#"[{"type":"bar","x":"a","y":"v"},{"type":"rule","y":{"value":1}}]"#,
+            5,
+        ),
+        (
+            r#"[{"a":"x","v":1,"z":null},{"a":"y","v":2,"z":null}]"#,
+            r#"[{"type":"bar","x":"a","y":"v"},{"type":"dot","x":"a","y":"z"}]"#,
+            4,
+        ),
+        (
+            r#"[{"a":"x","v":1,"label":"one"},{"a":"y","v":2,"label":null}]"#,
+            r#"[{"type":"dot","x":"a","y":"v","label":"label"}]"#,
+            2,
+        ),
+        (
+            r#"[{"a":"x","v":1},{"a":"y","v":2}]"#,
+            r#"[{"type":"line","x":"a","y":"v"}]"#,
+            3,
+        ),
+    ] {
+        let src = format!(
+            r#"{{"chart":1,"title":"t","x":{{"type":"band"}},"y":{{"type":"linear"}},"data":{data},"marks":{marks}}}"#
+        );
+        let out = render_chart(
+            &src,
+            &RenderOptions {
+                fuel: required,
+                ..strict()
+            },
+        );
+        assert_eq!(out.error, None, "{marks}: {:?}", out.diagnostics);
+        assert_eq!(out.fuel_used, required, "{marks}");
+        let out = render_chart(
+            &src,
+            &RenderOptions {
+                fuel: required - 1,
+                ..strict()
+            },
+        );
+        assert!(
+            matches!(
+                out.error,
+                Some(merlion_render::RenderError::TooLarge { what: "fuel" })
+            ),
+            "{marks}: {:?}",
+            out.error
+        );
+        assert_eq!(out.fuel_used, required - 1);
+        assert!(out.svg.is_none());
+    }
+}
+
+#[test]
+fn constant_source_text_is_shared_after_fuel_preflight() {
+    use merlion_render::{
+        chart::{layout, resolve, spec},
+        diag::Diagnostics,
+        fuel::Fuel,
+    };
+    use std::rc::Rc;
+
+    let constant = "a".repeat(4_096);
+    let rows = vec![r#"{"v":1}"#; 256].join(",");
+    let src = format!(
+        r#"{{"chart":1,"title":"t","x":{{"type":"band"}},"y":{{"type":"linear"}},"data":[{rows}],"marks":[{{"type":"dot","x":{{"value":"{constant}"}},"y":"v"}}]}}"#
+    );
+    let out = render_chart(
+        &src,
+        &RenderOptions {
+            fuel: 0,
+            ..strict()
+        },
+    );
+    assert!(matches!(
+        out.error,
+        Some(merlion_render::RenderError::TooLarge { what: "fuel" })
+    ));
+    assert_eq!(out.fuel_used, 0);
+    let mut diagnostics = Diagnostics::new(true);
+    let spec = spec::read(&src, 64, &mut diagnostics).unwrap();
+    let mut fuel = Fuel::new(257);
+    let resolved = resolve::resolve(&src, &spec, &mut diagnostics, &mut fuel)
+        .unwrap()
+        .unwrap();
+    assert_eq!(fuel.used(), 257);
+    let first = &resolved.marks[0].items[0].x.as_ref().unwrap().raw;
+    assert_eq!(first.as_ref(), constant);
+    assert!(Rc::ptr_eq(first, &resolved.x.categories[0]));
+    for item in &resolved.marks[0].items {
+        assert!(Rc::ptr_eq(first, &item.x.as_ref().unwrap().raw));
+    }
+    let geometry = layout::layout(&spec, &resolved, &strict(), &mut diagnostics).unwrap();
+    for item in &geometry.marks[0].items {
+        let value = &item
+            .data
+            .iter()
+            .find(|(k, _)| *k == "data-merlion-x")
+            .unwrap()
+            .1;
+        assert!(Rc::ptr_eq(first, value));
+        assert!(Rc::ptr_eq(first, &item.tip[0]));
+    }
+}
+
+#[test]
+fn repeated_source_text_is_bounded_before_layout_and_serialization() {
+    let constant = "a".repeat(4_096);
+    let rows = vec![r#"{"v":1}"#; 1_024].join(",");
+    let src = format!(
+        r#"{{"chart":1,"title":"t","x":{{"type":"band"}},"y":{{"type":"linear"}},"data":[{rows}],"marks":[{{"type":"dot","x":{{"value":"{constant}"}},"y":"v"}}]}}"#
+    );
+    let out = render_chart(&src, &strict());
+    assert!(matches!(
+        out.error,
+        Some(merlion_render::RenderError::TooLarge { what: "chart text" })
+    ));
+    assert!(out.svg.is_none());
+    assert!(out.outline.is_none());
+    assert!(out.diagnostics.iter().any(|d| d.code == "E004"));
+    assert!(check_chart(&src, true).iter().any(|d| d.code == "E004"));
+}

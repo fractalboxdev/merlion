@@ -6,17 +6,22 @@
 //! keeps the exact text it came from, which the SVG carries in `data-merlion-*`
 //! attributes and the outline prints, so a reader can check a mark against its source.
 
+use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::json;
 use super::spec::{Axis, Cell, Channel, Lit, Mark, MarkType, Row, ScaleType, Spec, Tone};
 use crate::diag::{Diagnostics, Severity};
+use crate::fuel::Fuel;
 use crate::model::gantt::calendar;
+use crate::RenderError;
 
 pub const E_VALUE: &str = "E022";
 pub const E_SERIES: &str = "E023";
 pub const I_SKIPPED: &str = "I041";
+/// Raw item text before XML escaping, including attribute and tooltip occurrences.
+pub const MAX_DRAWN_TEXT_BYTES: usize = 8 << 20;
 
 /// A value placed on an axis.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -40,7 +45,7 @@ impl Pos {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Val {
     pub pos: Pos,
-    pub raw: String,
+    pub raw: Rc<str>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -75,7 +80,7 @@ pub struct MarkData {
 pub struct AxisData {
     pub scale: ScaleType,
     /// Band categories in drawing order.
-    pub categories: Vec<String>,
+    pub categories: Vec<Rc<str>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -83,7 +88,7 @@ pub struct Resolved {
     pub x: AxisData,
     pub y: AxisData,
     pub marks: Vec<MarkData>,
-    pub series: Vec<String>,
+    pub series: Vec<Rc<str>>,
     /// Fields any mark reads, in first-use order (the outline's columns).
     pub fields: Vec<String>,
     /// The axis domains authored in the spec, resolved.
@@ -262,7 +267,7 @@ fn read_value(
     };
     Some(Val {
         pos,
-        raw: String::from(text),
+        raw: Rc::from(text),
     })
 }
 
@@ -374,7 +379,82 @@ fn check_roles(cx: &mut Ctx, spec: &Spec, i: usize, m: &Mark) -> bool {
     true
 }
 
-pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolved> {
+fn row_based(mark: &Mark) -> bool {
+    [Ch::X, Ch::Y, Ch::X2, Ch::Y2]
+        .iter()
+        .any(|&c| matches!(channel(mark, c), Some(Channel::Field(_))))
+}
+
+fn complete_row(mark: &Mark, row: &Row) -> bool {
+    let present = |field: &str| row.get(field).is_some_and(|(c, ..)| cell_text(c).is_some());
+    [Ch::X, Ch::Y, Ch::X2, Ch::Y2]
+        .iter()
+        .all(|&ch| !matches!(channel(mark, ch), Some(Channel::Field(f)) if !present(f)))
+        && !matches!(&mark.series, Some(Channel::Field(f)) if !present(f))
+        && mark.label.as_deref().is_none_or(present)
+}
+
+fn item_text_bytes(mark: &Mark, row: Option<&Row>) -> usize {
+    let channel_bytes = |c: &Channel| match c {
+        Channel::Const(l) => l.text.len(),
+        Channel::Field(f) => row
+            .and_then(|r| r.get(f))
+            .and_then(|(c, ..)| cell_text(c).map(|(t, _)| t.len()))
+            .unwrap_or(0),
+    };
+    let positions_and_series = [&mark.x, &mark.y, &mark.x2, &mark.y2, &mark.series]
+        .into_iter()
+        .flatten()
+        .map(channel_bytes)
+        .fold(0usize, |sum, bytes| {
+            sum.saturating_add(bytes.saturating_mul(2))
+        });
+    let label = mark
+        .label
+        .as_ref()
+        .and_then(|f| row.and_then(|r| r.get(f)))
+        .and_then(|(c, ..)| cell_text(c))
+        .map_or(0, |(t, _)| t.len());
+    positions_and_series
+        .saturating_add(label)
+        .saturating_add(mark.text.as_ref().map_or(0, |t| t.len().saturating_mul(2)))
+}
+
+/// Charges every mark and drawable row before allocating resolved items or copying
+/// source values. Missing cells do not consume an item unit.
+pub fn resolve(
+    src: &str,
+    spec: &Spec,
+    diags: &mut Diagnostics,
+    fuel: &mut Fuel,
+) -> Result<Option<Resolved>, RenderError> {
+    let mut text_bytes = 0usize;
+    for mark in &spec.marks {
+        fuel.burn(1)
+            .map_err(|_| RenderError::TooLarge { what: "fuel" })?;
+        let mut charge_item = |row: Option<&Row>| {
+            fuel.burn(1)
+                .map_err(|_| RenderError::TooLarge { what: "fuel" })?;
+            text_bytes = text_bytes.saturating_add(item_text_bytes(mark, row));
+            if text_bytes > MAX_DRAWN_TEXT_BYTES {
+                return Err(RenderError::TooLarge { what: "chart text" });
+            }
+            Ok(())
+        };
+        if row_based(mark) {
+            for row in &spec.data {
+                if complete_row(mark, row) {
+                    charge_item(Some(row))?;
+                }
+            }
+        } else {
+            charge_item(None)?;
+        }
+    }
+    Ok(resolve_values(src, spec, diags))
+}
+
+fn resolve_values(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolved> {
     let mut cx = Ctx { src, diags };
     if spec.x.scale == spec.y.scale && spec.x.scale != ScaleType::Linear {
         cx.error(
@@ -459,14 +539,14 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
     };
 
     // Band categories: the authored domain, else first appearance in mark, then row, order.
-    let mut cats: [Vec<String>; 2] = [Vec::new(), Vec::new()];
+    let mut cats: [Vec<Rc<str>>; 2] = [Vec::new(), Vec::new()];
     for (k, axis) in [&spec.x, &spec.y].into_iter().enumerate() {
         if axis.scale != ScaleType::Band {
             continue;
         }
         if let Some(d) = &axis.domain {
             for l in d {
-                if cats[k].contains(&l.text) {
+                if cats[k].iter().any(|c| c.as_ref() == l.text) {
                     cx.error(
                         super::spec::E_SPEC,
                         l.start,
@@ -478,18 +558,18 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                         ),
                     );
                 } else {
-                    cats[k].push(l.text.clone());
+                    cats[k].push(Rc::from(l.text.as_str()));
                 }
             }
         }
     }
 
-    let mut series: Vec<String> = Vec::new();
+    let mut series: Vec<Rc<str>> = Vec::new();
     let explicit_series = spec.series_domain.is_some();
     if let Some(d) = &spec.series_domain {
         for l in d {
-            if !series.contains(&l.text) {
-                series.push(l.text.clone());
+            if !series.iter().any(|s| s.as_ref() == l.text) {
+                series.push(Rc::from(l.text.as_str()));
             }
         }
     }
@@ -528,17 +608,17 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
             MarkType::Interval => m.x2.is_some(),
             _ => false,
         };
-        let row_based = [Ch::X, Ch::Y, Ch::X2, Ch::Y2]
-            .iter()
-            .any(|&c| matches!(channel(m, c), Some(Channel::Field(_))));
-        let rows: Vec<Option<(usize, &Row)>> = if row_based {
-            spec.data.iter().enumerate().map(Some).collect()
-        } else {
-            alloc::vec![None]
-        };
+        let row_based = row_based(m);
+        let count = if row_based { spec.data.len() } else { 1 };
+        let mut constants: [Option<Option<Val>>; 4] = core::array::from_fn(|_| None);
         let mut items = Vec::new();
         let mut skipped = 0usize;
-        for r in rows {
+        for ri in 0..count {
+            let r = row_based.then(|| (ri, &spec.data[ri]));
+            if r.is_some_and(|(_, row)| !complete_row(m, row)) {
+                skipped += 1;
+                continue;
+            }
             let mut item = Item {
                 row: r.map(|(i, _)| i),
                 x: None,
@@ -549,16 +629,20 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                 label: None,
             };
             let mut missing = false;
-            for ch in [Ch::X, Ch::Y, Ch::X2, Ch::Y2] {
+            for (ci, ch) in [Ch::X, Ch::Y, Ch::X2, Ch::Y2].into_iter().enumerate() {
                 let Some(c) = channel(m, ch) else { continue };
                 let axis = axis_of(ch);
                 let v = match (c, r) {
-                    (Channel::Const(l), _) => lit_value(
-                        &mut cx,
-                        axis,
-                        l,
-                        &alloc::format!("/marks/{}/{}/value", mi, ch.name()),
-                    ),
+                    (Channel::Const(l), _) => constants[ci]
+                        .get_or_insert_with(|| {
+                            lit_value(
+                                &mut cx,
+                                axis,
+                                l,
+                                &alloc::format!("/marks/{}/{}/value", mi, ch.name()),
+                            )
+                        })
+                        .clone(),
                     (Channel::Field(f), Some((ri, row))) => match row.get(f) {
                         Some((cell, s, e)) => match cell_text(cell) {
                             Some((t, num)) => read_value(
@@ -606,9 +690,9 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                     continue;
                 }
             }
-            let named: Option<(String, usize, usize, String)> = match (&m.series, r) {
+            let named: Option<(&str, usize, usize, String)> = match (&m.series, r) {
                 (Some(Channel::Const(l)), _) => Some((
-                    l.text.clone(),
+                    l.text.as_str(),
                     l.start,
                     l.end,
                     alloc::format!("/marks/{}/series/value", mi),
@@ -619,7 +703,7 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                         .and_then(|(c, s, e)| cell_text(c).map(|t| (t.0, s, e)))
                     {
                         Some((name, s, e)) => Some((
-                            String::from(name),
+                            name,
                             s,
                             e,
                             super::spec::child(&alloc::format!("/data/{}", ri), f),
@@ -637,7 +721,7 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                 continue;
             }
             if let Some((name, s, e, path)) = named {
-                match series.iter().position(|n| *n == name) {
+                match series.iter().position(|n| n.as_ref() == name) {
                     Some(k) => item.series = Some(k),
                     None if explicit_series => {
                         cx.error(
@@ -652,7 +736,7 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                         );
                     }
                     None => {
-                        series.push(name);
+                        series.push(Rc::from(name));
                         item.series = Some(series.len() - 1);
                     }
                 }

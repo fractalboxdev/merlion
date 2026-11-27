@@ -302,7 +302,9 @@ fn item(
     }
     attr(out, "color", colour);
     out.push_str("><title>");
-    push_escaped(out, &it.tip);
+    for part in &it.tip {
+        push_escaped(out, part);
+    }
     out.push_str("</title>");
     match &it.shape {
         Shape::Bar { rect, end } => {
@@ -471,7 +473,7 @@ pub fn draw_chart(
     if !geom.legend.is_empty() {
         out.push_str("<g class=\"merlion-chart-legend\">");
         for k in &geom.legend {
-            let name = r.series.get(k.series).map_or("", String::as_str);
+            let name = r.series.get(k.series).map_or("", AsRef::as_ref);
             let (class, colour) = paint(t, Tone::Series, MarkType::Bar, Some(k.series));
             out.push_str("<g");
             attr(
