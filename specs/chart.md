@@ -38,6 +38,7 @@
 - `x` and `y` must not both be `band`, and must not both be `time` (`E021`).
 - Without `domain`, a linear axis spans the values drawn on it, widened to whole tick steps; a time axis spans the values drawn on it exactly. A single value widens to ±1, or ±10% of a nonzero value; a single instant widens to ±1 day.
 - With `domain`, every value drawn on the axis must lie inside it, or the chart fails with `E022`. A chart never clips a mark.
+- An authored value domain for a bar, or the `y` domain for an area without `y2`, must include zero (`E022`).
 - A band axis without `domain` lists categories in order of first appearance: marks in array order, rows in array order.
 
 ## Values

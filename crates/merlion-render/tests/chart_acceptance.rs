@@ -157,3 +157,46 @@ fn null_cells_skip_rows_with_an_info() {
     assert!(out.diagnostics.iter().any(|d| d.code == "I041"));
     assert_eq!(out.svg.unwrap().matches("merlion-chart-item").count(), 1);
 }
+
+#[test]
+fn authored_domains_include_implicit_zero_baselines() {
+    for (x, y, mark) in [
+        (
+            r#"{"type":"band"}"#,
+            r#"{"type":"linear","domain":[5,10]}"#,
+            r#"{"type":"bar","x":"a","y":"v"}"#,
+        ),
+        (
+            r#"{"type":"linear","domain":[-10,-5]}"#,
+            r#"{"type":"band"}"#,
+            r#"{"type":"bar","x":"v","y":"a"}"#,
+        ),
+        (
+            r#"{"type":"band"}"#,
+            r#"{"type":"linear","domain":[5,10]}"#,
+            r#"{"type":"area","x":"a","y":"v"}"#,
+        ),
+    ] {
+        let src = format!(
+            r#"{{"chart":1,"title":"t","x":{x},"y":{y},"data":[{{"a":"x","v":7}}],"marks":[{mark}]}}"#
+        );
+        let d = check_chart(&src, false);
+        assert!(
+            d.iter().any(|d| d.code == "E022"
+                && d.message.contains("domain")
+                && d.message.contains("include zero")),
+            "{d:?}"
+        );
+        assert!(render_chart(&src, &strict()).svg.is_none());
+    }
+    for mark in [
+        r#"{"type":"line","x":"a","y":"v"}"#,
+        r#"{"type":"area","x":"a","y":"v","y2":"lo"}"#,
+        r#"{"type":"dot","x":"a","y":"v"}"#,
+    ] {
+        let src = format!(
+            r#"{{"chart":1,"title":"t","x":{{"type":"band"}},"y":{{"type":"linear","domain":[5,10]}},"data":[{{"a":"x","v":7,"lo":6}}],"marks":[{mark}]}}"#
+        );
+        assert_eq!(render_chart(&src, &strict()).error, None, "{mark}");
+    }
+}

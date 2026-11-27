@@ -487,6 +487,30 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
 
     let x_domain = domain(&mut cx, &spec.x, "/x/domain");
     let y_domain = domain(&mut cx, &spec.y, "/y/domain");
+    for (axis, name, dom, on_x) in [
+        (&spec.x, "x", x_domain, true),
+        (&spec.y, "y", y_domain, false),
+    ] {
+        let baseline = spec.marks.iter().any(|m| match m.kind {
+            MarkType::Bar => (spec.y.scale == ScaleType::Band) == on_x,
+            MarkType::Area => !on_x && m.y2.is_none(),
+            _ => false,
+        });
+        if baseline && dom.is_some_and(|(lo, hi)| lo > 0.0 || hi < 0.0) {
+            cx.error(
+                E_VALUE,
+                axis.start,
+                axis.end,
+                alloc::format!(
+                    "`/{}/domain`: must include zero for a bar or an area without `y2`",
+                    name
+                ),
+            );
+        }
+    }
+    if cx.diags.has_errors() {
+        return None;
+    }
 
     let mut marks = Vec::with_capacity(spec.marks.len());
     for (mi, m) in spec.marks.iter().enumerate() {
