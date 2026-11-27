@@ -428,7 +428,7 @@ pub(crate) fn parse_quadrant(
     let mut description: Option<(usize, String)> = None;
     while pos < src.len() {
         let next = idx.next_line_start(pos);
-        let line = src
+        let mut line = src
             .get(pos..next)
             .unwrap_or("")
             .trim_end_matches(['\n', '\r']);
@@ -438,19 +438,17 @@ pub(crate) fn parse_quadrant(
             if let Some((before, after)) = line.split_once('}') {
                 body.push_str(before.trim());
                 let span = idx.span(*start, line_pos + line.len());
-                if !after.trim().is_empty() && !after.trim_start().starts_with("%%") {
-                    return Err(fail(diags, span, "unexpected text after accDescr block"));
-                }
                 q.meta.acc_descr = Some(bounded(body, opts, span, diags));
                 description = None;
+                line = after;
             } else {
                 if body.len().saturating_add(line.len()) > opts.limits.label_bytes {
                     return Err(Stop::TooLarge("accessibility description"));
                 }
                 body.push_str(line.trim());
                 body.push('\n');
+                continue;
             }
-            continue;
         }
         if line.trim_start().starts_with("%%") {
             continue;

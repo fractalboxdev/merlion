@@ -212,6 +212,11 @@ fn metadata_preserves_literal_comment_markers() {
         assert!(d.is_empty(), "{d:#?}");
         assert_eq!(q.meta.acc_descr.as_deref(), Some("CPU is 90%% utilized"));
     }
+    let (q, d) = parse("quadrantChart\naccDescr {\nCPU is 90%% utilized\n}; A: [0.2, 0.3]\n");
+    assert!(d.is_empty(), "{d:#?}");
+    assert_eq!(q.meta.acc_descr.as_deref(), Some("CPU is 90%% utilized"));
+    assert_eq!(q.points.len(), 1);
+    assert_eq!(q.points[0].label, "A");
 }
 
 #[test]
