@@ -388,6 +388,21 @@ fn class_scans_and_palette_tables_are_fuel_bounded() {
     let out = render("quadrantChart\n", &RenderOptions { fuel: 5, ..options });
     assert!(out.svg.is_some());
     assert_eq!(out.fuel_used, 5);
+    let source = "quadrantChart\nclassDef accent radius: 2\nA:::accent: [0.5, 0.5]\n";
+    let light = render(source, &RenderOptions::default());
+    let out = render(
+        source,
+        &RenderOptions {
+            fuel: light.fuel_used,
+            palette: Some(Palette {
+                dark: Some(PaletteTable::default()),
+                ..Palette::default()
+            }),
+            ..RenderOptions::default()
+        },
+    );
+    assert!(out.svg.is_some());
+    assert_eq!(out.fuel_used, light.fuel_used);
     let out = render(
         "quadrantChart\nA:::accent: [0, 1]\n",
         &RenderOptions {

@@ -453,12 +453,13 @@ pub fn draw_quadrant(
 ) -> DrawOutput {
     let id = safe_root_id(id);
     let outline = outline_quadrant(q);
-    let light = Layer::new(opts.palette.as_ref().map(|p| &p.light), builtins(q));
+    let builtins = builtins(q);
+    let light = Layer::new(opts.palette.as_ref().map(|p| &p.light), builtins.clone());
     let dark = opts
         .palette
         .as_ref()
         .and_then(|p| p.dark.as_ref())
-        .map(|p| Layer::new(Some(p), builtins(q)));
+        .map(|p| Layer::new(Some(p), builtins));
     let used = point_roles(q);
     let mut budget = 16 * 1024 - 128;
     let (mut light_roles, light_base) = base_rules(q, &light, geom);
