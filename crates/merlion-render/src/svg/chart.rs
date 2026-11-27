@@ -313,7 +313,7 @@ fn item(
             attr(out, "fill", colour);
             out.push_str("/>");
         }
-        Shape::Path { d, fill } => {
+        Shape::Path { d, fill, points } => {
             out.push_str("<path");
             if *fill {
                 attr(out, "class", "merlion-chart-area");
@@ -333,6 +333,23 @@ fn item(
                 }
             }
             out.push_str("/>");
+            for point in points {
+                out.push_str("<g class=\"merlion-chart-point\"");
+                if let Some(row) = point.row {
+                    let _ = write!(out, " data-merlion-row=\"{}\"", row);
+                }
+                for (name, value) in &point.data {
+                    attr(out, name, value);
+                }
+                out.push_str("><title>");
+                for part in &point.tip {
+                    push_escaped(out, part);
+                }
+                out.push_str("</title><circle class=\"merlion-chart-point-hit\"");
+                attr_num(out, "cx", point.cx);
+                attr_num(out, "cy", point.cy);
+                out.push_str(" r=\"6\" fill=\"transparent\" pointer-events=\"all\"/></g>");
+            }
         }
         Shape::Dot { cx, cy, r } => {
             out.push_str("<circle class=\"merlion-chart-dot\"");

@@ -102,6 +102,7 @@
 | `data-merlion-series` | The series name |
 | `data-merlion-points` | On a line or area path: the number of points |
 
+- Each line or area path contains a `merlion-chart-point` group per source point with its row index, raw channel and series attributes, and value tooltip. A transparent circle of radius 6 px at the point exposes that tooltip without adding a visible mark; an area's tooltip includes `y2` when present.
 - Grid lines carry `data-merlion-value` with the tick label; the zero line carries `data-merlion-value="0"`. Tick labels are `merlion-chart-tick`, item labels `merlion-chart-label`, notes `merlion-chart-note`, axis titles `merlion-chart-title`.
 - Items paint with `currentColor`. The class `merlion-chart-s{k}` sets `color` from `--merlion-series-{k}`; `merlion-chart-neutral` from `--merlion-line`; `merlion-chart-accent` from `--merlion-accent`. Every element also carries its literal colour as a presentation attribute. A `palette` bakes literals and a dark variant exactly as for diagrams.
 - The outline is `Chart. {title}. {n} rows.`, the series list, then one line per row with the fields the marks read, band fields first, joined by ` | `, `-` for a missing value.

@@ -80,6 +80,53 @@ fn marks_carry_their_source_values() {
     assert!(outline.contains("South | -6.25"), "{outline}");
 }
 
+#[test]
+fn line_and_area_points_keep_raw_channels_rows_and_tooltips() {
+    for (kind, secondary) in [("line", ""), ("area", ""), ("area", r#", "y2":"lo""#)] {
+        let src = format!(
+            r#"{{"chart":1,"title":"t","x":{{"type":"linear"}},"y":{{"type":"linear"}},"data":[{{"x":"2.00","v":"-2.40","lo":"-3.40","s":"Example"}},{{"x":"1.00","v":"-3.15","lo":"-4.15","s":"Example"}}],"marks":[{{"type":"{kind}","x":"x","y":"v","series":"s"{secondary}}}]}}"#
+        );
+        let out = render_chart(&src, &strict());
+        assert_eq!(out.error, None, "{:?}", out.diagnostics);
+        let svg = out.svg.unwrap();
+        assert!(svg.contains("data-merlion-points=\"2\""));
+        let points: Vec<_> = svg
+            .split("<g class=\"merlion-chart-point\"")
+            .skip(1)
+            .map(|p| p.split("</g>").next().unwrap())
+            .collect();
+        assert_eq!(points.len(), 2, "{kind}{secondary}");
+        // The path sorts by x while each point keeps its original row identity.
+        assert!(points[0].contains("data-merlion-row=\"1\""));
+        for (row, x, y, y2) in [(0, "2.00", "-2.40", "-3.40"), (1, "1.00", "-3.15", "-4.15")] {
+            let point = points
+                .iter()
+                .find(|p| p.contains(&format!("data-merlion-row=\"{row}\"")))
+                .unwrap();
+            assert!(point.contains(&format!("data-merlion-x=\"{x}\"")));
+            assert!(point.contains(&format!("data-merlion-y=\"{y}\"")));
+            assert!(point.contains("data-merlion-series=\"Example\""));
+            let title = point
+                .split("<title>")
+                .nth(1)
+                .unwrap()
+                .split("</title>")
+                .next()
+                .unwrap();
+            assert!(
+                title.contains("Example") && title.contains(x) && title.contains(y),
+                "{title}"
+            );
+            if !secondary.is_empty() {
+                assert!(point.contains(&format!("data-merlion-y2=\"{y2}\"")));
+                assert!(title.contains(y2));
+                assert!(out.outline.as_ref().unwrap().contains(y2));
+            }
+            assert!(out.outline.as_ref().unwrap().contains(y));
+        }
+    }
+}
+
 /// Bars start at zero: the zero line sits inside the plot when values change sign.
 #[test]
 fn bar_value_axis_includes_zero() {

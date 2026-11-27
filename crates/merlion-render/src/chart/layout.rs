@@ -52,6 +52,7 @@ pub enum Shape {
     Path {
         d: String,
         fill: bool,
+        points: Vec<PointGeom>,
     },
     Dot {
         cx: f64,
@@ -68,6 +69,15 @@ pub enum Shape {
     Shade {
         rect: Rect,
     },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PointGeom {
+    pub row: Option<usize>,
+    pub cx: f64,
+    pub cy: f64,
+    pub tip: Vec<Rc<str>>,
+    pub data: Vec<(&'static str, Rc<str>)>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -905,10 +915,21 @@ pub fn layout(
                         "data-merlion-points",
                         Rc::from(alloc::format!("{}", coords.len())),
                     ));
+                    let points = pts
+                        .iter()
+                        .zip(&coords)
+                        .map(|(it, &(cx, cy, _))| PointGeom {
+                            row: it.row,
+                            cx,
+                            cy,
+                            tip: tip_of(it),
+                            data: data_of(it),
+                        })
+                        .collect();
                     g.items.push(ItemGeom {
                         row: None,
                         series: key,
-                        shape: Shape::Path { d, fill },
+                        shape: Shape::Path { d, fill, points },
                         label,
                         tip: alloc::vec![name(key).unwrap_or_else(|| Rc::from(spec.title.as_str()))],
                         data,
