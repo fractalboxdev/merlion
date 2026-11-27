@@ -291,3 +291,26 @@ fn skipped_rows_do_not_register_or_validate_series() {
         assert!(!svg.contains("data-merlion-series=\"skip"));
     }
 }
+
+#[test]
+fn bound_labels_skip_missing_and_null_cells() {
+    for absent in [r#", "label":null"#, ""] {
+        let src = format!(
+            r#"{{"chart":1,"title":"t","x":{{"type":"band"}},"y":{{"type":"linear"}},"data":[{{"a":"x","v":1,"label":"one","s":"drawn"}},{{"a":"y","v":2,"s":"skipped"{absent}}}],"marks":[{{"type":"dot","x":"a","y":"v","label":"label","series":"s"}}]}}"#
+        );
+        let out = render_chart(&src, &strict());
+        assert_eq!(out.error, None, "{:?}", out.diagnostics);
+        let skipped: Vec<_> = out
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == "I041")
+            .collect();
+        assert_eq!(skipped.len(), 1);
+        assert!(skipped[0].message.contains("1 of 2 rows"));
+        let svg = out.svg.unwrap();
+        assert_eq!(svg.matches("class=\"merlion-chart-item ").count(), 1);
+        assert!(svg.contains("data-merlion-row=\"0\""));
+        assert!(!svg.contains("data-merlion-row=\"1\""));
+        assert!(!svg.contains("merlion-chart-legend"));
+    }
+}

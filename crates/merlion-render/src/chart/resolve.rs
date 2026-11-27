@@ -596,6 +596,16 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                 skipped += 1;
                 continue;
             }
+            if let (Some(f), Some((_, row))) = (&m.label, r) {
+                item.label = row
+                    .get(f)
+                    .and_then(|(c, ..)| cell_text(c))
+                    .map(|(t, _)| String::from(t));
+                if item.label.is_none() {
+                    skipped += 1;
+                    continue;
+                }
+            }
             let named: Option<(String, usize, usize, String)> = match (&m.series, r) {
                 (Some(Channel::Const(l)), _) => Some((
                     l.text.clone(),
@@ -646,12 +656,6 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                         item.series = Some(series.len() - 1);
                     }
                 }
-            }
-            if let (Some(f), Some((_, row))) = (&m.label, r) {
-                item.label = row
-                    .get(f)
-                    .and_then(|(c, ..)| cell_text(c))
-                    .map(|(t, _)| String::from(t));
             }
             items.push(item);
         }
