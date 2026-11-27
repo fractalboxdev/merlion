@@ -21,6 +21,7 @@ const PROPERTY = {
   "font-weight": "fontWeight",
   "marker-end": "markerEnd",
   "marker-start": "markerStart",
+  "pointer-events": "pointerEvents",
   "stroke-dasharray": "strokeDashArray",
   "stroke-linecap": "strokeLineCap",
   "stroke-linejoin": "strokeLineJoin",
