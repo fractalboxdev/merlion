@@ -15,14 +15,52 @@ const el = (tagName, properties, children) => ({ type: "element", tagName, prope
 
 const unquote = (s) => (/^(["']).*\1$/.test(s) ? s.slice(1, -1) : s);
 
+/** Quadrant metadata uses case-insensitive statements and the last value wins. */
+const quadrantTitles = (source) => {
+  let title = null;
+  let acc = null;
+  let description = false;
+  for (let line of source.split(/\r?\n/)) {
+    if (description) {
+      const end = line.indexOf("}");
+      if (end < 0) continue;
+      description = false;
+      line = line.slice(end + 1);
+    }
+    while (line.trim()) {
+      line = line.trimStart();
+      if (line.startsWith("%%")) break;
+      const t = /^title(?:[ \t]+(.*)|$)/i.exec(line);
+      if (t) { title = (t[1] ?? "").trim(); break; }
+      const a = /^accTitle[ \t]*:[ \t]*(.*)/i.exec(line);
+      if (a) { acc = a[1].trim(); break; }
+      if (/^accDescr[ \t]*:/i.test(line)) break;
+      const d = /^accDescr[ \t]*\{/i.exec(line);
+      if (d) {
+        const end = line.indexOf("}", d[0].length);
+        if (end < 0) { description = true; break; }
+        line = line.slice(end + 1);
+        continue;
+      }
+      let quote = false;
+      let end = 0;
+      for (; end < line.length; end++) {
+        if (line[end] === '"') quote = !quote;
+        if (!quote && (line[end] === ";" || line.startsWith("%%", end))) break;
+      }
+      if (line[end] !== ";") break;
+      line = line.slice(end + 1);
+    }
+  }
+  return { title, acc };
+};
+
 /**
  * The diagram's caption: `accTitle`, else a Gantt or quadrant chart title, else the
  * front-matter title
  * (specs/svg-output.md#text-alternative uses the same precedence for `<title>`).
  */
 export const diagramTitle = (source) => {
-  const acc = /^[ \t]*accTitle[ \t]*:[ \t]*(.*?)[ \t]*$/m.exec(source);
-  if (acc && acc[1]) return acc[1];
   const fm = /^﻿?---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(source);
   const body = source.slice(fm?.[0].length ?? 0);
   let directive = false;
@@ -33,12 +71,20 @@ export const diagramTitle = (source) => {
     return t && !t.startsWith("%%");
   });
   const h = header?.trim() ?? "";
-  if (/^gantt(?:\s|$)/i.test(h) || /^quadrantChart(?:\s|;|$)/.test(h)) {
+  const title = fm && /^title[ \t]*:[ \t]*(.*?)[ \t]*$/m.exec(fm[1]);
+  const fallback = title && title[1] ? unquote(title[1]) : null;
+  if (/^quadrantChart(?:\s|;|$)/.test(h)) {
+    const start = body.indexOf(header) + header.indexOf("quadrantChart") + "quadrantChart".length;
+    const { title, acc } = quadrantTitles(body.slice(start));
+    return (acc ?? title ?? fallback) || null;
+  }
+  const acc = /^[ \t]*accTitle[ \t]*:[ \t]*(.*?)[ \t]*$/m.exec(source);
+  if (acc && acc[1]) return acc[1];
+  if (/^gantt(?:\s|$)/i.test(h)) {
     const ganttTitle = /^[ \t]*title[ \t]+(.+?)[ \t]*$/m.exec(body);
     if (ganttTitle) return ganttTitle[1];
   }
-  const title = fm && /^title[ \t]*:[ \t]*(.*?)[ \t]*$/m.exec(fm[1]);
-  return title && title[1] ? unquote(title[1]) : null;
+  return fallback;
 };
 
 /** A path relative to the project root, `/`-separated; '' without a path. */

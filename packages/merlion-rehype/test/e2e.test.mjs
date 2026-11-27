@@ -19,6 +19,22 @@ const pipeline = (options) =>
     .use(rehypeMerlion, { fontCss: true, ...options })
     .use(rehypeStringify, { allowDangerousHtml: true });
 
+test("quadrant captions agree with the rendered title across metadata statement forms", async () => {
+  for (const source of [
+    "quadrantChart\nTITLE Revenue\n",
+    "quadrantChart; title Revenue\n",
+    "quadrantChart\ntitle Draft\ntitle Revenue\n",
+    "quadrantChart\naccTitle: Draft\nACCTITLE: Revenue\n",
+    "quadrantChart\naccDescr {\ntitle Not a caption\n}\ntitle Revenue\n",
+  ]) {
+    const file = await pipeline({ strict: true }).process(`\`\`\`mermaid\n${source}\`\`\`\n`);
+    const html = String(file);
+    assert.match(html, /<title id="[^"]+-title">Revenue<\/title>/);
+    assert.ok(html.includes("<figcaption>Revenue</figcaption>"), html);
+    assert.deepEqual(file.messages.filter((m) => m.fatal), []);
+  }
+});
+
 test("Gantt Markdown fences render through the real WASM with an accessible outline", async () => {
   const source = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/gantt/delivery.mmd", import.meta.url), "utf8");
   const outlines = [];
