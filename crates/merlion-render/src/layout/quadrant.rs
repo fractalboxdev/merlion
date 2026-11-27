@@ -105,6 +105,7 @@ pub fn layout_quadrant(
         burn(fuel, s.len() as u64 + 1)?;
     }
     burn(fuel, q.points.len() as u64 + q.class_defs.len() as u64)?;
+    burn(fuel, q.class_lookup_units())?;
 
     let cfg = &q.meta.quadrant;
     let base = if opts.font_size.is_finite() && opts.font_size > 0.0 {

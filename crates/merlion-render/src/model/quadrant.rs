@@ -25,6 +25,12 @@ pub struct Quadrant {
 }
 
 impl Quadrant {
+    /// Worst-case comparisons for one class lookup per point. Charged before scans.
+    pub(crate) fn class_lookup_units(&self) -> u64 {
+        (self.points.iter().filter(|p| p.class.is_some()).count() as u64)
+            .saturating_mul(self.class_defs.len() as u64)
+    }
+
     /// The point style of class `name`, when a `classDef` declares it.
     pub fn class_def(&self, name: &str) -> Option<&PointClass> {
         self.class_defs.iter().find(|c| c.name == name)

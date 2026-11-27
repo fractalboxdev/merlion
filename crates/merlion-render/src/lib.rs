@@ -272,6 +272,13 @@ pub fn render(source: &str, opts: &RenderOptions) -> RenderResult {
             }
         }
         Diagram::Quadrant(chart) => {
+            if fuel.burn(svg::quadrant::role_units(chart, opts)).is_err() {
+                return RenderResult::failed(
+                    RenderError::TooLarge { what: "fuel" },
+                    diags.items,
+                    fuel.used(),
+                );
+            }
             let geom = match layout::layout_quadrant(chart, opts, &mut fuel, &mut diags) {
                 Ok(g) => g,
                 Err(layout::LayoutError::TooLarge { what }) => {

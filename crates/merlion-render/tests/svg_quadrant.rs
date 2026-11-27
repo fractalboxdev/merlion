@@ -328,6 +328,81 @@ fn baked_palettes_match_the_page_css_in_light_and_dark() {
 }
 
 #[test]
+fn class_scans_and_palette_tables_are_fuel_bounded() {
+    let mut source = String::from("quadrantChart\n");
+    for i in 0..100 {
+        source.push_str(&format!("classDef c{i} radius: 1\n"));
+    }
+    for _ in 0..100 {
+        source.push_str("A:::c99: [0.5, 0.5]\n");
+    }
+    let out = render(
+        &source,
+        &RenderOptions {
+            fuel: 400,
+            ..RenderOptions::default()
+        },
+    );
+    assert!(matches!(
+        out.error,
+        Some(RenderError::TooLarge { what: "fuel" })
+    ));
+    assert!(out.svg.is_none());
+    assert!(render(
+        &source,
+        &RenderOptions {
+            fuel: 100_000,
+            ..RenderOptions::default()
+        }
+    )
+    .svg
+    .is_some());
+
+    use merlion_render::stylesheet::{Palette, PaletteTable, PaletteTone};
+    let table = |count| PaletteTable {
+        tones: (0..count)
+            .map(|i| PaletteTone {
+                name: format!("role{i}"),
+                cluster: false,
+                tone: None,
+                dash: None,
+            })
+            .collect(),
+        ..PaletteTable::default()
+    };
+    let palette = Palette {
+        light: table(2),
+        dark: Some(table(3)),
+    };
+    let options = RenderOptions {
+        palette: Some(palette),
+        fuel: 4,
+        ..RenderOptions::default()
+    };
+    let out = render("quadrantChart\n", &options);
+    assert!(matches!(
+        out.error,
+        Some(RenderError::TooLarge { what: "fuel" })
+    ));
+    assert!(out.svg.is_none());
+    let out = render("quadrantChart\n", &RenderOptions { fuel: 5, ..options });
+    assert!(out.svg.is_some());
+    assert_eq!(out.fuel_used, 5);
+    let out = render(
+        "quadrantChart\nA:::accent: [0, 1]\n",
+        &RenderOptions {
+            fuel: 3,
+            ..RenderOptions::default()
+        },
+    );
+    assert!(matches!(
+        out.error,
+        Some(RenderError::TooLarge { what: "fuel" })
+    ));
+    assert!(out.svg.is_none());
+}
+
+#[test]
 fn bytes_are_deterministic_and_fuel_bounds_the_work() {
     let a = svg(CAMPAIGNS, &RenderOptions::default());
     assert_eq!(a, svg(CAMPAIGNS, &RenderOptions::default()));

@@ -98,7 +98,7 @@ The layout follows mermaid's builder with every label measured from the font tab
 6. Two labels on an axis centre on their halves; a lone label starts at the axis's low end: the left of the plot, or its bottom for a y label. y labels are laid out horizontally and drawn rotated −90° about their centres.
 7. A point's centre is `left + x × width`, `top + (1 − y) × height`. Its label hangs below the point, its top `pointTextPadding` below the centre or clear of the circle and its outline when they reach further. The label stays inside the chart's width, and the chart grows taller when a label would leave it. Circle and stroke extents contribute to the viewport; the complete drawing translates when a painted extent would start at a negative coordinate, preserving point coordinates within the plot.
 
-Labels wrap to the room they have; mermaid draws each on one line. Fuel covers one unit per label byte, per point and per class; exhausting it fails with `E004` before anything is drawn.
+Labels wrap to the room they have; mermaid draws each on one line. Fuel covers one unit per label byte, per point, per class declaration, per applied point class and per palette tone in each table. Each linear class lookup reserves its worst-case comparison count before the scan; role selection and painting reserve their class scans before drawing. Exhausting fuel fails with `E004` before anything is drawn.
 
 ## SVG
 

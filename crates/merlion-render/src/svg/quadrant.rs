@@ -107,6 +107,21 @@ pub fn outline_quadrant(q: &Quadrant) -> String {
     out
 }
 
+/// Draw-time class lookup comparisons, applied classes and palette tones, charged
+/// before layout and drawing (specs/quadrant.md#layout).
+pub fn role_units(q: &Quadrant, opts: &RenderOptions) -> u64 {
+    let classes = q.points.iter().filter(|p| p.class.is_some()).count() as u64;
+    let tones = opts.palette.as_ref().map_or(0, |p| {
+        p.light.tones.len() + p.dark.as_ref().map_or(0, |d| d.tones.len())
+    }) as u64;
+    // Role selection and literal painting each look up the point's class. Built-in
+    // role selection checks every built-in name against the class declarations.
+    classes
+        .saturating_add(tones)
+        .saturating_add(q.class_lookup_units().saturating_mul(2))
+        .saturating_add((BUILT_IN.len() as u64).saturating_mul(q.class_defs.len() as u64))
+}
+
 /// The built-in roles in effect: a `classDef` of the same name replaces one.
 fn builtins(q: &Quadrant) -> Vec<&'static BuiltIn> {
     BUILT_IN
