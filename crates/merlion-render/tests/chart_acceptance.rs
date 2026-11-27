@@ -314,3 +314,36 @@ fn bound_labels_skip_missing_and_null_cells() {
         assert!(!svg.contains("merlion-chart-legend"));
     }
 }
+
+#[test]
+fn field_diagnostics_escape_json_pointer_segments() {
+    for (field, escaped) in [("a/b", "a~1b"), ("a~b", "a~0b"), ("a~/b", "a~0~1b")] {
+        for (value, series, mark) in [
+            (
+                r#""bad""#,
+                "",
+                format!(r#"{{"type":"dot","x":"x","y":"{field}"}}"#),
+            ),
+            (
+                r#""bad""#,
+                r#", "series":{"domain":["good"]}"#,
+                format!(r#"{{"type":"dot","x":"x","y":"v","series":"{field}"}}"#),
+            ),
+        ] {
+            let src = format!(
+                r#"{{"chart":1,"title":"t","x":{{"type":"linear"}},"y":{{"type":"linear"}},"data":[{{"x":0,"v":1,"{field}":{value}}}],"marks":[{mark}]{series}}}"#
+            );
+            let diagnostics = check_chart(&src, false);
+            let error = diagnostics.iter().find(|d| d.code == "E022").unwrap();
+            assert!(
+                error.message.starts_with(&format!("`/data/0/{escaped}`:")),
+                "{}",
+                error.message
+            );
+            assert_eq!(
+                &src[error.span.byte_start as usize..error.span.byte_end as usize],
+                value
+            );
+        }
+    }
+}

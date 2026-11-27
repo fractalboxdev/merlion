@@ -733,7 +733,7 @@ impl Reader<'_> {
     }
 }
 
-fn child(path: &str, key: &str) -> String {
+pub(super) fn child(path: &str, key: &str) -> String {
     let mut p = String::from(path);
     p.push('/');
     // RFC 6901 escapes.

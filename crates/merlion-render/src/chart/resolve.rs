@@ -567,7 +567,7 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                                 t,
                                 num,
                                 (s, e),
-                                &alloc::format!("/data/{}/{}", ri, f),
+                                &super::spec::child(&alloc::format!("/data/{}", ri), f),
                             ),
                             None => {
                                 missing = true;
@@ -622,7 +622,7 @@ pub fn resolve(src: &str, spec: &Spec, diags: &mut Diagnostics) -> Option<Resolv
                             String::from(name),
                             s,
                             e,
-                            alloc::format!("/data/{}/{}", ri, f),
+                            super::spec::child(&alloc::format!("/data/{}", ri), f),
                         )),
                         None => {
                             missing = true;
