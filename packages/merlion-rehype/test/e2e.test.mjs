@@ -35,6 +35,23 @@ test("quadrant captions agree with the rendered title across metadata statement 
   }
 });
 
+test("quadrant captions preserve front-matter accessible title precedence", async () => {
+  for (const [source, expected] of [
+    ["---\naccTitle: Accessible\ntitle: Front matter\n---\nquadrantChart\ntitle Revenue\n", "Accessible"],
+    ['---\naccTitle: "Accessible title"\ntitle: Front matter\n---\nquadrantChart\ntitle Revenue\n', "Accessible title"],
+    ["---\naccTitle: 'Accessible title'\ntitle: Front matter\n---\nquadrantChart\ntitle Revenue\n", "Accessible title"],
+    ["---\naccTitle: Accessible\ntitle: Front matter\n---\nquadrantChart\ntitle Revenue\naccTitle: Body title\n", "Body title"],
+    ["---\ntitle: Front matter\n---\nquadrantChart\ntitle Revenue\n", "Revenue"],
+    ['---\ntitle: "Front matter"\n---\nquadrantChart\n', "Front matter"],
+  ]) {
+    const file = await pipeline({ strict: true }).process(`\`\`\`mermaid\n${source}\`\`\`\n`);
+    const html = String(file);
+    assert.equal(/<title id="[^"]+-title">([^<]*)<\/title>/.exec(html)?.[1], expected);
+    assert.ok(html.includes(`<figcaption>${expected}</figcaption>`), html);
+    assert.deepEqual(file.messages.filter((m) => m.fatal), []);
+  }
+});
+
 test("Gantt Markdown fences render through the real WASM with an accessible outline", async () => {
   const source = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/gantt/delivery.mmd", import.meta.url), "utf8");
   const outlines = [];

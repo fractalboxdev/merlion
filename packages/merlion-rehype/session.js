@@ -76,7 +76,9 @@ export const diagramTitle = (source) => {
   if (/^quadrantChart(?:\s|;|$)/.test(h)) {
     const start = body.indexOf(header) + header.indexOf("quadrantChart") + "quadrantChart".length;
     const { title, acc } = quadrantTitles(body.slice(start));
-    return (acc ?? title ?? fallback) || null;
+    const fmAcc = fm && /^accTitle[ \t]*:[ \t]*(.*?)[ \t]*$/m.exec(fm[1]);
+    const accessible = fmAcc && fmAcc[1] ? unquote(fmAcc[1]) : null;
+    return (acc ?? accessible ?? title ?? fallback) || null;
   }
   const acc = /^[ \t]*accTitle[ \t]*:[ \t]*(.*?)[ \t]*$/m.exec(source);
   if (acc && acc[1]) return acc[1];
