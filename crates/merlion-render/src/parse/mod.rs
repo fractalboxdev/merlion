@@ -130,17 +130,7 @@ pub fn parse(
         c.bump();
     }
     let header = source.get(header_start..c.pos).unwrap_or("");
-    // Quadrant colours of `themeVariables` are read by a quadrant chart only.
-    if header != "quadrantChart" {
-        if let Some(span) = meta.quadrant.theme.pending_ignored.take() {
-            diags.emit(
-                Severity::Info,
-                "I011",
-                span,
-                config::theme_variables_ignored(false),
-            );
-        }
-    }
+    config::finish_theme_variables(&mut meta, header == "quadrantChart", diags);
     let result = match header {
         "gantt" => gantt::parse_gantt(&idx, c.pos, meta, opts, diags).map(Diagram::Gantt),
         "flowchart" | "graph" | "flowchart-elk" => {

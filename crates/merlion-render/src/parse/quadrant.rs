@@ -76,7 +76,10 @@ fn takes_line(s: &str) -> bool {
         || colon_keyword(s, "accTitle").is_some()
         || colon_keyword(s, "accDescr").is_some()
         || s.get(..8)
-            .is_some_and(|h| h.eq_ignore_ascii_case("accDescr"))
+            .filter(|h| h.eq_ignore_ascii_case("accDescr"))
+            .and_then(|_| s.get(8..))
+            .and_then(|rest| rest.trim_start().strip_prefix('{'))
+            .is_some_and(|body| !body.contains('}'))
 }
 
 /// Statements of one line: split at `;` outside a quoted string, cut at a `%%` comment
@@ -435,7 +438,7 @@ pub(crate) fn parse_quadrant(
             if let Some((before, after)) = line.split_once('}') {
                 body.push_str(before.trim());
                 let span = idx.span(*start, line_pos + line.len());
-                if !after.trim().is_empty() {
+                if !after.trim().is_empty() && !after.trim_start().starts_with("%%") {
                     return Err(fail(diags, span, "unexpected text after accDescr block"));
                 }
                 q.meta.acc_descr = Some(bounded(body, opts, span, diags));

@@ -204,6 +204,14 @@ fn metadata_preserves_literal_comment_markers() {
     let (q, d) = parse("quadrantChart\naccDescr {\nCPU is 90%% utilized\n}\n");
     assert!(d.is_empty(), "{d:#?}");
     assert_eq!(q.meta.acc_descr.as_deref(), Some("CPU is 90%% utilized"));
+    for source in [
+        "quadrantChart\naccDescr {CPU is 90%% utilized} %% comment\n",
+        "quadrantChart\naccDescr {\nCPU is 90%% utilized\n} %% comment\n",
+    ] {
+        let (q, d) = parse(source);
+        assert!(d.is_empty(), "{d:#?}");
+        assert_eq!(q.meta.acc_descr.as_deref(), Some("CPU is 90%% utilized"));
+    }
 }
 
 #[test]
@@ -253,6 +261,22 @@ fn quadrant_theme_variables_are_fixed_colours_and_others_stay_ignored() {
     assert!(r.is_ok());
     assert_eq!(codes(&d), ["I011"]);
     assert!(!d[0].message.contains("except"));
+}
+
+#[test]
+fn other_diagrams_ignore_invalid_quadrant_colours_even_in_strict_mode() {
+    for variables in [
+        "\"quadrant1Fill\": \"not-a-colour\"",
+        "\"quadrant1Fill\": 123, \"primaryColor\": \"#fff\"",
+    ] {
+        let source = format!(
+            "%%{{init: {{\"themeVariables\": {{{variables}}}}}}}%%\nflowchart LR\nA[A] --> B[B]\n"
+        );
+        let (result, d) = run(&source, true, Limits::default());
+        assert!(result.is_ok(), "{d:#?}");
+        assert_eq!(codes(&d), ["I011"]);
+        assert!(!d[0].message.contains("except"));
+    }
 }
 
 #[test]

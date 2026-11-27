@@ -102,7 +102,7 @@ pub fn apply_front_matter(
 pub fn apply_config(entries: &[Entry], idx: &LineIndex, meta: &mut Meta, diags: &mut Diagnostics) {
     for e in entries {
         match e.key.as_str() {
-            "themeVariables" => apply_theme_variables(e, idx, meta, diags),
+            "themeVariables" => apply_theme_variables(e, idx, meta),
             "theme" | "look" => diags.emit(
                 Severity::Info,
                 "I011",
@@ -209,7 +209,7 @@ pub(crate) fn theme_variables_ignored(quadrant_keys: bool) -> &'static str {
 /// `themeVariables`: the quadrant chart colours are read (specs/quadrant.md#theme-variables);
 /// any other key is ignored with `I011`. A mapping of quadrant colours alone defers its
 /// `I011` to the header, which shows whether a quadrant chart reads them.
-fn apply_theme_variables(e: &Entry, idx: &LineIndex, meta: &mut Meta, diags: &mut Diagnostics) {
+fn apply_theme_variables(e: &Entry, idx: &LineIndex, meta: &mut Meta) {
     let mut other = !matches!(e.value, Value::Map(_));
     let mut quadrant_keys = false;
     if let Value::Map(m) = &e.value {
@@ -228,23 +228,53 @@ fn apply_theme_variables(e: &Entry, idx: &LineIndex, meta: &mut Meta, diags: &mu
                             .span
                             .get_or_insert(idx.span(inner.start, inner.end));
                     }
-                    None => bad_value(inner, idx, diags, "a colour"),
+                    None => meta
+                        .quadrant
+                        .theme
+                        .pending_invalid
+                        .push((idx.span(inner.start, inner.end), excerpt(&inner.key))),
                 },
-                _ => bad_value(inner, idx, diags, "a colour"),
+                _ => meta
+                    .quadrant
+                    .theme
+                    .pending_invalid
+                    .push((idx.span(inner.start, inner.end), excerpt(&inner.key))),
             }
         }
     }
     let span = idx.span(e.start, e.end);
-    if other || !quadrant_keys {
+    meta.quadrant.theme.pending_other |= other || !quadrant_keys;
+    meta.quadrant.theme.pending_ignored.get_or_insert(span);
+}
+
+/// Applies theme diagnostics after the header determines which keys have an effect.
+pub(crate) fn finish_theme_variables(meta: &mut Meta, quadrant: bool, diags: &mut Diagnostics) {
+    let theme = &mut meta.quadrant.theme;
+    if quadrant {
+        for (span, key) in theme.pending_invalid.drain(..) {
+            diags.emit(
+                Severity::Warning,
+                "W016",
+                span,
+                alloc::format!("`{key}` must be a colour; ignored"),
+            );
+        }
+    } else {
+        theme.pending_invalid.clear();
+    }
+    if let Some(span) = theme
+        .pending_ignored
+        .take()
+        .filter(|_| !quadrant || theme.pending_other)
+    {
         diags.emit(
             Severity::Info,
             "I011",
             span,
-            theme_variables_ignored(quadrant_keys),
+            theme_variables_ignored(quadrant && theme.span.is_some()),
         );
-    } else {
-        meta.quadrant.theme.pending_ignored = Some(span);
     }
+    theme.pending_other = false;
 }
 
 /// A quadrant colour: the accepted colour grammar, or three or six hex digits without
@@ -455,17 +485,18 @@ mod tests {
             entry("flowchart", s("x")),
         ];
         apply_config(&cfg, &idx, &mut meta, &mut d);
+        finish_theme_variables(&mut meta, false, &mut d);
         assert_eq!(
             codes(&d),
             alloc::vec![
                 ("I011", Severity::Info),
                 ("I011", Severity::Info),
+                ("W016", Severity::Warning),
+                ("W016", Severity::Warning),
+                ("W016", Severity::Warning),
+                ("W016", Severity::Warning),
+                ("W016", Severity::Warning),
                 ("I011", Severity::Info),
-                ("W016", Severity::Warning),
-                ("W016", Severity::Warning),
-                ("W016", Severity::Warning),
-                ("W016", Severity::Warning),
-                ("W016", Severity::Warning),
             ]
         );
         assert_eq!(meta, Meta::default());

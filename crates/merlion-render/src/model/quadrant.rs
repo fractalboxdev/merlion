@@ -234,9 +234,13 @@ pub struct QuadrantTheme {
     pub title: Option<Color>,
     /// The first quadrant key read, where `I030` points.
     pub span: Option<Span>,
-    /// The `themeVariables` key held only quadrant colours, so its `I011` waits until
-    /// the header shows whether the diagram is a quadrant chart.
+    /// The `themeVariables` location; `I011` waits until the header determines which
+    /// colours the diagram reads.
     pub pending_ignored: Option<Span>,
+    /// Other theme keys require `I011` even on a quadrant chart.
+    pub pending_other: bool,
+    /// Invalid quadrant colours are diagnosed only after a quadrant header.
+    pub pending_invalid: Vec<(Span, String)>,
 }
 
 /// Every quadrant colour key of `themeVariables`.
