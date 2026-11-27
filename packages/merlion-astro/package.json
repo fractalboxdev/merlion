@@ -1,6 +1,6 @@
 {
   "name": "@fractalboxdev/merlion-astro",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Astro integration: Mermaid to static, themeable SVG at build time via @fractalboxdev/merlion-rehype.",
   "license": "MIT",
   "repository": {
@@ -32,9 +32,9 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@fractalboxdev/merlion-rehype": "0.3.1",
-    "@fractalboxdev/merlion-themes": "0.3.1",
-    "@fractalboxdev/merlion-view": "0.3.1",
+    "@fractalboxdev/merlion-rehype": "0.4.0",
+    "@fractalboxdev/merlion-themes": "0.4.0",
+    "@fractalboxdev/merlion-view": "0.4.0",
     "astro": ">=5.5.0"
   },
   "peerDependenciesMeta": {
