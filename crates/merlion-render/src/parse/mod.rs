@@ -23,6 +23,7 @@ pub mod frontmatter;
 pub mod gantt;
 pub mod label;
 pub mod link;
+pub mod quadrant;
 pub mod repair;
 pub mod sequence;
 pub mod state;
@@ -129,10 +130,24 @@ pub fn parse(
         c.bump();
     }
     let header = source.get(header_start..c.pos).unwrap_or("");
+    // Quadrant colours of `themeVariables` are read by a quadrant chart only.
+    if header != "quadrantChart" {
+        if let Some(span) = meta.quadrant.theme.pending_ignored.take() {
+            diags.emit(
+                Severity::Info,
+                "I011",
+                span,
+                config::theme_variables_ignored(false),
+            );
+        }
+    }
     let result = match header {
         "gantt" => gantt::parse_gantt(&idx, c.pos, meta, opts, diags).map(Diagram::Gantt),
         "flowchart" | "graph" | "flowchart-elk" => {
             flowchart::parse_flowchart(&idx, c.pos, meta, opts, diags).map(Diagram::Flowchart)
+        }
+        "quadrantChart" => {
+            quadrant::parse_quadrant(&idx, c.pos, meta, opts, diags).map(Diagram::Quadrant)
         }
         "sequenceDiagram" => {
             sequence::parse_sequence(&idx, c.pos, meta, opts, diags).map(Diagram::Sequence)

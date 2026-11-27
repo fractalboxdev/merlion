@@ -31,6 +31,7 @@ Every way in takes the same diagram headers, so a `gantt` renders through the CL
 | `sequenceDiagram` | Participants, messages, activations, fragments, over a fixed geometry |
 | `stateDiagram` / `stateDiagram-v2` | States, transitions, composite and concurrent states, notes, over the layered engine — [State diagrams](/guides/state-diagrams/) |
 | `gantt` | Dated tasks, dependencies, sections and milestones, over a UTC time axis — [Gantt diagrams](/guides/gantt-diagrams/) |
+| `quadrantChart` | Points on a two-axis grid of four labelled quadrants — [Quadrant charts](/guides/quadrant-charts/) |
 
 Any other header returns `E003`.
 
@@ -125,4 +126,5 @@ This site is built that way. `docs/astro.config.mjs` registers the integration a
 - [Roles and stylesheets](/guides/roles-and-stylesheets/): classes as roles, the stylesheet subset.
 - [State diagrams](/guides/state-diagrams/): the `stateDiagram-v2` syntax, its diagnostics, theming and interaction.
 - [Gantt diagrams](/guides/gantt-diagrams/): schedules, dependencies, milestones and deterministic dates.
+- [Quadrant charts](/guides/quadrant-charts/): points on four labelled quadrants, styles and theme colours.
 - [How it works](/how-it-works/architecture/): the pipeline and every layout phase, drawn by Merlion.

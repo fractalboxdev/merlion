@@ -12,6 +12,7 @@ A hand-written recursive-descent parser per diagram type, with no parser-generat
 | Class | `classDiagram` | M4 |
 | ER | `erDiagram` | M4 |
 | Gantt | `gantt` | M3 ([gantt.md](gantt.md)) |
+| Quadrant | `quadrantChart` | M3 ([quadrant.md](quadrant.md)) |
 | Timeline, pie, XY, packet, kanban | `timeline`, `pie`, `xychart-beta`/`xychart`, `packet-beta`/`packet`, `kanban` | M3 |
 
 Any other header returns `UnsupportedDiagram { header }`, never a partial render.
@@ -20,7 +21,7 @@ Any other header returns `UnsupportedDiagram { header }`, never a partial render
 
 Compatibility means rendering the same graph that mermaid 12.0.0 renders: the same nodes, edges, labels, clusters and directions. Pixel positions are not part of it. The benchmark reports the pass rate per diagram type against the mermaid repository's own demo and test diagrams ([benchmark.md](benchmark.md)).
 
-For Gantt, compatibility compares the resolved schedule and visible task content; dates, dependencies, statuses and deterministic calendar differences follow [gantt.md](gantt.md).
+For Gantt, compatibility compares the resolved schedule and visible task content; dates, dependencies, statuses and deterministic calendar differences follow [gantt.md](gantt.md). For quadrant charts, it compares the title, quadrant and axis labels with their placement, and every point's coordinates and explicit style ([quadrant.md](quadrant.md#reference-and-compatibility)).
 
 mermaid 12's small symbol shapes (`@{ shape: … }` `sm-circ`, `f-circ`, `fr-circ`, `cross-circ`, `fork`, `hourglass`, `bolt` and their aliases) are drawn at a fixed size without their label, as mermaid draws them; the label stays in the model for the text alternative. The other expanded shapes (the document, stacked, cylinder, triangle, brace and process variants, `text` and `datastore`, with their aliases) are drawn with their own outline; `text` draws no outline and `datastore` only the lines above and below the label. `bang`, `cloud`, `folder`, `bucket`, `console`, `browser` and `person` become rectangles with `W015`, as does any other name.
 
@@ -34,11 +35,12 @@ Subgraph ids follow mermaid's resolution, which happens after the whole source i
 
 - YAML front matter (`---` … `---`) accepts `title`, `config.flowchart.curve`, `config.layout`, `config.merlion.autoTone`, `accTitle`, `accDescr`.
 - Gantt also accepts top-level `displayMode` and `config.gantt` keys for display mode and axes ([gantt.md](gantt.md#directives-and-configuration)).
+- `config.quadrantChart` takes mermaid's quadrant chart keys, and the quadrant colours of `themeVariables` are read as fixed colours ([quadrant.md](quadrant.md#configuration)).
 - The front matter parser accepts a YAML subset: block mappings, plain and quoted scalars, and flow sequences. Anchors, aliases, tags, multi-document streams and duplicate keys are rejected with an `Error` (`E011 FrontMatterUnsupported`), which rules out alias-expansion attacks.
 - `%%{init: …}%%` accepts the same keys as JSON. The JSON parser rejects nesting deeper than 64 and strings longer than 4,096 bytes (`E012 DirectiveTooLarge`).
 - Every accepted key takes an enumerated or numeric value (`curve` is one of Mermaid's curve names, `layout` is `dagre`, `elk` or `merlion`, all laid out by Merlion's engine); a value outside its set is ignored with `W016`.
 - `merlion` holds Merlion's own keys. `merlion.autoTone` is `true` or `false` (a JSON boolean, or the YAML scalar `true` / `false`); `false` turns the automatic tones off for the diagram ([svg-output.md](svg-output.md#automatic-tones)), and `true` leaves the render option in charge. Any other `merlion.*` key, a non-boolean `autoTone` or a `merlion` value that is not a mapping gives `W016`.
-- `theme`, `themeVariables` and `look` are accepted and ignored with `I011`, because themes are CSS ([svg-output.md](svg-output.md)).
+- `theme`, `themeVariables` and `look` are accepted and ignored with `I011`, because themes are CSS ([svg-output.md](svg-output.md)). The quadrant colour keys of `themeVariables` are the exception: a quadrant chart reads them, and the `I011` for a `themeVariables` holding nothing else waits for the header, so only another diagram type reports it.
 - Unknown keys and values outside a key's set produce `W016` and are otherwise ignored.
 - Neither front matter nor `%%{init}%%` names a stylesheet; only the caller passes one ([integrations.md](integrations.md#cli)).
 - `accTitle:` and `accDescr:` statements override the generated `<title>` and `<desc>`.
@@ -103,7 +105,8 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `E012` DirectiveTooLarge | Error | `%%{init}%%` JSON nested beyond 64 or with a string over 4,096 bytes |
 | `E013` StylesheetTooLarge | Error | Stylesheet over 64 KiB, 512 rules, 32 declarations per rule, 8 selectors per token rule, 16 theme names, 256 role selectors or block depth 2, or compiled output over 64 KiB ([svg-output.md](svg-output.md#stylesheet)) |
 | `E020`–`E023` | Error | Chart specs: invalid JSON, spec shape, value, more than eight series ([chart.md](chart.md#diagnostics)) |
-| `W010` StyleRejected | Warning | Style property or value outside the accepted set |
+| `E024` QuadrantValueOutOfRange | Error | A quadrant chart point coordinate outside 0–1 ([quadrant.md](quadrant.md#points)) |
+| `W010` StyleRejected | Warning | Style property or value outside the accepted set, including a quadrant chart point style outside `radius`, `color`, `stroke-color` and `stroke-width` ([quadrant.md](quadrant.md#point-styles)) |
 | `W011` ClassNameRejected | Warning | `classDef` name outside `[A-Za-z_][A-Za-z0-9_-]{0,63}` |
 | `W012` LabelTruncated | Warning | Label longer than 4,096 bytes |
 | `W013` LinkRejected | Warning | `click … href` URL outside the accepted schemes |
@@ -121,7 +124,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I020` LayoutHintDiscarded | Info | Fewer than 50% of nodes survive ([layout.md](layout.md#stable-layout)) |
 | `I021` LayoutHintPartial | Info | Some nodes treated as new |
 | `I022` LayoutHintInvalid | Info | Hint malformed, of unknown version, or too large |
-| `I030` FixedColour | Info | Source sets a colour that ignores the theme: a `classDef` colour is fixed unless a stylesheet or page sets its `--merlion-c-{name}-*` token; a `style` or `linkStyle` colour is fixed |
+| `I030` FixedColour | Info | Source sets a colour that ignores the theme: a `classDef` colour is fixed unless a stylesheet or page sets its `--merlion-c-{name}-*` token; a `style` or `linkStyle` colour, a quadrant chart point style colour and a quadrant colour of `themeVariables` are fixed |
 | `I031` ClickCallbackIgnored | Info | `click` callback or `call` dropped |
 | `I032` StylesheetRulesIgnored | Info | Count of stylesheet rules declaring no `--merlion-*` token |
 | `I033` ToneMasked | Info | A source `style` colour, or a `classDef` colour whose token the stylesheet leaves unset, overrides a stylesheet tone on the same element |
@@ -135,6 +138,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `R009`–`R013` | Repair | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 | `R014`–`R019` | Repair | State diagrams ([state.md](state.md#diagnostics)) |
 | `R020` PaddedGanttDate | Repair | An unpadded ISO year, month or day becomes a valid zero-padded date; the numeric year stays unchanged ([gantt.md](gantt.md)) |
+| `R021` QuadrantValueNormalised | Repair | A quadrant chart coordinate in 0–1 written in a form mermaid's lexer rejects (`1.0`, `.5`, `+0.5`, `00.5`) becomes the form it reads (`1`, `0.5`) ([quadrant.md](quadrant.md#points)) |
 
 Under `strict: true`, every `Warning` and `Repair` becomes an `Error`.
 

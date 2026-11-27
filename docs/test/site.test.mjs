@@ -11,18 +11,21 @@ const mmd = (dir) => readdirSync(new URL(dir, import.meta.url)).filter((n) => n.
 const fixtures = mmd("../../crates/merlion-render/tests/fixtures/flowcharts/");
 const stateFixtures = mmd("../../crates/merlion-render/tests/fixtures/state/");
 const ganttFixtures = mmd("../../crates/merlion-render/tests/fixtures/gantt/");
+const quadrantFixtures = mmd("../../crates/merlion-render/tests/fixtures/quadrant/");
 
 test("the gallery lists the showcase, roles, all diagram fixtures and twelve compat diagrams", () => {
   const sections = gallerySections();
   const by = (slug) => sections.find((s) => s.slug === slug).entries;
   assert.deepEqual(
     sections.map((s) => s.slug),
-    ["showcase", "roles", "fixtures", "state-diagrams", "gantt-diagrams", "mermaid-corpus"],
+    ["showcase", "roles", "fixtures", "state-diagrams", "gantt-diagrams", "quadrant-charts", "mermaid-corpus"],
   );
   assert.equal(by("fixtures").length, fixtures.length);
   assert.equal(by("state-diagrams").length, stateFixtures.length);
   assert.equal(by("gantt-diagrams").length, ganttFixtures.length);
   for (const e of by("gantt-diagrams")) assert.match(e.source, /^(---[\s\S]*?---\n)?gantt\b/, e.title);
+  assert.equal(by("quadrant-charts").length, quadrantFixtures.length);
+  for (const e of by("quadrant-charts")) assert.match(e.source, /^(---[\s\S]*?---\n)?(%%\{.*\}%%\n)?quadrantChart\b/, e.title);
   // Every state entry is a state diagram, headed by the fixture's stem.
   for (const e of by("state-diagrams")) assert.match(e.source, /^(---[\s\S]*?---\n)?stateDiagram(-v2)?\b/, e.title);
   assert.equal(CURATED.length, 12);

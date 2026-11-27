@@ -16,7 +16,8 @@ const el = (tagName, properties, children) => ({ type: "element", tagName, prope
 const unquote = (s) => (/^(["']).*\1$/.test(s) ? s.slice(1, -1) : s);
 
 /**
- * The diagram's caption: `accTitle`, else a Gantt title, else the front-matter title
+ * The diagram's caption: `accTitle`, else a Gantt or quadrant chart title, else the
+ * front-matter title
  * (specs/svg-output.md#text-alternative uses the same precedence for `<title>`).
  */
 export const diagramTitle = (source) => {
@@ -31,7 +32,8 @@ export const diagramTitle = (source) => {
     if (t.startsWith("%%{")) { directive = !t.includes("}%%"); return false; }
     return t && !t.startsWith("%%");
   });
-  if (/^gantt(?:\s|$)/i.test(header?.trim() ?? "")) {
+  const h = header?.trim() ?? "";
+  if (/^gantt(?:\s|$)/i.test(h) || /^quadrantChart(?:\s|;|$)/.test(h)) {
     const ganttTitle = /^[ \t]*title[ \t]+(.+?)[ \t]*$/m.exec(body);
     if (ganttTitle) return ganttTitle[1];
   }

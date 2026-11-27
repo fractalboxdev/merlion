@@ -14,6 +14,8 @@ pnpm bench sequence [--limit N] [--out-svgs]    # compat-sequence against mermai
 pnpm bench state [--limit N] [--out-svgs]       # compat-state against mermaid, writes results/<date>-state-baseline.md
 pnpm bench gantt [--limit N] [--out-svgs] [--min-compat PERCENT] # complete Gantt schedule/content comparison
 pnpm bench fetch --kind gantt                 # refresh only the pinned Gantt corpus
+pnpm bench quadrant [--limit N] [--out-svgs] [--min-compat PERCENT] # quadrant chart labels, placement and points
+pnpm bench fetch --kind quadrant              # refresh only the pinned quadrant chart corpus
 pnpm bench authoring generate --provider claude-cli --model <m> [--label <name>] [--limit N]
 pnpm bench authoring score [--out <dir>]        # writes results/<date>-authoring.md
 pnpm test && pnpm typecheck
@@ -29,6 +31,7 @@ pnpm test && pnpm typecheck
 | `compat-sequence` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, static template literals in `e2e/rendering/sequence/*.spec.*`, and `e2e/diagrams/sequence/*.mmd`. `sequenceDiagram` sources only, de-duplicated by content | 216 |
 | `compat-state` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, `mermaid` / `mermaid-example` fences in `packages/mermaid/src/docs/syntax/stateDiagram.md`, static template literals in `e2e/rendering/state/*.spec.*`, and `e2e/diagrams/state-diagram/**/*.mmd` and `e2e/diagrams/state-diagram-v2/**/*.mmd`. `stateDiagram` and `stateDiagram-v2` sources only, de-duplicated by content | 117 |
 | `compat-gantt` | mermaid at the same commit: canonical demos, Gantt syntax documentation, rendering templates and all 43 Gantt `.mmd` fixture sources; unique diagrams retain invalid and clock-dependent examples | 64 |
+| `compat-quadrant` | mermaid at the same commit: `<pre class="mermaid">` blocks in `demos/*.html`, fences in the quadrant chart syntax documentation, template literals in `packages/examples/src/examples/quadrant-chart.ts` and in the quadrant parser's and database's unit tests, and `e2e/diagrams/quadrant-chart/*.mmd`. `quadrantChart` sources only, de-duplicated by content; sources mermaid rejects stay | 24 |
 | `edits` | The first 30 `compat` diagrams (by name) with at least three simple edge lines, each edited four ways: add an isolated node, add an edge between the farthest-apart unconnected pair, remove the last simple edge (re-declaring endpoints it declared), rename the first `id[Label]` | 106 pairs |
 | `authoring` | 18 diagrams (5 to 16 nodes, 5 to 19 edges) stated in prose in `corpus/authoring/tasks.json` beside the graph each one means, and the recorded model answers in `corpus/authoring/outputs/` | 18 tasks |
 
@@ -85,6 +88,12 @@ Graph metrics are computed from the SVG alone (`src/svg/extract.ts`, `src/metric
 Time-only formats normalize a common day origin. Day-of-month formats without month/year normalize a common first-month origin while preserving elapsed durations; unequal month lengths can still differ. Those matches appear separately from absolute UTC matches. Invalid sources, unsupported syntax and clock-dependent reference behavior stay in the full denominator. Rejections receive no render credit. Directives-only empty charts require valid SVG viewports. [The Gantt contract](../specs/gantt.md) records deterministic clock differences and syntax limits.
 
 `--min-compat PERCENT` exits unsuccessfully below that percentage of all retained sources; its default of `0` permits exploratory reports. A nonzero gate requires the complete corpus and rejects `--limit`. Reports are `results/<date>-gantt-baseline.{md,json}`; Markdown is committed and SVG/JSON outputs are local. `MERLION_BENCH_CHROMIUM` optionally selects an existing browser executable. `pnpm bench determinism --corpus gantt` and `--corpus compat-gantt` compare native/WASM bytes, including one-sided failures.
+
+## Quadrant charts
+
+`pnpm bench quadrant --out-svgs` renders the complete `compat-quadrant` corpus with Merlion and with pinned mermaid in headless Chromium (`src/quadrant-run.ts`, `src/svg/quadrant.ts`, `src/metrics/quadrant.ts`), and reads both drawings into one shape: the title; each quadrant's box, label and whether the label sits in the top band or the centre; each axis label's side of the plot and whether it starts at the low end or centres on its half; and each point's label, its 0–1 coordinates recovered from the circle's position in the plot, its radius, stroke width and colours. A source matches when both render and these agree, points within 0.002 per coordinate; explicit colours compare where mermaid draws a hex colour, and quadrant fills where the source sets them. Default colours are each renderer's theme.
+
+`--min-compat PERCENT` exits unsuccessfully below that percentage of all retained sources and requires the complete corpus; CI gates at 95. Reports are `results/<date>-quadrant-baseline.{md,json}`; the Markdown is committed. `pnpm bench determinism --corpus compat-quadrant` and `--corpus quadrant` compare native and WASM bytes.
 
 ## Stylesheet parity
 

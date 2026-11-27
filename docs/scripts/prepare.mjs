@@ -14,6 +14,7 @@
 //        - fixtures: every crates/merlion-render/tests/fixtures/flowcharts/*.mmd
 //        - state: every crates/merlion-render/tests/fixtures/state/*.mmd
 //        - gantt: every crates/merlion-render/tests/fixtures/gantt/*.mmd
+//        - quadrant: every crates/merlion-render/tests/fixtures/quadrant/*.mmd
 //        - compat: twelve curated diagrams of bench/corpus/compat/
 //      Each diagram is a ```mermaid block, rendered at build time by the Merlion
 //      integration like any other page.
@@ -31,6 +32,7 @@ const SITE_CSS = join(DOCS, "src", "styles", "diagrams.css");
 const FIXTURES = join(REPO, "crates", "merlion-render", "tests", "fixtures", "flowcharts");
 const STATE = join(REPO, "crates", "merlion-render", "tests", "fixtures", "state");
 const GANTT = join(REPO, "crates", "merlion-render", "tests", "fixtures", "gantt");
+const QUADRANT = join(REPO, "crates", "merlion-render", "tests", "fixtures", "quadrant");
 const COMPAT = join(REPO, "bench", "corpus", "compat");
 const ROLES = join(REPO, "bench", "fixtures", "roles");
 const SHOWCASE = join(DOCS, "src", "gallery", "showcase.json");
@@ -139,6 +141,14 @@ export const gallerySections = () => {
       description: "Dated tasks, dependencies, sections and milestones from the Gantt acceptance fixtures.",
       intro: "Every file in `crates/merlion-render/tests/fixtures/gantt/`, rendered through the same core used by the CLI and WASM. [Gantt diagrams](/guides/gantt-diagrams/) explains the schedule and date rules.",
       entries: mmd(GANTT).map((f) => ({ title: titleOf(f.stem), source: f.source })),
+    },
+    {
+      slug: "quadrant-charts",
+      from: "crates/merlion-render/tests/fixtures/quadrant/",
+      title: "Quadrant charts",
+      description: "Points on four labelled quadrants, with roles, point styles and theme colours, from the quadrant chart fixtures.",
+      intro: "Every file in `crates/merlion-render/tests/fixtures/quadrant/`, rendered through the same core used by the CLI and WASM. [Quadrant charts](/guides/quadrant-charts/) explains the syntax, styles and configuration.",
+      entries: mmd(QUADRANT).map((f) => ({ title: titleOf(f.stem), source: f.source })),
     },
     {
       slug: "mermaid-corpus",

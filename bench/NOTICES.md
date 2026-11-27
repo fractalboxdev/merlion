@@ -1,9 +1,9 @@
 # Third-party notices: benchmark corpora
 
-## mermaid (`corpus/compat/`, `corpus/compat-sequence/`, `corpus/compat-state/`, `corpus/compat-gantt/`, `corpus/edits/`)
+## mermaid (`corpus/compat/`, `corpus/compat-sequence/`, `corpus/compat-state/`, `corpus/compat-gantt/`, `corpus/compat-quadrant/`, `corpus/edits/`)
 
-`corpus/compat/*.mmd`, `corpus/compat-sequence/*.mmd`, `corpus/compat-state/*.mmd` and `corpus/compat-gantt/*.mmd`
-are diagrams extracted verbatim (dedented) from the mermaid repository at tag
+`corpus/compat/*.mmd`, `corpus/compat-sequence/*.mmd`, `corpus/compat-state/*.mmd`, `corpus/compat-gantt/*.mmd`
+and `corpus/compat-quadrant/*.mmd` are diagrams extracted verbatim (dedented) from the mermaid repository at tag
 `mermaid@12.0.0`, commit `98a0945418c76238f15df2afaddbba4272656c3b`.
 
 | Corpus | Sources |
@@ -12,6 +12,7 @@ are diagrams extracted verbatim (dedented) from the mermaid repository at tag
 | `compat-sequence` | `demos/*.html`, `packages/mermaid/src/docs/syntax/sequenceDiagram.md`, `e2e/rendering/sequence/*.spec.*`, `e2e/diagrams/sequence/*.mmd` |
 | `compat-state` | `demos/*.html`, `packages/mermaid/src/docs/syntax/stateDiagram.md`, `e2e/rendering/state/*.spec.*`, `e2e/diagrams/state-diagram/**/*.mmd` and `e2e/diagrams/state-diagram-v2/**/*.mmd` except `handdrawn/` |
 | `compat-gantt` | `demos/*.html`, `packages/mermaid/src/docs/syntax/gantt.md`, `e2e/rendering/gantt/*.spec.*`, `e2e/diagrams/gantt/**/*.mmd` |
+| `compat-quadrant` | `demos/*.html`, `packages/mermaid/src/docs/syntax/quadrantChart.md`, `packages/examples/src/examples/quadrant-chart.ts`, `packages/mermaid/src/diagrams/quadrant-chart/**/*.spec.ts`, `e2e/diagrams/quadrant-chart/*.mmd` |
 
 Each corpus's `manifest.json` records every diagram's source path, the source
 file's git blob, and the diagram's sha256. `corpus/edits/*.json` are derived
@@ -21,6 +22,8 @@ The Gantt corpus retains invalid dates, clock-dependent schedules and configurat
 features regardless of Merlion support. Content de-duplication follows source-path
 order, with the first occurrence retained. `pnpm bench fetch --kind gantt` refreshes
 only that corpus under the same extraction rules as the other diagram types.
+The quadrant chart corpus likewise retains sources mermaid rejects, and
+`pnpm bench fetch --kind quadrant` refreshes it alone.
 
 https://github.com/mermaid-js/mermaid
 

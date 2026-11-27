@@ -4,11 +4,12 @@
  *   pnpm bench fetch
  *   pnpm bench run [--renderers merlion,mermaid-dagre,mermaid-elk] [--corpus compat] [--limit N] [--out-svgs] [--no-edits]
  *   pnpm bench report [--input results/<file>.json] [--out <file>.md]
- *   pnpm bench determinism [--corpus compat|compat-sequence|compat-state|compat-gantt|sequence|state|gantt] [--font link|embed|system]
+ *   pnpm bench determinism [--corpus compat|compat-sequence|compat-state|compat-gantt|compat-quadrant|sequence|state|gantt|quadrant] [--font link|embed|system]
  *   pnpm bench parity [--limit N] [--require-rsvg]
  *   pnpm bench sequence [--limit N] [--out-svgs]
  *   pnpm bench state [--limit N] [--out-svgs]
  *   pnpm bench gantt [--limit N] [--out-svgs] [--min-compat PERCENT]
+ *   pnpm bench quadrant [--limit N] [--out-svgs] [--min-compat PERCENT]
  *   pnpm bench authoring generate --provider <p> --model <m> [--label <name>] [--limit N] [--resume]
  *   pnpm bench authoring score [--out <dir>]
  */
@@ -19,18 +20,21 @@ import { Effect, Layer, Option, Schema } from "effect";
 import { generate } from "./authoring/generate.ts";
 import { PROVIDERS } from "./authoring/provider.ts";
 import { score } from "./authoring/score.ts";
-import { fetchCorpus, fetchGanttCorpus } from "./corpus/fetch.ts";
+import { fetchCorpus, fetchGanttCorpus, fetchQuadrantCorpus } from "./corpus/fetch.ts";
 import { CORPUS_NAMES, determinism, FONT_MODES } from "./determinism.ts";
 import { ganttRun } from "./gantt-run.ts";
 import { parity } from "./parity/gate.ts";
+import { quadrantRun } from "./quadrant-run.ts";
 import { RENDERER_NAMES, type RendererName } from "./renderers/Renderer.ts";
 import { report } from "./report.ts";
 import { run } from "./run.ts";
 import { sequenceRun } from "./sequence-run.ts";
 import { stateRun } from "./state-run.ts";
 
-const fetchKind = Options.choice("kind", ["all", "gantt"] as const).pipe(Options.withDefault("all" as const));
-const fetchCmd = Command.make("fetch", { kind: fetchKind }, (o) => (o.kind === "gantt" ? fetchGanttCorpus : fetchCorpus).pipe(Effect.asVoid)).pipe(
+const fetchKind = Options.choice("kind", ["all", "gantt", "quadrant"] as const).pipe(Options.withDefault("all" as const));
+const fetchCmd = Command.make("fetch", { kind: fetchKind }, (o) =>
+  (o.kind === "gantt" ? fetchGanttCorpus : o.kind === "quadrant" ? fetchQuadrantCorpus : fetchCorpus).pipe(Effect.asVoid),
+).pipe(
   Command.withDescription("Download the compat corpus at the pinned mermaid commit and derive the edits corpus"),
 );
 
@@ -63,7 +67,7 @@ const reportCmd = Command.make("report", { input, out }, (o) => report(o.input, 
 const font = Options.choice("font", FONT_MODES).pipe(Options.withDefault("link" as const));
 const determinismCorpus = Options.choice("corpus", CORPUS_NAMES).pipe(
   Options.withDefault("compat" as const),
-  Options.withDescription("A mermaid corpus (compat, compat-sequence, compat-state, compat-gantt) or a core fixture corpus (sequence, state, gantt)"),
+  Options.withDescription("A mermaid corpus (compat, compat-sequence, compat-state, compat-gantt, compat-quadrant) or a core fixture corpus (sequence, state, gantt, quadrant)"),
 );
 const determinismCmd = Command.make("determinism", { corpus: determinismCorpus, font }, (o) =>
   determinism(o.corpus, o.font).pipe(Effect.asVoid),
@@ -93,6 +97,11 @@ const minCompat = Options.integer("min-compat").pipe(Options.withDefault(0), Opt
 const ganttCmd = Command.make("gantt", { limit, outSvgs, minCompat }, (o) =>
   ganttRun({ limit: o.limit, outSvgs: o.outSvgs, minCompat: o.minCompat }).pipe(Effect.asVoid),
 ).pipe(Command.withDescription("Compare the complete compat-gantt corpus's resolved schedules and visible task content"));
+
+const quadrantMinCompat = Options.integer("min-compat").pipe(Options.withDefault(0), Options.withDescription("Fail below this percent of all retained quadrant sources (0–100); requires the complete corpus"));
+const quadrantCmd = Command.make("quadrant", { limit, outSvgs, minCompat: quadrantMinCompat }, (o) =>
+  quadrantRun({ limit: o.limit, outSvgs: o.outSvgs, minCompat: o.minCompat }).pipe(Effect.asVoid),
+).pipe(Command.withDescription("Compare the complete compat-quadrant corpus's labels, placements and points with mermaid"));
 
 const provider = Options.choice("provider", PROVIDERS).pipe(
   Options.withDefault("claude-cli" as const),
@@ -131,7 +140,7 @@ const authoringCmd = Command.make("authoring").pipe(
 );
 
 const bench = Command.make("bench").pipe(
-  Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd, sequenceCmd, stateCmd, ganttCmd, authoringCmd]),
+  Command.withSubcommands([fetchCmd, runCmd, reportCmd, determinismCmd, parityCmd, sequenceCmd, stateCmd, ganttCmd, quadrantCmd, authoringCmd]),
 );
 
 const cli = Command.run(bench, { name: "merlion-bench", version: "0.0.0" });
