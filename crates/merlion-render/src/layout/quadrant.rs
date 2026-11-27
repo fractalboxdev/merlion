@@ -237,7 +237,33 @@ pub fn layout_quadrant(
         height += MIN_PLOT - plot_h;
         plot_h = MIN_PLOT;
     }
-    let plot = Rect {
+    let measured_quadrants: [Option<LabelLayout>; 4] = core::array::from_fn(|i| {
+        non_empty(&q.quadrants[i]).map(|t| {
+            measure(
+                t,
+                sizes.quadrant,
+                plot_w / 2.0 - 2.0 * quad_pad,
+                Weight::Regular,
+                tolerance,
+                diags,
+            )
+        })
+    });
+    let label_height = measured_quadrants
+        .iter()
+        .flatten()
+        .fold(0.0, |h, l| max(h, l.height));
+    let required_half = label_height
+        + if has_points {
+            text_top + quad_pad
+        } else {
+            2.0 * quad_pad
+        };
+    if plot_h < 2.0 * required_half {
+        height += 2.0 * required_half - plot_h;
+        plot_h = 2.0 * required_half;
+    }
+    let mut plot = Rect {
         x: left,
         y: top,
         w: plot_w,
@@ -253,22 +279,14 @@ pub fn layout_quadrant(
         (left + half_w, top + half_h),
     ];
     let mut quadrants: [QuadrantGeom; 4] = Default::default();
-    for (i, (x, y)) in corners.into_iter().enumerate() {
+    for (i, ((x, y), measured)) in corners.into_iter().zip(measured_quadrants).enumerate() {
         let rect = Rect {
             x,
             y,
             w: half_w,
             h: half_h,
         };
-        let label = non_empty(&q.quadrants[i]).map(|t| {
-            let l = measure(
-                t,
-                sizes.quadrant,
-                half_w - 2.0 * quad_pad,
-                Weight::Regular,
-                tolerance,
-                diags,
-            );
+        let label = measured.map(|l| {
             let cx = x + half_w / 2.0;
             // Labels sit at the top of their quadrant when points might cover the
             // centre, and in the centre otherwise, as mermaid places them.
@@ -287,7 +305,7 @@ pub fn layout_quadrant(
         XAxisPosition::Top => x_pad + title_space,
         XAxisPosition::Bottom => top + plot_h + quad_pad + x_pad,
     };
-    let x_labels = x_measured
+    let mut x_labels: Vec<AxisLabel> = x_measured
         .into_iter()
         .map(|(high, l)| {
             let cx = if two_x {
@@ -306,7 +324,7 @@ pub fn layout_quadrant(
         YAxisPosition::Left => y_pad,
         YAxisPosition::Right => left + plot_w + quad_pad + y_pad,
     };
-    let y_labels = y_measured
+    let mut y_labels: Vec<AxisLabel> = y_measured
         .into_iter()
         .map(|(high, l)| {
             // Drawn rotated −90° about its centre: its width runs up the axis and its
@@ -362,7 +380,49 @@ pub fn layout_quadrant(
         });
     }
     height = max(height, bottom);
-    let title = title.map(|l| top_at(l, width / 2.0, title_pad));
+    let mut title = title.map(|l| top_at(l, width / 2.0, title_pad));
+
+    // Painted circles and border strokes contribute to the viewport. Translating the
+    // whole drawing keeps every point at its source coordinate within the plot.
+    let border_extent = cfg.external_border_width.unwrap_or(EXTERNAL_BORDER) / 2.0;
+    let mut min_x = min(0.0, plot.x - border_extent);
+    let mut min_y = min(0.0, plot.y - border_extent);
+    let mut right = max(width, plot.x + plot.w + border_extent);
+    let mut bottom = max(height, plot.y + plot.h + border_extent);
+    for p in &points {
+        let extent = p.radius + p.stroke_width / 2.0;
+        min_x = min(min_x, p.cx - extent);
+        min_y = min(min_y, p.cy - extent);
+        right = max(right, p.cx + extent);
+        bottom = max(bottom, p.cy + extent);
+    }
+    let (dx, dy) = (-min_x, -min_y);
+    width = right + dx;
+    height = bottom + dy;
+    plot.x += dx;
+    plot.y += dy;
+    let shift = |t: &mut TextGeom| {
+        t.x += dx;
+        t.y += dy;
+    };
+    for q in &mut quadrants {
+        q.rect.x += dx;
+        q.rect.y += dy;
+        if let Some(t) = &mut q.label {
+            shift(t);
+        }
+    }
+    for axis in x_labels.iter_mut().chain(y_labels.iter_mut()) {
+        shift(&mut axis.text);
+    }
+    if let Some(t) = &mut title {
+        shift(t);
+    }
+    for p in &mut points {
+        p.cx += dx;
+        p.cy += dy;
+        shift(&mut p.label);
+    }
 
     if !width.is_finite() || !height.is_finite() || width > 1_000_000.0 || height > 1_000_000.0 {
         return Err(fail("quadrant chart extent"));

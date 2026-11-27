@@ -135,6 +135,45 @@ fn configuration_sets_the_chart_size_and_a_narrow_container_scales_it() {
 }
 
 #[test]
+fn wrapped_quadrant_labels_fit_their_boxes_and_viewport() {
+    let label = "This quadrant label contains a fairly long description that needs multiple lines of text to remain readable in a narrow document";
+    for points in ["", "A: [0.2, 0.3]\n"] {
+        let source = format!("quadrantChart\nquadrant-1 {label}\nquadrant-3 {label}\n{points}");
+        let g = geometry(
+            &source,
+            &RenderOptions {
+                target_width: 200.0,
+                ..RenderOptions::default()
+            },
+        );
+        assert!(g.height > 200.0);
+        for q in &g.quadrants {
+            if let Some(t) = &q.label {
+                assert!(t.y - t.label.height / 2.0 >= q.rect.y);
+                assert!(t.y + t.label.height / 2.0 <= q.rect.y + q.rect.h);
+                assert!(t.y + t.label.height / 2.0 <= g.height);
+            }
+        }
+    }
+}
+
+#[test]
+fn styled_corner_points_fit_the_viewport_and_keep_their_coordinates() {
+    let g = geometry("quadrantChart\nA: [0, 1] radius: 30, stroke-width: 10px\nB: [1, 1] radius: 40, stroke-width: 20px\nC: [0, 0] radius: 35, stroke-width: 10px\nD: [1, 0] radius: 30, stroke-width: 10px\n", &RenderOptions::default());
+    for (p, (x, y)) in g
+        .points
+        .iter()
+        .zip([(0.0, 1.0), (1.0, 1.0), (0.0, 0.0), (1.0, 0.0)])
+    {
+        let extent = p.radius + p.stroke_width / 2.0;
+        assert!(p.cx - extent >= 0.0 && p.cy - extent >= 0.0);
+        assert!(p.cx + extent <= g.width && p.cy + extent <= g.height);
+        assert!((p.cx - g.plot.x - x * g.plot.w).abs() < 1e-9);
+        assert!((p.cy - g.plot.y - (1.0 - y) * g.plot.h).abs() < 1e-9);
+    }
+}
+
+#[test]
 fn svg_structure_data_attributes_and_accessibility() {
     let s = svg(CAMPAIGNS, &with_id("q1"));
     assert_well_formed(&s);
