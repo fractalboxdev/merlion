@@ -89,7 +89,10 @@ fn statements(line: &str) -> Vec<&str> {
     while i < bytes.len() {
         match bytes[i] {
             b'"' => quote = !quote,
-            b'%' if !quote && bytes.get(i + 1) == Some(&b'%') => {
+            b'%' if !quote
+                && bytes.get(i + 1) == Some(&b'%')
+                && !takes_line(line.get(start..i).unwrap_or("")) =>
+            {
                 end = i;
                 break;
             }

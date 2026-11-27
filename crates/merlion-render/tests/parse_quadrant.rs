@@ -185,6 +185,28 @@ fn accessibility_statements_and_comments() {
 }
 
 #[test]
+fn metadata_preserves_literal_comment_markers() {
+    let (q, d) = parse("quadrantChart; title Revenue 90%% retained; literal\naccTitle: Efficiency 90%% remaining\naccDescr: CPU is 90%% utilized\n");
+    assert!(d.is_empty(), "{d:#?}");
+    assert_eq!(
+        q.meta.title.as_deref(),
+        Some("Revenue 90%% retained; literal")
+    );
+    assert_eq!(
+        q.meta.acc_title.as_deref(),
+        Some("Efficiency 90%% remaining")
+    );
+    assert_eq!(q.meta.acc_descr.as_deref(), Some("CPU is 90%% utilized"));
+    let (q, d) = parse("quadrantChart\naccDescr {CPU is 90%% utilized}\nA: [0, 1] %% comment\n");
+    assert!(d.is_empty(), "{d:#?}");
+    assert_eq!(q.meta.acc_descr.as_deref(), Some("CPU is 90%% utilized"));
+    assert_eq!(q.points.len(), 1);
+    let (q, d) = parse("quadrantChart\naccDescr {\nCPU is 90%% utilized\n}\n");
+    assert!(d.is_empty(), "{d:#?}");
+    assert_eq!(q.meta.acc_descr.as_deref(), Some("CPU is 90%% utilized"));
+}
+
+#[test]
 fn quadrant_chart_config_from_directives_and_front_matter() {
     let (q, d) = parse(
         "%%{init: {\"quadrantChart\": {\"chartWidth\": 600, \"chartHeight\": 400, \"pointRadius\": 8, \"xAxisPosition\": \"bottom\", \"yAxisPosition\": \"right\", \"useMaxWidth\": true}}}%%\nquadrantChart\n",
