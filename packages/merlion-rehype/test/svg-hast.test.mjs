@@ -59,6 +59,26 @@ test("every rendered corpus diagram converts to elements an HTML parser agrees w
   assert.ok(n > 700, `rendered ${n} diagrams`);
 });
 
+test("every chart fixture converts to elements an HTML parser agrees with", async () => {
+  await loadWasmRender();
+  const { renderChart } = await import("@fractalboxdev/merlion-wasm");
+  const dir = join(REPO, "crates/merlion-render/tests/fixtures/chart");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
+  for (const f of files) {
+    const { svg, error } = renderChart(readFileSync(join(dir, f), "utf8"), { idPrefix: "c" });
+    assert.equal(error, null, f);
+    const tree = svgToHast(svg);
+    assert.ok(tree, `${f}: outside the grammar`);
+    assert.deepEqual(parsed(toHtml(tree, { space: "svg" })), parsed(svg.trim()), f);
+    walk(tree, (node) => {
+      for (const key of Object.keys(node.properties ?? {})) {
+        assert.equal(find(svgSchema, key).property, key, `${f}: <${node.tagName}> ${key}`);
+      }
+    });
+  }
+  assert.ok(files.length >= 6, `${files.length} chart fixtures`);
+});
+
 test("rejects input outside the core's output grammar", () => {
   for (const bad of [
     "<svg><!-- c --></svg>",

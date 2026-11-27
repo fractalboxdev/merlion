@@ -24,6 +24,8 @@ Every stage is a pure function of its inputs; no stage reads the clock, the envi
 
 The stylesheet compiler is outside the pipeline: `stylesheet::compile` turns CSS text into a typed `Stylesheet` once per invocation, and a render receives only the resolved `Palette` ([ADR-0009](adr/0009-stylesheet.md)). The palette reaches Draw alone; it never affects measurement, layout or the layout hint.
 
+Charts enter through `render_chart` as a `merlion-chart/1` JSON spec, not Mermaid source ([chart.md](chart.md), [ADR-0012](adr/0012-chart-spec.md)). Their pipeline reads and resolves the spec in place of Parse, then measures, lays out and draws with the same text tables, emitter, theme tokens and fuel.
+
 The diagram model is one tagged enum per diagram type (`Flowchart`, `Sequence`, `State`, `Class`, `Er`, `Gantt`, …). Graph-shaped types (flowchart, state, class, ER) lower to a shared `LayeredGraph` and share one layout engine. Types with a fixed geometry (sequence, gantt, timeline, pie, XY, packet, kanban) have their own layout modules and do no graph layout.
 
 ## Packages

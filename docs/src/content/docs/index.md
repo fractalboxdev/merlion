@@ -37,7 +37,7 @@ flowchart LR
   class e1,e2 async
 ```
 
-Merlion renders Mermaid flowcharts, sequence, state and Gantt diagrams to static, themeable, accessible SVG. The core (`crates/merlion-render`) is a `no_std` Rust library with zero dependencies; the same code runs as the `merlion` CLI and as a WebAssembly module, and native and WASM output are byte-identical. Labels are `<text>`, colours are CSS custom properties, so light, dark and custom themes switch with CSS alone, and every SVG carries `role="img"`, a `<title>` and a generated `<desc>`. The output is safe to inline without a sanitiser.
+Merlion renders Mermaid flowcharts, sequence, state and Gantt diagrams, and data charts from a JSON spec, to static, themeable, accessible SVG. The core (`crates/merlion-render`) is a `no_std` Rust library with zero dependencies; the same code runs as the `merlion` CLI and as a WebAssembly module, and native and WASM output are byte-identical. Labels are `<text>`, colours are CSS custom properties, so light, dark and custom themes switch with CSS alone, and every SVG carries `role="img"`, a `<title>` and a generated `<desc>`. The output is safe to inline without a sanitiser.
 
 Every diagram on this site, the one above included, is a ```` ```mermaid ```` block that Merlion renders at build time through the Astro integration. Switch the theme in the header: the diagrams restyle through CSS, with no re-render.
 

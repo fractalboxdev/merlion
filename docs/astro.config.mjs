@@ -50,6 +50,7 @@ export default defineConfig({
             "guides/labels",
             "guides/state-diagrams",
             "guides/gantt-diagrams",
+            "guides/charts",
             "guides/stable-layout",
             "guides/viewer",
             "guides/diagnostics",

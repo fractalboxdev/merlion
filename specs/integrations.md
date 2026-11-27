@@ -7,8 +7,10 @@ merlion render [<input>] [-o <output>] [--width <px>] [--direction auto]
                [--edge-style orthogonal|polyline|spline] [--font link|embed|system]
                [--hint <previous.svg>] [--strict] [--outline <file>]
                [--css <file>] [--theme <name>] [--auto-dark <name>] [--no-auto-tone]
+merlion render --chart [<spec.json>] [-o <output>] [--width <px>] [--font …] [--strict]
+               [--outline <file>] [--json] [--css <file>]
 merlion css    [<input.css>] [-o <output.css>] [--strict] [--follow-symlinks]
-merlion check  [<input>...] [--strict] [--fix]
+merlion check  [<input>...] [--chart] [--strict] [--fix]
 merlion outline [<input>] [--follow-symlinks]
 merlion --version
 ```
@@ -19,6 +21,7 @@ merlion --version
 - `merlion css` compiles a stylesheet ([svg-output.md](svg-output.md#stylesheet)) from a file or stdin and writes the page CSS to `-o` or stdout; diagnostics use the `check` format under the stylesheet's name. `--strict` turns every `W017`–`W019` into an error, and an error writes nothing. `E013` exits `3`.
 - `--css` bakes a stylesheet into the output ([svg-output.md](svg-output.md#palette)). `--theme <name>` picks the `[data-theme="<name>"]` block over `:root`; the default is `:root` alone. `--auto-dark <name>` adds the named block as the `prefers-color-scheme: dark` variant. A name the stylesheet does not define is a usage error (exit 2). Neither flag reads the `:root:not([data-theme])` media block. A Markdown input parses the stylesheet once for all its blocks. Without `--css`, built-in roles still render in their default tones ([svg-output.md](svg-output.md#built-in-roles)).
 - Decisions, stores, terminals and top-level subgraphs take automatic tones ([svg-output.md](svg-output.md#automatic-tones)); `--no-auto-tone` sets `auto_tone: false` and draws them untoned, byte-identical to the core with that option.
+- `--chart` reads the input as a `merlion-chart/1` JSON spec ([chart.md](chart.md)) and renders it through `render_chart`; `check --chart` checks every input as one. A chart reads no layout hint, so `--chart` with `--hint` or `--batch` is a usage error.
 - Front matter and `%%{init}%%` never name a stylesheet.
 - Exit codes: `0` every diagram rendered (warnings allowed); `1` at least one diagram failed to parse or render; `2` usage error; `3` at least one input exceeds limits (`TooLarge`) and none failed otherwise.
 
@@ -40,6 +43,8 @@ export function init(wasm?: BufferSource | URL | Response): Promise<void>; // br
 export function initSync(wasm: BufferSource): void;                         // Node, at build time
 export function render(source: string, options?: RenderOptions): RenderResult;
 export function check(source: string, options?: { strict?: boolean }): Diagnostic[];
+export function renderChart(spec: ChartSpec | string, options?: RenderOptions): RenderResult;
+export function checkChart(spec: ChartSpec | string, options?: { strict?: boolean }): Diagnostic[];
 export function compileStylesheet(
   css: string,
   options?: { theme?: string; autoDark?: string; strict?: boolean },

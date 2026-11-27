@@ -135,6 +135,59 @@ export function initSync(wasm: BufferSource | WebAssembly.Module): void;
 /** Synchronous after initialisation; throws `TypeError` on invalid arguments or options. */
 export function render(source: string, options?: RenderOptions): RenderResult;
 export function check(source: string, options?: { strict?: boolean }): Diagnostic[];
+/** A value as written: a decimal string such as `"-3.15"`, a number, a date or a category. */
+export type ChartValue = string | number;
+/** A field name in the data rows, or a constant. */
+export type ChartChannel = string | { value: ChartValue };
+
+export interface ChartAxis {
+  type: "band" | "linear" | "time";
+  label?: string;
+  /** Band: the categories in order. Linear or time: `[min, max]`. */
+  domain?: ChartValue[];
+  /** Linear only: include zero. Bars and areas without `y2` always do. */
+  zero?: boolean;
+  /** Linear: tick label format. Time: a D3 time format such as `"%b %Y"`. */
+  format?: { decimals?: number; prefix?: string; suffix?: string; group?: boolean } | string;
+}
+
+export interface ChartMark {
+  type: "bar" | "line" | "area" | "dot" | "interval" | "rule" | "span";
+  x?: ChartChannel;
+  y?: ChartChannel;
+  x2?: ChartChannel;
+  y2?: ChartChannel;
+  /** A field whose value names the series, or a constant series name. */
+  series?: ChartChannel;
+  /** A field whose value is drawn beside each mark, as written. */
+  label?: string;
+  /** The note of a rule or span. */
+  text?: string;
+  tone?: "series" | "neutral" | "accent";
+  /** Interval or rule stroke width, 1 to 40 px. */
+  thickness?: number;
+  dash?: boolean;
+}
+
+/** `merlion-chart/1` (specs/chart.md). Unknown members are errors. */
+export interface ChartSpec {
+  chart: 1;
+  /** The chart's accessible name, written into `<title>`; the host draws any visible title. */
+  title: string;
+  description?: string;
+  x: ChartAxis;
+  y: ChartAxis;
+  data: Record<string, ChartValue | null>[];
+  marks: ChartMark[];
+  series?: { domain: ChartValue[] };
+  legend?: boolean;
+  /** Total SVG height in px, 120 to 2000, for charts without a band y axis. */
+  height?: number;
+}
+
+/** Renders a chart spec; a string is passed through, an object serialised. */
+export function renderChart(spec: ChartSpec | string, options?: RenderOptions): RenderResult;
+export function checkChart(spec: ChartSpec | string, options?: { strict?: boolean }): Diagnostic[];
 /**
  * Compiles a stylesheet in Merlion's CSS subset. Over 64 KiB of UTF-8 returns `E013`
  * without calling the module; a theme name the stylesheet does not define throws

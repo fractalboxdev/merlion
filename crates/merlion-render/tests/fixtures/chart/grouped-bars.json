@@ -1,0 +1,72 @@
+{
+  "chart": 1,
+  "title": "Actual revenue trailed plan in every quarter",
+  "x": {
+    "type": "band"
+  },
+  "y": {
+    "type": "linear",
+    "label": "Revenue, $m",
+    "format": {
+      "prefix": "$",
+      "decimals": 0
+    }
+  },
+  "data": [
+    {
+      "quarter": "Q1",
+      "plan": "Plan",
+      "v": "12.5"
+    },
+    {
+      "quarter": "Q1",
+      "plan": "Actual",
+      "v": "9.0"
+    },
+    {
+      "quarter": "Q2",
+      "plan": "Plan",
+      "v": "14.1"
+    },
+    {
+      "quarter": "Q2",
+      "plan": "Actual",
+      "v": "11.3"
+    },
+    {
+      "quarter": "Q3",
+      "plan": "Plan",
+      "v": "13.2"
+    },
+    {
+      "quarter": "Q3",
+      "plan": "Actual",
+      "v": "12.8"
+    },
+    {
+      "quarter": "Q4",
+      "plan": "Plan",
+      "v": "15.9"
+    },
+    {
+      "quarter": "Q4",
+      "plan": "Actual",
+      "v": "14.0"
+    }
+  ],
+  "series": {
+    "domain": [
+      "Plan",
+      "Actual"
+    ]
+  },
+  "marks": [
+    {
+      "type": "bar",
+      "x": "quarter",
+      "y": "v",
+      "series": "plan",
+      "label": "v"
+    }
+  ]
+}

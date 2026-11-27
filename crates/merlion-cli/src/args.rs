@@ -14,9 +14,11 @@ Usage:
                  [--id-prefix <prefix>] [--fuel <units>] [--follow-symlinks] [--json]
                  [--no-auto-tone]
                  [--css <file.css> [--theme <name>] [--auto-dark <name>]]
+  merlion render --chart [<spec.json>] [-o <output>] [--width <px>] [--font …] [--strict]
+                 [--outline <file>] [--id-prefix <prefix>] [--json] [--css …]
   merlion render --batch <dir> [-o <outdir>] [--json-summary] [render options]
   merlion css [<input.css>] [-o <output.css>] [--strict] [--follow-symlinks]
-  merlion check [<input>...] [--strict] [--fix] [--follow-symlinks]
+  merlion check [<input>...] [--chart] [--strict] [--fix] [--follow-symlinks]
   merlion outline [<input>] [--follow-symlinks]
   merlion --version
   merlion --help
@@ -29,6 +31,9 @@ The input defaults to stdin (also `-`) and the output to stdout. A Markdown inpu
 shapes. `render --css` bakes it into the SVG: `--theme` picks a [data-theme] block over
 :root (default :root alone), `--auto-dark` adds a named block as the
 prefers-color-scheme: dark variant. --strict turns W017-W019 into errors.
+
+`--chart` reads a merlion-chart/1 JSON spec instead of Mermaid source: rows of values
+and marks that draw them (bar, line, area, dot, interval, rule, span).
 
 Decisions, stores, terminals and top-level subgraphs take automatic tones unless an
 element has its own class or style; --no-auto-tone draws them untoned.
@@ -58,6 +63,8 @@ pub struct RenderArgs {
     pub theme: Option<String>,
     pub auto_dark: Option<String>,
     pub no_auto_tone: bool,
+    /// The input is a `merlion-chart/1` JSON spec.
+    pub chart: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -71,6 +78,8 @@ pub struct CssArgs {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CheckArgs {
     pub inputs: Vec<PathBuf>,
+    /// Every input is a `merlion-chart/1` JSON spec.
+    pub chart: bool,
     pub strict: bool,
     pub fix: bool,
     pub follow_symlinks: bool,
@@ -264,6 +273,7 @@ fn parse_render(mut it: impl Iterator<Item = Tok>) -> Result<RenderArgs, String>
             "--theme" => r.theme = Some(str_value(&name, inline, &mut it)?),
             "--auto-dark" => r.auto_dark = Some(str_value(&name, inline, &mut it)?),
             "--no-auto-tone" => r.no_auto_tone = flag(&name, inline)?,
+            "--chart" => r.chart = flag(&name, inline)?,
             _ => return Err(format!("unknown option `{name}` for `render`")),
         }
     }
@@ -275,6 +285,9 @@ fn parse_render(mut it: impl Iterator<Item = Tok>) -> Result<RenderArgs, String>
     }
     if r.hint.is_some() && r.no_hint {
         return Err("`--hint` and `--no-hint` conflict".into());
+    }
+    if r.chart && (r.batch.is_some() || r.hint.is_some()) {
+        return Err("`--chart` renders one spec and reads no layout hint".into());
     }
     if r.batch.is_some() {
         if inputs > 0 {
@@ -296,6 +309,7 @@ fn parse_check(it: impl Iterator<Item = Tok>) -> Result<CheckArgs, String> {
             Tok::Pos(p) => c.inputs.push(PathBuf::from(p)),
             Tok::Opt { name, inline } => match name.as_str() {
                 "--strict" => c.strict = flag(&name, inline)?,
+                "--chart" => c.chart = flag(&name, inline)?,
                 "--fix" => c.fix = flag(&name, inline)?,
                 "--follow-symlinks" => c.follow_symlinks = flag(&name, inline)?,
                 _ => return Err(format!("unknown option `{name}` for `check`")),
@@ -479,11 +493,16 @@ mod tests {
             p(&["check", "a.mmd", "b.md", "--strict", "--fix"]),
             Ok(Command::Check(CheckArgs {
                 inputs: vec!["a.mmd".into(), "b.md".into()],
+                chart: false,
                 strict: true,
                 fix: true,
                 follow_symlinks: false,
             }))
         );
+        assert!(matches!(
+            p(&["check", "--chart", "s.json"]),
+            Ok(Command::Check(CheckArgs { chart: true, .. }))
+        ));
         assert_eq!(
             p(&["outline", "a.mmd"]),
             Ok(Command::Outline {

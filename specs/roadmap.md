@@ -14,4 +14,6 @@ Effort estimates are for one engineer working full time and are rough (±50%).
 | M5b | `merlion lsp`; `merlion-vscode` (VS Code Marketplace and Open VSX, serving Cursor); Zed extension for the language server | Extension renders every `compat` flowchart in the preview; theme follows the editor | 3–4 weeks |
 | M6 | 1.0: stable public API, token names, hint format `v1`, WASM ABI | Reproducible release verified by a second build on a different runner image; `SECURITY.md` published | 2 weeks |
 
+Charts from a JSON spec ([chart.md](chart.md)) sit outside the Mermaid milestones; `xychart` in M3 remains the Mermaid-compatible chart type.
+
 Mindmap, gitGraph, C4, architecture, block, sankey, quadrant, requirement, journey, radar and treemap are outside 1.0. TODO(owner): rank them after M4 by frequency in the `docs` corpus.

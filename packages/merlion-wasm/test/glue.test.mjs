@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { init, initSync, render, check, compileStylesheet, __trapForTests } from "../index.js";
+import { init, initSync, render, check, renderChart, checkChart, compileStylesheet, __trapForTests } from "../index.js";
 
 const script = fileURLToPath(new URL("../scripts/build-wasm.sh", import.meta.url));
 const wasmPath = fileURLToPath(new URL("./merlion-test.wasm", import.meta.url));
@@ -14,6 +14,7 @@ let bytes;
 
 const VALID = "flowchart LR\nA-->B\n";
 const INVALID = "this is not a diagram\n";
+const CHART = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/chart/dumbbell.json", import.meta.url), "utf8");
 const GANTT = readFileSync(new URL("../../../crates/merlion-render/tests/fixtures/gantt/delivery.mmd", import.meta.url), "utf8");
 
 before(() => {
@@ -109,6 +110,26 @@ test("Gantt render and check use the real WebAssembly core", () => {
   assert.ok(result.outline.includes("2026-10-13"));
   assert.equal(check(GANTT, { strict: true }).some((d) => d.severity === "error"), false);
   assert.equal(render(GANTT, { width: 640, strict: true, font: "embed", idPrefix: "schedule" }).svg, result.svg);
+});
+
+test("renderChart takes a JSON string or an object and returns the render shape", () => {
+  initSync(bytes);
+  const result = renderChart(CHART, { width: 640, strict: true, idPrefix: "teams" });
+  assert.equal(result.error, null, JSON.stringify(result.diagnostics));
+  assert.ok(result.svg.includes('class="merlion merlion-chart"'));
+  assert.ok(result.svg.includes('data-merlion-series="June"'));
+  assert.ok(result.outline.includes("team | jan | jun"));
+  assert.equal(renderChart(JSON.parse(CHART), { width: 640, strict: true, idPrefix: "teams" }).svg, result.svg);
+  assert.equal(checkChart(CHART, { strict: true }).some((d) => d.severity === "error"), false);
+});
+
+test("checkChart reports spec errors with their JSON path", () => {
+  initSync(bytes);
+  const d = checkChart({ chart: 1, title: "t", x: { type: "band" }, y: { type: "linear" }, data: [{ a: "x", v: "1,5" }], marks: [{ type: "bar", x: "a", y: "v" }] });
+  const e = d.find((d) => d.code === "E022");
+  assert.ok(e, JSON.stringify(d));
+  assert.ok(e.message.includes("/data/0/v"));
+  assert.throws(() => renderChart(42), TypeError);
 });
 
 test("default orientation keeps assurance relationships continuous and source is an explicit override", () => {

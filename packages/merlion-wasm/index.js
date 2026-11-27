@@ -313,6 +313,57 @@ export function check(source, options) {
 }
 
 /**
+ * A chart spec as JSON text: a string passes through unchanged, an object is
+ * serialised with `JSON.stringify`.
+ * @param {string | object} spec
+ * @returns {string}
+ */
+function specText(spec) {
+  if (typeof spec === "string") return spec;
+  if (spec !== null && typeof spec === "object") return JSON.stringify(spec);
+  throw new ArgumentError("merlion: spec must be a JSON string or an object");
+}
+
+/**
+ * Renders one `merlion-chart/1` spec (specs/chart.md). Same options and result shape
+ * as `render`; `direction`, `edgeStyle`, `hint` and `autoTone` have no effect on a chart.
+ * @param {string | object} spec
+ * @param {import("./index.d.ts").RenderOptions} [options]
+ * @returns {import("./index.d.ts").RenderResult}
+ */
+export function renderChart(spec, options) {
+  const source = specText(spec);
+  checkSource(source);
+  const opts = optionsJson(options);
+  const raw = guarded((ex) => call(ex, "render_chart", source, opts));
+  if (raw === null) return internalResult();
+  rejectOptions(raw);
+  return {
+    svg: raw.svg,
+    outline: raw.outline,
+    diagnostics: raw.diagnostics.map(toDiagnostic),
+    error: raw.error,
+    fuelUsed: raw.fuel_used,
+  };
+}
+
+/**
+ * Checks a chart spec without drawing it: every error carries its JSON path.
+ * @param {string | object} spec
+ * @param {{ strict?: boolean }} [options]
+ * @returns {import("./index.d.ts").Diagnostic[]}
+ */
+export function checkChart(spec, options) {
+  const source = specText(spec);
+  checkSource(source);
+  const opts = optionsJson(options, ["strict"]);
+  const raw = guarded((ex) => call(ex, "check_chart", source, opts));
+  if (raw === null) return [internalError()];
+  rejectOptions(raw);
+  return raw.diagnostics.map(toDiagnostic);
+}
+
+/**
  * Compiles a stylesheet (specs/svg-output.md#stylesheet) into page CSS and the palette
  * of `theme` (`:root` alone by default) with `autoDark` as its dark variant. A name the
  * stylesheet does not define throws `RangeError`; over 64 KiB returns `E013` without

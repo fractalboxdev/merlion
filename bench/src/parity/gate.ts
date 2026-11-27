@@ -286,7 +286,7 @@ export const parity = (opts: { readonly limit: Option.Option<number>; readonly r
     const notRendered = new Set<string>();
 
     const browser = yield* Effect.acquireRelease(
-      Effect.tryPromise({ try: () => chromium.launch(), catch: (e) => fail(`chromium launch failed: ${String(e)}`) }),
+      Effect.tryPromise({ try: () => chromium.launch(process.env.MERLION_BENCH_CHROMIUM ? { executablePath: process.env.MERLION_BENCH_CHROMIUM } : {}), catch: (e) => fail(`chromium launch failed: ${String(e)}`) }),
       (b) => Effect.promise(() => b.close()),
     );
     const newPage = (scale: number) =>

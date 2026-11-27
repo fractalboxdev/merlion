@@ -102,6 +102,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `E011` FrontMatterUnsupported | Error | YAML outside the accepted subset, or nested beyond 64 |
 | `E012` DirectiveTooLarge | Error | `%%{init}%%` JSON nested beyond 64 or with a string over 4,096 bytes |
 | `E013` StylesheetTooLarge | Error | Stylesheet over 64 KiB, 512 rules, 32 declarations per rule, 8 selectors per token rule, 16 theme names, 256 role selectors or block depth 2, or compiled output over 64 KiB ([svg-output.md](svg-output.md#stylesheet)) |
+| `E020`–`E023` | Error | Chart specs: invalid JSON, spec shape, value, more than eight series ([chart.md](chart.md#diagnostics)) |
 | `W010` StyleRejected | Warning | Style property or value outside the accepted set |
 | `W011` ClassNameRejected | Warning | `classDef` name outside `[A-Za-z_][A-Za-z0-9_-]{0,63}` |
 | `W012` LabelTruncated | Warning | Label longer than 4,096 bytes |
@@ -129,6 +130,7 @@ The `fix` field lets an editor or an LLM loop apply the repair to the source tex
 | `I038` TodayMarkerOmitted | Info | Gantt's live today marker is omitted for deterministic output |
 | `I039` AxisIntervalCoarsened | Info | An overly dense Gantt axis uses an aligned multiple of the requested interval; task dates stay unchanged |
 | `I040` ExclusionBandsOmitted | Info | Gantt weekday bands are too dense to draw individually at this time scale |
+| `I041` ChartRowsSkipped | Info | A chart mark skips rows whose value is missing or `null` ([chart.md](chart.md#values)) |
 | `R001`–`R008` | Repair | See [Error tolerance](#error-tolerance) |
 | `R009`–`R013` | Repair | Sequence diagrams ([sequence.md](sequence.md#diagnostics)) |
 | `R014`–`R019` | Repair | State diagrams ([state.md](state.md#diagnostics)) |

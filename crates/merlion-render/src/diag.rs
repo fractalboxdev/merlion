@@ -191,6 +191,34 @@ impl Diagnostics {
         });
     }
 
+    /// Builds the span and message only while a diagnostic or its first dropped
+    /// span is retained. Later diagnostics update the summary and error state.
+    pub fn emit_lazy(
+        &mut self,
+        severity: Severity,
+        code: &'static str,
+        make: impl FnOnce() -> (Span, String),
+    ) {
+        if self.dropped == 0 {
+            let (span, message) = make();
+            self.emit(severity, code, span, message);
+        } else {
+            let severity =
+                if self.strict && matches!(severity, Severity::Warning | Severity::Repair) {
+                    Severity::Error
+                } else {
+                    severity
+                };
+            self.count_dropped(Diagnostic {
+                severity,
+                code,
+                span: Span::default(),
+                message: String::new(),
+                fix: None,
+            });
+        }
+    }
+
     /// Adds a diagnostic unless one with the same code already exists (e.g. `I010` once per diagram).
     pub fn emit_once(
         &mut self,
@@ -206,5 +234,38 @@ impl Diagnostics {
 
     pub fn has_errors(&self) -> bool {
         self.dropped_error || self.items.iter().any(|d| d.severity == Severity::Error)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::cell::Cell;
+
+    #[test]
+    fn lazy_diagnostics_stop_building_after_the_first_dropped_span() {
+        let built = Cell::new(0);
+        let mut diagnostics = Diagnostics::with_limit(true, 2);
+        diagnostics.emit(Severity::Info, "I000", Span::default(), "info");
+        for _ in 0..10 {
+            diagnostics.emit_lazy(Severity::Warning, "W000", || {
+                built.set(built.get() + 1);
+                (
+                    Span {
+                        line: 7,
+                        ..Span::default()
+                    },
+                    String::from("warning"),
+                )
+            });
+        }
+        assert_eq!(built.get(), 1);
+        assert_eq!(diagnostics.items.len(), 2);
+        assert_eq!(diagnostics.items[1].code, "I034");
+        assert_eq!(diagnostics.items[1].span.line, 7);
+        assert!(diagnostics.items[1]
+            .message
+            .starts_with("10 further diagnostics"));
+        assert!(diagnostics.has_errors());
     }
 }

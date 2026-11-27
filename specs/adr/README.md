@@ -13,5 +13,6 @@
 | [0009](0009-stylesheet.md) | One compiled stylesheet for web and standalone diagrams | Proposed |
 | [0010](0010-hover-interaction.md) | Hover interaction in two layers: bounded CSS in the SVG, full behaviour in the viewer | Proposed |
 | [0011](0011-continuous-container-fit.md) | Automatic orientation preserves continuous flow before wrapping | Proposed |
+| [0012](0012-chart-spec.md) | Charts from a JSON spec rendered by the core, not new Mermaid syntax | Proposed |
 
 A superseding decision is a new ADR; the old one keeps its text and changes status to `Superseded by <link>`.

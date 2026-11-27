@@ -1,0 +1,63 @@
+{
+  "chart": 1,
+  "title": "The central case spans 4,650 to 5,050",
+  "x": {
+    "type": "linear",
+    "label": "Index level",
+    "zero": false
+  },
+  "y": {
+    "type": "band",
+    "domain": [
+      "Low",
+      "Central",
+      "High"
+    ]
+  },
+  "data": [
+    {
+      "case": "Low",
+      "lo": "4300",
+      "hi": "4600",
+      "p": "30%"
+    },
+    {
+      "case": "Central",
+      "lo": "4650",
+      "hi": "5050",
+      "p": "45%"
+    },
+    {
+      "case": "High",
+      "lo": "5050",
+      "hi": "5400",
+      "p": "25%"
+    }
+  ],
+  "marks": [
+    {
+      "type": "interval",
+      "y": "case",
+      "x": "lo",
+      "x2": "hi",
+      "label": "p",
+      "thickness": 12
+    },
+    {
+      "type": "rule",
+      "x": {
+        "value": "4812.40"
+      },
+      "text": "Last close 4,812.40"
+    },
+    {
+      "type": "rule",
+      "x": {
+        "value": "4600"
+      },
+      "text": "Trigger",
+      "dash": true,
+      "tone": "neutral"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Merlion
 
-Merlion renders Mermaid flowcharts, sequence, state and Gantt diagrams to static, themeable, accessible SVG. The core (`crates/merlion-render`) is a `no_std` Rust library with zero dependencies; the same code runs as the `merlion` CLI and as a WebAssembly module, and native and WASM output are byte-identical. Labels are `<text>`, colours are CSS custom properties, so light, dark and custom themes switch with CSS alone, and every SVG carries `role="img"`, a `<title>` and a generated `<desc>`. The output is safe to inline without a sanitiser.
+Merlion renders Mermaid flowcharts, sequence, state and Gantt diagrams, and data charts from a JSON spec, to static, themeable, accessible SVG. The core (`crates/merlion-render`) is a `no_std` Rust library with zero dependencies; the same code runs as the `merlion` CLI and as a WebAssembly module, and native and WASM output are byte-identical. Labels are `<text>`, colours are CSS custom properties, so light, dark and custom themes switch with CSS alone, and every SVG carries `role="img"`, a `<title>` and a generated `<desc>`. The output is safe to inline without a sanitiser.
 
 Documentation: <https://merlion.fractalbox.dev/> (source in [docs/](docs/)). Design and contracts: [specs/](specs/README.md).
 
@@ -18,7 +18,7 @@ Documentation: <https://merlion.fractalbox.dev/> (source in [docs/](docs/)). Des
 
 ## Status
 
-Pre-1.0 ([roadmap](specs/roadmap.md)). Flowcharts, sequence diagrams, state diagrams and [Gantt schedules](docs/src/content/docs/guides/gantt-diagrams.md); any other header returns `E003`. The npm packages publish to GitHub Packages and require [registry authentication](specs/supply-chain.md#releases). Over the 390 flowcharts of the mermaid 12.0.0 corpus, Merlion renders 384, fits 98.2% of them in 720 px (mermaid-dagre 81.0%, mermaid-elk 82.3%) and moves surviving nodes less after a one-line edit than either (mean 0.054, p95 0.253), per [bench/results/2026-09-22-round2.md](bench/results/2026-09-22-round2.md) at commit `5392e69`.
+Pre-1.0 ([roadmap](specs/roadmap.md)). Flowcharts, sequence diagrams, state diagrams and [Gantt schedules](docs/src/content/docs/guides/gantt-diagrams.md); any other header returns `E003`. [Charts](docs/src/content/docs/guides/charts.md) render from a `merlion-chart/1` JSON spec ([specs/chart.md](specs/chart.md)). The npm packages publish to GitHub Packages and require [registry authentication](specs/supply-chain.md#releases). Over the 390 flowcharts of the mermaid 12.0.0 corpus, Merlion renders 384, fits 98.2% of them in 720 px (mermaid-dagre 81.0%, mermaid-elk 82.3%) and moves surviving nodes less after a one-line edit than either (mean 0.054, p95 0.253), per [bench/results/2026-09-22-round2.md](bench/results/2026-09-22-round2.md) at commit `5392e69`.
 
 | Package | Path |
 |---|---|

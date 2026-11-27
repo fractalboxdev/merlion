@@ -1,0 +1,161 @@
+{
+  "chart": 1,
+  "title": "Product A fell below Product B in the last two weeks",
+  "x": {
+    "type": "time"
+  },
+  "y": {
+    "type": "linear",
+    "label": "Index, 7 Sep = 100"
+  },
+  "data": [
+    {
+      "week": "2026-09-07",
+      "series": "Product A",
+      "index": "102.0"
+    },
+    {
+      "week": "2026-09-14",
+      "series": "Product A",
+      "index": "103.4"
+    },
+    {
+      "week": "2026-09-21",
+      "series": "Product A",
+      "index": "101.9"
+    },
+    {
+      "week": "2026-09-28",
+      "series": "Product A",
+      "index": "104.2"
+    },
+    {
+      "week": "2026-10-05",
+      "series": "Product A",
+      "index": "106.0"
+    },
+    {
+      "week": "2026-10-12",
+      "series": "Product A",
+      "index": "105.1"
+    },
+    {
+      "week": "2026-10-19",
+      "series": "Product A",
+      "index": "107.8"
+    },
+    {
+      "week": "2026-10-26",
+      "series": "Product A",
+      "index": "109.0"
+    },
+    {
+      "week": "2026-11-02",
+      "series": "Product A",
+      "index": "108.2"
+    },
+    {
+      "week": "2026-11-09",
+      "series": "Product A",
+      "index": "104.5"
+    },
+    {
+      "week": "2026-11-16",
+      "series": "Product A",
+      "index": "99.7"
+    },
+    {
+      "week": "2026-11-23",
+      "series": "Product A",
+      "index": "97.3",
+      "end": "A 97.3"
+    },
+    {
+      "week": "2026-09-07",
+      "series": "Product B",
+      "index": "98.0"
+    },
+    {
+      "week": "2026-09-14",
+      "series": "Product B",
+      "index": "98.6"
+    },
+    {
+      "week": "2026-09-21",
+      "series": "Product B",
+      "index": "99.1"
+    },
+    {
+      "week": "2026-09-28",
+      "series": "Product B",
+      "index": "99.0"
+    },
+    {
+      "week": "2026-10-05",
+      "series": "Product B",
+      "index": "100.4"
+    },
+    {
+      "week": "2026-10-12",
+      "series": "Product B",
+      "index": "101.2"
+    },
+    {
+      "week": "2026-10-19",
+      "series": "Product B",
+      "index": "101.0"
+    },
+    {
+      "week": "2026-10-26",
+      "series": "Product B",
+      "index": "102.3"
+    },
+    {
+      "week": "2026-11-02",
+      "series": "Product B",
+      "index": "103.1"
+    },
+    {
+      "week": "2026-11-09",
+      "series": "Product B",
+      "index": "102.2"
+    },
+    {
+      "week": "2026-11-16",
+      "series": "Product B",
+      "index": "100.9"
+    },
+    {
+      "week": "2026-11-23",
+      "series": "Product B",
+      "index": "100.1",
+      "end": "B 100.1"
+    }
+  ],
+  "marks": [
+    {
+      "type": "span",
+      "x": {
+        "value": "2026-11-09"
+      },
+      "x2": {
+        "value": "2026-11-23"
+      },
+      "text": "Price change"
+    },
+    {
+      "type": "rule",
+      "y": {
+        "value": "100"
+      },
+      "tone": "neutral"
+    },
+    {
+      "type": "line",
+      "x": "week",
+      "y": "index",
+      "series": "series",
+      "label": "end"
+    }
+  ]
+}

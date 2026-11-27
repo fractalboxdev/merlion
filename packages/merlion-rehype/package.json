@@ -20,6 +20,10 @@
     "./satteri": {
       "types": "./satteri.d.ts",
       "default": "./satteri.js"
+    },
+    "./svg-hast": {
+      "types": "./svg-hast.d.ts",
+      "default": "./svg-hast.js"
     }
   },
   "types": "./index.d.ts",
@@ -30,6 +34,7 @@
     "satteri.d.ts",
     "session.js",
     "svg-hast.js",
+    "svg-hast.d.ts",
     "fnv.js",
     "cache.js",
     "stylesheet.js",

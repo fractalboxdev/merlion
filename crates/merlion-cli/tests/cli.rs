@@ -43,6 +43,46 @@ fn gantt_render_check_and_outline_share_the_public_core() {
 }
 
 #[test]
+fn chart_render_and_check_read_a_json_spec() {
+    let dir = tempdir("chart");
+    let src = include_str!("../../merlion-render/tests/fixtures/chart/ranges.json");
+    fs::write(dir.join("ranges.json"), src).unwrap();
+    let rendered = merlion(
+        &dir,
+        &[
+            "render",
+            "--chart",
+            "--strict",
+            "ranges.json",
+            "-o",
+            "ranges.svg",
+        ],
+        None,
+    );
+    assert!(rendered.status.success(), "{}", stderr(&rendered));
+    let svg = fs::read_to_string(dir.join("ranges.svg")).unwrap();
+    assert_eq!(
+        Some(svg.as_str()),
+        merlion_render::render_chart(
+            src,
+            &merlion_render::RenderOptions {
+                strict: true,
+                ..Default::default()
+            }
+        )
+        .svg
+        .as_deref()
+    );
+    let checked = merlion(&dir, &["check", "--chart", "--strict", "ranges.json"], None);
+    assert!(checked.status.success(), "{}", stderr(&checked));
+    let bad = merlion(&dir, &["check", "--chart"], Some(r#"{"chart":1}"#));
+    assert_eq!(bad.status.code(), Some(1));
+    assert!(stderr(&bad).contains("E021"), "{}", stderr(&bad));
+    let usage = merlion(&dir, &["render", "--chart", "--batch", "x"], None);
+    assert_eq!(usage.status.code(), Some(2));
+}
+
+#[test]
 fn default_orientation_avoids_wraps_and_source_remains_an_explicit_override() {
     let dir = tempdir("orientation");
     let source =

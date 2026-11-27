@@ -14,13 +14,17 @@
 const PROPERTY = {
   class: "className",
   "aria-labelledby": "ariaLabelledBy",
+  "fill-opacity": "fillOpacity",
   "font-family": "fontFamily",
   "font-size": "fontSize",
   "font-style": "fontStyle",
   "font-weight": "fontWeight",
   "marker-end": "markerEnd",
   "marker-start": "markerStart",
+  "pointer-events": "pointerEvents",
   "stroke-dasharray": "strokeDashArray",
+  "stroke-linecap": "strokeLineCap",
+  "stroke-linejoin": "strokeLineJoin",
   "stroke-width": "strokeWidth",
   "text-anchor": "textAnchor",
 };
