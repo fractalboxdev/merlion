@@ -94,12 +94,16 @@ const fetchCorpora = (only: "gantt" | "quadrant" | null = null) => Effect.gen(fu
       yield* Console.log(`${corpus}: ${es.length} diagrams written to ${path.relative(process.cwd(), dir) || "."}`);
     });
 
-  const quadrantSources = selectSourcePaths([...blobs.keys()], "quadrant");
-  yield* Console.log(`${quadrantSources.length} quadrant source files at ${MERMAID_TAG}`);
-  const quadrantContents = yield* Effect.forEach(quadrantSources, fetchText, { concurrency: 8 });
-  const quadrantEntries = collect("quadrant", quadrantContents);
-  yield* write("compat-quadrant", COMPAT_QUADRANT_DIR, quadrantEntries);
-  if (only === "quadrant") return { quadrantDiagrams: quadrantEntries.length };
+  let quadrantDiagrams = 0;
+  if (only !== "gantt") {
+    const quadrantSources = selectSourcePaths([...blobs.keys()], "quadrant");
+    yield* Console.log(`${quadrantSources.length} quadrant source files at ${MERMAID_TAG}`);
+    const quadrantContents = yield* Effect.forEach(quadrantSources, fetchText, { concurrency: 8 });
+    const quadrantEntries = collect("quadrant", quadrantContents);
+    quadrantDiagrams = quadrantEntries.length;
+    yield* write("compat-quadrant", COMPAT_QUADRANT_DIR, quadrantEntries);
+    if (only === "quadrant") return { quadrantDiagrams };
+  }
 
   const ganttSources = selectSourcePaths([...blobs.keys()], "gantt");
   yield* Console.log(`${ganttSources.length} gantt source files at ${MERMAID_TAG}`);
@@ -148,7 +152,7 @@ const fetchCorpora = (only: "gantt" | "quadrant" | null = null) => Effect.gen(fu
     sequenceDiagrams: seqEntries.length,
     stateDiagrams: stateEntries.length,
     ganttDiagrams: ganttEntries.length,
-    quadrantDiagrams: quadrantEntries.length,
+    quadrantDiagrams,
     editPairs: pairs,
   };
 });
